@@ -78,7 +78,7 @@ def _load_mobs() -> dict[str, MobData]:
     for row in _read_csv("mobs.csv"):
         mobs[row["name"]] = MobData(
             id = int(row["id"]),
-            game_id = row["game_id"],
+            game_id = "minecraft:" + str(row["name"]).lower().replace(" ", "_"),
             category = row["category"],
             region = row["region"],
         )

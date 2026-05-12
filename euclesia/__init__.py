@@ -43,7 +43,8 @@ class EuclesiaWorld(World):
     """Minecraft Randomizer by KuroLynx (Mod by EDGN)"""
     game = "Minecraft"
     options: EuclesiaOptions
-    web = EuclesiaWebWorld
+    options_dataclass = EuclesiaOptions
+    web: WebWorld = EuclesiaWebWorld()
     death_list: list[str] = []
 
     item_name_to_id = {name: data.id for (name, data) in ITEMS.items() if name != "Victory"}
@@ -132,7 +133,7 @@ class EuclesiaWorld(World):
             case Goals.option_all_bosses:
                 selected_bosses = self.options.boss_selection.value
                 goal_location = next(
-                    f"Kill Boss: {name}" for name in reversed(list(MOBS_BOSS.keys())) if name in selected_bosses,
+                    (f"Kill Boss: {name}" for name in reversed(list(MOBS_BOSS.keys())) if name in selected_bosses)
                 )
             # Using of default _ pattern to not lock generation if a valid goal was not selected (always at the end of
             # all cases)

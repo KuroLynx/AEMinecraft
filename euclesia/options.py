@@ -65,11 +65,11 @@ class KillSanity(Toggle):
     default = 0
 
 class EuclesiaOptions(PerGameCommonOptions):
-    goals: Goals = Goals
-    boss_selection: BossSelection = BossSelection
-    death_list: DeathList = DeathList
-    death_list_count: DeathListCount = DeathListCount
-    advancements_required: AdvancementsRequired = AdvancementsRequired
-    death_link: DeathLink = DeathLink
-    villager_trust: VillagerTrust = VillagerTrust
-    kill_sanity: KillSanity = KillSanity
+    goals: Goals
+    boss_selection: BossSelection
+    death_list: DeathList
+    death_list_count: DeathListCount
+    advancements_required: AdvancementsRequired
+    death_link: DeathLink
+    villager_trust: VillagerTrust
+    kill_sanity: KillSanity
