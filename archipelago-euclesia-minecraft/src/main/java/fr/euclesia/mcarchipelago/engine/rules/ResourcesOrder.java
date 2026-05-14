@@ -1,11 +1,12 @@
 package fr.euclesia.mcarchipelago.engine.rules;
 
 public enum ResourcesOrder {
-    COPPER(1),
-    GOLD(2),
-    IRON(3),
-    DIAMOND(4),
-    NETHERITE(5);
+    STONE(1),
+    COPPER(2),
+    GOLD(3),
+    IRON(4),
+    DIAMOND(5),
+    NETHERITE(6);
 
     private final int level;
 
