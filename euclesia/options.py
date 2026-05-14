@@ -57,12 +57,21 @@ class VillagerTrust(Toggle):
 
 class KillSanity(Toggle):
     """If toggled on, killing a mob for the first time will send a check
-        Bosses will always send a check when killed even if toggled off
+    Bosses will always send a check when killed even if toggled off
     """
     display_name = "Kill Sanity"
     option_true = 1
     option_false = 0
     default = 0
+
+class MobSpawnLockCategory(OptionSet):
+    """
+    Define which mob categories are locked until their unlock item is received.
+    Leave empty to disable  mob spawn locking entirely.
+    """
+    display_name = "Mob Spawn Lock Category"
+    valid_keys = {"passive", "neutral", "hostile"}
+    default = frozenset()
 
 class EuclesiaOptions(PerGameCommonOptions):
     goals: Goals
@@ -73,3 +82,4 @@ class EuclesiaOptions(PerGameCommonOptions):
     death_link: DeathLink
     villager_trust: VillagerTrust
     kill_sanity: KillSanity
+    mob_spawn_lock_category: MobSpawnLockCategory

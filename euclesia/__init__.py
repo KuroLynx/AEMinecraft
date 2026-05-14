@@ -44,10 +44,13 @@ class EuclesiaWorld(World):
     game = "Minecraft"
     options: EuclesiaOptions
     options_dataclass = EuclesiaOptions
-    web: WebWorld = EuclesiaWebWorld()
+    web = EuclesiaWebWorld()
     death_list: list[str] = []
 
-    item_name_to_id = {name: data.id for (name, data) in ITEMS.items() if name != "Victory"}
+    item_name_to_id = {
+        **{name: data.id for (name, data) in ITEMS.items() if name != "Victory"},
+        **{f"Mob Unlock: {name}": BASE_ID_ITEMS + 500 + mob.id for (name, mob) in MOBS_ALL.items()},
+    }
     location_name_to_id = {name: data.id for (name, data) in ALL_LOCATIONS.items() if name != "Victory"}
 
     # -----------------------------------------------------------------------
@@ -55,8 +58,21 @@ class EuclesiaWorld(World):
     # -----------------------------------------------------------------------
 
     def create_item(self, name: str) -> EuclesiaItem:
-        item_data: ItemData = ITEMS[name]
-        return EuclesiaItem(name, item_data.classification, item_data.id, self.player)
+
+        if name in ITEMS:
+            item_data: ItemData = ITEMS[name]
+            return EuclesiaItem(name, item_data.classification, item_data.id, self.player)
+
+        if name.startswith("Mob Unlock:"):
+            mob_name = name.removeprefix("Mob Unlock:")
+            mob_data = MOBS_ALL[mob_name]
+            classification = CLASSIFICATION_MAP.get(
+                mob_data.unlock_classification,
+                ItemClassification.progression,
+            )
+            return EuclesiaItem(name, classification, BASE_ID_ITEMS + 500 + mob_data.id, self.player)
+
+        raise KeyError(f"Unknown item: {name}")
 
     def generate_early(self) -> None:
         """Génère les données aléatoires qui doivent être disponibles dès set_rules."""
@@ -96,7 +112,10 @@ class EuclesiaWorld(World):
 
         added_regions[EuclesiaRegion.OVERWORLD].connect(
             added_regions[EuclesiaRegion.THE_END],
-            rule = lambda state: state.has("Dimension Unlock: The End", self.player),
+            rule = lambda state: (
+                    state.has("Dimension Unlock: The End", self.player) and
+                    state.has("Advancement: Into Fire", self.player)
+            ),
         )
 
         # If needed to add new dimensions (like TP), do it here i guess
@@ -116,6 +135,11 @@ class EuclesiaWorld(World):
             for _ in range(item_data.count):
                 pool.append(self.create_item(name))
 
+        if self.options.mob_spawn_lock_category:
+            for mob_name, mob_data in MOBS_ALL.items():
+                if mob_data.category in self.options.mob_spawn_lock_category.value:
+                    pool.append(self.create_item(f"Mob Unlock: {mob_name}"))
+
         # Complétion de la pool avec filler
         active_location_count = len(self._get_active_locations())
         while len(pool) < active_location_count:
@@ -133,7 +157,7 @@ class EuclesiaWorld(World):
             case Goals.option_all_bosses:
                 selected_bosses = self.options.boss_selection.value
                 goal_location = next(
-                    (f"Kill Boss: {name}" for name in reversed(list(MOBS_BOSS.keys())) if name in selected_bosses)
+                    (f"Kill Boss: {name}" for name in reversed(list(MOBS_BOSS.keys())) if name in selected_bosses),
                 )
             # Using of default _ pattern to not lock generation if a valid goal was not selected (always at the end of
             # all cases)
@@ -141,7 +165,6 @@ class EuclesiaWorld(World):
                 goal_location = "Kill Boss: Ender Dragon"
 
         self.multiworld.get_location(goal_location, self.player).place_locked_item(victory)
-
 
     # -----------------------------------------------------------------------
     # Goal
@@ -154,9 +177,11 @@ class EuclesiaWorld(World):
             case Goals.option_all_bosses:
                 selected_bosses = self.options.boss_selection.value
                 bosses_location = [f"Kill Boss: {name}" for name in list(MOBS_BOSS.keys()) if name in selected_bosses]
-                return lambda state: all(state.can_reach(boss_location, "Location", player) for boss_location in bosses_location)
+                return lambda state: all(
+                    state.can_reach(boss_location, "Location", player) for boss_location in bosses_location,
+                )
 
-            #Using of default _ pattern to not lock generation if a valid goal was not selected (always at the end of
+            # Using of default _ pattern to not lock generation if a valid goal was not selected (always at the end of
             # all cases)
             case Goals.option_vanilla | _:
                 return lambda state: state.can_reach("Kill Boss: Ender Dragon", player)
@@ -169,7 +194,9 @@ class EuclesiaWorld(World):
             death_list_locations = [f"Kill Entity: {mob_name}" for mob_name in self.death_list]
 
             def completion_condition(state) -> bool:
-                return primary_condition(state) and all(state.can_reach(location, "Location", player) for location in death_list_locations)
+                return primary_condition(state) and all(
+                    state.can_reach(location, "Location", player) for location in death_list_locations,
+                )
 
             self.multiworld.completion_condition[player] = completion_condition
         else:
@@ -180,7 +207,8 @@ class EuclesiaWorld(World):
     # -----------------------------------------------------------------------
 
     def fill_slot_data(self) -> dict:
-        slot_data = {
+        return {
+            # --- Options ---
             "goal"                 : self.options.goals.value,
             "boss_selection"       : list(self.options.boss_selection.value),
             "death_link"           : bool(self.options.death_link.value),
@@ -189,15 +217,40 @@ class EuclesiaWorld(World):
             "death_list"           : bool(self.options.death_list.value),
             "death_list_count"     : self.options.death_list_count.value,
             "advancements_required": self.options.advancements_required.value,
-            "advancement_locations": {
-                advancement_data.game_id: advancement_data.id
-                for advancement_data in LOCATIONS_ADVANCEMENT.values()
-            },
-            "boss_locations"       : {
-                boss_kill_data.game_id: boss_kill_data.id
-                for boss_kill_data in LOCATIONS_BOSS_KILLS.values()
-            },
-            "death_list_mobs"      : self.death_list,
-        }
+            "mob_spawn_lock"       : list(self.options.mob_spawn_lock_category.value),
 
-        return slot_data
+            # --- Mapping item ID → nom (le mod applique l'effet depuis le nom) ---
+            "items"                : {
+                item_data.id: name
+                for name, item_data in ITEMS.items()
+            },
+
+            # --- Mapping game_id → location ID (le mod envoie le check depuis le game_id) ---
+            "locations"            : {
+                location_data.game_id: location_data.id
+                for location_data in ALL_LOCATIONS.values()
+                if location_data.game_id  # exclut les locations sans game_id
+            },
+
+            # --- Mobs à tracker (uniquement ceux actifs selon les options) ---
+            "tracked_mobs"         : {
+                mob_data.game_id: loc_data.id
+                for loc_name, loc_data in self._get_active_locations().items()
+                if loc_data.category in (LocationCategory.MOB_KILL, LocationCategory.BOSS_KILL)
+                for mob_name, mob_data in {**MOBS_ALL, **MOBS_BOSS}.items()
+                if f"Kill Entity: {mob_name}" == loc_name or f"Kill Boss: {mob_name}" == loc_name
+            },
+
+            # --- Death list ---
+            "death_list_mobs"      : [
+                next(mob.game_id for name, mob in {**MOBS_ALL, **MOBS_BOSS}.items() if name == mob_name)
+                for mob_name in self.death_list
+            ],
+
+            # --- Mob spawn lock : game_id des mobs à bloquer au spawn ---
+            "mob_spawn_lock_mobs"  : {
+                mob_data.game_id: BASE_ID_ITEMS + 500 + mob_data.id
+                for mob_name, mob_data in {**MOBS_ALL, **MOBS_BOSS}.items()
+                if mob_data.category in self.options.mob_spawn_lock_category.value
+            },
+        }

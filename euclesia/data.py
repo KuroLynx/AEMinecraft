@@ -71,6 +71,7 @@ class MobData:
     game_id: str
     category: str
     region: str
+    unlock_classification: str = "progression"
 
 
 def _load_mobs() -> dict[str, MobData]:
@@ -81,6 +82,7 @@ def _load_mobs() -> dict[str, MobData]:
             game_id = "minecraft:" + str(row["name"]).lower().replace(" ", "_"),
             category = row["category"],
             region = row["region"],
+            unlock_classification = row["unlock_classification"],
         )
     return mobs
 
@@ -115,11 +117,13 @@ class LocationData:
 def _load_advancements() -> dict[str, LocationData]:
     locations = {}
     for row in _read_csv("advancements.csv"):
-        locations[row["location"]] = LocationData(
-            id = BASE_ID_LOCATIONS + int(row["location"]),
+        name = row["name"]
+        full_game_id = f"minecraft:{row['tab']}/{row['game_id']}"
+        locations[f"Advancement: {name}"] = LocationData(
+            id = BASE_ID_LOCATIONS + int(row["id"]),
             category = LocationCategory.ADVANCEMENT,
             region = row["region"],
-            game_id = row["game_id"],
+            game_id = full_game_id,
         )
     return locations
 
@@ -127,7 +131,8 @@ def _load_advancements() -> dict[str, LocationData]:
 def _load_mob_kill_locations() -> dict[str, LocationData]:
     locations = {}
     for name, mob in MOBS_ALL.items():
-        if mob.category == MobCategory.BOSS: continue
+        if mob.category == MobCategory.BOSS:
+            continue
         locations[f"Kill Entity: {name}"] = LocationData(
             id = BASE_ID_LOCATIONS + 300 + int(mob.id),
             category = LocationCategory.MOB_KILL,
@@ -147,6 +152,7 @@ def _load_boss_kill_locations() -> dict[str, LocationData]:
             game_id = mob.game_id,
         )
     return locations
+
 
 LOCATIONS_ADVANCEMENT: dict[str, LocationData] = _load_advancements()
 LOCATIONS_MOB_KILLS: dict[str, LocationData] = _load_mob_kill_locations()

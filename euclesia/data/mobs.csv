@@ -1,88 +1,88 @@
-id,name,category,region
-1,Allay,passive,Overworld
-2,Armadillo,passive,Overworld
-3,Axolotl,passive,Overworld
-4,Bat,passive,Overworld
-5,Camel,passive,Overworld
-6,Camel Husk,passive,Overworld
-7,Cat,passive,Overworld
-8,Chicken,passive,Overworld
-9,Cod,passive,Overworld
-10,Copper Golem,passive,Overworld
-11,Cow,passive,Overworld
-12,Donkey,passive,Overworld
-13,Frog,passive,Overworld
-14,Glow Squid,passive,Overworld
-15,Happy Ghast,passive,Nether
-16,Horse,passive,Overworld
-17,Mooshroom,passive,Overworld
-18,Mule,passive,Overworld
-19,Ocelot,passive,Overworld
-20,Parrot,passive,Overworld
-21,Pig,passive,Overworld
-22,Rabbit,passive,Overworld
-23,Salmon,passive,Overworld
-24,Sheep,passive,Overworld
-25,Skeleton Horse,passive,Overworld
-26,Sniffer,passive,Overworld
-27,Snow Golem,passive,Overworld
-28,Squid,passive,Overworld
-29,Strider,passive,Nether
-30,Tadpole,passive,Overworld
-31,Tropical Fish,passive,Overworld
-32,Turtle,passive,Overworld
-33,Villager,passive,Overworld
-34,Wandering Trader,passive,Overworld
-35,Zombie Horse,passive,Overworld
-36,Bee,neutral,Overworld
-37,Cave Spider,neutral,Overworld
-38,Dolphin,neutral,Overworld
-39,Drowned,neutral,Overworld
-40,Enderman,neutral,The End
-41,Fox,neutral,Overworld
-42,Goat,neutral,Overworld
-43,Iron Golem,neutral,Overworld
-44,Llama,neutral,Overworld
-45,Nautilus,neutral,Overworld
-46,Panda,neutral,Overworld
-47,Piglin,neutral,Nether
-48,Polar Bear,neutral,Overworld
-49,Pufferfish,neutral,Overworld
-50,Spider,neutral,Overworld
-51,Trader Llama,neutral,Overworld
-52,Wolf,neutral,Overworld
-53,Zombie Nautilus,neutral,Overworld
-54,Zombified Piglin,neutral,Nether
-55,Blaze,hostile,Nether
-56,Bogged,hostile,Overworld
-57,Breeze,hostile,Overworld
-58,Creaking,hostile,Overworld
-59,Creeper,hostile,Overworld
-60,Elder Guardian,boss,Overworld
-61,Ender Dragon,boss,The End
-62,Endermite,hostile,The End
-63,Evoker,hostile,Overworld
-64,Ghast,hostile,Overworld
-65,Guardian,hostile,Overworld
-66,Hoglin,hostile,Overworld
-67,Husk,hostile,Overworld
-68,Magma Cube,hostile,Overworld
-69,Parched,hostile,Overworld
-70,Phantom,hostile,Overworld
-71,Piglin Brute,hostile,Nether
-72,Pillager,hostile,Overworld
-73,Ravager,hostile,Overworld
-74,Shulker,hostile,The End
-75,Silverfish,hostile,Overworld
-76,Skeleton,hostile,Overworld
-77,Slime,hostile,Overworld
-78,Stray,hostile,Overworld
-79,Vex,hostile,Overworld
-80,Vindicator,hostile,Overworld
-81,Warden,boss,Overworld
-82,Witch,hostile,Overworld
-83,Wither,boss,Nether
-84,Wither Skeleton,hostile,Nether
-85,Zoglin,hostile,Nether
-86,Zombie,hostile,Overworld
-87,Zombie Villager,hostile,Overworld
+id,name,category,region,unlock_classification
+1,Allay,passive,Overworld,filler
+2,Armadillo,passive,Overworld,useful
+3,Axolotl,passive,Overworld,useful
+4,Bat,passive,Overworld,filler
+5,Camel,passive,Overworld,useful
+6,Camel Husk,passive,Overworld,filler
+7,Cat,passive,Overworld,useful
+8,Chicken,passive,Overworld,useful
+9,Cod,passive,Overworld,useful
+10,Copper Golem,passive,Overworld,filler
+11,Cow,passive,Overworld,progression
+12,Donkey,passive,Overworld,useful
+13,Frog,passive,Overworld,useful
+14,Glow Squid,passive,Overworld,filler
+15,Happy Ghast,passive,Nether,filler
+16,Horse,passive,Overworld,useful
+17,Mooshroom,passive,Overworld,useful
+18,Mule,passive,Overworld,useful
+19,Ocelot,passive,Overworld,useful
+20,Parrot,passive,Overworld,useful
+21,Pig,passive,Overworld,useful
+22,Rabbit,passive,Overworld,useful
+23,Salmon,passive,Overworld,useful
+24,Sheep,passive,Overworld,useful
+25,Skeleton Horse,passive,Overworld,filler
+26,Sniffer,passive,Overworld,useful
+27,Snow Golem,passive,Overworld,filler
+28,Squid,passive,Overworld,filler
+29,Strider,passive,Nether,useful
+30,Tadpole,passive,Overworld,useful
+31,Tropical Fish,passive,Overworld,useful
+32,Turtle,passive,Overworld,useful
+33,Villager,passive,Overworld,progression
+34,Wandering Trader,passive,Overworld,useful
+35,Zombie Horse,passive,Overworld,filler
+36,Bee,neutral,Overworld,useful
+37,Cave Spider,neutral,Overworld,useful
+38,Dolphin,neutral,Overworld,useful
+39,Drowned,neutral,Overworld,useful
+40,Enderman,neutral,The End,progression
+41,Fox,neutral,Overworld,useful
+42,Goat,neutral,Overworld,useful
+43,Iron Golem,neutral,Overworld,useful
+44,Llama,neutral,Overworld,useful
+45,Nautilus,neutral,Overworld,filler
+46,Panda,neutral,Overworld,useful
+47,Piglin,neutral,Nether,progression
+48,Polar Bear,neutral,Overworld,filler
+49,Pufferfish,neutral,Overworld,useful
+50,Spider,neutral,Overworld,useful
+51,Trader Llama,neutral,Overworld,filler
+52,Wolf,neutral,Overworld,useful
+53,Zombie Nautilus,neutral,Overworld,filler
+54,Zombified Piglin,neutral,Nether,useful
+55,Blaze,hostile,Nether,progression
+56,Bogged,hostile,Overworld,useful
+57,Breeze,hostile,Overworld,useful
+58,Creaking,hostile,Overworld,filler
+59,Creeper,hostile,Overworld,useful
+60,Elder Guardian,boss,Overworld,progression
+61,Ender Dragon,boss,The End,progression
+62,Endermite,hostile,The End,filler
+63,Evoker,hostile,Overworld,useful
+64,Ghast,hostile,Nether,useful
+65,Guardian,hostile,Overworld,filler
+66,Hoglin,hostile,Nether,useful
+67,Husk,hostile,Overworld,useful
+68,Magma Cube,hostile,Nether,useful
+69,Parched,hostile,Overworld,filler
+70,Phantom,hostile,Overworld,useful
+71,Piglin Brute,hostile,Nether,useful
+72,Pillager,hostile,Overworld,useful
+73,Ravager,hostile,Overworld,useful
+74,Shulker,hostile,The End,useful
+75,Silverfish,hostile,Overworld,useful
+76,Skeleton,hostile,Overworld,useful
+77,Slime,hostile,Overworld,useful
+78,Stray,hostile,Overworld,useful
+79,Vex,hostile,Overworld,useful
+80,Vindicator,hostile,Overworld,useful
+81,Warden,boss,Overworld,progression
+82,Witch,hostile,Overworld,useful
+83,Wither,boss,Nether,progression
+84,Wither Skeleton,hostile,Nether,progression
+85,Zoglin,hostile,Nether,useful
+86,Zombie,hostile,Overworld,useful
+87,Zombie Villager,hostile,Overworld,useful
