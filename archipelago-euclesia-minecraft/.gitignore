@@ -38,3 +38,13 @@ hs_err_*.log
 replay_*.log
 *.hprof
 *.jfr
+
+# worktrees
+
+.worktrees/
+
+# local tool state
+.codex-tmp/
+
+# runtime logs
+logs/
