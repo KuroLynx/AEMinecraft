@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 from Options import Choice, OptionSet, Toggle, Range, NumericOption, PerGameCommonOptions
 
 
@@ -12,8 +14,8 @@ class Goals(Choice):
 class BossSelection(OptionSet):
     """ Define all bosses that should be killed when all bosses or random bosses is selected"""
     display_name = "Bosses"
-    valid_keys = {"ender_dragon", "elder_guardian", "warden", "wither"}
-    default = {"ender_dragon", "elder_guardian", "warden", "wither"}
+    valid_keys = {"Ender Dragon", "Elder Guardian", "Warden", "Wither"}
+    default = {"Ender Dragon", "Elder Guardian", "Warden", "Wither"}
 
 
 class DeathList(Toggle):
@@ -36,8 +38,8 @@ class AdvancementsRequired(Range):
     """Define how many advancements you need to complete your game"""
     display_name = "Advancements Required"
     range_start = 0
-    range_end = 137
-    default = 60
+    range_end = 160
+    default = 80
 
 
 class DeathLink(Toggle):
@@ -73,6 +75,7 @@ class MobSpawnLockCategory(OptionSet):
     valid_keys = {"passive", "neutral", "hostile"}
     default = frozenset()
 
+@dataclass
 class EuclesiaOptions(PerGameCommonOptions):
     goals: Goals
     boss_selection: BossSelection

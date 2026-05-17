@@ -72,6 +72,8 @@ class MobData:
     category: str
     region: str
     unlock_classification: str = "progression"
+    breedable: bool = False # counts toward "Two by Two" advancement or not !
+    tameable: bool = False # counts toward "Best Friends Forever" advancement or not !
 
 
 def _load_mobs() -> dict[str, MobData]:
@@ -83,6 +85,8 @@ def _load_mobs() -> dict[str, MobData]:
             category = row["category"],
             region = row["region"],
             unlock_classification = row["unlock_classification"],
+            breedable = (row["breedable"] == "True"),
+            tameable = (row["tameable"] == "True")
         )
     return mobs
 
@@ -90,11 +94,12 @@ def _load_mobs() -> dict[str, MobData]:
 MOBS_ALL: dict[str, MobData] = _load_mobs()
 
 # Sous-ensembles par catégorie
-MOBS_PASSIVE: dict[str, MobData] = {k: v for k, v in MOBS_ALL.items() if v.category == MobCategory.PASSIVE}
-MOBS_NEUTRAL: dict[str, MobData] = {k: v for k, v in MOBS_ALL.items() if v.category == MobCategory.NEUTRAL}
-MOBS_HOSTILE: dict[str, MobData] = {k: v for k, v in MOBS_ALL.items() if v.category == MobCategory.HOSTILE}
-MOBS_BOSS: dict[str, MobData] = {k: v for k, v in MOBS_ALL.items() if v.category == MobCategory.BOSS}
-
+MOBS_PASSIVE: dict[str, MobData]    = {k: v for k, v in MOBS_ALL.items() if v.category == MobCategory.PASSIVE}
+MOBS_NEUTRAL: dict[str, MobData]    = {k: v for k, v in MOBS_ALL.items() if v.category == MobCategory.NEUTRAL}
+MOBS_HOSTILE: dict[str, MobData]    = {k: v for k, v in MOBS_ALL.items() if v.category == MobCategory.HOSTILE}
+MOBS_BOSS: dict[str, MobData]       = {k: v for k, v in MOBS_ALL.items() if v.category == MobCategory.BOSS}
+MOBS_BREEDABLE: dict[str, MobData]  = {k: v for k, v in MOBS_ALL.items() if v.breedable}
+MOBS_TAMEABLE: dict[str, MobData]   = {k: v for k,v in MOBS_ALL.items() if v.tameable}
 
 # ---------------------------------------------------------------------------
 # Locations

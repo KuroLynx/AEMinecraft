@@ -135,7 +135,7 @@ Nombre d'advancements à compléter pour gagner si `goal = advancementsanity`. C
 
 ## `mob_spawn_lock` — `list[str]`
 
-Catégories de mobs bloqués au spawn jusqu'à réception de leur item `Mob Unlock: <nom>`.  
+Catégories de mobs bloqués au spawn jusqu'à réception de leur item `Entity Unlock: <nom>`.  
 Liste vide = fonctionnalité désactivée.
 
 | Valeur | Catégorie |
@@ -184,8 +184,8 @@ Mapping complet `item ID AP → nom de l'item`.
     15466520: "Iron Ingot Bundle",
     15466521: "Experience Bottle",
     15466595: "Victory",
-    15466997: "Mob Unlock: Zombie",
-    15466998: "Mob Unlock: Creeper",
+    15466997: "Entity Unlock: Zombie",
+    15466998: "Entity Unlock: Creeper",
     15466999: "Dimension Unlock: Nether",
     15467000: "Dimension Unlock: The End"
 }

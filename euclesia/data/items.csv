@@ -21,3 +21,5 @@ id,name,classification,count
 19,Knowledge: Brewing,useful,1
 20,Knowledge: Enchanting,useful,1
 21,Knowledge: Sharpshooter,useful,1
+22,Knowledge: Flying,useful,1
+23,Bread,filler,1
