@@ -150,10 +150,15 @@ class MCWorld(World):
                 if mob_data.category in self.options.mob_spawn_lock_category.value:
                     pool.append(self.create_item(f"{ENTITY_UNLOCK_PREFIX}{mob_name}"))
 
-        # Complétion de la pool avec filler
         active_location_count = len(self._get_active_locations())
-        while len(pool) < active_location_count:
-            pool.append(self.create_item("Bread"))
+
+        filler_items = [item_name for item_name, item_data in ITEMS.items() if item_data.classification ==
+                        ItemClassification.filler]
+
+        shortage = active_location_count - len(pool)
+        if shortage > 0:
+            for _ in range(shortage):
+                pool.append(self.create_item(self.random_choice(filler_items)))
 
         mc_trap_items = [item_name for item_name, item_data in ITEMS.items() if item_data.classification ==
                          ItemClassification.trap]

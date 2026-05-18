@@ -5,15 +5,15 @@ Dimension Unlock: The End,progression,1
 Progressive Material Handling,progression,6
 Knowledge: Sword Handling,progression,1
 Knowledge: Spear Handling,useful,1
-Knowledge: Shovel Handling,filler,1
+Knowledge: Shovel Handling,useful,1
 Knowledge: Axe Handling,useful,1
 Knowledge: Pickaxe Handling,progression,1
 Knowledge: Fishing,useful,1
-Knowledge: Hoe Handling,filler,1
-Knowledge: Shear Handling,filler,1
+Knowledge: Hoe Handling,useful,1
+Knowledge: Shear Handling,useful,1
 Knowledge: Mace Handling,useful,1
 Knowledge: Trident Handling,useful,1
-Knowledge: Brush Handling,filler,1
+Knowledge: Brush Handling,useful,1
 Knowledge: Pyromaniac,progression,1
 Knowledge: Shield Handling,useful,1
 Knowledge: Armor Handling,useful,1
@@ -21,4 +21,4 @@ Knowledge: Brewing,useful,1
 Knowledge: Enchanting,useful,1
 Knowledge: Sharpshooter,useful,1
 Knowledge: Flying,useful,1
-Bread,filler,1
+,,
