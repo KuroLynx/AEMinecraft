@@ -3,7 +3,7 @@ print("Euclesia world loading...")
 from BaseClasses import Item, Location, Region, Tutorial
 from worlds.AutoWorld import WebWorld, World
 from .data import *
-from .options import EuclesiaOptions, Goals
+from .options import EuclesiaOptions
 from .regions import EuclesiaRegion
 from .rules import set_rules
 
@@ -77,7 +77,6 @@ class EuclesiaWorld(World):
             struct_name = name.removeprefix(STRUCT_UNLOCK_PREFIX)
             struct_data = STRUCTURES[struct_name]
             return EuclesiaItem(name, struct_data.classification, BASE_ID_STRUCT_UNLOCK + struct_data.id, self.player)
-
 
         raise KeyError(f"Unknown item: {name}")
 
@@ -166,7 +165,7 @@ class EuclesiaWorld(World):
 
         # Créer une location event sans ID
         victory_location = Location(self.player, "Victory", None,
-                                    self.multiworld.get_region("Overworld", self.player)
+                                    self.multiworld.get_region("Overworld", self.player),
                                     )
         victory_location.place_locked_item(victory)
         self.multiworld.get_region("Overworld", self.player).locations.append(victory_location)
@@ -179,21 +178,23 @@ class EuclesiaWorld(World):
     # Goal
     # -----------------------------------------------------------------------
 
+    def _get_selected_bosses(self) -> list[str]:
+        available_bosses = [name for name in MOBS_BOSS.keys() if name in self.options.boss_list.value]
+
+        match self.options.boss_selection_mode.value:
+            case 10:  # all
+                return available_bosses
+            case 11:  # random
+                count = self.random.randint(1, len(available_bosses))
+                return self.random.sample(available_bosses, count)
+            case _:
+                count = min(self.options.boss_selection_mode.value, len(available_bosses))
+                return self.random.sample(available_bosses, count)
+
     def _get_primary_condition(self):
-        player = self.player
-
-        match self.options.goals:
-            case Goals.option_all_bosses:
-                selected_bosses = self.options.boss_selection.value
-                bosses_location = [f"{BOSS_KILL_PREFIX}{name}" for name in list(MOBS_BOSS.keys()) if name in selected_bosses]
-                return lambda state: all(
-                    (state.can_reach(boss_location, "Location", player) for boss_location in bosses_location),
-                )
-
-            # Using of default _ pattern to not lock generation if a valid goal was not selected (always at the end of
-            # all cases)
-            case Goals.option_vanilla | _:
-                return lambda state: state.can_reach(f"{BOSS_KILL_PREFIX}Ender Dragon", "Location", player)
+        selected_bosses = self._get_selected_bosses()
+        boss_locations = [f"{BOSS_KILL_PREFIX}{name}" for name in selected_bosses]
+        return lambda state: all(state.can_reach(location, "Location", self.player) for location in boss_locations)
 
     def _set_goal_rule(self) -> None:
         player = self.player
@@ -222,8 +223,8 @@ class EuclesiaWorld(World):
     def fill_slot_data(self) -> dict:
         return {
             # --- Options ---
-            "goal"                 : self.options.goals.value,
-            "boss_selection"       : list(self.options.boss_selection.value),
+            "boss_selection_mode"  : self.options.boss_selection_mode.value,
+            "boss_list"            : list(self.options.boss_list.value),
             "death_link"           : bool(self.options.death_link.value),
             "villager_trust"       : bool(self.options.villager_trust.value),
             "kill_sanity"          : bool(self.options.kill_sanity.value),
