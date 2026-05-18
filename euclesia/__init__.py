@@ -1,6 +1,5 @@
 from BaseClasses import Item, Location, Region, Tutorial
 from worlds.AutoWorld import WebWorld, World
-from worlds.stardew_valley.data.bundles_data.meme_bundles import trap_items
 
 from .data import *
 from .options import BossSelectionMode, MCOptions
