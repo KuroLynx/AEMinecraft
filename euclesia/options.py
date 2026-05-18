@@ -4,26 +4,45 @@ from Options import OptionSet, PerGameCommonOptions, Range, Toggle
 
 
 class BossSelectionMode(Range):
-    """How many bosses to kill.
-    Named presets:
-    - all: Kill all bosses
-    - random: kill a random number of bosses
-    Use a number (1-4) to specify an exact count from BossList.
+    """How many bosses from Boss List you must defeat to complete your game.
+
+    Use a number from 1 to 4 for an exact count.
+    Use 4 to require all bosses in Boss List.
+    Use weighted values to randomize the count at generation time.
+
+    Examples:
+        1: 100                 → always exactly 1 boss
+        4: 100                 → always all bosses in Boss List
+        random: 100            → random between 1 and 4
+        random-range-1-3: 100  → random between 1 and 3
     """
     display_name = "Boss Selection Mode"
     range_start = 1
     range_end = 4
     default = 4
 
+
 class BossList(OptionSet):
-    """Bosses available for selection"""
+    """The pool of bosses available for selection.
+
+    The number of bosses actually required is determined by Boss Selection Mode.
+
+    Valid values: Ender Dragon, Elder Guardian, Warden, Wither
+    """
     display_name = "Boss List"
     valid_keys = {"Ender Dragon", "Elder Guardian", "Warden", "Wither"}
     default = frozenset({"Ender Dragon", "Elder Guardian", "Warden", "Wither"})
 
 
 class DeathList(Toggle):
-    """ Toggling on will have you killed certain mobs to complete your game"""
+    """If enabled, a random list of mobs will be assigned to you at generation.
+
+    Killing all of them becomes an additional victory condition
+    on top of killing the required bosses.
+
+    The number of mobs assigned is determined by Death List Count.
+    The pool includes all mob types: passive, neutral, hostile and bosses.
+    """
     display_name = "Death List"
     option_true = 1
     option_false = 0
@@ -31,7 +50,14 @@ class DeathList(Toggle):
 
 
 class DeathListCount(Range):
-    """Define how many mobs you should be tasked to kill with 'Death List' toggled on"""
+    """Number of unique mobs assigned to your Death List when Death List is enabled.
+
+    The mobs are randomly selected from the full mob pool at generation time.
+    Includes all mob types: passive, neutral, hostile and bosses.
+
+    Minimum value is 1
+    Maximum value is 87
+    """
     display_name = "Death List Count"
     range_start = 1
     range_end = 87
@@ -39,15 +65,26 @@ class DeathListCount(Range):
 
 
 class AdvancementsRequired(Range):
-    """Define how many advancements you need to complete your game"""
+    """Number of advancements you must complete as an additional victory condition.
+
+    Set to 0 to disable this condition entirely.
+    This is cumulative with the boss kill condition and the death list:
+    all active conditions must be met to win.
+
+    Minimum value is 0
+    Maximum value is 160
+    """
     display_name = "Advancements Required"
     range_start = 0
     range_end = 160
-    default = 80
+    default = 0
 
 
 class DeathLink(Toggle):
-    """Should you die, you will cause death to all, and should one die, you will soon follow"""
+    """When you die, all players with Death Link enabled die too.
+
+    Of course the reverse is true too: when any of them dies, you die.
+    """
     display_name = "Death Link"
     option_true = 1
     option_false = 0
@@ -55,7 +92,11 @@ class DeathLink(Toggle):
 
 
 class VillagerTrust(Toggle):
-    """Lock the ability to trade with each level of villagers, each will be added to the item pool"""
+    """If enabled, trading with villagers requires receiving Progressive Villager Trust items.
+
+    One item per trade level, 5 levels total.
+    These items are added to the multiworld item pool.
+    """
     display_name = "Villager Trust"
     option_true = 1
     option_false = 0
@@ -63,8 +104,9 @@ class VillagerTrust(Toggle):
 
 
 class KillSanity(Toggle):
-    """If toggled on, killing a mob for the first time will send a check
-    Bosses will always send a check when killed even if toggled off
+    """If enabled, killing a mob for the first time sends a location check.
+
+    Bosses always send a check regardless of this setting.
     """
     display_name = "Kill Sanity"
     option_true = 1
@@ -73,9 +115,23 @@ class KillSanity(Toggle):
 
 
 class MobSpawnLockCategory(OptionSet):
-    """
-    Define which mob categories are locked until their unlock item is received.
-    Leave empty to disable  mob spawn locking entirely.
+    """Define which mob categories are locked until their unlock item is received.
+
+    When a mob category is locked, mobs of that type will not spawn in the world
+    until the corresponding 'Entity Unlock: <mob>' item is received from the multiworld.
+
+    Leave empty to disable mob spawn locking entirely.
+
+    Valid values: passive, neutral, hostile
+
+    Examples:
+        Lock only hostiles:
+            - hostile
+
+        Lock everything:
+            - passive
+            - neutral
+            - hostile
     """
     display_name = "Mob Spawn Lock Category"
     valid_keys = {"passive", "neutral", "hostile"}
@@ -84,12 +140,12 @@ class MobSpawnLockCategory(OptionSet):
 
 @dataclass
 class EuclesiaOptions(PerGameCommonOptions):
-    boss_selection_mode: BossSelectionMode
-    boss_list: BossList
-    death_list: DeathList
-    death_list_count: DeathListCount
+    boss_selection_mode:  BossSelectionMode
+    boss_list:            BossList
+    death_list:           DeathList
+    death_list_count:     DeathListCount
     advancements_required: AdvancementsRequired
-    death_link: DeathLink
-    villager_trust: VillagerTrust
-    kill_sanity: KillSanity
+    death_link:           DeathLink
+    villager_trust:       VillagerTrust
+    kill_sanity:          KillSanity
     mob_spawn_lock_category: MobSpawnLockCategory
