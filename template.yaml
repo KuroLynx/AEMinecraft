@@ -1,5 +1,5 @@
 name: Player{number}
-description: Euclesia — Minecraft Randomizer by KuroLynx
+description: Euclesia — Minecraft Randomizer by KuroLynx (mod by EDGN)
 game: Minecraft
 requires:
   version: 0.6.7
@@ -64,18 +64,13 @@ Minecraft:
     # If enabled, a random list of mobs will be assigned to you.
     # Killing all of them becomes an additional victory condition
     # on top of killing the required bosses.
-    'false': 50
-    'true': 0
+    'false': 0
+    'true': 50
 
   death_list_count:
     # Number of mobs assigned to your death list when death_list is enabled.
     # Includes all mob types: passive, neutral, hostile and bosses.
     # Minimum: 1, Maximum: 87
-    #
-    # 42: 50
-    # random: 0
-    # random-low: 0
-    # random-range-1-20: 0
     42: 50
     random: 0
     random-low: 0
@@ -91,7 +86,7 @@ Minecraft:
     # Minimum: 0, Maximum: 160
     #
     # Note: this is cumulative with the boss kill condition and the death list.
-    0: 50
+    160: 50
     random: 0
     random-range-0-125: 0
 
@@ -102,8 +97,8 @@ Minecraft:
   kill_sanity:
     # If enabled, killing a mob for the first time sends a location check.
     # Bosses always send a check regardless of this setting.
-    'false': 50
-    'true': 0
+    'false': 0
+    'true': 50
 
   # -------------------------------------------------------------------------
   # Villager Trust
@@ -113,8 +108,8 @@ Minecraft:
     # If enabled, trading with villagers requires receiving
     # "Progressive Villager Trust" items (one per trade level, 5 total).
     # These items are added to the item pool.
-    'false': 50
-    'true': 0
+    'false': 0
+    'true': 50
 
   # -------------------------------------------------------------------------
   # Mob Spawn Lock
@@ -135,7 +130,26 @@ Minecraft:
     #   - passive
     #   - neutral
     #   - hostile
-    []
+    - "passive"
+    - "neutral"
+    - "hostile"
+
+  # -------------------------------------------------------------------------
+  # Traps
+  # -------------------------------------------------------------------------
+
+  trap_chance:
+    # The probability (%) for each filler item to be replaced with a trap.
+    # Set to 0 to disable traps entirely.
+    # Trap types and their frequency are weighted by their count in the item pool.
+    #
+    # Minimum value is 0
+    # Maximum value is 100
+    30: 50
+    0: 0
+    random: 0
+    random-low: 0
+    random-range-0-30: 0
 
   # -------------------------------------------------------------------------
   # Death Link
@@ -144,8 +158,8 @@ Minecraft:
   death_link:
     # When you die, all players with Death Link enabled die too.
     # When any of them dies, you die too.
-    'false': 50
-    'true': 0
+    'false': 0
+    'true': 50
 
   # -------------------------------------------------------------------------
   # Standard item/location options
