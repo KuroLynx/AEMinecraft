@@ -207,9 +207,7 @@ class MCWorld(World):
             required = required_advancement_count
 
             def advancement_condition(state) -> bool:
-                return sum(
-                    1 for location in advancements_locations if state.can_reach(location, "Location", self.player),
-                ) >= required
+                return sum(1 for location in advancements_locations if state.can_reach(location, "Location", self.player)) >= required
 
             conditions.append(advancement_condition)
 
