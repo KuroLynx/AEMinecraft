@@ -1,10 +1,10 @@
-print("Euclesia world loading...")
-
 from BaseClasses import Item, Location, Region, Tutorial
 from worlds.AutoWorld import WebWorld, World
+from worlds.stardew_valley.data.bundles_data.meme_bundles import trap_items
+
 from .data import *
-from .options import BossSelectionMode, EuclesiaOptions
-from .regions import EuclesiaRegion
+from .options import BossSelectionMode, MCOptions
+from .regions import MCRegion
 from .rules import set_rules
 
 
@@ -12,11 +12,11 @@ from .rules import set_rules
 # Classes Item et Location
 # ---------------------------------------------------------------------------
 
-class EuclesiaItem(Item):
+class MCItem(Item):
     game = "Minecraft"
 
 
-class EuclesiaLocation(Location):
+class MCLocation(Location):
     game = "Minecraft"
 
 
@@ -24,7 +24,7 @@ class EuclesiaLocation(Location):
 # WebWorld
 # ---------------------------------------------------------------------------
 
-class EuclesiaWebWorld(WebWorld):
+class MCWebWorld(WebWorld):
     theme = "dirt"
     tutorials = [
         Tutorial(
@@ -42,12 +42,12 @@ class EuclesiaWebWorld(WebWorld):
 # World principal
 # ---------------------------------------------------------------------------
 
-class EuclesiaWorld(World):
+class MCWorld(World):
     """Minecraft Randomizer by KuroLynx (Mod by EDGN)"""
     game = "Minecraft"
-    options: EuclesiaOptions
-    options_dataclass = EuclesiaOptions
-    web = EuclesiaWebWorld()
+    options: MCOptions
+    options_dataclass = MCOptions
+    web = MCWebWorld()
     death_list: list[str] = []
     selected_bosses: list[str] = []
 
@@ -64,21 +64,21 @@ class EuclesiaWorld(World):
     # Génération
     # -----------------------------------------------------------------------
 
-    def create_item(self, name: str) -> EuclesiaItem:
+    def create_item(self, name: str) -> MCItem:
 
         if name in ITEMS:
-            item_data: ItemData = ITEMS[name]
-            return EuclesiaItem(name, item_data.classification, item_data.id, self.player)
+            item_data: MCItemData = ITEMS[name]
+            return MCItem(name, item_data.classification, item_data.id, self.player)
 
         if name.startswith(ENTITY_UNLOCK_PREFIX):
             mob_name = name.removeprefix(ENTITY_UNLOCK_PREFIX)
             mob_data = MOBS_ALL[mob_name]
-            return EuclesiaItem(name, mob_data.unlock_classification, BASE_ID_ENTITY_UNLOCK + mob_data.id, self.player)
+            return MCItem(name, mob_data.unlock_classification, BASE_ID_ENTITY_UNLOCK + mob_data.id, self.player)
 
         if name.startswith(STRUCT_UNLOCK_PREFIX):
             struct_name = name.removeprefix(STRUCT_UNLOCK_PREFIX)
             struct_data = STRUCTURES[struct_name]
-            return EuclesiaItem(name, struct_data.classification, BASE_ID_STRUCT_UNLOCK + struct_data.id, self.player)
+            return MCItem(name, struct_data.classification, BASE_ID_STRUCT_UNLOCK + struct_data.id, self.player)
 
         raise KeyError(f"Unknown item: {name}")
 
@@ -90,9 +90,9 @@ class EuclesiaWorld(World):
             count = min(self.options.death_list_count.value, len(MOBS_ALL))
             self.death_list: list[str] = self.random.sample(list(MOBS_ALL.keys()), count)
 
-    def _get_active_locations(self) -> dict[str, LocationData]:
+    def _get_active_locations(self) -> dict[str, MCLocationData]:
         """Retourne les locations actives selon les options du joueur."""
-        locations: dict[str, LocationData] = {
+        locations: dict[str, MCLocationData] = {
             **LOCATIONS_ADVANCEMENT,
             **LOCATIONS_BOSS_KILLS,
         }
@@ -105,26 +105,26 @@ class EuclesiaWorld(World):
     def create_regions(self) -> None:
         added_regions: dict[str, Region] = {}
 
-        for region in EuclesiaRegion:
+        for region in MCRegion:
             added_regions[region] = Region(region, self.player, self.multiworld)
 
         for loc_name, loc_data in self._get_active_locations().items():
-            region = added_regions[EuclesiaRegion(loc_data.region)]
-            location = EuclesiaLocation(self.player, loc_name, loc_data.id, region)
+            region = added_regions[MCRegion(loc_data.region)]
+            location = MCLocation(self.player, loc_name, loc_data.id, region)
             region.locations.append(location)
 
-        added_regions[EuclesiaRegion.MENU].connect(added_regions[EuclesiaRegion.OVERWORLD])
+        added_regions[MCRegion.MENU].connect(added_regions[MCRegion.OVERWORLD])
 
-        added_regions[EuclesiaRegion.OVERWORLD].connect(
-            added_regions[EuclesiaRegion.NETHER],
+        added_regions[MCRegion.OVERWORLD].connect(
+            added_regions[MCRegion.NETHER],
             rule = lambda state: (
                     state.has("Dimension Unlock: Nether", self.player) and
                     state.can_reach(f"{ADVANCEMENT_PREFIX}Ice Bucket Challenge", "Location", self.player)
             ),
         )
 
-        added_regions[EuclesiaRegion.OVERWORLD].connect(
-            added_regions[EuclesiaRegion.THE_END],
+        added_regions[MCRegion.OVERWORLD].connect(
+            added_regions[MCRegion.THE_END],
             rule = lambda state: (
                     state.has("Dimension Unlock: The End", self.player) and
                     state.can_reach(f"{ADVANCEMENT_PREFIX}Into Fire", "Location", self.player)
@@ -136,7 +136,7 @@ class EuclesiaWorld(World):
         self.multiworld.regions += list(added_regions.values())
 
     def create_items(self) -> None:
-        pool: list[EuclesiaItem] = []
+        pool: list[MCItem] = []
 
         for name, item_data in ITEMS.items():
             if not self.options.villager_trust and name == "Progressive Villager Trust":
@@ -154,6 +154,18 @@ class EuclesiaWorld(World):
         active_location_count = len(self._get_active_locations())
         while len(pool) < active_location_count:
             pool.append(self.create_item("Bread"))
+
+        mc_trap_items = [item_name for item_name, item_data in ITEMS.items() if item_data.classification ==
+                         ItemClassification.trap]
+
+        trap_chance = self.options.trap_chance.value
+
+        if mc_trap_items and trap_chance > 0:
+            for (index, item) in enumerate(pool):
+                if item.classification == ItemClassification.filler:
+                    if self.random.randint(1, 100) <= trap_chance:
+                        pool[index] = self.create_item(self.random.choice(mc_trap_items))
+
 
         self.multiworld.itempool += pool[:active_location_count]
 
@@ -188,14 +200,14 @@ class EuclesiaWorld(World):
 
             def advancement_condition(state) -> bool:
                 return sum(
-                    1 for location in advancements_locations if state.can_reach(location, "Location", self.player)
+                    1 for location in advancements_locations if state.can_reach(location, "Location", self.player),
                 ) >= required
 
             conditions.append(advancement_condition)
 
         if self.options.death_list:
             death_list_locations = [
-                f"{BOSS_KILL_PREFIX}{mob_name}" if MOBS_ALL[mob_name].category == MobCategory.BOSS
+                f"{BOSS_KILL_PREFIX}{mob_name}" if MOBS_ALL[mob_name].category == MCEntityCategory.BOSS
                 else f"{ENTITY_KILL_PREFIX}{mob_name}"
                 for mob_name in self.death_list
             ]
@@ -245,7 +257,7 @@ def fill_slot_data(self) -> dict:
         "tracked_mobs"         : {
             mob_data.game_id: loc_data.id
             for loc_name, loc_data in self._get_active_locations().items()
-            if loc_data.category in (LocationCategory.MOB_KILL, LocationCategory.BOSS_KILL)
+            if loc_data.category in (MCLocationCategory.MOB_KILL, MCLocationCategory.BOSS_KILL)
             for mob_name, mob_data in {**MOBS_ALL}.items()
             if f"{ENTITY_KILL_PREFIX}{mob_name}" == loc_name or f"{BOSS_KILL_PREFIX}{mob_name}" == loc_name
         },

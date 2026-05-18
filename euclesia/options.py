@@ -138,8 +138,21 @@ class MobSpawnLockCategory(OptionSet):
     default = frozenset()
 
 
+class TrapChance(Range):
+    """The probability for each filler item to be replaced with a trap item.
+    Set to 0 to disable traps entirely.
+
+    Minimum value is 0
+    Maximum value is 100
+    """
+
+    display_name = "Trap Chance"
+    range_start = 0
+    range_end = 100
+    default = 30
+
 @dataclass
-class EuclesiaOptions(PerGameCommonOptions):
+class MCOptions(PerGameCommonOptions):
     boss_selection_mode:  BossSelectionMode
     boss_list:            BossList
     death_list:           DeathList
@@ -149,3 +162,4 @@ class EuclesiaOptions(PerGameCommonOptions):
     villager_trust:       VillagerTrust
     kill_sanity:          KillSanity
     mob_spawn_lock_category: MobSpawnLockCategory
+    trap_chance: TrapChance

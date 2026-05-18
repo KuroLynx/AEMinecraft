@@ -49,16 +49,16 @@ def _read_csv(filename: str) -> list[dict[str, str]]:
 # ---------------------------------------------------------------------------
 
 @dataclass(frozen=True)
-class ItemData:
+class MCItemData:
     id:             int
     classification: ItemClassification
     count:          int
 
 
-def _load_items() -> dict[str, ItemData]:
+def _load_items() -> dict[str, MCItemData]:
     items = {}
     for index, row in enumerate(_read_csv("items.csv")):
-        items[row["name"]] = ItemData(
+        items[row["name"]] = MCItemData(
             id             = BASE_ID_ITEMS + index,
             classification = CLASSIFICATION_MAP[row["classification"]],
             count          = int(row["count"]),
@@ -66,7 +66,7 @@ def _load_items() -> dict[str, ItemData]:
     return items
 
 
-ITEMS: dict[str, ItemData] = _load_items()
+ITEMS: dict[str, MCItemData] = _load_items()
 
 
 # ---------------------------------------------------------------------------
@@ -74,17 +74,17 @@ ITEMS: dict[str, ItemData] = _load_items()
 # ---------------------------------------------------------------------------
 
 @dataclass(frozen=True)
-class StructureData:
+class MCStructureData:
     id:             int
     game_id:        str
     classification: ItemClassification
     region:         str
 
 
-def _load_structures() -> dict[str, StructureData]:
+def _load_structures() -> dict[str, MCStructureData]:
     structures = {}
     for index, row in enumerate(_read_csv("structures.csv")):
-        structures[row["name"]] = StructureData(
+        structures[row["name"]] = MCStructureData(
             id             = index,
             game_id        = f"minecraft:{row['game_id']}",
             classification = CLASSIFICATION_MAP[row["classification"]],
@@ -93,14 +93,14 @@ def _load_structures() -> dict[str, StructureData]:
     return structures
 
 
-STRUCTURES: dict[str, StructureData] = _load_structures()
+STRUCTURES: dict[str, MCStructureData] = _load_structures()
 
 
 # ---------------------------------------------------------------------------
 # Mobs
 # ---------------------------------------------------------------------------
 
-class MobCategory:
+class MCEntityCategory:
     PASSIVE = "passive"
     NEUTRAL = "neutral"
     HOSTILE = "hostile"
@@ -108,7 +108,7 @@ class MobCategory:
 
 
 @dataclass(frozen=True)
-class MobData:
+class MCEntityData:
     id:                    int
     game_id:               str
     category:              str
@@ -118,10 +118,10 @@ class MobData:
     tameable:              bool = False  # counts toward "Best Friends Forever"
 
 
-def _load_mobs() -> dict[str, MobData]:
+def _load_mobs() -> dict[str, MCEntityData]:
     mobs = {}
     for index, row in enumerate(_read_csv("mobs.csv")):
-        mobs[row["name"]] = MobData(
+        mobs[row["name"]] = MCEntityData(
             id                    = index,
             game_id               = "minecraft:" + row["name"].lower().replace(" ", "_"),
             category              = row["category"],
@@ -133,79 +133,79 @@ def _load_mobs() -> dict[str, MobData]:
     return mobs
 
 
-MOBS_ALL: dict[str, MobData] = _load_mobs()
+MOBS_ALL: dict[str, MCEntityData] = _load_mobs()
 
 # Sous-ensembles par catégorie
-MOBS_PASSIVE:   dict[str, MobData] = {k: v for k, v in MOBS_ALL.items() if v.category == MobCategory.PASSIVE}
-MOBS_NEUTRAL:   dict[str, MobData] = {k: v for k, v in MOBS_ALL.items() if v.category == MobCategory.NEUTRAL}
-MOBS_HOSTILE:   dict[str, MobData] = {k: v for k, v in MOBS_ALL.items() if v.category == MobCategory.HOSTILE}
-MOBS_BOSS:      dict[str, MobData] = {k: v for k, v in MOBS_ALL.items() if v.category == MobCategory.BOSS}
-MOBS_BREEDABLE: dict[str, MobData] = {k: v for k, v in MOBS_ALL.items() if v.breedable}
-MOBS_TAMEABLE:  dict[str, MobData] = {k: v for k, v in MOBS_ALL.items() if v.tameable}
+MOBS_PASSIVE:   dict[str, MCEntityData] = {k: v for k, v in MOBS_ALL.items() if v.category == MCEntityCategory.PASSIVE}
+MOBS_NEUTRAL:   dict[str, MCEntityData] = {k: v for k, v in MOBS_ALL.items() if v.category == MCEntityCategory.NEUTRAL}
+MOBS_HOSTILE:   dict[str, MCEntityData] = {k: v for k, v in MOBS_ALL.items() if v.category == MCEntityCategory.HOSTILE}
+MOBS_BOSS:      dict[str, MCEntityData] = {k: v for k, v in MOBS_ALL.items() if v.category == MCEntityCategory.BOSS}
+MOBS_BREEDABLE: dict[str, MCEntityData] = {k: v for k, v in MOBS_ALL.items() if v.breedable}
+MOBS_TAMEABLE:  dict[str, MCEntityData] = {k: v for k, v in MOBS_ALL.items() if v.tameable}
 
 
 # ---------------------------------------------------------------------------
 # Locations
 # ---------------------------------------------------------------------------
 
-class LocationCategory:
+class MCLocationCategory:
     ADVANCEMENT = "advancement"
     MOB_KILL    = "mob_kill"
     BOSS_KILL   = "boss_kill"
 
 
 @dataclass(frozen=True)
-class LocationData:
+class MCLocationData:
     id:       int
     category: str
     region:   str = "Overworld"
     game_id:  str = ""
 
 
-def _load_advancements() -> dict[str, LocationData]:
+def _load_advancements() -> dict[str, MCLocationData]:
     locations = {}
     for index, row in enumerate(_read_csv("advancements.csv")):
         full_game_id = f"minecraft:{row['tab']}/{row['game_id']}"
-        locations[f"{ADVANCEMENT_PREFIX}{row['name']}"] = LocationData(
+        locations[f"{ADVANCEMENT_PREFIX}{row['name']}"] = MCLocationData(
             id       = BASE_ID_LOC_ADVANCEMENT + index,
-            category = LocationCategory.ADVANCEMENT,
+            category = MCLocationCategory.ADVANCEMENT,
             region   = row["region"],
             game_id  = full_game_id,
         )
     return locations
 
 
-def _load_mob_kill_locations() -> dict[str, LocationData]:
+def _load_mob_kill_locations() -> dict[str, MCLocationData]:
     locations = {}
     for name, mob in MOBS_ALL.items():
-        if mob.category == MobCategory.BOSS:
+        if mob.category == MCEntityCategory.BOSS:
             continue
-        locations[f"{ENTITY_KILL_PREFIX}{name}"] = LocationData(
+        locations[f"{ENTITY_KILL_PREFIX}{name}"] = MCLocationData(
             id       = BASE_ID_LOC_MOB_KILL + mob.id,
-            category = LocationCategory.MOB_KILL,
+            category = MCLocationCategory.MOB_KILL,
             region   = mob.region,
             game_id  = mob.game_id,
         )
     return locations
 
 
-def _load_boss_kill_locations() -> dict[str, LocationData]:
+def _load_boss_kill_locations() -> dict[str, MCLocationData]:
     locations = {}
     for name, mob in MOBS_BOSS.items():
-        locations[f"{BOSS_KILL_PREFIX}{name}"] = LocationData(
+        locations[f"{BOSS_KILL_PREFIX}{name}"] = MCLocationData(
             id       = BASE_ID_LOC_BOSS_KILL + mob.id,
-            category = LocationCategory.BOSS_KILL,
+            category = MCLocationCategory.BOSS_KILL,
             region   = mob.region,
             game_id  = mob.game_id,
         )
     return locations
 
 
-LOCATIONS_ADVANCEMENT: dict[str, LocationData] = _load_advancements()
-LOCATIONS_MOB_KILLS:   dict[str, LocationData] = _load_mob_kill_locations()
-LOCATIONS_BOSS_KILLS:  dict[str, LocationData] = _load_boss_kill_locations()
+LOCATIONS_ADVANCEMENT: dict[str, MCLocationData] = _load_advancements()
+LOCATIONS_MOB_KILLS:   dict[str, MCLocationData] = _load_mob_kill_locations()
+LOCATIONS_BOSS_KILLS:  dict[str, MCLocationData] = _load_boss_kill_locations()
 
-ALL_LOCATIONS: dict[str, LocationData] = {
+ALL_LOCATIONS: dict[str, MCLocationData] = {
     **LOCATIONS_ADVANCEMENT,
     **LOCATIONS_BOSS_KILLS,
     **LOCATIONS_MOB_KILLS,

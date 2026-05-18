@@ -6,7 +6,7 @@ from . import ADVANCEMENT_PREFIX, ENTITY_UNLOCK_PREFIX, MOBS_BREEDABLE, MOBS_TAM
 from .data import MOBS_ALL, MOBS_HOSTILE
 
 
-class MaterialTier(IntEnum):
+class ProgressiveMaterialTier(IntEnum):
     WOOD = 0
     STONE = 1
     COPPER = 2
@@ -75,40 +75,40 @@ def set_rules(world) -> None:
 
     advancement("Stone Age", all_of(
         knowledge("Pickaxe Handling"),
-        material(MaterialTier.STONE),
+        material(ProgressiveMaterialTier.STONE),
     ))
 
     advancement("Getting an Upgrade", reached("Advancement: Stone Age"))
 
     advancement("Acquire Hardware", all_of(
         knowledge("Pickaxe Handling"),
-        material(MaterialTier.IRON),
+        material(ProgressiveMaterialTier.IRON),
     ))
 
     advancement("Suit Up", all_of(
         knowledge("Armor Handling"),
-        material(MaterialTier.IRON),
+        material(ProgressiveMaterialTier.IRON),
     ))
 
-    advancement("Hot Stuff", material(MaterialTier.IRON))
+    advancement("Hot Stuff", material(ProgressiveMaterialTier.IRON))
 
     advancement("Isn't It Iron Pick", all_of(
         knowledge("Pickaxe Handling"),
-        material(MaterialTier.IRON),
+        material(ProgressiveMaterialTier.IRON),
     ))
 
     advancement("Not Today Thank You", all_of(
         knowledge("Shield Handling"),
-        material(MaterialTier.IRON),
+        material(ProgressiveMaterialTier.IRON),
     ))
 
     advancement("Diamonds!", all_of(
         knowledge("Pickaxe Handling"),
-        material(MaterialTier.DIAMOND),
+        material(ProgressiveMaterialTier.DIAMOND),
     ))
 
     advancement("Ice Bucket Challenge", any_of(
-        material(MaterialTier.DIAMOND),  # obsidienne trouvée naturellement (coffres, ruines portail)
+        material(ProgressiveMaterialTier.DIAMOND),  # obsidienne trouvée naturellement (coffres, ruines portail)
     ))
 
     advancement("We Need to Go Deeper", all_of(
@@ -118,7 +118,7 @@ def set_rules(world) -> None:
 
     advancement("Cover Me with Diamonds", all_of(
         knowledge("Armor Handling"),
-        material(MaterialTier.DIAMOND),
+        material(ProgressiveMaterialTier.DIAMOND),
     ))
 
     advancement("Enchanter", all_of(
@@ -151,7 +151,7 @@ def set_rules(world) -> None:
 
     advancement("Hidden in the Depths", all_of(
         knowledge("Pickaxe Handling"),
-        material(MaterialTier.NETHERITE),
+        material(ProgressiveMaterialTier.NETHERITE),
     ))
 
     advancement("A Terrible Fortress", all_of())
@@ -323,7 +323,7 @@ def set_rules(world) -> None:
 
     advancement("Voluntary Exile", entity("Pillager"))
 
-    advancement("Country Lode Take Me Home", material(MaterialTier.IRON))
+    advancement("Country Lode Take Me Home", material(ProgressiveMaterialTier.IRON))
 
     advancement("Is It a Bird?", entity("Parrot"))
 
@@ -331,13 +331,13 @@ def set_rules(world) -> None:
         *[entity(name) for name in MOBS_HOSTILE.keys()],
     ))
 
-    advancement("The Power of Books", material(MaterialTier.IRON))
+    advancement("The Power of Books", material(ProgressiveMaterialTier.IRON))
 
     advancement("What a Deal!", can_trade())
 
     advancement("Crafting a New Look", all_of(
         knowledge("Armor Handling"),
-        material(MaterialTier.IRON),
+        material(ProgressiveMaterialTier.IRON),
     ))
 
     advancement("Sticky Situation", entity("Bee"))
@@ -345,11 +345,11 @@ def set_rules(world) -> None:
     advancement("Ol' Betsy", knowledge("Sharpshooter"))
 
     advancement("Surge Protector", all_of(
-        material(MaterialTier.COPPER),
+        material(ProgressiveMaterialTier.COPPER),
         entity("Villager"),  # villageois non enflammé requis
     ))
 
-    advancement("Caves & Cliffs", material(MaterialTier.IRON))
+    advancement("Caves & Cliffs", material(ProgressiveMaterialTier.IRON))
 
     advancement("Respecting the Remnants", knowledge("Brush Handling"))
 
@@ -396,7 +396,7 @@ def set_rules(world) -> None:
     advancement("Mob Kabob", knowledge("Spear Handling"))
 
     advancement("Hired Help", all_of(
-        material(MaterialTier.IRON),
+        material(ProgressiveMaterialTier.IRON),
         entity("Iron Golem"),
     ))
 
@@ -436,7 +436,7 @@ def set_rules(world) -> None:
     advancement("Adventuring Time", all_of())
 
     advancement("Sound of Music", all_of(
-        material(MaterialTier.DIAMOND),
+        material(ProgressiveMaterialTier.DIAMOND),
         any_of(
             knowledge("Brush Handling"),  # disque via Trail Ruins
             all_of(
@@ -474,7 +474,7 @@ def set_rules(world) -> None:
 
     advancement("Lighten Up", all_of(
         knowledge("Axe Handling"),
-        material(MaterialTier.COPPER),
+        material(ProgressiveMaterialTier.COPPER),
     ))
 
     advancement("Who Needs Rockets?", entity("Breeze"))
@@ -529,7 +529,7 @@ def set_rules(world) -> None:
     advancement("Bukkit Bukkit", all_of(
         entity("Tadpole"),
         entity("Frog"),  # les Tadpoles viennent des Frogs
-        material(MaterialTier.IRON),  # water bucket = iron bucket
+        material(ProgressiveMaterialTier.IRON),  # water bucket = iron bucket
     ))
 
     advancement("Uh Oh", all_of())
@@ -551,7 +551,7 @@ def set_rules(world) -> None:
     ))
 
     advancement("Tactical Fishing", all_of(
-        material(MaterialTier.IRON),
+        material(ProgressiveMaterialTier.IRON),
         any_of(
             entity("Cod"),
             entity("Salmon"),
@@ -580,14 +580,14 @@ def set_rules(world) -> None:
         entity("Mooshroom"),  # Mushroom Stew
         entity("Bee"),        # Honey Bottle
         # Golden Apple/Carrot — nécessite de l'or
-        material(MaterialTier.GOLD),
+        material(ProgressiveMaterialTier.GOLD),
         # Chorus Fruit — uniquement dans le End
         reached("Advancement: The End?"),
     ))
 
     advancement("Serious Dedication", all_of(
         knowledge("Hoe Handling"),
-        material(MaterialTier.NETHERITE),
+        material(ProgressiveMaterialTier.NETHERITE),
     ))
 
     advancement("Wax Off", all_of(
@@ -597,7 +597,7 @@ def set_rules(world) -> None:
 
     advancement("The Cutest Predator", all_of(
         entity("Axolotl"),
-        material(MaterialTier.IRON),
+        material(ProgressiveMaterialTier.IRON),
     ))
 
     advancement("With Our Powers Combined!", all_of(

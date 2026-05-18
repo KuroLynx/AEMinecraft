@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class EuclesiaRegion(str, Enum):
+class MCRegion(str, Enum):
     MENU        = "Menu"
     OVERWORLD   = "Overworld"
     NETHER      = "Nether"
