@@ -152,8 +152,10 @@ class MCWorld(World):
 
         active_location_count = len(self._get_active_locations())
 
-        filler_items = [item_name for item_name, item_data in ITEMS.items() if item_data.classification ==
-                        ItemClassification.filler]
+        filler_items = [item_name for item_name, item_data in ITEMS.items()
+                        if item_data.classification == ItemClassification.filler
+                        for _ in range(item_data.count)
+                        ]
 
         shortage = active_location_count - len(pool)
         if shortage > 0:
@@ -170,7 +172,6 @@ class MCWorld(World):
                 if item.classification == ItemClassification.filler:
                     if self.random.randint(1, 100) <= trap_chance:
                         pool[index] = self.create_item(self.random.choice(mc_trap_items))
-
 
         self.multiworld.itempool += pool[:active_location_count]
 
