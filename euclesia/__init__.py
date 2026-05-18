@@ -170,46 +170,45 @@ class EuclesiaWorld(World):
         count = min(self.options.boss_selection_mode.value, len(available_bosses))
         return self.random.sample(available_bosses, count)
 
-def _get_primary_condition(self):
-    boss_locations = [f"{BOSS_KILL_PREFIX}{name}" for name in self.selected_bosses]
-    return lambda state: all(state.can_reach(location, "Location", self.player) for location in boss_locations)
+    def _get_primary_condition(self):
+        boss_locations = [f"{BOSS_KILL_PREFIX}{name}" for name in self.selected_bosses]
+        return lambda state: all(state.can_reach(location, "Location", self.player) for location in boss_locations)
 
+    def _set_goal_rule(self) -> None:
+        player = self.player
+        primary_condition = self._get_primary_condition()
 
-def _set_goal_rule(self) -> None:
-    player = self.player
-    primary_condition = self._get_primary_condition()
+        conditions = [primary_condition]
 
-    conditions = [primary_condition]
+        required_advancement_count = self.options.advancements_required.value
 
-    required_advancement_count = self.options.advancements_required.value
+        if required_advancement_count > 0:
+            advancements_locations = list(LOCATIONS_ADVANCEMENT.keys())
+            required = required_advancement_count
 
-    if required_advancement_count > 0:
-        advancements_locations = list(LOCATIONS_ADVANCEMENT.keys())
-        required = required_advancement_count
+            def advancement_condition(state) -> bool:
+                return sum(
+                    1 for location in advancements_locations if state.can_reach(location, "Location", self.player)
+                ) >= required
 
-        def advancement_condition(state) -> bool:
-            return sum(
-                1 for location in advancements_locations if state.can_reach(location, "Location", self.player),
-            ) >= required
+            conditions.append(advancement_condition)
 
-        conditions.append(advancement_condition)
+        if self.options.death_list:
+            death_list_locations = [
+                f"{BOSS_KILL_PREFIX}{mob_name}" if MOBS_ALL[mob_name].category == MobCategory.BOSS
+                else f"{ENTITY_KILL_PREFIX}{mob_name}"
+                for mob_name in self.death_list
+            ]
 
-    if self.options.death_list:
-        death_list_locations = [
-            f"{BOSS_KILL_PREFIX}{mob_name}" if MOBS_ALL[mob_name].category == MobCategory.BOSS
-            else f"{ENTITY_KILL_PREFIX}{mob_name}"
-            for mob_name in self.death_list
-        ]
+            def death_list_condition(state) -> bool:
+                return all(state.can_reach(location, "Location", self.player) for location in death_list_locations)
 
-        def death_list_condition(state) -> bool:
-            return all(state.can_reach(location, "Location", self.player) for location in death_list_locations)
+            conditions.append(death_list_condition)
 
-        conditions.append(death_list_condition)
+        def completion_condition(state) -> bool:
+            return all(cond(state) for cond in conditions)
 
-    def completion_condition(state) -> bool:
-        return all(cond(state) for cond in conditions)
-
-    self.multiworld.completion_condition[player] = completion_condition
+        self.multiworld.completion_condition[player] = completion_condition
 
 
 # -----------------------------------------------------------------------
