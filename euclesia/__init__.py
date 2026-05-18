@@ -162,8 +162,10 @@ class MCWorld(World):
             for _ in range(shortage):
                 pool.append(self.create_item(self.random_choice(filler_items)))
 
-        mc_trap_items = [item_name for item_name, item_data in ITEMS.items() if item_data.classification ==
-                         ItemClassification.trap]
+        mc_trap_items = [item_name for item_name, item_data in ITEMS.items()
+                         if item_data.classification == ItemClassification.trap
+                         for _ in range(item_data.count)
+                         ]
 
         trap_chance = self.options.trap_chance.value
 
