@@ -179,21 +179,23 @@ class EuclesiaWorld(World):
     # Goal
     # -----------------------------------------------------------------------
 
+    def _get_selected_bosses(self) -> list[str]:
+        available_bosses = [name for name in MOBS_BOSS.keys() if name in self.options.boss_list.value]
+
+        match self.options.boss_selection_mode.value:
+            case 10:  # all
+                return available_bosses
+            case 11:  # random
+                count = self.random.randint(1, len(available_bosses))
+                return self.random.sample(available_bosses, count)
+            case _:
+                count = min(self.options.boss_selection_mode.value, len(available_bosses))
+                return self.random.sample(available_bosses, count)
+
     def _get_primary_condition(self):
-        player = self.player
-
-        match self.options.goals:
-            case Goals.option_all_bosses:
-                selected_bosses = self.options.boss_selection.value
-                bosses_location = [f"{BOSS_KILL_PREFIX}{name}" for name in list(MOBS_BOSS.keys()) if name in selected_bosses]
-                return lambda state: all(
-                    (state.can_reach(boss_location, "Location", player) for boss_location in bosses_location),
-                )
-
-            # Using of default _ pattern to not lock generation if a valid goal was not selected (always at the end of
-            # all cases)
-            case Goals.option_vanilla | _:
-                return lambda state: state.can_reach(f"{BOSS_KILL_PREFIX}Ender Dragon", "Location", player)
+        selected_bosses = self._get_selected_bosses()
+        boss_locations = [f"{BOSS_KILL_PREFIX}{name}" for name in selected_bosses]
+        return lambda state: all(state.can_reach(location, "Location", self.player) for location in boss_locations)
 
     def _set_goal_rule(self) -> None:
         player = self.player

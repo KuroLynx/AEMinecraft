@@ -1,22 +1,29 @@
 from dataclasses import dataclass
 
-from Options import Choice, OptionSet, Toggle, Range, NumericOption, PerGameCommonOptions
+from Options import Choice, NamedRange, OptionSet, Toggle, Range, NumericOption, PerGameCommonOptions
 
 
-class Goals(Choice):
-    """"""
-    display_name = "Goals"
-    option_vanilla = 0
-    option_all_bosses = 1
-    default = 0
+class BossSelectionMode(NamedRange):
+    """How many bosses to kill.
+    Named presets:
+    - all: Kill all bosses
+    - random: kill a random number of bosses
+    Use a number (1-4) to specify an exact count from BossList.
+    """
+    display_name = "Boss Selection Mode"
+    range_start = 1
+    range_end = 4
+    default = 4
+    special_range_names = {
+        "all": 10,
+        "random": 11,
+    }
 
-
-class BossSelection(OptionSet):
-    """ Define all bosses that should be killed when all bosses or random bosses is selected"""
-    display_name = "Bosses"
+class BossList(OptionSet):
+    """Bosses available for selection"""
+    display_name = "Boss List"
     valid_keys = {"Ender Dragon", "Elder Guardian", "Warden", "Wither"}
-    default = {"Ender Dragon", "Elder Guardian", "Warden", "Wither"}
-
+    default = frozenset({"Ender Dragon", "Elder Guardian", "Warden", "Wither"})
 
 class DeathList(Toggle):
     """ Toggling on will have you killed certain mobs to complete your game"""
@@ -77,8 +84,8 @@ class MobSpawnLockCategory(OptionSet):
 
 @dataclass
 class EuclesiaOptions(PerGameCommonOptions):
-    goals: Goals
-    boss_selection: BossSelection
+    boss_selection_mode: BossSelectionMode
+    boss_list: BossList
     death_list: DeathList
     death_list_count: DeathListCount
     advancements_required: AdvancementsRequired
