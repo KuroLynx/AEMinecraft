@@ -1,0 +1,35 @@
+name,game_id,classification,region
+Ancient City,ancient_city,useful,Overworld
+Bastion Remnant,bastion_remnant,progression,Nether
+Buried Treasure,buried_treasure,useful,Overworld
+Desert Pyramid,desert_pyramid,useful,Overworld
+End City,end_city,progression,The End
+Nether Fortress,fortress,progression,Nether
+Igloo,igloo,useful,Overworld
+Jungle Pyramid,jungle_pyramid,filler,Overworld
+Mansion,mansion,progression,Overworld
+Mineshaft,mineshaft,filler,Overworld
+Mineshaft (Mesa),mineshaft_mesa,filler,Overworld
+Ocean Monument,monument,progression,Overworld
+Nether Fossil,nether_fossil,filler,Nether
+Ocean Ruin (Cold),ocean_ruin_cold,filler,Overworld
+Ocean Ruin (Warm),ocean_ruin_warm,useful,Overworld
+Pillager Outpost,pillager_outpost,progression,Overworld
+Ruined Portal,ruined_portal,useful,Overworld
+Ruined Portal (Desert),ruined_portal_desert,useful,Overworld
+Ruined Portal (Jungle),ruined_portal_jungle,useful,Overworld
+Ruined Portal (Mountain),ruined_portal_mountain,useful,Overworld
+Ruined Portal (Nether),ruined_portal_nether,filler,Nether
+Ruined Portal (Ocean),ruined_portal_ocean,useful,Overworld
+Ruined Portal (Swamp),ruined_portal_swamp,useful,Overworld
+Shipwreck,shipwreck,filler,Overworld
+Shipwreck (Beached),shipwreck_beached,filler,Overworld
+Stronghold,stronghold,progression,Overworld
+Swamp Hut,swamp_hut,filler,Overworld
+Trail Ruins,trail_ruins,useful,Overworld
+Trial Chambers,trial_chambers,progression,Overworld
+Village (Desert),village_desert,progression,Overworld
+Village (Plains),village_plains,progression,Overworld
+Village (Savanna),village_savanna,progression,Overworld
+Village (Snowy),village_snowy,progression,Overworld
+Village (Taiga),village_taiga,progression,Overworld

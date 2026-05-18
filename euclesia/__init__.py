@@ -52,7 +52,9 @@ class EuclesiaWorld(World):
 
     item_name_to_id = {
         **{name: data.id for (name, data) in ITEMS.items() if name != "Victory"},
-        **{f"Entity Unlock: {name}": BASE_ID_ITEMS + 500 + mob.id for (name, mob) in MOBS_ALL.items()},
+        **{f"Entity Unlock: {name}": BASE_ID_ENTITY_UNLOCK + mob.id for (name, mob) in MOBS_ALL.items()},
+        **{f"Structure Unlock: {name}": BASE_ID_STRUCT_UNLOCK + structure.id for (name, structure) in
+           STRUCTURES.items()}
     }
     location_name_to_id = {name: data.id for (name, data) in ALL_LOCATIONS.items() if name != "Victory"}
 
@@ -66,14 +68,16 @@ class EuclesiaWorld(World):
             item_data: ItemData = ITEMS[name]
             return EuclesiaItem(name, item_data.classification, item_data.id, self.player)
 
-        if name.startswith("Entity Unlock:"):
-            mob_name = name.removeprefix("Entity Unlock: ")
+        if name.startswith(ENTITY_UNLOCK_PREFIX):
+            mob_name = name.removeprefix(ENTITY_UNLOCK_PREFIX)
             mob_data = MOBS_ALL[mob_name]
-            classification = CLASSIFICATION_MAP.get(
-                mob_data.unlock_classification,
-                ItemClassification.progression,
-            )
-            return EuclesiaItem(name, classification, BASE_ID_ITEMS + 500 + mob_data.id, self.player)
+            return EuclesiaItem(name, mob_data.unlock_classification, BASE_ID_ENTITY_UNLOCK + mob_data.id, self.player)
+
+        if name.startswith(STRUCT_UNLOCK_PREFIX):
+            struct_name = name.removeprefix(STRUCT_UNLOCK_PREFIX)
+            struct_data = STRUCTURES[struct_name]
+            return EuclesiaItem(name, struct_data.classification, BASE_ID_STRUCT_UNLOCK + struct_data.id, self.player)
+
 
         raise KeyError(f"Unknown item: {name}")
 
@@ -112,7 +116,7 @@ class EuclesiaWorld(World):
             added_regions[EuclesiaRegion.NETHER],
             rule = lambda state: (
                     state.has("Dimension Unlock: Nether", self.player) and
-                    state.can_reach("Advancement: Ice Bucket Challenge", "Location", self.player)
+                    state.can_reach(f"{ADVANCEMENT_PREFIX}Ice Bucket Challenge", "Location", self.player)
             ),
         )
 
@@ -120,7 +124,7 @@ class EuclesiaWorld(World):
             added_regions[EuclesiaRegion.THE_END],
             rule = lambda state: (
                     state.has("Dimension Unlock: The End", self.player) and
-                    state.can_reach("Advancement: Into Fire", "Location", self.player)
+                    state.can_reach(f"{ADVANCEMENT_PREFIX}Into Fire", "Location", self.player)
             ),
         )
 
@@ -144,7 +148,7 @@ class EuclesiaWorld(World):
         if self.options.mob_spawn_lock_category:
             for mob_name, mob_data in MOBS_ALL.items():
                 if mob_data.category in self.options.mob_spawn_lock_category.value:
-                    pool.append(self.create_item(f"Entity Unlock: {mob_name}"))
+                    pool.append(self.create_item(f"{ENTITY_UNLOCK_PREFIX}{mob_name}"))
 
         # Complétion de la pool avec filler
         active_location_count = len(self._get_active_locations())
@@ -160,25 +164,12 @@ class EuclesiaWorld(World):
     def generate_basic(self) -> None:
         victory = EuclesiaItem("Victory", ItemClassification.progression, None, self.player)
 
-        # Créer une location event dédiée dans la région appropriée
-        match self.options.goals:
-            case Goals.option_all_bosses:
-                selected_bosses = self.options.boss_selection.value
-                goal_boss = next(
-                    (name for name in reversed(list(MOBS_BOSS.keys()))
-                     if name in selected_bosses),
-                    "Ender Dragon"
-                )
-                goal_region = MOBS_BOSS[goal_boss].region
-            case _:
-                goal_region = "The End"
-
         # Créer une location event sans ID
         victory_location = Location(self.player, "Victory", None,
-                                    self.multiworld.get_region(goal_region, self.player)
+                                    self.multiworld.get_region("Overworld", self.player)
                                     )
         victory_location.place_locked_item(victory)
-        self.multiworld.get_region(goal_region, self.player).locations.append(victory_location)
+        self.multiworld.get_region("Overworld", self.player).locations.append(victory_location)
 
         # Condition de victoire sur cette location event
         self.multiworld.completion_condition[self.player] = \
@@ -194,7 +185,7 @@ class EuclesiaWorld(World):
         match self.options.goals:
             case Goals.option_all_bosses:
                 selected_bosses = self.options.boss_selection.value
-                bosses_location = [f"Kill Boss: {name}" for name in list(MOBS_BOSS.keys()) if name in selected_bosses]
+                bosses_location = [f"{BOSS_KILL_PREFIX}{name}" for name in list(MOBS_BOSS.keys()) if name in selected_bosses]
                 return lambda state: all(
                     (state.can_reach(boss_location, "Location", player) for boss_location in bosses_location),
                 )
@@ -202,7 +193,7 @@ class EuclesiaWorld(World):
             # Using of default _ pattern to not lock generation if a valid goal was not selected (always at the end of
             # all cases)
             case Goals.option_vanilla | _:
-                return lambda state: state.can_reach("Kill Boss: Ender Dragon", "Location", player)
+                return lambda state: state.can_reach(f"{BOSS_KILL_PREFIX}Ender Dragon", "Location", player)
 
     def _set_goal_rule(self) -> None:
         player = self.player
@@ -210,8 +201,8 @@ class EuclesiaWorld(World):
 
         if self.options.death_list:
             death_list_locations = [
-                f"Kill Boss: {mob_name}" if MOBS_ALL[mob_name].category == MobCategory.BOSS
-                else f"Kill Entity: {mob_name}"
+                f"{BOSS_KILL_PREFIX}{mob_name}" if MOBS_ALL[mob_name].category == MobCategory.BOSS
+                else f"{ENTITY_KILL_PREFIX}{mob_name}"
                 for mob_name in self.death_list
             ]
 
@@ -260,21 +251,19 @@ class EuclesiaWorld(World):
                 for loc_name, loc_data in self._get_active_locations().items()
                 if loc_data.category in (LocationCategory.MOB_KILL, LocationCategory.BOSS_KILL)
                 for mob_name, mob_data in {**MOBS_ALL}.items()
-                if f"Kill Entity: {mob_name}" == loc_name or f"Kill Boss: {mob_name}" == loc_name
+                if f"{ENTITY_KILL_PREFIX}{mob_name}" == loc_name or f"{BOSS_KILL_PREFIX}{mob_name}" == loc_name
             },
 
             # --- Death list ---
             "death_list_mobs"      : [
-                next(mob.game_id for name, mob in {**MOBS_ALL, **MOBS_BOSS}.items() if name == mob_name)
+                next(mob.game_id for name, mob in MOBS_ALL.items() if name == mob_name)
                 for mob_name in self.death_list
             ],
 
             # --- Mob spawn lock : game_id des mobs à bloquer au spawn ---
             "mob_spawn_lock_mobs"  : {
-                mob_data.game_id: BASE_ID_ITEMS + 500 + mob_data.id
-                for mob_name, mob_data in {**MOBS_ALL, **MOBS_BOSS}.items()
+                mob_data.game_id: BASE_ID_ENTITY_UNLOCK + mob_data.id
+                for mob_name, mob_data in MOBS_ALL.items()
                 if mob_data.category in self.options.mob_spawn_lock_category.value
             },
         }
-
-print(f"EuclesiaWorld registered: game={EuclesiaWorld.game}, options={EuclesiaWorld.options_dataclass}")

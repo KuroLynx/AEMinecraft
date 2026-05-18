@@ -1,88 +1,88 @@
-id,name,category,region,unlock_classification,breedable,tameable
-1,Allay,passive,Overworld,filler,True,False
-2,Armadillo,passive,Overworld,useful,True,False
-3,Axolotl,passive,Overworld,useful,True,False
-4,Bat,passive,Overworld,filler,False,False
-5,Camel,passive,Overworld,useful,True,False
-6,Camel Husk,passive,Overworld,filler,False,False
-7,Cat,passive,Overworld,useful,True,True
-8,Chicken,passive,Overworld,useful,True,False
-9,Cod,passive,Overworld,useful,False,False
-10,Copper Golem,passive,Overworld,filler,False,False
-11,Cow,passive,Overworld,progression,True,False
-12,Donkey,passive,Overworld,useful,True,True
-13,Frog,passive,Overworld,useful,True,False
-14,Glow Squid,passive,Overworld,filler,False,False
-15,Happy Ghast,passive,Nether,filler,False,False
-16,Horse,passive,Overworld,useful,True,True
-17,Mooshroom,passive,Overworld,useful,True,False
-18,Mule,passive,Overworld,useful,True,True
-19,Ocelot,passive,Overworld,useful,True,False
-20,Parrot,passive,Overworld,useful,False,True
-21,Pig,passive,Overworld,useful,True,False
-22,Rabbit,passive,Overworld,useful,True,False
-23,Salmon,passive,Overworld,useful,False,False
-24,Sheep,passive,Overworld,useful,True,False
-25,Skeleton Horse,passive,Overworld,filler,False,False
-26,Sniffer,passive,Overworld,useful,True,False
-27,Snow Golem,passive,Overworld,filler,False,False
-28,Squid,passive,Overworld,filler,False,False
-29,Strider,passive,Nether,useful,True,False
-30,Tadpole,passive,Overworld,useful,False,False
-31,Tropical Fish,passive,Overworld,useful,False,False
-32,Turtle,passive,Overworld,useful,True,False
-33,Villager,passive,Overworld,progression,False,False
-34,Wandering Trader,passive,Overworld,useful,False,False
-35,Zombie Horse,passive,Overworld,filler,False,True
-36,Bee,neutral,Overworld,useful,True,False
-37,Cave Spider,neutral,Overworld,useful,False,False
-38,Dolphin,neutral,Overworld,useful,False,False
-39,Drowned,neutral,Overworld,useful,False,False
-40,Enderman,neutral,The End,progression,False,False
-41,Fox,neutral,Overworld,useful,True,False
-42,Goat,neutral,Overworld,useful,True,False
-43,Iron Golem,neutral,Overworld,useful,False,False
-44,Llama,neutral,Overworld,useful,True,True
-45,Nautilus,neutral,Overworld,filler,True,True
-46,Panda,neutral,Overworld,useful,True,False
-47,Piglin,neutral,Nether,progression,False,False
-48,Polar Bear,neutral,Overworld,filler,False,False
-49,Pufferfish,neutral,Overworld,useful,False,False
-50,Spider,neutral,Overworld,useful,False,False
-51,Trader Llama,neutral,Overworld,filler,False,True
-52,Wolf,neutral,Overworld,useful,True,True
-53,Zombie Nautilus,neutral,Overworld,filler,False,True
-54,Zombified Piglin,neutral,Nether,useful,False,False
-55,Blaze,hostile,Nether,progression,False,False
-56,Bogged,hostile,Overworld,useful,False,False
-57,Breeze,hostile,Overworld,useful,False,False
-58,Creaking,hostile,Overworld,filler,False,False
-59,Creeper,hostile,Overworld,useful,False,False
-60,Elder Guardian,boss,Overworld,progression,False,False
-61,Ender Dragon,boss,The End,progression,False,False
-62,Endermite,hostile,The End,filler,False,False
-63,Evoker,hostile,Overworld,useful,False,False
-64,Ghast,hostile,Nether,useful,False,False
-65,Guardian,hostile,Overworld,filler,False,False
-66,Hoglin,hostile,Nether,useful,True,False
-67,Husk,hostile,Overworld,useful,False,False
-68,Magma Cube,hostile,Nether,useful,False,False
-69,Parched,hostile,Overworld,filler,False,False
-70,Phantom,hostile,Overworld,useful,False,False
-71,Piglin Brute,hostile,Nether,useful,False,False
-72,Pillager,hostile,Overworld,useful,False,False
-73,Ravager,hostile,Overworld,useful,False,False
-74,Shulker,hostile,The End,useful,False,False
-75,Silverfish,hostile,Overworld,useful,False,False
-76,Skeleton,hostile,Overworld,useful,False,False
-77,Slime,hostile,Overworld,useful,False,False
-78,Stray,hostile,Overworld,useful,False,False
-79,Vex,hostile,Overworld,useful,False,False
-80,Vindicator,hostile,Overworld,useful,False,False
-81,Warden,boss,Overworld,progression,False,False
-82,Witch,hostile,Overworld,useful,False,False
-83,Wither,boss,Nether,progression,False,False
-84,Wither Skeleton,hostile,Nether,progression,False,False
-85,Zoglin,hostile,Nether,useful,False,False
-86,Zombie,hostile,Overworld,useful,False,False
-87,Zombie Villager,hostile,Overworld,useful,False,False
+name,category,region,unlock_classification,breedable,tameable
+Allay,passive,Overworld,filler,True,False
+Armadillo,passive,Overworld,useful,True,False
+Axolotl,passive,Overworld,useful,True,False
+Bat,passive,Overworld,filler,False,False
+Camel,passive,Overworld,useful,True,False
+Camel Husk,passive,Overworld,filler,False,False
+Cat,passive,Overworld,useful,True,True
+Chicken,passive,Overworld,useful,True,False
+Cod,passive,Overworld,useful,False,False
+Copper Golem,passive,Overworld,filler,False,False
+Cow,passive,Overworld,progression,True,False
+Donkey,passive,Overworld,useful,True,True
+Frog,passive,Overworld,useful,True,False
+Glow Squid,passive,Overworld,filler,False,False
+Happy Ghast,passive,Nether,filler,False,False
+Horse,passive,Overworld,useful,True,True
+Mooshroom,passive,Overworld,useful,True,False
+Mule,passive,Overworld,useful,True,True
+Ocelot,passive,Overworld,useful,True,False
+Parrot,passive,Overworld,useful,False,True
+Pig,passive,Overworld,useful,True,False
+Rabbit,passive,Overworld,useful,True,False
+Salmon,passive,Overworld,useful,False,False
+Sheep,passive,Overworld,useful,True,False
+Skeleton Horse,passive,Overworld,filler,False,False
+Sniffer,passive,Overworld,useful,True,False
+Snow Golem,passive,Overworld,filler,False,False
+Squid,passive,Overworld,filler,False,False
+Strider,passive,Nether,useful,True,False
+Tadpole,passive,Overworld,useful,False,False
+Tropical Fish,passive,Overworld,useful,False,False
+Turtle,passive,Overworld,useful,True,False
+Villager,passive,Overworld,progression,False,False
+Wandering Trader,passive,Overworld,useful,False,False
+Zombie Horse,passive,Overworld,filler,False,True
+Bee,neutral,Overworld,useful,True,False
+Cave Spider,neutral,Overworld,useful,False,False
+Dolphin,neutral,Overworld,useful,False,False
+Drowned,neutral,Overworld,useful,False,False
+Enderman,neutral,The End,progression,False,False
+Fox,neutral,Overworld,useful,True,False
+Goat,neutral,Overworld,useful,True,False
+Iron Golem,neutral,Overworld,useful,False,False
+Llama,neutral,Overworld,useful,True,True
+Nautilus,neutral,Overworld,filler,True,True
+Panda,neutral,Overworld,useful,True,False
+Piglin,neutral,Nether,progression,False,False
+Polar Bear,neutral,Overworld,filler,False,False
+Pufferfish,neutral,Overworld,useful,False,False
+Spider,neutral,Overworld,useful,False,False
+Trader Llama,neutral,Overworld,filler,False,True
+Wolf,neutral,Overworld,useful,True,True
+Zombie Nautilus,neutral,Overworld,filler,False,True
+Zombified Piglin,neutral,Nether,useful,False,False
+Blaze,hostile,Nether,progression,False,False
+Bogged,hostile,Overworld,useful,False,False
+Breeze,hostile,Overworld,useful,False,False
+Creaking,hostile,Overworld,filler,False,False
+Creeper,hostile,Overworld,useful,False,False
+Elder Guardian,boss,Overworld,progression,False,False
+Ender Dragon,boss,The End,progression,False,False
+Endermite,hostile,The End,filler,False,False
+Evoker,hostile,Overworld,useful,False,False
+Ghast,hostile,Nether,useful,False,False
+Guardian,hostile,Overworld,filler,False,False
+Hoglin,hostile,Nether,useful,True,False
+Husk,hostile,Overworld,useful,False,False
+Magma Cube,hostile,Nether,useful,False,False
+Parched,hostile,Overworld,filler,False,False
+Phantom,hostile,Overworld,useful,False,False
+Piglin Brute,hostile,Nether,useful,False,False
+Pillager,hostile,Overworld,useful,False,False
+Ravager,hostile,Overworld,useful,False,False
+Shulker,hostile,The End,useful,False,False
+Silverfish,hostile,Overworld,useful,False,False
+Skeleton,hostile,Overworld,useful,False,False
+Slime,hostile,Overworld,useful,False,False
+Stray,hostile,Overworld,useful,False,False
+Vex,hostile,Overworld,useful,False,False
+Vindicator,hostile,Overworld,useful,False,False
+Warden,boss,Overworld,progression,False,False
+Witch,hostile,Overworld,useful,False,False
+Wither,boss,Nether,progression,False,False
+Wither Skeleton,hostile,Nether,progression,False,False
+Zoglin,hostile,Nether,useful,False,False
+Zombie,hostile,Overworld,useful,False,False
+Zombie Villager,hostile,Overworld,useful,False,False

@@ -1,127 +1,127 @@
-id,name,tab,game_id,region
-0,Minecraft,story,root,Overworld
-1,Stone Age,story,mine_stone,Overworld
-2,Getting an Upgrade,story,upgrade_tools,Overworld
-3,Acquire Hardware,story,smelt_iron,Overworld
-4,Suit Up,story,obtain_armor,Overworld
-5,Hot Stuff,story,lava_bucket,Overworld
-6,Isn't It Iron Pick,story,iron_tools,Overworld
-7,Not Today Thank You,story,deflect_arrow,Overworld
-8,Ice Bucket Challenge,story,form_obsidian,Overworld
-9,Diamonds!,story,mine_diamond,Overworld
-10,We Need to Go Deeper,story,enter_the_nether,Nether
-11,Cover Me with Diamonds,story,shiny_gear,Overworld
-12,Enchanter,story,enchant_item,Overworld
-13,Zombie Doctor,story,cure_zombie_villager,Overworld
-14,Eye Spy,story,follow_ender_eye,Overworld
-15,The End?,story,enter_the_end,The End
-20,Nether,nether,root,Nether
-21,Return to Sender,nether,return_to_sender,Nether
-22,Those Were the Days,nether,find_bastion,Nether
-23,Hidden in the Depths,nether,obtain_ancient_debris,Nether
-24,Subspace Bubble,nether,fast_travel,Nether
-25,A Terrible Fortress,nether,find_fortress,Nether
-26,Who is Cutting Onions?,nether,obtain_crying_obsidian,Nether
-27,Oh Shiny,nether,distract_piglin,Nether
-28,This Boat Has Legs,nether,ride_strider,Nether
-29,Uneasy Alliance,nether,uneasy_alliance,Nether
-30,War Pigs,nether,loot_bastion,Nether
-31,Cover Me in Debris,nether,netherite_armor,Nether
-32,Spooky Scary Skeleton,nether,get_wither_skull,Nether
-33,Into Fire,nether,obtain_blaze_rod,Nether
-34,Not Quite Nine Lives,nether,charge_respawn_anchor,Nether
-35,Feels Like Home,nether,ride_strider_in_overworld_lava,Overworld
-36,Hot Tourist Destinations,nether,explore_nether,Nether
-37,Withering Heights,nether,summon_wither,Nether
-38,Local Brewery,nether,brew_potion,Nether
-39,Bring Home the Beacon,nether,create_beacon,Nether
-40,A Furious Cocktail,nether,all_potions,Nether
-41,Beaconator,nether,create_full_beacon,Nether
-42,How Did We Get Here?,nether,all_effects,Nether
-50,The End,end,root,The End
-51,Free the End,end,kill_dragon,The End
-52,The Next Generation,end,dragon_egg,The End
-53,Remote Getaway,end,enter_end_gateway,The End
-54,The End... Again...,end,respawn_dragon,The End
-55,You Need a Mint,end,dragon_breath,The End
-56,The City at the End of the Game,end,find_end_city,The End
-57,Sky's the Limit,end,elytra,The End
-58,Great View From Up Here,end,levitate,The End
-70,Adventure,adventure,root,Overworld
-71,Heart Transplanter,adventure,heart_transplanter,Overworld
-72,Voluntary Exile,adventure,voluntary_exile,Overworld
-73,Country Lode Take Me Home,adventure,use_lodestone,Overworld
-74,Is It a Bird?,adventure,spyglass_at_parrot,Overworld
-75,Monster Hunter,adventure,kill_a_mob,Overworld
-76,The Power of Books,adventure,read_power_of_chiseled_bookshelf,Overworld
-77,What a Deal!,adventure,trade,Overworld
-78,Crafting a New Look,adventure,trim_with_any_armor_pattern,Overworld
-79,Sticky Situation,adventure,honey_block_slide,Overworld
-80,Ol' Betsy,adventure,ol_betsy,Overworld
-81,Surge Protector,adventure,lightning_rod_with_villager_no_fire,Overworld
-82,Caves & Cliffs,adventure,fall_from_world_height,Overworld
-83,Respecting the Remnants,adventure,salvage_sherd,Overworld
-84,Sneak 100,adventure,avoid_vibration,Overworld
-85,Sweet Dreams,adventure,sleep_in_bed,Overworld
-86,Hero of the Village,adventure,hero_of_the_village,Overworld
-87,Is It a Balloon?,adventure,spyglass_at_ghast,Nether
-88,A Throwaway Joke,adventure,throw_trident,Overworld
-89,It Spreads,adventure,kill_mob_near_sculk_catalyst,Overworld
-90,Take Aim,adventure,shoot_arrow,Overworld
-91,Monsters Hunted,adventure,kill_all_mobs,Overworld
-92,Postmortal,adventure,totem_of_undying,Overworld
-93,Mob Kabob,adventure,spear_many_mobs,Overworld
-94,Hired Help,adventure,summon_iron_golem,Overworld
-95,Star Trader,adventure,trade_at_world_height,Overworld
-96,Smithing with Style,adventure,trim_with_all_exclusive_armor_patterns,Overworld
-97,Two Birds One Arrow,adventure,two_birds_one_arrow,Overworld
-98,Who's the Pillager Now?,adventure,whos_the_pillager_now,Overworld
-99,Arbalistic,adventure,arbalistic,Overworld
-100,Careful Restoration,adventure,craft_decorated_pot_using_only_sherds,Overworld
-101,Adventuring Time,adventure,adventuring_time,Overworld
-102,Sound of Music,adventure,play_jukebox_in_meadows,Overworld
-103,Light as a Rabbit,adventure,walk_on_powder_snow_with_leather_boots,Overworld
-104,Is It a Plane?,adventure,spyglass_at_dragon,The End
-105,Very Very Frightening,adventure,very_very_frightening,Overworld
-106,Sniper Duel,adventure,sniper_duel,Overworld
-107,Bullseye,adventure,bullseye,Overworld
-108,Isn't It Scute?,adventure,brush_armadillo,Overworld
-109,Minecraft: Trial(s) Edition,adventure,minecraft_trials_edition,Overworld
-110,Crafters Crafting Crafters,adventure,crafters_crafting_crafters,Overworld
-111,Lighten Up,adventure,lighten_up,Overworld
-112,Who Needs Rockets?,adventure,who_needs_rockets,Overworld
-113,Under Lock and Key,adventure,under_lock_and_key,Overworld
-114,Revaulting,adventure,revaulting,Overworld
-115,Blowback,adventure,blowback,Overworld
-116,Over-Overkill,adventure,overoverkill,Overworld
-130,Husbandry,husbandry,root,Overworld
-131,Stay Hydrated!,husbandry,place_dried_ghast_in_water,Overworld
-132,Bee Our Guest,husbandry,safely_harvest_honey,Overworld
-133,The Parrots and the Bats,husbandry,breed_an_animal,Overworld
-134,You've Got a Friend in Me,husbandry,allay_deliver_item_to_player,Overworld
-135,Whatever Floats Your Goat!,husbandry,ride_a_boat_with_a_goat,Overworld
-136,Best Friends Forever,husbandry,tame_an_animal,Overworld
-137,Glow and Behold!,husbandry,make_a_sign_glow,Overworld
-138,Fishy Business,husbandry,fishy_business,Overworld
-139,Total Beelocation,husbandry,silk_touch_nest,Overworld
-140,Bukkit Bukkit,husbandry,tadpole_in_a_bucket,Overworld
-141,Uh Oh,husbandry,uh_oh,Overworld
-142,Smells Interesting,husbandry,obtain_sniffer_egg,Overworld
-143,A Seedy Place,husbandry,plant_seed,Overworld
-144,Wax On,husbandry,wax_on,Overworld
-145,Two by Two,husbandry,bred_all_animals,Overworld
-146,Birthday Song,husbandry,allay_deliver_cake_to_note_block,Overworld
-147,A Complete Catalogue,husbandry,complete_catalogue,Overworld
-148,Tactical Fishing,husbandry,tactical_fishing,Overworld
-149,When the Squad Hops into Town,husbandry,leash_all_frog_variants,Overworld
-150,Little Sniffs,husbandry,feed_snifflet,Overworld
-151,A Balanced Diet,husbandry,balanced_diet,Overworld
-152,Serious Dedication,husbandry,obtain_netherite_hoe,Overworld
-153,Wax Off,husbandry,wax_off,Overworld
-154,The Cutest Predator,husbandry,axolotl_in_a_bucket,Overworld
-155,With Our Powers Combined!,husbandry,froglights,Overworld
-156,Planting the Past,husbandry,plant_any_sniffer_seed,Overworld
-157,The Healing Power of Friendship!,husbandry,kill_axolotl_target,Overworld
-158,Good as New,husbandry,repair_wolf_armor,Overworld
-159,The Whole Pack,husbandry,whole_pack,Overworld
-160,Shear Brilliance,husbandry,remove_wolf_armor,Overworld
+name,tab,game_id,region
+Minecraft,story,root,Overworld
+Stone Age,story,mine_stone,Overworld
+Getting an Upgrade,story,upgrade_tools,Overworld
+Acquire Hardware,story,smelt_iron,Overworld
+Suit Up,story,obtain_armor,Overworld
+Hot Stuff,story,lava_bucket,Overworld
+Isn't It Iron Pick,story,iron_tools,Overworld
+Not Today Thank You,story,deflect_arrow,Overworld
+Ice Bucket Challenge,story,form_obsidian,Overworld
+Diamonds!,story,mine_diamond,Overworld
+We Need to Go Deeper,story,enter_the_nether,Nether
+Cover Me with Diamonds,story,shiny_gear,Overworld
+Enchanter,story,enchant_item,Overworld
+Zombie Doctor,story,cure_zombie_villager,Overworld
+Eye Spy,story,follow_ender_eye,Overworld
+The End?,story,enter_the_end,The End
+Nether,nether,root,Nether
+Return to Sender,nether,return_to_sender,Nether
+Those Were the Days,nether,find_bastion,Nether
+Hidden in the Depths,nether,obtain_ancient_debris,Nether
+Subspace Bubble,nether,fast_travel,Nether
+A Terrible Fortress,nether,find_fortress,Nether
+Who is Cutting Onions?,nether,obtain_crying_obsidian,Nether
+Oh Shiny,nether,distract_piglin,Nether
+This Boat Has Legs,nether,ride_strider,Nether
+Uneasy Alliance,nether,uneasy_alliance,Nether
+War Pigs,nether,loot_bastion,Nether
+Cover Me in Debris,nether,netherite_armor,Nether
+Spooky Scary Skeleton,nether,get_wither_skull,Nether
+Into Fire,nether,obtain_blaze_rod,Nether
+Not Quite Nine Lives,nether,charge_respawn_anchor,Nether
+Feels Like Home,nether,ride_strider_in_overworld_lava,Overworld
+Hot Tourist Destinations,nether,explore_nether,Nether
+Withering Heights,nether,summon_wither,Nether
+Local Brewery,nether,brew_potion,Nether
+Bring Home the Beacon,nether,create_beacon,Nether
+A Furious Cocktail,nether,all_potions,Nether
+Beaconator,nether,create_full_beacon,Nether
+How Did We Get Here?,nether,all_effects,Nether
+The End,end,root,The End
+Free the End,end,kill_dragon,The End
+The Next Generation,end,dragon_egg,The End
+Remote Getaway,end,enter_end_gateway,The End
+The End... Again...,end,respawn_dragon,The End
+You Need a Mint,end,dragon_breath,The End
+The City at the End of the Game,end,find_end_city,The End
+Sky's the Limit,end,elytra,The End
+Great View From Up Here,end,levitate,The End
+Adventure,adventure,root,Overworld
+Heart Transplanter,adventure,heart_transplanter,Overworld
+Voluntary Exile,adventure,voluntary_exile,Overworld
+Country Lode Take Me Home,adventure,use_lodestone,Overworld
+Is It a Bird?,adventure,spyglass_at_parrot,Overworld
+Monster Hunter,adventure,kill_a_mob,Overworld
+The Power of Books,adventure,read_power_of_chiseled_bookshelf,Overworld
+What a Deal!,adventure,trade,Overworld
+Crafting a New Look,adventure,trim_with_any_armor_pattern,Overworld
+Sticky Situation,adventure,honey_block_slide,Overworld
+Ol' Betsy,adventure,ol_betsy,Overworld
+Surge Protector,adventure,lightning_rod_with_villager_no_fire,Overworld
+Caves & Cliffs,adventure,fall_from_world_height,Overworld
+Respecting the Remnants,adventure,salvage_sherd,Overworld
+Sneak 100,adventure,avoid_vibration,Overworld
+Sweet Dreams,adventure,sleep_in_bed,Overworld
+Hero of the Village,adventure,hero_of_the_village,Overworld
+Is It a Balloon?,adventure,spyglass_at_ghast,Nether
+A Throwaway Joke,adventure,throw_trident,Overworld
+It Spreads,adventure,kill_mob_near_sculk_catalyst,Overworld
+Take Aim,adventure,shoot_arrow,Overworld
+Monsters Hunted,adventure,kill_all_mobs,Overworld
+Postmortal,adventure,totem_of_undying,Overworld
+Mob Kabob,adventure,spear_many_mobs,Overworld
+Hired Help,adventure,summon_iron_golem,Overworld
+Star Trader,adventure,trade_at_world_height,Overworld
+Smithing with Style,adventure,trim_with_all_exclusive_armor_patterns,Overworld
+Two Birds One Arrow,adventure,two_birds_one_arrow,Overworld
+Who's the Pillager Now?,adventure,whos_the_pillager_now,Overworld
+Arbalistic,adventure,arbalistic,Overworld
+Careful Restoration,adventure,craft_decorated_pot_using_only_sherds,Overworld
+Adventuring Time,adventure,adventuring_time,Overworld
+Sound of Music,adventure,play_jukebox_in_meadows,Overworld
+Light as a Rabbit,adventure,walk_on_powder_snow_with_leather_boots,Overworld
+Is It a Plane?,adventure,spyglass_at_dragon,The End
+Very Very Frightening,adventure,very_very_frightening,Overworld
+Sniper Duel,adventure,sniper_duel,Overworld
+Bullseye,adventure,bullseye,Overworld
+Isn't It Scute?,adventure,brush_armadillo,Overworld
+Minecraft: Trial(s) Edition,adventure,minecraft_trials_edition,Overworld
+Crafters Crafting Crafters,adventure,crafters_crafting_crafters,Overworld
+Lighten Up,adventure,lighten_up,Overworld
+Who Needs Rockets?,adventure,who_needs_rockets,Overworld
+Under Lock and Key,adventure,under_lock_and_key,Overworld
+Revaulting,adventure,revaulting,Overworld
+Blowback,adventure,blowback,Overworld
+Over-Overkill,adventure,overoverkill,Overworld
+Husbandry,husbandry,root,Overworld
+Stay Hydrated!,husbandry,place_dried_ghast_in_water,Overworld
+Bee Our Guest,husbandry,safely_harvest_honey,Overworld
+The Parrots and the Bats,husbandry,breed_an_animal,Overworld
+You've Got a Friend in Me,husbandry,allay_deliver_item_to_player,Overworld
+Whatever Floats Your Goat!,husbandry,ride_a_boat_with_a_goat,Overworld
+Best Friends Forever,husbandry,tame_an_animal,Overworld
+Glow and Behold!,husbandry,make_a_sign_glow,Overworld
+Fishy Business,husbandry,fishy_business,Overworld
+Total Beelocation,husbandry,silk_touch_nest,Overworld
+Bukkit Bukkit,husbandry,tadpole_in_a_bucket,Overworld
+Uh Oh,husbandry,uh_oh,Overworld
+Smells Interesting,husbandry,obtain_sniffer_egg,Overworld
+A Seedy Place,husbandry,plant_seed,Overworld
+Wax On,husbandry,wax_on,Overworld
+Two by Two,husbandry,bred_all_animals,Overworld
+Birthday Song,husbandry,allay_deliver_cake_to_note_block,Overworld
+A Complete Catalogue,husbandry,complete_catalogue,Overworld
+Tactical Fishing,husbandry,tactical_fishing,Overworld
+When the Squad Hops into Town,husbandry,leash_all_frog_variants,Overworld
+Little Sniffs,husbandry,feed_snifflet,Overworld
+A Balanced Diet,husbandry,balanced_diet,Overworld
+Serious Dedication,husbandry,obtain_netherite_hoe,Overworld
+Wax Off,husbandry,wax_off,Overworld
+The Cutest Predator,husbandry,axolotl_in_a_bucket,Overworld
+With Our Powers Combined!,husbandry,froglights,Overworld
+Planting the Past,husbandry,plant_any_sniffer_seed,Overworld
+The Healing Power of Friendship!,husbandry,kill_axolotl_target,Overworld
+Good as New,husbandry,repair_wolf_armor,Overworld
+The Whole Pack,husbandry,whole_pack,Overworld
+Shear Brilliance,husbandry,remove_wolf_armor,Overworld

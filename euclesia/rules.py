@@ -2,7 +2,7 @@ from enum import IntEnum
 
 from worlds.generic.Rules import set_rule
 
-from . import MOBS_BREEDABLE, MOBS_TAMEABLE
+from . import ADVANCEMENT_PREFIX, ENTITY_UNLOCK_PREFIX, MOBS_BREEDABLE, MOBS_TAMEABLE
 from .data import MOBS_ALL, MOBS_HOSTILE
 
 
@@ -42,7 +42,7 @@ def set_rules(world) -> None:
             print(f"Warning: {entity_name} not found !")
         return lambda state: (
             not world.options.mob_spawn_lock_category.value or
-            state.has(f"Entity Unlock: {entity_name}", player)
+            state.has(f"{ENTITY_UNLOCK_PREFIX}{entity_name}", player)
         )
 
     def reached(location: str):
@@ -58,7 +58,7 @@ def set_rules(world) -> None:
         return lambda state: state.has(f"Knowledge: {item}", player)
 
     def advancement(name: str, condition):
-        rule(f"Advancement: {name}", condition)
+        rule(f"{ADVANCEMENT_PREFIX}{name}", condition)
 
     def can_trade():
         base = any_of(
