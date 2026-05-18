@@ -160,7 +160,7 @@ class MCWorld(World):
         shortage = active_location_count - len(pool)
         if shortage > 0:
             for _ in range(shortage):
-                pool.append(self.create_item(self.random_choice(filler_items)))
+                pool.append(self.create_item(self.random.choice(filler_items)))
 
         mc_trap_items = [item_name for item_name, item_data in ITEMS.items()
                          if item_data.classification == ItemClassification.trap
