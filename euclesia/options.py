@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 
-from Options import Choice, NamedRange, OptionSet, Toggle, Range, NumericOption, PerGameCommonOptions
+from Options import OptionSet, PerGameCommonOptions, Range, Toggle
 
 
-class BossSelectionMode(NamedRange):
+class BossSelectionMode(Range):
     """How many bosses to kill.
     Named presets:
     - all: Kill all bosses
@@ -14,16 +14,13 @@ class BossSelectionMode(NamedRange):
     range_start = 1
     range_end = 4
     default = 4
-    special_range_names = {
-        "all": 10,
-        "random": 11,
-    }
 
 class BossList(OptionSet):
     """Bosses available for selection"""
     display_name = "Boss List"
     valid_keys = {"Ender Dragon", "Elder Guardian", "Warden", "Wither"}
     default = frozenset({"Ender Dragon", "Elder Guardian", "Warden", "Wither"})
+
 
 class DeathList(Toggle):
     """ Toggling on will have you killed certain mobs to complete your game"""
@@ -64,6 +61,7 @@ class VillagerTrust(Toggle):
     option_false = 0
     default = 0
 
+
 class KillSanity(Toggle):
     """If toggled on, killing a mob for the first time will send a check
     Bosses will always send a check when killed even if toggled off
@@ -73,6 +71,7 @@ class KillSanity(Toggle):
     option_false = 0
     default = 0
 
+
 class MobSpawnLockCategory(OptionSet):
     """
     Define which mob categories are locked until their unlock item is received.
@@ -81,6 +80,7 @@ class MobSpawnLockCategory(OptionSet):
     display_name = "Mob Spawn Lock Category"
     valid_keys = {"passive", "neutral", "hostile"}
     default = frozenset()
+
 
 @dataclass
 class EuclesiaOptions(PerGameCommonOptions):
