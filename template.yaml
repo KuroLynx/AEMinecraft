@@ -1,0 +1,161 @@
+name: Player{number}
+description: Euclesia — Minecraft Randomizer by KuroLynx
+game: Minecraft
+requires:
+  version: 0.6.7
+
+Minecraft:
+  # -------------------------------------------------------------------------
+  # Generic Archipelago options
+  # -------------------------------------------------------------------------
+
+  progression_balancing:
+    # A system that moves progression items earlier to prevent the player
+    # from getting stuck. Higher = less likely to get stuck early.
+    # Minimum: 0 (disabled), Maximum: 99 (extreme)
+    normal: 50
+    random: 0
+    random-low: 0
+    random-high: 0
+
+  accessibility:
+    # Set rules for reachability of items and locations.
+    # full:    everything must be reachable and acquirable
+    # minimal: only what is needed to reach the goal must be reachable
+    full: 50
+    minimal: 0
+
+  # -------------------------------------------------------------------------
+  # Boss Selection
+  # -------------------------------------------------------------------------
+
+  boss_selection_mode:
+    # How many bosses from boss_list you must defeat to complete your game.
+    # Use a number from 1 to 4 for an exact count.
+    # Use 4 to require all bosses in boss_list (equivalent to "all").
+    # Use weighted values to randomize the count at generation time.
+    #
+    # Examples:
+    #   1: 100              → always exactly 1 boss
+    #   4: 100              → always all bosses
+    #   random: 100         → random between 1 and 4
+    #   random-range-1-3: 100  → random between 1 and 3
+    1: 0
+    2: 0
+    3: 0
+    4: 50
+    random: 0
+    random-range-1-3: 0
+
+  boss_list:
+    # The pool of bosses available for selection.
+    # The number of bosses actually required is determined by boss_selection_mode.
+    # Valid values: Ender Dragon, Elder Guardian, Warden, Wither
+    - Ender Dragon
+    - Elder Guardian
+    - Warden
+    - Wither
+
+  # -------------------------------------------------------------------------
+  # Death List
+  # -------------------------------------------------------------------------
+
+  death_list:
+    # If enabled, a random list of mobs will be assigned to you.
+    # Killing all of them becomes an additional victory condition
+    # on top of killing the required bosses.
+    'false': 50
+    'true': 0
+
+  death_list_count:
+    # Number of mobs assigned to your death list when death_list is enabled.
+    # Includes all mob types: passive, neutral, hostile and bosses.
+    # Minimum: 1, Maximum: 87
+    #
+    # 42: 50
+    # random: 0
+    # random-low: 0
+    # random-range-1-20: 0
+    42: 50
+    random: 0
+    random-low: 0
+    random-range-1-20: 0
+
+  # -------------------------------------------------------------------------
+  # Advancements
+  # -------------------------------------------------------------------------
+
+  advancements_required:
+    # Number of advancements you must complete as an additional victory condition.
+    # Set to 0 to disable this condition entirely.
+    # Minimum: 0, Maximum: 160
+    #
+    # Note: this is cumulative with the boss kill condition and the death list.
+    0: 50
+    random: 0
+    random-range-0-125: 0
+
+  # -------------------------------------------------------------------------
+  # Kill Sanity
+  # -------------------------------------------------------------------------
+
+  kill_sanity:
+    # If enabled, killing a mob for the first time sends a location check.
+    # Bosses always send a check regardless of this setting.
+    'false': 50
+    'true': 0
+
+  # -------------------------------------------------------------------------
+  # Villager Trust
+  # -------------------------------------------------------------------------
+
+  villager_trust:
+    # If enabled, trading with villagers requires receiving
+    # "Progressive Villager Trust" items (one per trade level, 5 total).
+    # These items are added to the item pool.
+    'false': 50
+    'true': 0
+
+  # -------------------------------------------------------------------------
+  # Mob Spawn Lock
+  # -------------------------------------------------------------------------
+
+  mob_spawn_lock_category:
+    # Define which mob categories are locked until their
+    # "Entity Unlock: <mob>" item is received from the multiworld.
+    # Leave empty to disable mob spawn locking entirely.
+    #
+    # Valid values: passive, neutral, hostile
+    # You can combine multiple categories.
+    #
+    # Example — lock only hostiles:
+    #   - hostile
+    #
+    # Example — lock everything:
+    #   - passive
+    #   - neutral
+    #   - hostile
+    []
+
+  # -------------------------------------------------------------------------
+  # Death Link
+  # -------------------------------------------------------------------------
+
+  death_link:
+    # When you die, all players with Death Link enabled die too.
+    # When any of them dies, you die too.
+    'false': 50
+    'true': 0
+
+  # -------------------------------------------------------------------------
+  # Standard item/location options
+  # -------------------------------------------------------------------------
+
+  local_items: []
+  non_local_items: []
+  start_inventory: {}
+  start_hints: []
+  start_location_hints: []
+  exclude_locations: []
+  priority_locations: []
+  item_links: []
