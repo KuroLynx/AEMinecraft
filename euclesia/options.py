@@ -76,7 +76,7 @@ class AdvancementsRequired(Range):
     """
     display_name = "Advancements Required"
     range_start = 0
-    range_end = 160
+    range_end = 126
     default = 0
 
 
