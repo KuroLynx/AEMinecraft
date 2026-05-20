@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from Options import OptionSet, PerGameCommonOptions, Range, Toggle
+from Options import Choice, OptionSet, PerGameCommonOptions, Range, Toggle
 
 
 class BossSelectionMode(Range):
@@ -145,11 +145,26 @@ class TrapChance(Range):
     Minimum value is 0
     Maximum value is 100
     """
-
     display_name = "Trap Chance"
     range_start = 0
     range_end = 100
     default = 30
+
+class ChallengeSanity(Choice):
+    """If enabled, includes extremely complex advancements in the location pool.
+
+    This includes:
+    - A Furious Cocktail (have all potion effects simultaneously)
+    - How Did We Get Here? (have all status effects simultaneously)
+    - Arbalistic (Kill 5 unique mobs with one arrow)
+    - A Balanced Diet (Eat every food items)
+
+    These advancements are very difficult to complete and are excluded by default.
+    """
+    display_name = "Challenge Sanity"
+    option_true = 1
+    option_false = 0
+    default = 0
 
 @dataclass
 class MCOptions(PerGameCommonOptions):
@@ -163,3 +178,4 @@ class MCOptions(PerGameCommonOptions):
     kill_sanity:          KillSanity
     mob_spawn_lock_category: MobSpawnLockCategory
     trap_chance: TrapChance
+    challenge_sanity: ChallengeSanity

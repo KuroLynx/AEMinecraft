@@ -2,7 +2,7 @@ from enum import IntEnum
 
 from worlds.generic.Rules import set_rule
 
-from . import ADVANCEMENT_PREFIX, ENTITY_UNLOCK_PREFIX, MOBS_BREEDABLE, MOBS_TAMEABLE
+from . import ADVANCEMENT_PREFIX, ENTITY_UNLOCK_PREFIX, MOBS_BOSS, MOBS_BREEDABLE, MOBS_TAMEABLE, STRUCT_UNLOCK_PREFIX, STRUCTURES
 from .data import MOBS_ALL, MOBS_HOSTILE
 
 
@@ -18,6 +18,14 @@ class ProgressiveMaterialTier(IntEnum):
 
 def set_rules(world) -> None:
     player = world.player
+
+    STRUCTURE_BOUND_MOBS = {
+        "Cat"           : lambda: any_village(),
+        "Allay"         : lambda: any_of(structure("Pillager Outpost"), structure("Mansion")),
+        "Elder Guardian": lambda: structure("Ocean Monument"),
+        "Guardian"      : lambda: structure("Ocean Monument"),
+        "Breeze"        : lambda: reached(f"{ADVANCEMENT_PREFIX}Minecraft: Trial(s) Edition"),
+    }
 
     def rule(location_name: str, condition):
         set_rule(world.multiworld.get_location(location_name, player), condition)
@@ -37,21 +45,51 @@ def set_rules(world) -> None:
     def all_of(*conditions):
         return lambda state: all(cond(state) for cond in conditions)
 
+    # --- NOUVEAUX HELPERS POUR ÉVITER LES PIÈGES DE BOUCLES LAMBDAS ---
+    def has_all_entities(*entity_names: str):
+        return all_of(*[entity(name) for name in entity_names])
+
+    def has_any_entities(*entity_names: str):
+        return any_of(*[entity(name) for name in entity_names])
+
+    def structure(struct_name: str):
+        if struct_name not in STRUCTURES:
+            print(f"Warning: {struct_name} not found !")
+        return lambda state: state.has(f"{STRUCT_UNLOCK_PREFIX}{struct_name}", player)
+
+    def any_village():
+        return has_any(*[f"{STRUCT_UNLOCK_PREFIX}Village ({biome})" for biome in ["Desert", "Plains", "Savanna", "Snowy", "Taiga"]])
+
+    def any_portal(nether_allowed: bool = False):
+        portals = ["Ruined Portal", "Ruined Portal (Desert)", "Ruined Portal (Ocean)", "Ruined Portal (Mountain)", "Ruined Portal (Jungle)", "Ruined Portal (Swamp)"]
+        if nether_allowed:
+            return any_of(has_any(*[f"{STRUCT_UNLOCK_PREFIX}{p}" for p in portals]), structure("Ruined Portal (Nether)"))
+        return has_any(*[f"{STRUCT_UNLOCK_PREFIX}{p}" for p in portals])
+
+    def any_mineshaft():
+        return has_any(f"{STRUCT_UNLOCK_PREFIX}Mineshaft", f"{STRUCT_UNLOCK_PREFIX}Mineshaft (Mesa)")
+
     def entity(entity_name: str):
         if entity_name not in MOBS_ALL:
             print(f"Warning: {entity_name} not found !")
+
+        entity_data = MOBS_ALL[entity_name]
+
+        structure_condition = STRUCTURE_BOUND_MOBS.get(entity_name)
+
         return lambda state: (
-            not world.options.mob_spawn_lock_category.value or
-            state.has(f"{ENTITY_UNLOCK_PREFIX}{entity_name}", player)
+                state.can_reach_region(entity_data.region, player) and
+                (structure_condition is None or structure_condition()(state)) and
+                (not world.options.mob_spawn_lock_category.value or state.has(f"{ENTITY_UNLOCK_PREFIX}{entity_name}", player))
         )
 
+    def access_region(region_name: str):
+        return lambda state: state.can_reach_region(region_name, player)
+
     def reached(location: str):
-        return lambda state: state.can_reach(location, "Location", player)
+        return lambda state: state.can_reach_location(location, player)
 
     def material(tier: int):
-        """Progressive Material Handling tier shorthand.
-        1=Stone, 2=Copper, 3=Iron, 4=Gold, 5=Diamond, 6=Netherite
-        """
         return lambda state: state.has("Progressive Material Handling", player, tier)
 
     def knowledge(item: str):
@@ -60,14 +98,207 @@ def set_rules(world) -> None:
     def advancement(name: str, condition):
         rule(f"{ADVANCEMENT_PREFIX}{name}", condition)
 
-    def can_trade():
-        base = any_of(
-            entity("Villager"),
-            entity("Wandering Trader"),
-        )
+    def can_trade(include_trader: bool = True, tier: int = 1):
+        traders = [all_of(entity("Villager"), any_village())]
+        if include_trader:
+            traders.append(entity("Wandering Trader"))
+
+        base = any_of(*traders)
+
         if world.options.villager_trust:
-            return all_of(base, has("Progressive Villager Trust"))
+            return all_of(base, has("Progressive Villager Trust", tier))
         return base
+
+    def can_craft_bucket():
+        return any_of(
+            reached(f"{ADVANCEMENT_PREFIX}Acquire Hardware"),  # Craft it yourself
+            structure("Mansion"),
+            structure("Dungeon"),
+            any_village(),
+        )
+
+    def can_get_totem():
+        return all_of(
+            entity("Evoker"),
+            any_of(
+                reached(f"{ADVANCEMENT_PREFIX}Voluntary Exile"),
+                structure("Mansion")
+            )
+        )
+
+    def can_get_string():
+        return any_of(
+            has_any_entities("Spider", "Cave Spider", "Cat", "Strider"),  # mob drops
+            knowledge("Fishing"),  # fishing junk
+            can_barter(),  # Piglin bartering
+            structure("Desert Pyramid"),  # chest
+            structure("Jungle Pyramid"),  # string inside
+            structure("Pillager Outpost"),  # chest
+            structure("Trail Ruins"),  # chest
+            any_mineshaft(),  # cobweb → string
+            reached(f"{ADVANCEMENT_PREFIX}Those Were the Days"),  # Bastion chests
+            structure("Dungeon"),  # chest
+            structure("Mansion"),  # chest
+        )
+
+    def can_get_arrow():
+        return any_of(
+            can_get_feather(),
+            has_any_entities("Skeleton", "Stray", "Bogged", "Parched"),  # Arrow drop
+            reached(f"{ADVANCEMENT_PREFIX}Those Were the Days"),  # Bastion Remnant chest
+            structure("Pillager Outpost"),  # Pillager Outpost chest
+            structure("Jungle Pyramid"),  # Temple Dispenser
+            reached(f"{ADVANCEMENT_PREFIX}Minecraft: Trial(s) Edition"),  # Entrance/Supply/Common chest | Also tipped arrow
+            any_village(),  # Fletcher chest
+            can_trade(False),  # Fletcher trade
+            reached(f"{ADVANCEMENT_PREFIX}Hero of the Village"),  # Fletcher gift
+            can_barter(),  # Spectral Arrow
+        )
+
+    def can_get_disc():
+        return any_of(
+            all_of(has_any_entities("Skeleton", "Stray", "Bogged", "Parched"), entity("Creeper")),  # skeleton variant kills Creeper
+            entity("Ghast"),  # Tears disc — deflect fireball
+            all_of(has_brush(), structure("Trail Ruins")),  # Relic disc — archaeology
+            structure("Dungeon"),  # 13, cat, otherside
+            structure("Ancient City"),  # 13, cat, otherside
+            structure("Mansion"),  # 13, cat
+            reached(f"{ADVANCEMENT_PREFIX}Eye Spy"),  # otherside — Stronghold
+            reached(f"{ADVANCEMENT_PREFIX}Those Were the Days"),  # Pigstep — Bastion
+            reached(f"{ADVANCEMENT_PREFIX}Minecraft: Trial(s) Edition"),  # Creator (Music Box) — decorated pots
+            reached(f"{ADVANCEMENT_PREFIX}Under Lock and Key"),  # Precipice/Creator — Vault
+            reached(f"{ADVANCEMENT_PREFIX}Revaulting"),  # Creator — Ominous Vault
+        )
+
+    def can_barter():
+        return all_of(
+            access_region("Nether"),
+            entity("Piglin"),
+            material(ProgressiveMaterialTier.GOLD),
+        )
+
+    def can_get_spyglass():
+        return all_of(
+            material(ProgressiveMaterialTier.COPPER),
+            knowledge("Pickaxe Handling"),
+        )
+
+    def can_get_trident():
+        return all_of(
+            knowledge("Trident Handling"),
+            any_of(
+                entity("Drowned"),
+                reached(f"{ADVANCEMENT_PREFIX}Under Lock and Key"),
+            )
+        )
+
+    def can_get_redstone():
+        return any_of(
+            all_of(
+                knowledge("Pickaxe Handling"),
+                material(ProgressiveMaterialTier.IRON),
+            ),  # mine Redstone Ore
+            any_mineshaft(),  # chest
+            structure("Dungeon"),  # chest
+            reached(f"{ADVANCEMENT_PREFIX}Eye Spy"),  # Stronghold chest
+            any_village(),  # temple chest
+            structure("Mansion"),  # chest
+            entity("Witch"),  # Witch drop
+            reached(f"{ADVANCEMENT_PREFIX}Hero of the Village"),  # Cleric gift
+        )
+
+    def can_get_snowball():
+        return any_of(
+            knowledge("Shovel Handling"),
+            entity("Snow Golem"),  # Snow Golem drop
+            structure("Ancient City"),  # Ice Box chest
+            any_village(),  # Snowy village house
+            reached(f"{ADVANCEMENT_PREFIX}Minecraft: Trial(s) Edition"),  # chamber chest
+        )
+
+    def can_get_egg():
+        return any_of(
+            entity("Chicken"),  # Chicken lay
+            any_village(),  # Fletcher chest
+            reached(f"{ADVANCEMENT_PREFIX}Minecraft: Trial(s) Edition"),  # chamber chest
+        )
+
+    def can_get_feather():
+        return any_of(
+            entity("Chicken"),  # Chicken drop
+            entity("Parrot"),  # Parrot drop
+            entity("Cat"),  # Cat morning gift
+            any_village(),  # Fletcher/Plains House chest
+            structure("Shipwreck"),  # Map chest
+        )
+
+    def can_get_gold():
+        return all_of(
+            material(ProgressiveMaterialTier.GOLD),  # always needed — unlock gold tier
+            any_of(
+                knowledge("Pickaxe Handling"),  # mine Gold Ore
+                entity("Zombified Piglin"),  # Gold Nugget drop
+                can_barter(),  # Piglin bartering
+                any_mineshaft(),  # Gold Ingot in chest
+                reached(f"{ADVANCEMENT_PREFIX}Those Were the Days"),  # Bastion chests
+                structure("Desert Pyramid"),  # Gold Ingot in chest
+                structure("Jungle Pyramid"),  # Gold Ingot in chest
+                structure("Buried Treasure"),  # Gold Ingot in chest
+                reached(f"{ADVANCEMENT_PREFIX}A Terrible Fortress"),  # Nether Fortress bridge
+                any_portal(True),  # Ruined Portal
+                structure("Shipwreck"),  # Treasure chest
+                structure("Dungeon"),  # Gold Ingot in chest
+                reached(f"{ADVANCEMENT_PREFIX}Eye Spy"),  # Stronghold chest
+                any_village(),  # Temple/Toolsmith/Weaponsmith
+                structure("Mansion"),  # Gold Ingot in chest
+                reached(f"{ADVANCEMENT_PREFIX}The City at the End of the Game"),  # End City
+                structure("Ocean Ruin (Cold)"),  # Gold Nugget
+                structure("Ocean Ruin (Warm)"),  # Gold Nugget
+                structure("Trail Ruins"),  # Gold Nugget
+                structure("Igloo"),  # Gold Nugget
+            ),
+        )
+
+    def has_brush():
+        return all_of(
+            knowledge("Brush Handling"),
+            material(ProgressiveMaterialTier.COPPER),
+            can_get_feather(),
+        )
+
+    def can_get_copper():
+        return all_of(
+            material(ProgressiveMaterialTier.COPPER),  # always needed — unlock copper tier
+            any_of(
+                knowledge("Pickaxe Handling"),  # mine Copper Ore
+                entity("Drowned"),  # Copper Ingot drop
+                entity("Copper Golem"),  # Copper Golem drop
+            ),
+        )
+
+    def can_get_notch_apple():
+        return any_of(
+            any_mineshaft(),  # Mineshaft chest
+            structure("Ancient City"),  # Ancient City chest
+            structure("Desert Pyramid"),  # Desert Pyramid chest
+            reached(f"{ADVANCEMENT_PREFIX}Those Were the Days"),  # Bastion Treasure chest
+            any_portal(True),  # Ruined Portal chest
+            structure("Dungeon"),  # Dungeon chest
+            reached(f"{ADVANCEMENT_PREFIX}Revaulting"),  # Ominous Unique Vault
+            structure("Mansion"),  # Mansion chest
+        )
+
+    def can_get_cake():
+        return any_of(
+            # Crafting the cake
+            all_of(
+                entity("Cow"),
+                can_craft_bucket(),
+                can_get_egg(),
+            ),
+            # Getting it
+            reached(f"{ADVANCEMENT_PREFIX}Minecraft: Trial(s) Edition"),
+        )
 
     # -----------------------------------------------------------------------
     # Story
@@ -76,555 +307,1005 @@ def set_rules(world) -> None:
     advancement("Stone Age", all_of(
         knowledge("Pickaxe Handling"),
         material(ProgressiveMaterialTier.STONE),
-    ))
+    ),
+                )
 
-    advancement("Getting an Upgrade", reached("Advancement: Stone Age"))
+    advancement("Getting an Upgrade", any_of(
+        reached(f"{ADVANCEMENT_PREFIX}Stone Age"),
+        reached(f"{ADVANCEMENT_PREFIX}Minecraft: Trial(s) Edition"),
+        reached(f"{ADVANCEMENT_PREFIX}Hero of the Village"),
+        can_trade(False),  # A toolsmith
+    ),
+                )
 
     advancement("Acquire Hardware", all_of(
-        knowledge("Pickaxe Handling"),
-        material(ProgressiveMaterialTier.IRON),
-    ))
+        material(ProgressiveMaterialTier.IRON),  # You always need to have unlocked iron handling
+        any_of(
+            reached(f"{ADVANCEMENT_PREFIX}Stone Age"),  # You can mine iron ore
+            any_village(),  # Find it in any village chests
+            any_mineshaft(),  # Find it in any mineshaft chests
+            structure("Buried Treasure"),
+            structure("Shipwreck"),
+            structure("Desert Pyramid"),
+            structure("Jungle Pyramid"),
+            structure("Mansion"),
+            reached(f"{ADVANCEMENT_PREFIX}Minecraft: Trial(s) Edition"),
+
+            reached(f"{ADVANCEMENT_PREFIX}Eye Spy"),  # In Stronghold
+            reached(f"{ADVANCEMENT_PREFIX}A Terrible Fortress"),  # In Nether Fortress
+            reached(f"{ADVANCEMENT_PREFIX}Those Were the Days"),  # In Bastion Remnant
+            reached(f"{ADVANCEMENT_PREFIX}The City at the End of the Game"),  # In End City
+
+            can_barter(),  # Piglin trade gives nuggets
+
+            any_portal(True),
+            has_any_entities("Husk", "Iron Golem", "Zombie", "Zombie Villager"),
+        ),
+    ),
+                )
 
     advancement("Suit Up", all_of(
-        knowledge("Armor Handling"),
-        material(ProgressiveMaterialTier.IRON),
-    ))
+        knowledge("Armor Handling"),  # Always needing armor handling
+        any_of(
+            reached(f"{ADVANCEMENT_PREFIX}Acquire Hardware"),  # Craft it yourself
+            can_trade(False),  # Tradeable at novice level from armorer / in any_village
+            reached(f"{ADVANCEMENT_PREFIX}The City at the End of the Game"),  # In End City
+            reached(f"{ADVANCEMENT_PREFIX}Eye Spy"),  # In Stronghold
+            reached(f"{ADVANCEMENT_PREFIX}Under Lock and Key"),  # In Trial Chambers Vault
+            structure("Ancient City"),
+            can_barter(),  # Iron Boots
+        ),
+    ),
+                )
 
-    advancement("Hot Stuff", material(ProgressiveMaterialTier.IRON))
+    advancement("Hot Stuff", any_of(
+        can_craft_bucket()
+    ),
+                )
 
     advancement("Isn't It Iron Pick", all_of(
         knowledge("Pickaxe Handling"),
-        material(ProgressiveMaterialTier.IRON),
-    ))
+        any_of(
+            reached(f"{ADVANCEMENT_PREFIX}Acquire Hardware"),  # Craft it yourself
+            any_mineshaft(),  # In Mineshaft
+            reached(f"{ADVANCEMENT_PREFIX}The City at the End of the Game"),  # In End City
+            reached(f"{ADVANCEMENT_PREFIX}Eye Spy"),  # In Stronghold
+            any_village(),
+            can_trade(False, 3),  # A toolsmith
+        ),
+    ),
+                )
 
     advancement("Not Today Thank You", all_of(
         knowledge("Shield Handling"),
-        material(ProgressiveMaterialTier.IRON),
-    ))
+        any_of(
+            reached(f"{ADVANCEMENT_PREFIX}Acquire Hardware"),  # Craft it yourself
+            reached(f"{ADVANCEMENT_PREFIX}Under Lock and Key"),  # In Trial Chambers Vault
+            can_trade(False, 3),
+        ),
+    ),
+                )
 
     advancement("Diamonds!", all_of(
-        knowledge("Pickaxe Handling"),
         material(ProgressiveMaterialTier.DIAMOND),
-    ))
+        any_of(
+            knowledge("Pickaxe Handling"),  # Mine it yourself
+            any_mineshaft(),  # In Mineshaft
+            reached(f"{ADVANCEMENT_PREFIX}Those Were the Days"),  # In Bastion Remnant
+            structure("Desert Pyramid"),  # In Desert Pyramid (Chest)
+            structure("Jungle Pyramid"),
+            structure("Buried Treasure"),
+            structure("Shipwreck"),
+            reached(f"{ADVANCEMENT_PREFIX}A Terrible Fortress"),  # In Nether Fortress
+            reached(f"{ADVANCEMENT_PREFIX}The City at the End of the Game"),  # In End City
+            reached(f"{ADVANCEMENT_PREFIX}Eye Spy"),  # In Stronghold
+
+            reached(f"{ADVANCEMENT_PREFIX}Minecraft: Trial(s) Edition"),  # In Trial Chambers (Chest & Pots)
+            reached(f"{ADVANCEMENT_PREFIX}Under Lock and Key"),  # In Trial Chambers (Vault)
+            reached(f"{ADVANCEMENT_PREFIX}Revaulting"),  # In Trial Chambers (Ominous Vault)
+
+            any_village(),  # In Village
+
+            all_of(  # In Desert Pyramid (Archeology)
+                structure("Desert Pyramid"),
+                has_brush(),
+            ),
+        ),
+    ),
+                )
 
     advancement("Ice Bucket Challenge", any_of(
-        material(ProgressiveMaterialTier.DIAMOND),  # obsidienne trouvée naturellement (coffres, ruines portail)
-    ))
-
-    advancement("We Need to Go Deeper", all_of(
-        reached("Advancement: Ice Bucket Challenge"),
-        has("Dimension Unlock: Nether"),
-    ))
+        reached(f"{ADVANCEMENT_PREFIX}Diamonds!"),  # Mine it with your diamonds
+        reached(f"{ADVANCEMENT_PREFIX}Those Were the Days"),  # In Bastion Remnants
+        reached(f"{ADVANCEMENT_PREFIX}A Terrible Fortress"),  # In Nether Fortress
+        any_portal(True),  # In any ruined portal
+        can_barter(),  # Piglin trade
+        any_village(),  # In village chests
+    ),
+                )
 
     advancement("Cover Me with Diamonds", all_of(
-        knowledge("Armor Handling"),
-        material(ProgressiveMaterialTier.DIAMOND),
-    ))
+        knowledge("Armor Handling"),  # Must always have that
+        any_of(
+            reached(f"{ADVANCEMENT_PREFIX}Diamonds!"),  # Craft it yourself
+            can_trade(False, 4),  # Villager trade toolsmith
+            reached(f"{ADVANCEMENT_PREFIX}Those Were the Days"),  # In Bastion Remnant
+            reached(f"{ADVANCEMENT_PREFIX}The City at the End of the Game"),  # In End City
+            structure("Mansion"),
+            reached(f"{ADVANCEMENT_PREFIX}Under Lock and Key"),  # In Trial Chambers (Vault)
+            reached(f"{ADVANCEMENT_PREFIX}Revaulting"),  # In Trial Chambers (Ominous Vault)
+            structure("Ancient City"),
+        ),
+    ),
+                )
 
     advancement("Enchanter", all_of(
         knowledge("Enchanting"),
-        reached("Advancement: Ice Bucket Challenge"),  # obsidienne nécessaire pour l'enchanting table
-    ))
+        reached(f"{ADVANCEMENT_PREFIX}Ice Bucket Challenge"),
+        reached(f"{ADVANCEMENT_PREFIX}Diamonds!"),  # In case we don't get obsidian by mining
+        # Book: (Make assumption that we have a grindstone for enchanted book)
+        any_of(
+            entity("Cow"),
+            can_trade(False),  # bookshelf from librarian
+            any_mineshaft(),
+            structure("Ancient City"),
+            reached(f"{ADVANCEMENT_PREFIX}Those Were the Days"),  # In Bastion Remnant
+            structure("Desert Pyramid"),
+            structure("Jungle Pyramid"),
+            structure("Pillager Outpost"),
+            structure("Shipwreck"),
+            structure("Dungeon"),
+            reached(f"{ADVANCEMENT_PREFIX}Eye Spy"),  # In Stronghold
+            structure("Ocean Ruin (Cold)"),
+            structure("Ocean Ruin (Warm)"),
+            structure("Mansion"),
+            reached(f"{ADVANCEMENT_PREFIX}Under Lock and Key"),  # In Trial Chambers (Vault)
+            reached(f"{ADVANCEMENT_PREFIX}Revaulting"),  # In Trial Chambers (Ominous Vault)
+            can_barter(),
+            knowledge("Fishing"),
+            reached(f"{ADVANCEMENT_PREFIX}Hero of the Village"),
+        ),
+    ),
+                )
 
     advancement("Zombie Doctor", all_of(
-        reached("Advancement: Local Brewery"),
         entity("Zombie Villager"),
-    ))
+        # Golden Apple
+        any_of(
+            can_get_gold(),
+            any_mineshaft(),
+            reached(f"{ADVANCEMENT_PREFIX}Those Were the Days"),  # In Bastion Remnant
+            structure("Desert Pyramid"),
+            structure("Igloo"),
+            any_portal(True),
+            structure("Dungeon"),
+            reached(f"{ADVANCEMENT_PREFIX}Eye Spy"),  # In Stronghold
+            structure("Ocean Ruin (Cold)"),
+            structure("Ocean Ruin (Warm)"),
+            structure("Mansion"),
+        ),
+        # Weakness potion
+        any_of(
+            # Brewing
+            all_of(
+                reached(f"{ADVANCEMENT_PREFIX}Local Brewery"),
+                has_any_entities("Cave Spider", "Spider"),
+            ),
+            # Finding
+            all_of(knowledge("Brewing"), structure("Igloo")),
+            reached(f"{ADVANCEMENT_PREFIX}Minecraft: Trial(s) Edition"),
+            entity("Witch"),
+        ),
+    ),
+                )
 
     advancement("Eye Spy", all_of(
-        reached("Advancement: Into Fire"),
-        entity("Enderman"),  # ender pearl
-    ))
-
-    advancement("The End?", all_of(
-        reached("Advancement: Eye Spy"),
-        has("Dimension Unlock: The End"),
-    ))
+        reached(f"{ADVANCEMENT_PREFIX}Into Fire"),
+        entity("Enderman"),
+        structure("Stronghold"),
+    ),
+                )
 
     # -----------------------------------------------------------------------
     # Nether
     # -----------------------------------------------------------------------
 
+    advancement("We Need to Go Deeper", all_of())
+
     advancement("Return to Sender", entity("Ghast"))
 
-    advancement("Those Were the Days", all_of())
+    advancement("Those Were the Days", structure("Bastion Remnant"))
 
     advancement("Hidden in the Depths", all_of(
-        knowledge("Pickaxe Handling"),
-        material(ProgressiveMaterialTier.NETHERITE),
-    ))
+        material(ProgressiveMaterialTier.NETHERITE),  # Always needed
+        any_of(
+            knowledge("Pickaxe Handling"),  # Obtain it
+            reached(f"{ADVANCEMENT_PREFIX}Those Were the Days"),
+        ),
+    ),
+                )
 
-    advancement("A Terrible Fortress", all_of())
+    advancement("A Terrible Fortress", structure("Nether Fortress"))
 
-    advancement("Oh Shiny", entity("Piglin"))
+    advancement("Oh Shiny", all_of(
+        entity("Piglin"),
+        material(ProgressiveMaterialTier.GOLD),
+    ),
+                )
 
-    advancement("This Boat Has Legs", all_of(
-        entity("Strider"),
-        knowledge("Fishing"),  # pour crafter la Warped Fungus on a Stick
-    ))
+    advancement("This Boat Has Legs", all_of(entity("Strider"), knowledge("Fishing")))
 
-    advancement("Uneasy Alliance", all_of(
-        entity("Ghast"),
-        reached("Advancement: Return to Sender"),
-    ))
+    advancement("Uneasy Alliance", entity("Ghast"))
 
-    advancement("War Pigs", reached("Advancement: Those Were the Days"))
+    advancement("War Pigs", reached(f"{ADVANCEMENT_PREFIX}Those Were the Days"))
 
     advancement("Cover Me in Debris", all_of(
-        reached("Advancement: Hidden in the Depths"),
+        reached(f"{ADVANCEMENT_PREFIX}Hidden in the Depths"),
         knowledge("Armor Handling"),
-    ))
+        reached(f"{ADVANCEMENT_PREFIX}Those Were the Days"),
+    )
+                )
 
     advancement("Spooky Scary Skeleton", all_of(
         entity("Wither Skeleton"),
-    ))
+        reached(f"{ADVANCEMENT_PREFIX}A Terrible Fortress"),
+    ),
+                )
 
-    advancement("Into Fire", entity("Blaze"))
+    advancement("Into Fire", all_of(
+        reached(f"{ADVANCEMENT_PREFIX}A Terrible Fortress"),
+        entity("Blaze"),
+    ),
+                )
 
-    advancement("Not Quite Nine Lives", reached("Advancement: Those Were the Days"))
+    advancement("Who is Cutting Onions?", any_of(
+        can_barter(),
+        reached(f"{ADVANCEMENT_PREFIX}Those Were the Days"),
+    ),
+                )
 
-    advancement("Feels Like Home", reached("Advancement: This Boat Has Legs"))
+    advancement("Not Quite Nine Lives", reached(f"{ADVANCEMENT_PREFIX}Who is Cutting Onions?"))
 
-    advancement("Hot Tourist Destinations", all_of())
+    advancement("Feels Like Home", reached(f"{ADVANCEMENT_PREFIX}This Boat Has Legs"))
 
-    advancement("Withering Heights", all_of(
-        reached("Advancement: Spooky Scary Skeleton"),
-        entity("Wither"),
-    ))
+    advancement("Withering Heights", all_of(reached(f"{ADVANCEMENT_PREFIX}Spooky Scary Skeleton"), entity("Wither")))
 
-    advancement("Local Brewery", all_of(
-        reached("Advancement: Into Fire"),
-        knowledge("Brewing"),
-    ))
+    advancement("Local Brewery", all_of(reached(f"{ADVANCEMENT_PREFIX}Into Fire"), knowledge("Brewing")))
 
-    advancement("Bring Home the Beacon", reached("Advancement: Withering Heights"))
+    advancement("Bring Home the Beacon", reached(f"{ADVANCEMENT_PREFIX}Withering Heights"))
+
+    advancement("Beaconator", reached(f"{ADVANCEMENT_PREFIX}Bring Home the Beacon"))
 
     advancement("A Furious Cocktail", all_of(
-        knowledge("Brewing"),
-        reached("Advancement: Local Brewery"),
+        reached(f"{ADVANCEMENT_PREFIX}Local Brewery"),  # Brewing Stand + Blaze Rod
 
-        # Fire Resistance — Magma Cream ou Witch (drop direct)
+        # Infestation — Stone always accessible, no condition needed
+
+        # Invisibility + Night Vision — Golden Carrot or Suspicious Stew
         any_of(
-            entity("Magma Cube"),
-            entity("Witch"),
+            material(ProgressiveMaterialTier.GOLD),  # craft Golden Carrot
+            entity("Witch"),  # Witch drop
+            can_barter(),  # Piglin barter
+            any_village(),  # village chests
+            reached(f"{ADVANCEMENT_PREFIX}Those Were the Days"),  # Bastion chests
+            can_trade(False, 4),  # expert farmer villager trade
+            structure("Shipwreck"),  # Suspicious Stew
+            # Suspicious Stew with Poppy — always accessible
         ),
 
-        # Regeneration — Ghast Tear ou Beacon
+        # Jump Boost — Rabbit's Foot or Beacon
         any_of(
-            entity("Ghast"),
-            reached("Advancement: Bring Home the Beacon"),
+            entity("Rabbit"),  # Rabbit's Foot
+            reached(f"{ADVANCEMENT_PREFIX}Bring Home the Beacon"),  # Beacon
         ),
 
-        # Jump Boost — Rabbit's Foot ou Beacon
+        # Oozing — Slime Block, Panda sneeze or Ominous Bottle
         any_of(
-            entity("Rabbit"),
-            reached("Advancement: Bring Home the Beacon"),
+            entity("Slime"),  # Slime Block
+            entity("Panda"),  # Slimeball from sneeze
+            all_of(reached(f"{ADVANCEMENT_PREFIX}Minecraft: Trial(s) Edition"), entity("Pillager")),  # Ominous Bottle
         ),
 
-        # Resistance — Turtle Master ou Beacon
+        # Poison — Spider Eye, Witch, Pufferfish, Bee, Poisonous Potato or Suspicious Stew
         any_of(
-            entity("Turtle"),
-            reached("Advancement: Bring Home the Beacon"),
+            entity("Spider"),  # Spider Eye
+            entity("Cave Spider"),  # Spider Eye
+            entity("Witch"),  # Witch drop
+            entity("Pufferfish"),  # Pufferfish
+            knowledge("Fishing"),  # Fish a Pufferfish
+            entity("Bee"),  # Bee sting
+            # Poisonous Potato — always accessible
+            # Suspicious Stew with Lily of the Valley — always accessible
         ),
 
-        # Slow Falling — Phantom Membrane (seule source)
-        entity("Phantom"),
-
-        # Speed — Sugar (Witch drop) ou Beacon
+        # Regeneration — Ghast Tear, Axolotl, Beacon, Totem, Golden Apple or Enchanted Golden Apple
         any_of(
-            entity("Witch"),
-            reached("Advancement: Bring Home the Beacon"),
+            entity("Ghast"),  # Ghast Tear
+            reached(f"{ADVANCEMENT_PREFIX}The Healing Power of Friendship!"),  # Kill mob near Axolotl
+            reached(f"{ADVANCEMENT_PREFIX}Bring Home the Beacon"),  # Beacon
+            can_get_totem(),  # Totem of Undying
+            material(ProgressiveMaterialTier.GOLD),  # Golden Apple craft
+            any_mineshaft(),  # Golden/Enchanted Golden Apple
+            structure("Ancient City"),  # Enchanted Golden Apple
+            reached(f"{ADVANCEMENT_PREFIX}Those Were the Days"),  # Golden/Enchanted Golden Apple in Bastion
+            structure("Desert Pyramid"),  # Golden/Enchanted Golden Apple
+            any_portal(True),  # Golden/Enchanted Golden Apple
+            structure("Dungeon"),  # Golden/Enchanted Golden Apple
+            structure("Mansion"),  # Golden/Enchanted Golden Apple
+            structure("Igloo"),  # Golden Apple
+            reached(f"{ADVANCEMENT_PREFIX}Eye Spy"),  # Golden Apple in Stronghold
+            structure("Ocean Ruin (Cold)"),  # Golden Apple in Underwater Ruin
+            structure("Ocean Ruin (Warm)"),  # Golden Apple in Underwater Ruin
+            reached(f"{ADVANCEMENT_PREFIX}Revaulting"),  # Golden Apple in Ominous Rare Vault
+            reached(f"{ADVANCEMENT_PREFIX}Under Lock and Key"),  # Golden Apple in Unique Vault
         ),
 
-        # Water Breathing — Pufferfish ou Turtle Shell ou Witch
+        # Resistance — Turtle Shell, Beacon, Totem or Enchanted Golden Apple
         any_of(
-            knowledge("Fishing"),
-            entity("Turtle"),
-            entity("Witch"),
+            entity("Turtle"),  # Turtle Shell
+            reached(f"{ADVANCEMENT_PREFIX}Bring Home the Beacon"),  # Beacon
+            can_get_totem(),  # Totem of Undying
+            any_mineshaft(),  # Enchanted Golden Apple
+            structure("Ancient City"),  # Enchanted Golden Apple
+            reached(f"{ADVANCEMENT_PREFIX}Those Were the Days"),  # Enchanted Golden Apple in Bastion
+            structure("Desert Pyramid"),  # Enchanted Golden Apple
+            any_portal(True),  # Enchanted Golden Apple
+            structure("Dungeon"),  # Enchanted Golden Apple
+            structure("Mansion"),  # Enchanted Golden Apple
+            reached(f"{ADVANCEMENT_PREFIX}Revaulting"),  # Enchanted Golden Apple in Ominous Vault
         ),
 
-        # Poison — Spider Eye (craft ou Witch drop)
+        # Fire Resistance — Magma Cream, Witch, Totem, Enchanted Golden Apple or Barter
         any_of(
-            entity("Spider"),
-            entity("Cave Spider"),
-            entity("Witch"),
+            entity("Magma Cube"),  # Magma Cream drop
+            entity("Witch"),  # Witch drop
+            can_get_totem(),  # Totem of Undying
+            can_barter(),  # Piglin barter
+            any_mineshaft(),  # Enchanted Golden Apple
+            structure("Ancient City"),  # Enchanted Golden Apple
+            reached(f"{ADVANCEMENT_PREFIX}Those Were the Days"),  # Enchanted Golden Apple in Bastion
+            structure("Desert Pyramid"),  # Enchanted Golden Apple
+            any_portal(True),  # Enchanted Golden Apple
+            structure("Dungeon"),  # Enchanted Golden Apple
+            structure("Mansion"),  # Enchanted Golden Apple
+            reached(f"{ADVANCEMENT_PREFIX}Revaulting"),  # Enchanted Golden Apple in Ominous Vault
         ),
 
-        # Oozing — Slime Block
-        entity("Slime"),
-
-        # Weaving — Cobweb (Spider drop)
+        # Slow Falling — Phantom Membrane or Cat morning gift
         any_of(
-            entity("Spider"),
-            entity("Cave Spider"),
+            entity("Phantom"),  # Phantom Membrane
+            entity("Cat"),  # Cat morning gift
         ),
 
-        # Wind Charged — Breeze Rod
-        entity("Breeze"),
-    ))
+        # Slowness — Potion of Slowness, Turtle Master or Stray attack
+        any_of(
+            has_any_entities("Spider", "Cave Spider", "Witch"),  # Fermented Spider Eye → Potion of Slowness
+            entity("Turtle"),  # Potion of Turtle Master
+            entity("Stray"),  # Stray attack
+        ),
 
-    advancement("Beaconator", reached("Advancement: Bring Home the Beacon"))
+        # Speed — Sugar cane always accessible, no condition needed
+
+        # Strength — Blaze Powder always available via Local Brewery prerequisite
+
+        # Water Breathing — Pufferfish, Turtle Shell or Witch drop
+        any_of(
+            entity("Pufferfish"),  # Pufferfish mob
+            knowledge("Fishing"),  # Fish a Pufferfish
+            entity("Turtle"),  # Turtle Shell
+            entity("Witch"),  # Witch drop
+        ),
+
+        # Weakness — Fermented Spider Eye, Witch drop, Igloo or Suspicious Stew
+        any_of(
+            has_any_entities("Spider", "Cave Spider", "Witch"),  # Fermented Spider Eye or Witch drop
+            structure("Igloo"),  # pre-brewed Weakness potion
+            # Suspicious Stew with Brown Mushroom — always accessible
+        ),
+
+        # Weaving — Cobweb (Spider drop or Mineshaft) or Ominous Bottle
+        any_of(
+            has_any_entities("Spider", "Cave Spider"),  # String → Cobweb craft
+            any_mineshaft(),  # Cobweb naturally in Mineshaft
+            all_of(reached(f"{ADVANCEMENT_PREFIX}Minecraft: Trial(s) Edition"), entity("Pillager")),  # Ominous Bottle
+        ),
+
+        # Wind Charged — Breeze Rod or Ominous Bottle
+        any_of(
+            entity("Breeze"),  # Breeze Rod
+            all_of(reached(f"{ADVANCEMENT_PREFIX}Minecraft: Trial(s) Edition"), entity("Pillager")),  # Ominous Bottle
+        ),
+    ),
+                )
 
     advancement("How Did We Get Here?", all_of(
-        reached("Advancement: A Furious Cocktail"),
-        reached("Advancement: Beaconator"),  # Haste via Beacon niveau 2
-        entity("Drowned"),        # Conduit Power — Nautilus Shell
-        entity("Guardian"),       # Conduit Power — Heart of the Sea via monument
-        entity("Warden"),         # Darkness
-        entity("Shulker"),        # Levitation
-        entity("Elder Guardian"), # Mining Fatigue
-        entity("Dolphin"),        # Dolphin's Grace
+        reached(f"{ADVANCEMENT_PREFIX}A Furious Cocktail"),  # Covers: Fire Resistance, Infestation, Invisibility,
+        # Jump Boost, Night Vision, Oozing, Poison, Regeneration,
+        # Resistance, Slow Falling, Slowness, Speed, Strength,
+        # Water Breathing, Weakness, Weaving, Wind Charged
+
+        # Absorption — Golden Apple, Enchanted Golden Apple or Totem of Undying
+        # Already specified by A Furious Cocktail indirectly
+
+        # Bad Omen — Pillager Raid Captain
+        entity("Pillager"),
+
+        # Blindness — Suspicious Stew with Azure Bluet (always accessible)
+        # Hunger — Pufferfish or Rotten Flesh (always accessible)
+        # Nausea — Pufferfish (always accessible)
+
+        # Breath of the Nautilus + Conduit Power — Nautilus Shell + Heart of the Sea
+        all_of(
+            entity("Drowned"),  # Nautilus Shell
+            structure("Buried Treasure"),  # Heart of the Sea
+        ),
+
+        # Darkness — Warden proximity
+        entity("Warden"),
+
+        # Dolphin's Grace — swim near a Dolphin
+        entity("Dolphin"),
+
+        # Glowing — Spectral Arrow (Glowstone always accessible in Nether)
+        all_of(
+            knowledge("Sharpshooter"),  # need bow/crossbow to shoot
+            any_of(
+                # Glowstone + Arrow — always accessible in Nether
+                reached(f"{ADVANCEMENT_PREFIX}Those Were the Days"),  # Bastion Remnant chests
+                can_barter(),  # Piglin bartering
+            ),
+        ),
+
+        # Haste — Beacon level 2
+        reached(f"{ADVANCEMENT_PREFIX}Beaconator"),
+
+        # Hero of the Village — complete a Raid
+        reached(f"{ADVANCEMENT_PREFIX}Hero of the Village"),
+
+        # Infested — Stone always accessible, no condition needed
+
+        # Levitation — Shulker attack
+        entity("Shulker"),
+
+        # Mining Fatigue — Elder Guardian
+        entity("Elder Guardian"),
+
+        # Raid Omen — Ominous Bottle near a village
+        any_village(),  # village needed for Raid Omen
+
+        # Trial Omen — already covered by A Furious Cocktail (Trial Chambers + Pillager)
+
+        # Wither — Wither Rose or Wither Skeleton arrow
         any_of(
-            knowledge("Fishing"),
-            entity("Pufferfish"),
-        ),                        # Hunger/Nausea via Pufferfish
-        reached("Advancement: Hero of the Village"),  # Hero of the Village effect
-        entity("Pillager"),       # Bad Omen via Raid Captain
-        entity("Wither"),         # Wither effect via Wither Rose
-        entity("Evoker"),         # Absorption via Totem of Undying
-    ))
+            entity("Wither"),  # Wither Rose
+            entity("Wither Skeleton"),  # Wither Skeleton arrow
+        ),
+    ),
+                )
 
     advancement("Subspace Bubble", all_of())
+
+    advancement("Hot Tourist Destinations", all_of())
 
     # -----------------------------------------------------------------------
     # The End
     # -----------------------------------------------------------------------
 
+    advancement("The End?", all_of())
     advancement("Free the End", entity("Ender Dragon"))
-
-    advancement("The Next Generation", reached("Advancement: Free the End"))
-
-    advancement("Remote Getaway", reached("Advancement: Free the End"))
-
-    advancement("The End... Again...", all_of(
-        reached("Advancement: Free the End"),
-        entity("Ghast"),  # Ghast Tear pour crafter les End Crystals
-    ))
-
-    advancement("You Need a Mint", reached("Advancement: Free the End"))
-
-    advancement("The City at the End of the Game", reached("Advancement: Remote Getaway"))
-
-    advancement("Sky's the Limit", all_of(
-        reached("Advancement: The City at the End of the Game"),
-        knowledge("Flying"),  # pour équiper et utiliser les Elytra
-    ))
-
-    advancement("Great View From Up Here", all_of(
-        reached("Advancement: The City at the End of the Game"),
-        entity("Shulker"),
-    ))
+    advancement("The Next Generation", reached(f"{ADVANCEMENT_PREFIX}Free the End"))
+    advancement("Remote Getaway", reached(f"{ADVANCEMENT_PREFIX}Free the End"))
+    advancement("The End... Again...", all_of(reached(f"{ADVANCEMENT_PREFIX}Free the End"), entity("Ghast")))
+    advancement("You Need a Mint", entity("Ender Dragon"))
+    advancement("The City at the End of the Game", all_of(reached(f"{ADVANCEMENT_PREFIX}Remote Getaway"), structure("End City")))
+    advancement("Sky's the Limit", all_of(reached(f"{ADVANCEMENT_PREFIX}The City at the End of the Game"), knowledge("Flying")))
+    advancement("Great View From Up Here", all_of(reached(f"{ADVANCEMENT_PREFIX}The City at the End of the Game"), entity("Shulker")))
 
     # -----------------------------------------------------------------------
     # Adventure
     # -----------------------------------------------------------------------
 
     advancement("Heart Transplanter", entity("Creaking"))
-
     advancement("Voluntary Exile", entity("Pillager"))
+    advancement("Country Lode Take Me Home", all_of(
+        # Lodestone — craft or found in structures
+        any_of(
+            reached(f"{ADVANCEMENT_PREFIX}Acquire Hardware"),  # craft Lodestone (Iron + Chiseled Stone Brick)
+            reached(f"{ADVANCEMENT_PREFIX}Those Were the Days"),  # Bastion Remnant
+            any_portal(True),  # Ruined Portal
+        ),
+        # Compass — craft or found in structures
+        any_of(
+            reached(f"{ADVANCEMENT_PREFIX}Acquire Hardware"),  # craft Compass (Iron + Redstone)
+            structure("Ancient City"),  # found in chest
+            structure("Shipwreck"),  # found in chest
+            reached(f"{ADVANCEMENT_PREFIX}Eye Spy"),  # Stronghold
+            reached(f"{ADVANCEMENT_PREFIX}Minecraft: Trial(s) Edition"),  # found in chest
+            can_trade(False, 4),  # expert cartographer trade
+        ),
+    ),
+                )
 
-    advancement("Country Lode Take Me Home", material(ProgressiveMaterialTier.IRON))
+    advancement("Is It a Bird?", all_of(
+        entity("Parrot"),
+        can_get_spyglass()
+    )
+                )
 
-    advancement("Is It a Bird?", entity("Parrot"))
+    advancement("Monster Hunter", has_any_entities(*MOBS_HOSTILE.keys()))
 
-    advancement("Monster Hunter", any_of(
-        *[entity(name) for name in MOBS_HOSTILE.keys()],
-    ))
-
-    advancement("The Power of Books", material(ProgressiveMaterialTier.IRON))
+    advancement("The Power of Books", any_of(
+        all_of(
+            material(ProgressiveMaterialTier.IRON),  # mine Redstone
+            knowledge("Pickaxe Handling"),
+            access_region("Nether"),  # Nether Quartz
+        ),
+        structure("Ancient City"),  # generate here
+    )
+                )
 
     advancement("What a Deal!", can_trade())
 
     advancement("Crafting a New Look", all_of(
         knowledge("Armor Handling"),
         material(ProgressiveMaterialTier.IRON),
-    ))
-
-    advancement("Sticky Situation", entity("Bee"))
-
-    advancement("Ol' Betsy", knowledge("Sharpshooter"))
-
-    advancement("Surge Protector", all_of(
-        material(ProgressiveMaterialTier.COPPER),
-        entity("Villager"),  # villageois non enflammé requis
-    ))
-
-    advancement("Caves & Cliffs", material(ProgressiveMaterialTier.IRON))
-
-    advancement("Respecting the Remnants", knowledge("Brush Handling"))
-
-    advancement("Sneak 100", any_of(
-        entity("Warden"),
-        # Sculk Sensor suffit — pas besoin du Warden
-    ))
-
-    advancement("Sweet Dreams", all_of())
-
-    advancement("Hero of the Village", all_of(
-        reached("Advancement: Voluntary Exile"),
-        entity("Villager"),
+        # Trim locations
         any_of(
-            entity("Pillager"),
-            entity("Vindicator"),
-            entity("Evoker"),
-            entity("Ravager"),
-            entity("Witch"),
-        ),
-    ))
-
-    advancement("Is It a Balloon?", entity("Ghast"))
-
-    advancement("A Throwaway Joke", knowledge("Trident Handling"))
-
-    advancement("It Spreads", any_of(
-        *[entity(name) for name in MOBS_ALL.keys()],
-    ))
-
-    advancement("Take Aim", any_of(
-        knowledge("Sharpshooter"),
-        knowledge("Trident Handling"),
-    ))
-
-    advancement("Monsters Hunted", all_of(
-        *[entity(name) for name in MOBS_HOSTILE.keys() if name != "Warden"],
-        entity("Ender Dragon"),
-        entity("Wither"),
-    ))
-
-    advancement("Postmortal", entity("Evoker"))
-
-    advancement("Mob Kabob", knowledge("Spear Handling"))
-
-    advancement("Hired Help", all_of(
-        material(ProgressiveMaterialTier.IRON),
-        entity("Iron Golem"),
-    ))
-
-    advancement("Star Trader", can_trade())
+            entity("Elder Guardian"),  # Tide — Kill on Elder Guardian
+            reached(f"{ADVANCEMENT_PREFIX}Those Were the Days"),  # Snout/Netherite Upgrade — Bastion
+            structure("Pillager Outpost"),  # Sentry
+            structure("Mansion"),  # Vex
+            structure("Jungle Pyramid"),  # Wild
+            structure("Shipwreck"),  # Coast
+            structure("Desert Pyramid"),  # Dune
+            structure("Ancient City"),  # Ward + Silence
+            reached(f"{ADVANCEMENT_PREFIX}A Terrible Fortress"),  # Rib — Nether Fortress
+            reached(f"{ADVANCEMENT_PREFIX}Eye Spy"),  # Eye — Stronghold
+            reached(f"{ADVANCEMENT_PREFIX}The City at the End of the Game"),  # Spire — End City
+            all_of(has_brush(), structure("Trail Ruins"))  # Wayfinder/Raiser/Shaper/Host
+        )
+    )
+                )
 
     advancement("Smithing with Style", all_of(
         knowledge("Armor Handling"),
-        reached("Advancement: The City at the End of the Game"),  # Spire
-        reached("Advancement: Those Were the Days"),               # Snout
-        reached("Advancement: A Terrible Fortress"),               # Rib
-        entity("Evoker"),                                          # Vex template
-        knowledge("Brush Handling"),                               # Wayfinder (Trail Ruins)
-        entity("Elder Guardian"),                                  # Tide (Ocean Monument)
-        # Ward + Silence → Ancient City (structure pure, pas de mob)
-    ))
+        material(ProgressiveMaterialTier.IRON),
+        reached(f"{ADVANCEMENT_PREFIX}The City at the End of the Game"),  # Spire — End City
+        reached(f"{ADVANCEMENT_PREFIX}Those Were the Days"),  # Snout/Netherite Upgrade — Bastion
+        reached(f"{ADVANCEMENT_PREFIX}A Terrible Fortress"),  # Rib — Nether Fortress
+        structure("Ancient City"),  # Ward + Silence
+        structure("Mansion"),  # Vex
+        entity("Elder Guardian"),  # Tide — Kill on Elder Guardian
+        all_of(has_brush(), structure("Trail Ruins")),  # Wayfinder
+    )
+                )
+
+    advancement("Sticky Situation", any_of(
+        entity("Bee"),
+        reached(f"{ADVANCEMENT_PREFIX}Under Lock and Key")
+    )
+                )
+
+    advancement("Ol' Betsy", all_of(
+        knowledge("Sharpshooter"),
+        # Crossbow
+        any_of(
+            all_of(reached(f"{ADVANCEMENT_PREFIX}Acquire Hardware"), can_get_string()),  # craft Crossbow (Iron + Tripwire + String)
+            reached(f"{ADVANCEMENT_PREFIX}Those Were the Days"),  # Bastion Remnant chest
+            structure("Pillager Outpost"),  # Pillager Outpost chest
+            reached(f"{ADVANCEMENT_PREFIX}Under Lock and Key"),  # Trial Chambers Vault
+            reached(f"{ADVANCEMENT_PREFIX}Revaulting"),  # Trial Chambers Ominous Vault
+        ),
+        # Arrow
+        can_get_arrow(),
+    )
+                )
+
+    advancement("Surge Protector", all_of(material(ProgressiveMaterialTier.COPPER), can_trade(False, 0)))
+
+    advancement("Caves & Cliffs", any_of(
+        can_craft_bucket(),
+        can_get_totem(),
+        all_of(
+            reached(f"{ADVANCEMENT_PREFIX}Local Brewery"),
+            entity("Phantom")
+        )
+    )
+                )
+
+    advancement("Respecting the Remnants", all_of(
+        has_brush(),
+        any_of(
+            structure("Trail Ruins"),  # Burn, Danger, Friend, Heart, Heartbreak, Howl, Sheaf
+            structure("Ocean Ruin (Warm)"),  # Angler, Shelter, Snort
+            structure("Ocean Ruin (Cold)"),  # Blade, Explorer, Mourner, Plenty
+            structure("Desert Pyramid"),  # Archer, Miner, Prize, Skull
+            structure("Desert Well"),  # Arms Up, Brewer
+        ),
+    )
+                )
+
+    advancement("Sneak 100", all_of())
+
+    advancement("Sweet Dreams", any_of(
+        can_trade(False, 2),  # Shepherd
+        can_get_string(),
+        entity("Sheep"),
+        structure("Igloo"),
+        structure("Mansion")
+    )
+                )
+
+    advancement("Hero of the Village", all_of(
+        can_trade(False, 0),
+        reached(f"{ADVANCEMENT_PREFIX}Voluntary Exile"),
+    )
+                )
+
+    advancement("Is It a Balloon?", all_of(
+        entity("Ghast"),
+        can_get_spyglass()
+    )
+                )
+
+    advancement("A Throwaway Joke", can_get_trident())
+
+    advancement("It Spreads", has_any_entities(*MOBS_ALL.keys()))
+
+    advancement("Take Aim", all_of(
+        knowledge("Sharpshooter"),
+        can_get_arrow()
+    )
+                )
+
+    advancement("Monsters Hunted", all_of(
+        has_all_entities(*[n for n in MOBS_HOSTILE.keys() if n != "Warden"]),
+        entity("Ender Dragon"),
+        entity("Wither"),
+    ),
+                )
+
+    advancement("Postmortal", can_get_totem())
+
+    advancement("Mob Kabob", all_of(
+        knowledge("Spear Handling"),
+        has_any_entities(*[name for name in MOBS_ALL.keys() if name not in MOBS_BOSS]),
+    )
+                )
+
+    advancement("Hired Help", all_of(
+        entity("Iron Golem"),
+        knowledge("Shear Handling"),
+        any_of(
+            reached(f"{ADVANCEMENT_PREFIX}Acquire Hardware"),
+            reached(f"{ADVANCEMENT_PREFIX}Revaulting"),
+            reached(f"{ADVANCEMENT_PREFIX}Those Were the Days"),
+            reached(f"{ADVANCEMENT_PREFIX}Minecraft: Trial(s) Edition")
+        )
+    )
+                )
+
+    advancement("Star Trader", can_trade())
 
     advancement("Two Birds One Arrow", all_of(
-        knowledge("Sharpshooter"),
+        reached(f"{ADVANCEMENT_PREFIX}Ol' Betsy"),
+        knowledge("Enchanting"),
         entity("Phantom"),
-    ))
+    )
+                )
 
     advancement("Who's the Pillager Now?", all_of(
-        knowledge("Sharpshooter"),
-        entity("Pillager"),
-    ))
+        reached(f"{ADVANCEMENT_PREFIX}Ol' Betsy"),
+        entity("Pillager")
+    )
+                )
 
     advancement("Arbalistic", all_of(
+        reached(f"{ADVANCEMENT_PREFIX}Ol' Betsy"),
         knowledge("Enchanting"),
-        reached("Advancement: Ol' Betsy"),
-        any_of(
-            *[entity(name) for name in MOBS_ALL.keys()],
-        ),
-    ))
+        has_all_entities(*[name for name in MOBS_ALL.keys() if name not in MOBS_BOSS]),
+    ),
+                )
 
-    advancement("Careful Restoration", knowledge("Brush Handling"))
+    advancement("Careful Restoration", reached(f"{ADVANCEMENT_PREFIX}Respecting the Remnants"))
 
     advancement("Adventuring Time", all_of())
 
     advancement("Sound of Music", all_of(
-        material(ProgressiveMaterialTier.DIAMOND),
+        reached(f"{ADVANCEMENT_PREFIX}Diamonds!"),
+        can_get_disc(),
+    )
+                )
+
+    advancement("Light as a Rabbit", all_of(
+        knowledge("Armor Handling"),
         any_of(
-            knowledge("Brush Handling"),  # disque via Trail Ruins
-            all_of(
-                entity("Skeleton"),
-                entity("Creeper"),  # Skeleton tue Creeper → Music Disc
-            ),
-        ),
-    ))
+            # Leather sources → craft boots
+            has_any_entities("Cow", "Donkey", "Horse", "Llama", "Mooshroom", "Mule", "Trader Llama", "Hoglin"),
+            entity("Rabbit"),  # 4 Rabbit Hide → Leather
+            knowledge("Fishing"),  # fishing junk
+            can_barter(),  # Piglin bartering
+            can_trade(False, 2),  # leatherworker trade
+            reached(f"{ADVANCEMENT_PREFIX}Hero of the Village"),  # leatherworker gift
+            structure("Ancient City"),  # Leather in chest
+            reached(f"{ADVANCEMENT_PREFIX}Those Were the Days"),  # Leather in Bastion
+            structure("Desert Pyramid"),  # Leather in chest
+            structure("Jungle Pyramid"),  # Leather in chest
+            structure("Dungeon"),  # Leather in chest
+            reached(f"{ADVANCEMENT_PREFIX}Eye Spy"),  # Leather in Stronghold
+            any_village(),  # Leather in tannery
+            # Leather Boots directly
+            structure("Shipwreck"),  # Leather Boots in supply chest
+        )
+    )
+                )
 
-    advancement("Light as a Rabbit", all_of())
-
-    advancement("Is It a Plane?", entity("Ender Dragon"))
+    advancement("Is It a Plane?", all_of(
+        can_get_spyglass(),
+        entity("Ender Dragon"),
+    )
+                )
 
     advancement("Very Very Frightening", all_of(
-        knowledge("Trident Handling"),
-        knowledge("Enchanting"),  # enchantement Channeling requis
-        entity("Villager"),
-    ))
+        can_get_trident(),
+        can_trade(False, 0),
+        knowledge("Enchanting"),
+    )
+                )
 
     advancement("Sniper Duel", all_of(
-        entity("Skeleton"),
         knowledge("Sharpshooter"),
-    ))
+        can_get_arrow(),
+        entity("Skeleton"),
+    )
+                )
 
-    advancement("Bullseye", knowledge("Sharpshooter"))
+    advancement("Bullseye", all_of(
+        can_get_redstone(),  # Target Block needs Redstone
+        any_of(
+            all_of(knowledge("Sharpshooter"), can_get_arrow()),  # bow/crossbow + arrow
+            can_get_snowball(),
+            can_get_egg(),
+            entity("Breeze"),  # Wind Charge
+        ),
+    )
+                )
 
-    advancement("Isn't It Scute?", all_of(
-        entity("Armadillo"),
-        knowledge("Brush Handling"),
-    ))
+    advancement("Isn't It Scute?", all_of(entity("Armadillo"), has_brush()))
 
-    advancement("Minecraft: Trial(s) Edition", all_of())
+    advancement("Minecraft: Trial(s) Edition", structure("Trial Chambers"))
 
-    advancement("Crafters Crafting Crafters", all_of())
+    advancement("Crafters Crafting Crafters", all_of(
+        reached(f"{ADVANCEMENT_PREFIX}Acquire Hardware"),
+        can_get_redstone(),
+    )
+                )
 
     advancement("Lighten Up", all_of(
         knowledge("Axe Handling"),
-        material(ProgressiveMaterialTier.COPPER),
-    ))
+        any_of(
+            all_of(
+                can_get_copper(),  # craft Copper Bulb
+                can_get_redstone(),  # Redstone
+                reached(f"{ADVANCEMENT_PREFIX}Into Fire"),  # Blaze Rod
+            ),
+            reached(f"{ADVANCEMENT_PREFIX}Minecraft: Trial(s) Edition"),  # found in Trial Chambers
+        ),
+    )
+                )
 
-    advancement("Who Needs Rockets?", entity("Breeze"))
+    advancement("Who Needs Rockets?", any_of(
+        entity("Breeze"),  # Breeze Rod → craft Wind Charge
+        reached(f"{ADVANCEMENT_PREFIX}Under Lock and Key"),  # Wind Charge in Common Vault
+        reached(f"{ADVANCEMENT_PREFIX}Revaulting"),  # Wind Charge in Ominous Common Vault
+    )
+                )
 
-    advancement("Under Lock and Key", entity("Breeze"))
+    advancement("Under Lock and Key", all_of(
+        reached(f"{ADVANCEMENT_PREFIX}Minecraft: Trial(s) Edition"),
+        has_any_entities(
+            "Breeze",  # always present
+            "Zombie", "Husk", "Slime", "Baby Zombie", "Silverfish",  # melee pool
+            "Skeleton", "Stray", "Bogged",  # ranged pool
+            "Spider", "Cave Spider",  # small melee pool
+        ),
+    )
+                )
 
     advancement("Revaulting", all_of(
-        entity("Breeze"),
-        entity("Pillager"),
-    ))
+        reached(f"{ADVANCEMENT_PREFIX}Minecraft: Trial(s) Edition"),
+        reached(f"{ADVANCEMENT_PREFIX}Voluntary Exile"),  # Ominous Bottle via Pillager Captain
+        has_any_entities(
+            "Breeze",  # always present
+            "Zombie", "Husk", "Slime", "Baby Zombie", "Silverfish",  # melee pool
+            "Skeleton", "Stray", "Bogged",  # ranged pool
+            "Spider", "Cave Spider",  # small melee pool
+        ),
+    )
+                )
 
-    advancement("Blowback", all_of(
-        knowledge("Shield Handling"),
-        entity("Breeze"),
-    ))
+    advancement("Blowback", entity("Breeze"))
 
-    advancement("Over-Overkill", knowledge("Mace Handling"))
+    advancement("Over-Overkill", all_of(
+        knowledge("Mace Handling"),
+        knowledge("Enchanting"),
+        entity("Breeze"),
+        reached(f"{ADVANCEMENT_PREFIX}Revaulting"),
+        has_any_entities(*[name for name in MOBS_ALL.keys()])
+    )
+                )
 
     # -----------------------------------------------------------------------
     # Husbandry
     # -----------------------------------------------------------------------
 
     advancement("Stay Hydrated!", any_of(
-        reached("Advancement: We Need to Go Deeper"),
-        entity("Piglin"),  # possible source de Dried Ghast via trade
-    ))
+        can_barter(),
+        entity("Ghast")
+    )
+                )
 
     advancement("Bee Our Guest", entity("Bee"))
 
     advancement("The Parrots and the Bats", any_of(
         entity("Trader Llama"),
-        *[entity(name) for name in MOBS_BREEDABLE.keys()],
-    ))
+        has_any_entities(*MOBS_BREEDABLE.keys()),
+    ),
+                )
 
     advancement("You've Got a Friend in Me", entity("Allay"))
 
     advancement("Whatever Floats Your Goat!", entity("Goat"))
 
-    advancement("Best Friends Forever", any_of(
-        *[entity(name) for name in MOBS_TAMEABLE.keys()],
-    ))
-
     advancement("Glow and Behold!", entity("Glow Squid"))
+
+    advancement("Best Friends Forever", has_any_entities(*MOBS_TAMEABLE.keys()))
 
     advancement("Fishy Business", knowledge("Fishing"))
 
     advancement("Total Beelocation", all_of(
         entity("Bee"),
         knowledge("Enchanting"),
-    ))
+        any_of(
+            knowledge("Shovel Handling"),
+            knowledge("Pickaxe Handling"),
+            knowledge("Axe Handling"),
+            knowledge("Hoe Handling"),
+        )
+    )
+                )
 
     advancement("Bukkit Bukkit", all_of(
         entity("Tadpole"),
-        entity("Frog"),  # les Tadpoles viennent des Frogs
-        material(ProgressiveMaterialTier.IRON),  # water bucket = iron bucket
-    ))
+        entity("Frog"),
+        can_craft_bucket(),
+    ),
+                )
 
-    advancement("Uh Oh", all_of())
+    advancement("Smells Interesting", all_of(
+        has_brush(),
+        structure("Ocean Ruin (Warm)")
+    )
+                )
 
-    advancement("Smells Interesting", knowledge("Brush Handling"))
+    advancement("A Seedy Place", any_of(
+        knowledge("Hoe Handling"),
+        any_village(),
+    )
+                )
 
-    advancement("A Seedy Place", knowledge("Hoe Handling"))
+    advancement("Wax On", all_of(
+        knowledge("Shear Handling"),
+        entity("Bee"),
+        can_get_copper(),
+    )
+                )
 
-    advancement("Wax On", entity("Bee"))
+    advancement("Two by Two", has_all_entities(*MOBS_BREEDABLE.keys()))
 
-    advancement("Two by Two", all_of(
-        *[entity(name) for name in MOBS_BREEDABLE.keys()],
-    ))
+    advancement("Birthday Song", all_of(
+        entity("Allay"),
+        can_get_cake(),
+    )
+                )
 
-    advancement("Birthday Song", entity("Allay"))
-
-    advancement("A Complete Catalogue", all_of(
-        entity("Cat"),
-    ))
+    advancement("A Complete Catalogue", entity("Cat"))
 
     advancement("Tactical Fishing", all_of(
-        material(ProgressiveMaterialTier.IRON),
-        any_of(
-            entity("Cod"),
-            entity("Salmon"),
-            entity("Pufferfish"),
-            entity("Tropical Fish"),
-        ),
-    ))
+        can_craft_bucket(),
+        has_any_entities("Cod", "Salmon", "Pufferfish", "Tropical Fish"),
+    ),
+                )
 
     advancement("When the Squad Hops into Town", entity("Frog"))
 
-    advancement("Little Sniffs", entity("Sniffer"))
+    advancement("Little Sniffs", reached(f"{ADVANCEMENT_PREFIX}Smells Interesting"))
 
     advancement("A Balanced Diet", all_of(
-        # Viandes — mobs à tuer
-        entity("Cow"),
-        entity("Chicken"),
-        entity("Sheep"),
-        entity("Pig"),
-        entity("Rabbit"),
-        # Poissons — pêche ou mobs
-        entity("Salmon"),
-        entity("Cod"),
-        entity("Pufferfish"),
-        knowledge("Fishing"),
-        # Soup / Beverages
-        entity("Mooshroom"),  # Mushroom Stew
-        entity("Bee"),        # Honey Bottle
-        # Golden Apple/Carrot — nécessite de l'or
-        material(ProgressiveMaterialTier.GOLD),
-        # Chorus Fruit — uniquement dans le End
-        reached("Advancement: The End?"),
-    ))
+        # Always accessible foods (no condition needed):
+        # Bread, Apple, Carrot, Potato, Baked Potato, Beetroot, Beetroot Soup,
+        # Melon Slice, Pumpkin Pie, Cookie, Dried Kelp, Sweet Berries,
+        # Glow Berries, Suspicious Stew, Poisonous Potato
+
+        # Meats
+        entity("Cow"),  # Beef
+        entity("Chicken"),  # Chicken
+        entity("Sheep"),  # Mutton
+        entity("Pig"),  # Porkchop
+        entity("Rabbit"),  # Rabbit
+
+        # Fish
+        any_of(
+            knowledge("Fishing"),
+            has_any_entities("Cod", "Salmon", "Pufferfish", "Tropical Fish"),
+        ),
+
+        # Mushroom Stew
+        entity("Mooshroom"),
+
+        # Honey Bottle
+        entity("Bee"),
+
+        # Golden Apple / Golden Carrot
+        can_get_gold(),
+
+        # Enchanted golden apple
+        can_get_notch_apple(),
+
+        # Spider Eye
+        has_any_entities("Spider", "Cave Spider", "Witch"),
+
+        # Rotten Flesh
+        has_any_entities("Zombie", "Husk", "Drowned", "Zombie Villager"),
+
+        # Chorus Fruit
+        reached(f"{ADVANCEMENT_PREFIX}Free the End"),
+
+        # Cake
+        can_get_cake(),
+    )
+                )
 
     advancement("Serious Dedication", all_of(
         knowledge("Hoe Handling"),
-        material(ProgressiveMaterialTier.NETHERITE),
-    ))
+        reached(f"{ADVANCEMENT_PREFIX}Hidden in the Depths"),
+        reached(f"{ADVANCEMENT_PREFIX}Those Were the Days")
+    )
+                )
 
     advancement("Wax Off", all_of(
-        reached("Advancement: Wax On"),
+        reached(f"{ADVANCEMENT_PREFIX}Wax On"),
         knowledge("Axe Handling"),
-    ))
+    ),
+                )
 
     advancement("The Cutest Predator", all_of(
         entity("Axolotl"),
-        material(ProgressiveMaterialTier.IRON),
-    ))
+        can_craft_bucket(),
+    ),
+                )
 
     advancement("With Our Powers Combined!", all_of(
         entity("Frog"),
         entity("Magma Cube"),
-    ))
+    ),
+                )
 
-    advancement("Planting the Past", entity("Sniffer"))
+    advancement("Planting the Past", reached(f"{ADVANCEMENT_PREFIX}Smells Interesting"))
 
     advancement("The Healing Power of Friendship!", all_of(
         entity("Axolotl"),
-        any_of(
-            entity("Drowned"),
-            entity("Guardian"),
-            entity("Elder Guardian"),
-        ),
-    ))
+        has_any_entities("Drowned", "Guardian", "Elder Guardian"),
+    ),
+                )
 
     advancement("Good as New", all_of(
         entity("Wolf"),
         entity("Armadillo"),
-        knowledge("Brush Handling"),  # pour obtenir les Scutes de l'Armadillo
-    ))
+        has_brush(),
+    ),
+                )
 
     advancement("The Whole Pack", entity("Wolf"))
 
-    advancement("Shear Brilliance", all_of(
-        entity("Wolf"),
-        knowledge("Shear Handling"),
-    ))
+    advancement("Shear Brilliance", all_of(entity("Wolf"), knowledge("Shear Handling")))

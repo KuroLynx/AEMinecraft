@@ -17,13 +17,11 @@ ENTITY_UNLOCK_PREFIX = "Entity Unlock: "
 STRUCT_UNLOCK_PREFIX = "Structure Unlock: "
 ENTITY_KILL_PREFIX   = "Mob Kill: "
 BOSS_KILL_PREFIX     = "Boss Kill: "
-STRUCTURE_PREFIX     = "Structure Check: "
 
 class MCLocationCategory:
     ADVANCEMENT = "advancement"
     MOB_KILL    = "mob_kill"
     BOSS_KILL   = "boss_kill"
-    STRUCTURE   = "structure"
 
 class MCEntityCategory:
     PASSIVE = "passive"
@@ -41,8 +39,9 @@ class MCItemData:
 class MCLocationData:
     id: int
     category: str
-    region: str
-    game_id: str
+    region: str = "Overworld"
+    game_id: str = ""
+    challenge: bool = False
 
 @dataclass
 class MCMobData:
@@ -143,6 +142,7 @@ def _load_advancements() -> dict[str, MCLocationData]:
                 category = MCLocationCategory.ADVANCEMENT,
                 region = row["region"],
                 game_id = full_game_id,
+                challenge = (row.get("challenge", "false") == "true"),
             )
     return locations
 
@@ -170,25 +170,12 @@ def _load_boss_kill_locations() -> dict[str, MCLocationData]:
         )
     return locations
 
-def _load_structure_locations() -> dict[str, MCLocationData]:
-    locations = {}
-    for name, struct in STRUCTURES.items():
-        locations[f"{STRUCTURE_PREFIX}{name}"] = MCLocationData(
-            id = BASE_ID_LOC_STRUCTURE + struct.id,
-            category = MCLocationCategory.STRUCTURE,
-            region = struct.region,
-            game_id = f"minecraft:structure_{struct.game_id}",
-        )
-    return locations
-
 LOCATIONS_ADVANCEMENT: dict[str, MCLocationData] = _load_advancements()
 LOCATIONS_MOB_KILL: dict[str, MCLocationData] = _load_mob_kill_locations()
 LOCATIONS_BOSS_KILL: dict[str, MCLocationData] = _load_boss_kill_locations()
-LOCATIONS_STRUCTURE: dict[str, MCLocationData] = _load_structure_locations()
 
 ALL_LOCATIONS: dict[str, MCLocationData] = {
     **LOCATIONS_ADVANCEMENT,
     **LOCATIONS_MOB_KILL,
     **LOCATIONS_BOSS_KILL,
-    **LOCATIONS_STRUCTURE,
 }

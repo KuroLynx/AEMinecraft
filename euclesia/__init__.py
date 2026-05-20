@@ -93,11 +93,16 @@ class MCWorld(World):
         """Retourne les locations actives selon les options du joueur."""
         locations: dict[str, MCLocationData] = {
             **LOCATIONS_ADVANCEMENT,
-            **LOCATIONS_BOSS_KILLS,
+            **LOCATIONS_BOSS_KILL
         }
 
         if self.options.kill_sanity:
-            locations.update(LOCATIONS_MOB_KILLS)
+            locations.update(LOCATIONS_MOB_KILL)
+
+        if not self.options.challenge_sanity:
+            locations = {
+                name: loc_data for name, loc_data in locations.items() if not loc_data.challenge
+            }
 
         return locations
 
@@ -118,7 +123,8 @@ class MCWorld(World):
             added_regions[MCRegion.NETHER],
             rule = lambda state: (
                     state.has("Dimension Unlock: Nether", self.player) and
-                    state.can_reach(f"{ADVANCEMENT_PREFIX}Ice Bucket Challenge", "Location", self.player)
+                    state.can_reach(f"{ADVANCEMENT_PREFIX}Ice Bucket Challenge", "Location", self.player) and
+                    state.has("Knowledge: Pyromaniac")
             ),
         )
 
@@ -126,7 +132,7 @@ class MCWorld(World):
             added_regions[MCRegion.THE_END],
             rule = lambda state: (
                     state.has("Dimension Unlock: The End", self.player) and
-                    state.can_reach(f"{ADVANCEMENT_PREFIX}Into Fire", "Location", self.player)
+                    state.can_reach(f"{ADVANCEMENT_PREFIX}Eye Spy", "Location", self.player)
             ),
         )
 
