@@ -5,6 +5,7 @@ from .data import *
 from .options import BossSelectionMode, MCOptions
 from .regions import MCRegion
 from .rules import set_rules
+from .rules.constant import *
 
 
 # ---------------------------------------------------------------------------
@@ -122,17 +123,17 @@ class MCWorld(World):
         added_regions[MCRegion.OVERWORLD].connect(
             added_regions[MCRegion.NETHER],
             rule = lambda state: (
-                    state.has("Dimension Unlock: Nether", self.player) and
-                    state.can_reach(f"{ADVANCEMENT_PREFIX}Ice Bucket Challenge", "Location", self.player) and
-                    state.has("Knowledge: Pyromaniac")
+                    state.has(ITEM_DIMENSION_NETHER, self.player) and
+                    state.can_reach(f"{ADVANCEMENT_PREFIX}{A_ICE_BUCKET_CHALLENGE}", "Location", self.player) and
+                    state.has(f"Knowledge: {K_PYRO}")
             ),
         )
 
         added_regions[MCRegion.OVERWORLD].connect(
             added_regions[MCRegion.THE_END],
             rule = lambda state: (
-                    state.has("Dimension Unlock: The End", self.player) and
-                    state.can_reach(f"{ADVANCEMENT_PREFIX}Eye Spy", "Location", self.player)
+                    state.has(ITEM_DIMENSION_END, self.player) and
+                    state.can_reach(f"{ADVANCEMENT_PREFIX}{A_EYE_SPY}", "Location", self.player)
             ),
         )
 
@@ -144,7 +145,7 @@ class MCWorld(World):
         pool: list[MCItem] = []
 
         for name, item_data in ITEMS.items():
-            if not self.options.villager_trust and name == "Progressive Villager Trust":
+            if not self.options.villager_trust and name == ITEM_VILLAGER_TRUST:
                 continue
 
             for _ in range(item_data.count):
