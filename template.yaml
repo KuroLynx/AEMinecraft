@@ -83,12 +83,12 @@ Minecraft:
   advancements_required:
     # Number of advancements you must complete as an additional victory condition.
     # Set to 0 to disable this condition entirely.
-    # Minimum: 0, Maximum: 160
+    # Minimum: 0, Maximum: 126
     #
     # Note: this is cumulative with the boss kill condition and the death list.
-    160: 50
+    126: 50
     random: 0
-    random-range-0-125: 0
+    random-range-0-126: 0
 
   # -------------------------------------------------------------------------
   # Kill Sanity
@@ -162,14 +162,30 @@ Minecraft:
     'true': 50
 
   # -------------------------------------------------------------------------
+  # Challenge Sanity
+  # -------------------------------------------------------------------------
+  challenge_sanity:
+  #If enabled, includes extremely complex advancements in the location pool.
+
+  # This includes:
+  #- A Furious Cocktail (have all potion effects simultaneously)
+  #- How Did We Get Here? (have all status effects simultaneously)
+  #- Arbalistic (Kill 5 unique mobs with one arrow)
+  #- A Balanced Diet (Eat every food items)
+
+  #These advancements are very difficult to complete and are excluded by default.
+  'false': 50
+  'true': 50
+
+  # -------------------------------------------------------------------------
   # Standard item/location options
   # -------------------------------------------------------------------------
 
-  local_items: []
-  non_local_items: []
-  start_inventory: {}
-  start_hints: []
-  start_location_hints: []
-  exclude_locations: []
-  priority_locations: []
-  item_links: []
+  local_items: [ ]
+  non_local_items: [ ]
+  start_inventory: { }
+  start_hints: [ ]
+  start_location_hints: [ ]
+  exclude_locations: [ ]
+  priority_locations: [ ]
+  item_links: [ ]

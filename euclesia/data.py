@@ -1,5 +1,6 @@
 import csv
 from dataclasses import dataclass
+from importlib.resources import files
 from pathlib import Path
 from BaseClasses import ItemClassification
 from .rules.constants import *
@@ -55,11 +56,12 @@ class MCStructureData:
     region: str
     game_id: str
 
-DATA_FOLDER = Path(__file__).parent
+DATA_FOLDER = files(__package__).joinpath("data")
 
 def _load_items() -> dict[str, MCItemData]:
     items = {}
-    with open(DATA_FOLDER / "items.csv", mode="r", encoding="utf-8-sig") as f:
+    csv_path = DATA_FOLDER.joinpath("items.csv")
+    with csv_path.open(mode="r", encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
         for index, row in enumerate(reader):
             class_map = {
@@ -77,7 +79,8 @@ def _load_items() -> dict[str, MCItemData]:
 
 def _load_mobs() -> dict[str, MCMobData]:
     mobs = {}
-    with open(DATA_FOLDER / "mobs.csv", mode="r", encoding="utf-8-sig") as f:
+    csv_path = DATA_FOLDER.joinpath("mobs.csv")
+    with csv_path.open(mode="r", encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
         for index, row in enumerate(reader):
             class_map = {
@@ -98,7 +101,8 @@ def _load_mobs() -> dict[str, MCMobData]:
 
 def _load_structures() -> dict[str, MCStructureData]:
     structs = {}
-    with open(DATA_FOLDER / "structures.csv", mode="r", encoding="utf-8-sig") as f:
+    csv_path = DATA_FOLDER.joinpath("structures.csv")
+    with csv_path.open(mode="r", encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
         for index, row in enumerate(reader):
             class_map = {
@@ -128,7 +132,8 @@ MOBS_TAMEABLE  = {k: v for k, v in MOBS_ALL.items() if v.tameable}
 
 def _load_advancements() -> dict[str, MCLocationData]:
     locations = {}
-    with open(DATA_FOLDER / "advancements.csv", mode="r", encoding="utf-8-sig") as f:
+    csv_path = DATA_FOLDER.joinpath("advancements.csv")
+    with csv_path.open(mode="r", encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
         for index, row in enumerate(reader):
             full_game_id = f"minecraft:{row['tab']}/{row['game_id']}" if row["game_id"] != "root" else f"minecraft:{row['tab']}/root"
