@@ -2,6 +2,7 @@ import csv
 from dataclasses import dataclass
 from pathlib import Path
 from BaseClasses import ItemClassification
+from .rules.constants import *
 
 # Base IDs
 BASE_ID_ITEMS           = 0xEC0000
@@ -11,12 +12,6 @@ BASE_ID_LOC_ADVANCEMENT = 0xEC1000
 BASE_ID_LOC_BOSS_KILL   = 0xEC1100
 BASE_ID_LOC_MOB_KILL    = 0xEC1200
 BASE_ID_LOC_STRUCTURE   = 0xEC1300
-
-ADVANCEMENT_PREFIX  = "Advancement: "
-ENTITY_UNLOCK_PREFIX = "Entity Unlock: "
-STRUCT_UNLOCK_PREFIX = "Structure Unlock: "
-ENTITY_KILL_PREFIX   = "Mob Kill: "
-BOSS_KILL_PREFIX     = "Boss Kill: "
 
 class MCLocationCategory:
     ADVANCEMENT = "advancement"

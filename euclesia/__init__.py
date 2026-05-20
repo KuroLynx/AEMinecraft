@@ -4,8 +4,8 @@ from worlds.AutoWorld import WebWorld, World
 from .data import *
 from .options import BossSelectionMode, MCOptions
 from .regions import MCRegion
-from .rules import set_rules
-from .rules.constant import *
+from .rules.root import set_rules
+from .rules.constants import *
 
 
 # ---------------------------------------------------------------------------

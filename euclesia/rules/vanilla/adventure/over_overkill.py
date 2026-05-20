@@ -1,0 +1,15 @@
+from euclesia import MOBS_ALL
+from euclesia.rules.constants import *
+from euclesia.rules.helpers import RuleHelper
+
+
+def over_overkill(helper: RuleHelper) -> dict:
+    return {
+        A_OVER_OVERKILL: helper.all_of(
+            helper.knowledge("Mace Handling"),
+            helper.knowledge(K_ENCHANT),
+            helper.entity("Breeze"),
+            helper.reached(f"{ADVANCEMENT_PREFIX}{A_REVAULTING}"),
+            helper.has_any_entities(*[name for name in MOBS_ALL.keys()])
+        )
+    }

@@ -1,0 +1,64 @@
+from euclesia.rules.helpers import RuleHelper
+from euclesia.rules.vanilla.husbandry.a_balanced_diet import a_balanced_diet
+from euclesia.rules.vanilla.husbandry.a_complete_catalogue import a_complete_catalogue
+from euclesia.rules.vanilla.husbandry.a_seedy_place import a_seedy_place
+from euclesia.rules.vanilla.husbandry.bee_our_guest import bee_our_guest
+from euclesia.rules.vanilla.husbandry.best_friends_forever import best_friends_forever
+from euclesia.rules.vanilla.husbandry.birthday_song import birthday_song
+from euclesia.rules.vanilla.husbandry.bukkit_bukkit import bukkit_bukkit
+from euclesia.rules.vanilla.husbandry.fishy_business import fishy_business
+from euclesia.rules.vanilla.husbandry.glow_and_behold import glow_and_behold
+from euclesia.rules.vanilla.husbandry.good_as_new import good_as_new
+from euclesia.rules.vanilla.husbandry.little_sniffs import little_sniffs
+from euclesia.rules.vanilla.husbandry.planting_the_past import planting_the_past
+from euclesia.rules.vanilla.husbandry.serious_dedication import serious_dedication
+from euclesia.rules.vanilla.husbandry.shear_brilliance import shear_brilliance
+from euclesia.rules.vanilla.husbandry.smells_interesting import smells_interesting
+from euclesia.rules.vanilla.husbandry.stay_hydrated import stay_hydrated
+from euclesia.rules.vanilla.husbandry.tactical_fishing import tactical_fishing
+from euclesia.rules.vanilla.husbandry.the_cutest_predator import the_cutest_predator
+from euclesia.rules.vanilla.husbandry.the_healing_power_of_friendship import the_healing_power_of_friendship
+from euclesia.rules.vanilla.husbandry.the_parrots_and_the_bats import the_parrots_and_the_bats
+from euclesia.rules.vanilla.husbandry.the_whole_pack import the_whole_pack
+from euclesia.rules.vanilla.husbandry.total_beelocation import total_beelocation
+from euclesia.rules.vanilla.husbandry.two_by_two import two_by_two
+from euclesia.rules.vanilla.husbandry.wax_off import wax_off
+from euclesia.rules.vanilla.husbandry.wax_on import wax_on
+from euclesia.rules.vanilla.husbandry.whatever_floats_your_goat import whatever_floats_your_goat
+from euclesia.rules.vanilla.husbandry.when_the_squad_hops_into_town import when_the_squad_hops_into_town
+from euclesia.rules.vanilla.husbandry.with_our_powers_combined import with_our_powers_combined
+from euclesia.rules.vanilla.husbandry.you_ve_got_a_friend_in_me import you_ve_got_a_friend_in_me
+
+
+def get_husbandry_rules(helper: RuleHelper) -> dict:
+    return (
+            a_balanced_diet(helper) |
+            a_complete_catalogue(helper) |
+            a_seedy_place(helper) |
+            bee_our_guest(helper) |
+            best_friends_forever(helper) |
+            birthday_song(helper) |
+            bukkit_bukkit(helper) |
+            fishy_business(helper) |
+            glow_and_behold(helper) |
+            good_as_new(helper) |
+            little_sniffs(helper) |
+            planting_the_past(helper) |
+            serious_dedication(helper) |
+            shear_brilliance(helper) |
+            smells_interesting(helper) |
+            stay_hydrated(helper) |
+            tactical_fishing(helper) |
+            the_cutest_predator(helper) |
+            the_healing_power_of_friendship(helper) |
+            the_parrots_and_the_bats(helper) |
+            the_whole_pack(helper) |
+            total_beelocation(helper) |
+            two_by_two(helper) |
+            wax_off(helper) |
+            wax_on(helper) |
+            whatever_floats_your_goat(helper) |
+            when_the_squad_hops_into_town(helper) |
+            with_our_powers_combined(helper) |
+            you_ve_got_a_friend_in_me(helper)
+    )
