@@ -86,3 +86,4 @@ Wither Skeleton,hostile,Nether,progression,False,False
 Zoglin,hostile,Nether,useful,False,False
 Zombie,hostile,Overworld,useful,False,False
 Zombie Villager,hostile,Overworld,useful,False,False
+Baby Zombie,hostile,Overworld,useful,False,False

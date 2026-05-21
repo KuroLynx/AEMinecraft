@@ -125,7 +125,7 @@ class MCWorld(World):
             rule = lambda state: (
                     state.has(ITEM_DIMENSION_NETHER, self.player) and
                     state.can_reach(f"{ADVANCEMENT_PREFIX}{A_ICE_BUCKET_CHALLENGE}", "Location", self.player) and
-                    state.has(f"Knowledge: {K_PYRO}")
+                    state.has(f"Knowledge: {K_PYRO}", self.player)
             ),
         )
 

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from Options import Choice, OptionSet, PerGameCommonOptions, Range, Toggle
+from Options import OptionSet, PerGameCommonOptions, Range, Toggle
 
 
 class BossSelectionMode(Range):
@@ -150,7 +150,8 @@ class TrapChance(Range):
     range_end = 100
     default = 30
 
-class ChallengeSanity(Choice):
+
+class ChallengeSanity(Toggle):
     """If enabled, includes extremely complex advancements in the location pool.
 
     This includes:
@@ -166,16 +167,17 @@ class ChallengeSanity(Choice):
     option_false = 0
     default = 0
 
+
 @dataclass
 class MCOptions(PerGameCommonOptions):
-    boss_selection_mode:  BossSelectionMode
-    boss_list:            BossList
-    death_list:           DeathList
-    death_list_count:     DeathListCount
+    boss_selection_mode: BossSelectionMode
+    boss_list: BossList
+    death_list: DeathList
+    death_list_count: DeathListCount
     advancements_required: AdvancementsRequired
-    death_link:           DeathLink
-    villager_trust:       VillagerTrust
-    kill_sanity:          KillSanity
+    death_link: DeathLink
+    villager_trust: VillagerTrust
+    kill_sanity: KillSanity
     mob_spawn_lock_category: MobSpawnLockCategory
     trap_chance: TrapChance
     challenge_sanity: ChallengeSanity

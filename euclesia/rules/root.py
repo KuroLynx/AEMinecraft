@@ -1,3 +1,4 @@
+from .constants import ADVANCEMENT_PREFIX
 from .helpers import RuleHelper
 from .vanilla.adventure.root import get_adventure_rules
 from .vanilla.end.root import get_end_rules
@@ -10,7 +11,7 @@ def set_rules(world) -> None:
 
     helper = RuleHelper(world)
 
-    all_rules = {
+    all_advancement_rules = {
         **get_story_rules(helper),
         **get_nether_rules(helper),
         **get_end_rules(helper),
@@ -18,5 +19,5 @@ def set_rules(world) -> None:
         **get_husbandry_rules(helper),
     }
 
-    for advancement_name, condition in all_rules.items():
-        world.set_rule(world.multiworld.get_location(advancement_name, world.player), condition)
+    for advancement_name, condition in all_advancement_rules.items():
+        world.set_rule(world.multiworld.get_location(f"{ADVANCEMENT_PREFIX}{advancement_name}", world.player), condition)

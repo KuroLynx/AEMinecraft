@@ -2,7 +2,7 @@ from worlds.euclesia import *
 
 
 class RuleHelper:
-    def __init__(self, world: MCWorld):
+    def __init__(self, world: World):
         self.world = world
         self.player = world.player
         # Correction : On utilise les méthodes d'instance de manière sécurisée
@@ -21,10 +21,10 @@ class RuleHelper:
         return lambda state: state.has(item, self.player, count)
 
     def has_all(self, *items: str):
-        return lambda state: state.has_all(*items, self.player)
+        return lambda state: state.has_all(items, self.player)
 
     def has_any(self, *items: str):
-        return lambda state: state.has_any(*items, self.player)
+        return lambda state: state.has_any(items, self.player)
 
     # Correction : Ajout de self pour respecter l'accès aux méthodes d'instance
     def any_of(self, *conditions):
