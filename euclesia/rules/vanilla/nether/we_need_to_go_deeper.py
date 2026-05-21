@@ -1,6 +1,5 @@
-from euclesia.rules.constants import *
-from euclesia.rules.helpers import RuleHelper
-
+from worlds.euclesia.rules.constants import *
+from worlds.euclesia.rules.helpers import RuleHelper
 
 def we_need_to_go_deeper(helper: RuleHelper) -> dict:
     return {

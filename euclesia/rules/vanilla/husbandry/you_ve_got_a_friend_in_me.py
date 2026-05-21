@@ -1,6 +1,5 @@
-from euclesia.rules.constants import *
-from euclesia.rules.helpers import RuleHelper
-
+from worlds.euclesia.rules.constants import *
+from worlds.euclesia.rules.helpers import RuleHelper
 
 def you_ve_got_a_friend_in_me(helper: RuleHelper) -> dict:
     return {

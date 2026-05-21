@@ -1,6 +1,6 @@
-from euclesia import MOBS_TAMEABLE
-from euclesia.rules.constants import *
-from euclesia.rules.helpers import RuleHelper
+from worlds.euclesia.data import MOBS_TAMEABLE
+from worlds.euclesia.rules.constants import *
+from worlds.euclesia.rules.helpers import RuleHelper
 
 
 def best_friends_forever(helper: RuleHelper) -> dict:

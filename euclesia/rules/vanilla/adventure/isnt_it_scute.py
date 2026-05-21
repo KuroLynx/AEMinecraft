@@ -1,6 +1,5 @@
-from euclesia.rules.constants import *
-from euclesia.rules.helpers import RuleHelper
-
+from worlds.euclesia.rules.constants import *
+from worlds.euclesia.rules.helpers import RuleHelper
 
 def isnt_it_scute(helper: RuleHelper) -> dict:
     return {

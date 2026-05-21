@@ -1,5 +1,5 @@
-from euclesia.rules.constants import *
-from euclesia.rules.helpers import RuleHelper
+from worlds.euclesia.rules.constants import *
+from worlds.euclesia.rules.helpers import RuleHelper
 
 
 def sneak_100(helper: RuleHelper) -> dict:

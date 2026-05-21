@@ -1,6 +1,5 @@
-from euclesia.rules.constants import *
-from euclesia.rules.helpers import RuleHelper
-
+from worlds.euclesia.rules.constants import *
+from worlds.euclesia.rules.helpers import RuleHelper
 
 def whatever_floats_your_goat(helper: RuleHelper) -> dict:
     return {

@@ -1,9 +1,9 @@
-from euclesia.rules.helpers import RuleHelper
-from euclesia.rules.vanilla.adventure.root import get_adventure_rules
-from euclesia.rules.vanilla.end.root import get_end_rules
-from euclesia.rules.vanilla.husbandry.root import get_husbandry_rules
-from euclesia.rules.vanilla.nether.root import get_nether_rules
-from euclesia.rules.vanilla.story.root import get_story_rules
+from .helpers import RuleHelper
+from .vanilla.adventure.root import get_adventure_rules
+from .vanilla.end.root import get_end_rules
+from .vanilla.husbandry.root import get_husbandry_rules
+from .vanilla.nether.root import get_nether_rules
+from .vanilla.story.root import get_story_rules
 
 
 def set_rules(world) -> None:

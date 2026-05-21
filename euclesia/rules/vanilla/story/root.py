@@ -1,19 +1,18 @@
-from euclesia.rules.helpers import RuleHelper
-from euclesia.rules.vanilla.story.acquire_hardware import acquire_hardware
-from euclesia.rules.vanilla.story.cover_me_with_diamonds import cover_me_with_diamonds
-from euclesia.rules.vanilla.story.diamonds import diamonds
-from euclesia.rules.vanilla.story.enchanter import enchanter
-from euclesia.rules.vanilla.story.enter_end_portal import enter_end_portal
-from euclesia.rules.vanilla.story.eye_spy import eye_spy
-from euclesia.rules.vanilla.story.getting_an_upgrade import getting_an_upgrade
-from euclesia.rules.vanilla.story.hot_stuff import hot_stuff
-from euclesia.rules.vanilla.story.ice_bucket_challenge import ice_bucket_challenge
-from euclesia.rules.vanilla.story.isnt_it_iron_pick import isnt_it_iron_pick
-from euclesia.rules.vanilla.story.not_today_thank_you import not_today_thank_you
-from euclesia.rules.vanilla.story.stone_age import stone_age
-from euclesia.rules.vanilla.story.suit_up import suit_up
-from euclesia.rules.vanilla.story.zombie_doctor import zombie_doctor
-
+from worlds.euclesia.rules.helpers import RuleHelper
+from .stone_age import stone_age
+from .getting_an_upgrade import getting_an_upgrade
+from .acquire_hardware import  acquire_hardware
+from .suit_up import suit_up
+from .hot_stuff import hot_stuff
+from .isnt_it_iron_pick import isnt_it_iron_pick
+from .not_today_thank_you import not_today_thank_you
+from .diamonds import diamonds
+from .ice_bucket_challenge import ice_bucket_challenge
+from .cover_me_with_diamonds import cover_me_with_diamonds
+from .enchanter import enchanter
+from .zombie_doctor import zombie_doctor
+from .eye_spy import eye_spy
+from .enter_end_portal import enter_end_portal
 
 def get_story_rules(helper: RuleHelper) -> dict:
     return (
