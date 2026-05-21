@@ -204,8 +204,8 @@ ITEM_MATERIAL_HANDLING = "Progressive Material Handling"
 ADVANCEMENT_PREFIX = "Advancement: "
 ENTITY_UNLOCK_PREFIX = "Entity Unlock: "
 STRUCT_UNLOCK_PREFIX = "Structure Unlock: "
-ENTITY_KILL_PREFIX = "Mob Kill: "
-BOSS_KILL_PREFIX = "Boss Kill: "
+ENTITY_KILL_PREFIX = "Kill Entity: "
+BOSS_KILL_PREFIX = "Kill Boss: "
 
 # -----------------------------------------------------------------------
 # Mobs — Passive
