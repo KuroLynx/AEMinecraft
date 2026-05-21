@@ -60,7 +60,7 @@ class DeathListCount(Range):
     """
     display_name = "Death List Count"
     range_start = 1
-    range_end = 87
+    range_end = 88
     default = 42
 
 
