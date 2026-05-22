@@ -1,5 +1,5 @@
-from worlds.euclesia.rules.constants import *
-from worlds.euclesia.rules.helpers import RuleHelper
+from ...constants import *
+from ...helpers import RuleHelper
 
 def subspace_bubble(helper: RuleHelper) -> dict:
     return {

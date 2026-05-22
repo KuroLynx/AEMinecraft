@@ -1,4 +1,4 @@
-from worlds.euclesia.rules.helpers import RuleHelper
+from ...helpers import RuleHelper
 from .a_throwaway_joke import a_throwaway_joke
 from .adventuring_time import adventuring_time
 from .arbalistic import arbalistic

@@ -1,6 +1,6 @@
-from worlds.euclesia.data import MOBS_ALL, MOBS_BOSS
-from worlds.euclesia.rules.constants import *
-from worlds.euclesia.rules.helpers import RuleHelper
+from ....data import MOBS_ALL, MOBS_BOSS
+from ...constants import *
+from ...helpers import RuleHelper
 
 
 def arbalistic(helper: RuleHelper) -> dict:

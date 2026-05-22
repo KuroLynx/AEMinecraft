@@ -1,5 +1,5 @@
-from worlds.euclesia.rules.constants import *
-from worlds.euclesia.rules.helpers import RuleHelper
+from ...constants import *
+from ...helpers import RuleHelper
 
 
 def two_birds_one_arrow(helper: RuleHelper) -> dict:

@@ -1,5 +1,5 @@
-from worlds.euclesia.rules.constants import *
-from worlds.euclesia.rules.helpers import RuleHelper
+from ...constants import *
+from ...helpers import RuleHelper
 
 
 def country_lode_take_me_home(helper: RuleHelper) -> dict:

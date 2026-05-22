@@ -1,5 +1,5 @@
-from worlds.euclesia.rules.constants import *
-from worlds.euclesia.rules.helpers import RuleHelper
+from ...constants import *
+from ...helpers import RuleHelper
 
 
 def the_healing_power_of_friendship(helper: RuleHelper) -> dict:

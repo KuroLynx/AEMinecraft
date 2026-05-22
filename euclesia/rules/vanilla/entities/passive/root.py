@@ -1,4 +1,4 @@
-from worlds.euclesia.rules.helpers import RuleHelper
+from ....helpers import RuleHelper
 from .allay import allay
 from .armadillo import armadillo
 from .axolotl import axolotl

@@ -1,5 +1,5 @@
-from worlds.euclesia.rules.constants import *
-from worlds.euclesia.rules.helpers import RuleHelper
+from ...constants import *
+from ...helpers import RuleHelper
 
 
 def cover_me_with_diamonds(helper: RuleHelper) -> dict:

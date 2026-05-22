@@ -1,3 +1,5 @@
+from worlds.generic.Rules import set_rule
+
 from ..data import MCEntityCategory, MOBS_ALL
 from .constants import *
 from .helpers import RuleHelper
@@ -9,7 +11,7 @@ from .vanilla.nether.root import get_nether_rules
 from .vanilla.story.root import get_story_rules
 
 
-def set_rules(world) -> None:
+def set_rules(world ) -> None:
 
     helper = RuleHelper(world)
 
@@ -22,7 +24,7 @@ def set_rules(world) -> None:
     }
 
     for advancement_name, condition in all_advancement_rules.items():
-        world.set_rule(world.multiworld.get_location(f"{ADVANCEMENT_PREFIX}{advancement_name}", world.player), condition)
+        set_rule(world.multiworld.get_location(f"{ADVANCEMENT_PREFIX}{advancement_name}", world.player),condition)
 
 
     all_mob_unlock_rules = get_entities_rules(helper)
@@ -38,4 +40,4 @@ def set_rules(world) -> None:
         if mob_data.category == MCEntityCategory.BOSS:
             prefix = f"{BOSS_KILL_PREFIX}"
 
-        world.set_rule(world.multiworld.get_location(f"{prefix}{mob_name}", world.player), condition)
+        set_rule(world.multiworld.get_location(f"{prefix}{mob_name}", world.player), condition)

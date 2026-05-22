@@ -100,6 +100,14 @@ class MCWorld(World):
         if self.options.kill_sanity:
             locations.update(LOCATIONS_MOB_KILL)
 
+        if self.options.death_list:
+            locations.update({
+                name: loc_data
+                for name, loc_data in LOCATIONS_MOB_KILL.items()
+                if any(name == f"{ENTITY_KILL_PREFIX}{mob}" for mob in self.death_list) and name not in locations
+            }
+            )
+
         if not self.options.challenge_sanity:
             locations = {
                 name: loc_data for name, loc_data in locations.items() if not loc_data.challenge
@@ -213,7 +221,8 @@ class MCWorld(World):
             required = required_advancement_count
 
             def advancement_condition(state) -> bool:
-                return sum(1 for location in advancements_locations if state.can_reach(location, "Location", self.player)) >= required
+                return sum(1 for location in advancements_locations if state.can_reach(location, "Location", self.player)
+                           ) >= required
 
             conditions.append(advancement_condition)
 

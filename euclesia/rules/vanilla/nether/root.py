@@ -1,4 +1,4 @@
-from worlds.euclesia.rules.helpers import RuleHelper
+from ...helpers import RuleHelper
 from .a_furious_cocktail import a_furious_cocktail
 from .a_terrible_fortress import a_terrible_fortress
 from .beaconator import beaconator

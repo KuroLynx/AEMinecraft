@@ -1,4 +1,4 @@
-from worlds.euclesia.rules.helpers import RuleHelper
+from ...helpers import RuleHelper
 from .passive.root import get_passive_rules
 from .neutral.root import get_neutral_rules
 from .hostile.root import get_hostile_rules

@@ -1,4 +1,4 @@
-from worlds.euclesia.rules.helpers import RuleHelper
+from ...helpers import RuleHelper
 from .stone_age import stone_age
 from .getting_an_upgrade import getting_an_upgrade
 from .acquire_hardware import  acquire_hardware

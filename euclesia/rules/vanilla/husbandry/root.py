@@ -1,4 +1,4 @@
-from worlds.euclesia.rules.helpers import RuleHelper
+from ...helpers import RuleHelper
 from .a_balanced_diet import a_balanced_diet
 from .a_complete_catalogue import a_complete_catalogue
 from .a_seedy_place import a_seedy_place

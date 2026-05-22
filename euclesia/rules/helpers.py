@@ -1,4 +1,4 @@
-from worlds.euclesia import *
+from .. import *
 
 
 class RuleHelper:

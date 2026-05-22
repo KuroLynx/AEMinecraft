@@ -1,4 +1,4 @@
-from worlds.euclesia.rules.helpers import RuleHelper
+from ....helpers import RuleHelper
 from .bee import bee
 from .cave_spider import cave_spider
 from .dolphin import dolphin

@@ -1,4 +1,4 @@
-from worlds.euclesia.rules.helpers import RuleHelper
+from ....helpers import RuleHelper
 from .baby_zombie import baby_zombie
 from .blaze import blaze
 from .bogged import bogged

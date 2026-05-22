@@ -1,4 +1,4 @@
-from worlds.euclesia.rules.helpers import RuleHelper
+from ...helpers import RuleHelper
 from .free_the_end import free_the_end
 from .great_view_from_up_here import great_view_from_up_here
 from .remote_getaway import remote_getaway
