@@ -12,6 +12,10 @@ import java.util.List;
 public interface ArchipelagoGateway {
     void checkLocations(Collection<Long> locations);
 
+    boolean checkLocation(String gameId);
+
+    boolean checkTrackedMob(String mobGameId);
+
     void scoutLocations(Collection<Long> locations, APHintMode hintMode);
 
     void markGoalReached();

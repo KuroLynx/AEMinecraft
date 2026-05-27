@@ -6,16 +6,20 @@ import com.google.gson.JsonObject;
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.protocol.APClientStatus;
 import fr.euclesia.mcarchipelago.protocol.APCommand;
+import fr.euclesia.mcarchipelago.protocol.APJson;
 import fr.euclesia.mcarchipelago.protocol.APPacket;
 import fr.euclesia.mcarchipelago.protocol.APPacketCodec;
 import fr.euclesia.mcarchipelago.protocol.APProtocolException;
 import fr.euclesia.mcarchipelago.protocol.APReceivedPacket;
+import fr.euclesia.mcarchipelago.protocol.packet.inbound.LocationInfoPacket;
+import fr.euclesia.mcarchipelago.protocol.packet.inbound.ReceivedItemsPacket;
 import fr.euclesia.mcarchipelago.protocol.packet.outbound.ConnectPacket;
 import fr.euclesia.mcarchipelago.protocol.packet.outbound.GetDataPackagePacket;
 import fr.euclesia.mcarchipelago.protocol.packet.outbound.StatusUpdatePacket;
 import fr.euclesia.mcarchipelago.protocol.registry.APHandlerRegistry;
 import fr.euclesia.mcarchipelago.protocol.transport.APTransport;
 import fr.euclesia.mcarchipelago.protocol.transport.APTransportListener;
+import fr.euclesia.mcarchipelago.registry.AEMRegistries;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -25,14 +29,18 @@ import java.util.concurrent.CompletableFuture;
 
 public final class ArchipelagoClient {
     private final APTransport transport;
-    private final APHandlerRegistry handlers;
+    private final AEMRegistries registries;
     private final APSessionState state = new APSessionState();
     private final List<APEventListener> listeners = new ArrayList<>();
     private APConnectionOptions options;
 
     public ArchipelagoClient(APTransport transport) {
+        this(transport, new AEMRegistries());
+    }
+
+    public ArchipelagoClient(APTransport transport, AEMRegistries registries) {
         this.transport = transport;
-        this.handlers = new APHandlerRegistry();
+        this.registries = registries;
         registerDefaultHandlers();
     }
 
@@ -54,7 +62,11 @@ public final class ArchipelagoClient {
     }
 
     public APHandlerRegistry handlers() {
-        return handlers;
+        return registries.apHandlers();
+    }
+
+    public AEMRegistries registries() {
+        return registries;
     }
 
     public APSessionState state() {
@@ -70,18 +82,18 @@ public final class ArchipelagoClient {
     }
 
     private void registerDefaultHandlers() {
-        handlers.register(APCommand.ROOM_INFO, this::handleRoomInfo);
-        handlers.register(APCommand.CONNECTED, this::handleConnected);
-        handlers.register(APCommand.CONNECTION_REFUSED, this::handleConnectionRefused);
-        handlers.register(APCommand.RECEIVED_ITEMS, (client, packet) -> listeners.forEach(listener -> listener.onReceivedItems(client, packet)));
-        handlers.register(APCommand.LOCATION_INFO, (client, packet) -> listeners.forEach(listener -> listener.onLocationInfo(client, packet)));
-        handlers.register(APCommand.ROOM_UPDATE, this::handleRoomUpdate);
-        handlers.register(APCommand.PRINT_JSON, (client, packet) -> listeners.forEach(listener -> listener.onPrintJson(client, packet)));
-        handlers.register(APCommand.DATA_PACKAGE, (client, packet) -> listeners.forEach(listener -> listener.onDataPackage(client, packet)));
-        handlers.register(APCommand.BOUNCED, (client, packet) -> listeners.forEach(listener -> listener.onBounced(client, packet)));
-        handlers.register(APCommand.INVALID_PACKET, this::handleInvalidPacket);
-        handlers.register(APCommand.RETRIEVED, (client, packet) -> listeners.forEach(listener -> listener.onRetrieved(client, packet)));
-        handlers.register(APCommand.SET_REPLY, (client, packet) -> listeners.forEach(listener -> listener.onSetReply(client, packet)));
+        handlers().register(APCommand.ROOM_INFO, this::handleRoomInfo);
+        handlers().register(APCommand.CONNECTED, this::handleConnected);
+        handlers().register(APCommand.CONNECTION_REFUSED, this::handleConnectionRefused);
+        handlers().register(APCommand.RECEIVED_ITEMS, this::handleReceivedItems);
+        handlers().register(APCommand.LOCATION_INFO, this::handleLocationInfo);
+        handlers().register(APCommand.ROOM_UPDATE, this::handleRoomUpdate);
+        handlers().register(APCommand.PRINT_JSON, (client, packet) -> listeners.forEach(listener -> listener.onPrintJson(client, packet)));
+        handlers().register(APCommand.DATA_PACKAGE, this::handleDataPackage);
+        handlers().register(APCommand.BOUNCED, (client, packet) -> listeners.forEach(listener -> listener.onBounced(client, packet)));
+        handlers().register(APCommand.INVALID_PACKET, this::handleInvalidPacket);
+        handlers().register(APCommand.RETRIEVED, (client, packet) -> listeners.forEach(listener -> listener.onRetrieved(client, packet)));
+        handlers().register(APCommand.SET_REPLY, (client, packet) -> listeners.forEach(listener -> listener.onSetReply(client, packet)));
     }
 
     private void handleRoomInfo(ArchipelagoClient client, APReceivedPacket packet) {
@@ -109,10 +121,17 @@ public final class ArchipelagoClient {
 
         if (payload.has("slot_data") && payload.get("slot_data").isJsonObject()) {
             state.setSlotData(payload.getAsJsonObject("slot_data"));
+            registries.apItems().loadSlotData(state.parsedSlotData());
+            registries.apLocations().loadSlotData(state.parsedSlotData());
+            registries.apMobs().loadSlotData(state.parsedSlotData());
         }
 
+        state.missingLocations().clear();
+        state.checkedLocations().clear();
         readLocations(payload, "missing_locations", state.missingLocations());
         readLocations(payload, "checked_locations", state.checkedLocations());
+        registries.apLocations().replaceMissing(state.missingLocations());
+        registries.apLocations().markChecked(state.checkedLocations());
 
         AEM.LOGGER.info("Connected to Archipelago as team {} slot {}", state.team(), state.slot());
         send(new StatusUpdatePacket(APClientStatus.CLIENT_PLAYING));
@@ -124,10 +143,42 @@ public final class ArchipelagoClient {
         AEM.LOGGER.error("Archipelago connection refused: {}", packet.payload().get("errors"));
     }
 
+    private void handleReceivedItems(ArchipelagoClient client, APReceivedPacket packet) {
+        ReceivedItemsPacket receivedItems = ReceivedItemsPacket.from(packet);
+        receivedItems.items().forEach(item -> {
+            registries.apItems().markReceived(item);
+            registries.apMobs().markUnlockedByItem(item.itemId());
+        });
+
+        listeners.forEach(listener -> {
+            listener.onReceivedItems(client, packet);
+            listener.onReceivedItems(client, receivedItems);
+        });
+    }
+
+    private void handleLocationInfo(ArchipelagoClient client, APReceivedPacket packet) {
+        LocationInfoPacket locationInfo = LocationInfoPacket.from(packet);
+        listeners.forEach(listener -> {
+            listener.onLocationInfo(client, packet);
+            listener.onLocationInfo(client, locationInfo);
+        });
+    }
+
     private void handleRoomUpdate(ArchipelagoClient client, APReceivedPacket packet) {
         JsonObject payload = packet.payload();
         readLocations(payload, "checked_locations", state.checkedLocations());
+        registries.apLocations().markChecked(APJson.longSet(payload, "checked_locations"));
         listeners.forEach(listener -> listener.onRoomUpdate(client, packet));
+    }
+
+    private void handleDataPackage(ArchipelagoClient client, APReceivedPacket packet) {
+        JsonObject minecraftData = minecraftDataPackage(packet.payload());
+        if (minecraftData != null) {
+            registries.apItems().registerNameToId(APJson.stringLongMap(minecraftData, "item_name_to_id"));
+            registries.apLocations().registerNameToId(APJson.stringLongMap(minecraftData, "location_name_to_id"));
+        }
+
+        listeners.forEach(listener -> listener.onDataPackage(client, packet));
     }
 
     private void handleInvalidPacket(ArchipelagoClient client, APReceivedPacket packet) {
@@ -145,6 +196,21 @@ public final class ArchipelagoClient {
         }
     }
 
+    private static JsonObject minecraftDataPackage(JsonObject payload) {
+        JsonElement data = payload.get("data");
+        if (data == null || !data.isJsonObject()) {
+            return null;
+        }
+
+        JsonElement games = data.getAsJsonObject().get("games");
+        if (games == null || !games.isJsonObject()) {
+            return null;
+        }
+
+        JsonElement minecraft = games.getAsJsonObject().get("Minecraft");
+        return minecraft != null && minecraft.isJsonObject() ? minecraft.getAsJsonObject() : null;
+    }
+
     private final class Listener implements APTransportListener {
         @Override
         public void onOpen() {
@@ -155,7 +221,7 @@ public final class ArchipelagoClient {
         public void onText(String message) {
             try {
                 for (APReceivedPacket packet : APPacketCodec.decodeWire(message)) {
-                    if (!handlers.dispatch(ArchipelagoClient.this, packet)) {
+                    if (!handlers().dispatch(ArchipelagoClient.this, packet)) {
                         AEM.LOGGER.debug("Unhandled Archipelago packet: {}", packet.command());
                     }
                 }

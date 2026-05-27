@@ -34,6 +34,26 @@ public final class APArchipelagoGateway implements ArchipelagoGateway {
     }
 
     @Override
+    public boolean checkLocation(String gameId) {
+        return client.registries().apLocations().idForGameId(gameId)
+                .map(locationId -> {
+                    checkLocations(List.of(locationId));
+                    return true;
+                })
+                .orElse(false);
+    }
+
+    @Override
+    public boolean checkTrackedMob(String mobGameId) {
+        return client.registries().apMobs().trackedLocationId(mobGameId)
+                .map(locationId -> {
+                    checkLocations(List.of(locationId));
+                    return true;
+                })
+                .orElse(false);
+    }
+
+    @Override
     public void scoutLocations(Collection<Long> locations, APHintMode hintMode) {
         client.send(new LocationScoutsPacket(locations, hintMode));
     }

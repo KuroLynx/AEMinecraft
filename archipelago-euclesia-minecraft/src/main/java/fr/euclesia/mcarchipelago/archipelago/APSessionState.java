@@ -1,6 +1,7 @@
 package fr.euclesia.mcarchipelago.archipelago;
 
 import com.google.gson.JsonObject;
+import fr.euclesia.mcarchipelago.archipelago.slot.APSlotData;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -10,6 +11,7 @@ public final class APSessionState {
     private int team = -1;
     private int slot = -1;
     private JsonObject slotData = new JsonObject();
+    private APSlotData parsedSlotData = APSlotData.empty();
     private final Set<Long> missingLocations = new HashSet<>();
     private final Set<Long> checkedLocations = new HashSet<>();
 
@@ -43,6 +45,11 @@ public final class APSessionState {
 
     public void setSlotData(JsonObject slotData) {
         this.slotData = slotData;
+        this.parsedSlotData = APSlotData.fromJson(slotData);
+    }
+
+    public APSlotData parsedSlotData() {
+        return parsedSlotData;
     }
 
     public Set<Long> missingLocations() {
