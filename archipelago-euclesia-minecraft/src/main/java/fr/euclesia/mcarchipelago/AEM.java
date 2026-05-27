@@ -1,6 +1,7 @@
 package fr.euclesia.mcarchipelago;
 
 import fr.euclesia.mcarchipelago.engine.ap.ArchipelagoService;
+import fr.euclesia.mcarchipelago.server.AEMServerBridge;
 import net.fabricmc.api.ModInitializer;
 
 import org.slf4j.Logger;
@@ -17,6 +18,7 @@ public class AEM implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
+		AEMServerBridge.register();
 		LOGGER.info("Archipelago Euclesia Minecraft initialized");
 	}
 }
