@@ -85,6 +85,7 @@ def _load_mobs() -> dict[str, MCMobData]:
         for index, row in enumerate(reader):
             class_map = {
                 "progression": ItemClassification.progression,
+                "progression_skip_balancing": ItemClassification.progression_skip_balancing,
                 "useful": ItemClassification.useful,
                 "filler": ItemClassification.filler
             }
@@ -107,6 +108,7 @@ def _load_structures() -> dict[str, MCStructureData]:
         for index, row in enumerate(reader):
             class_map = {
                 "progression": ItemClassification.progression,
+                "progression_skip_balancing": ItemClassification.progression_skip_balancing,
                 "useful": ItemClassification.useful,
                 "filler": ItemClassification.filler
             }
@@ -114,7 +116,7 @@ def _load_structures() -> dict[str, MCStructureData]:
                 id = index,
                 classification = class_map.get(row["classification"], ItemClassification.filler),
                 region = row["region"],
-                game_id = row["game_id"]
+                game_id = f"minecraft:{row['game_id']}"
             )
     return structs
 
@@ -142,7 +144,7 @@ def _load_advancements() -> dict[str, MCLocationData]:
                 category = MCLocationCategory.ADVANCEMENT,
                 region = row["region"],
                 game_id = full_game_id,
-                challenge = (row.get("challenge", "false") == "true"),
+                challenge = row.get("challenge", "false").strip().lower() == "true",
             )
     return locations
 

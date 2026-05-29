@@ -12,7 +12,7 @@ def smithing_with_style(helper: RuleHelper) -> dict:
             helper.reached(f"{ADVANCEMENT_PREFIX}{A_A_TERRIBLE_FORTRESS}"),  # Rib — Nether Fortress
             helper.structure(S_ANCIENT_CITY),  # Ward + Silence
             helper.structure(S_MANSION),  # Vex
-            helper.entity("Elder Guardian"),  # Tide — Kill on Elder Guardian
+            helper.entity(E_ELDER_GUARDIAN),  # Tide — Kill on Elder Guardian
             helper.all_of(helper.has_brush(), helper.structure(S_TRAIL_RUINS)),  # Wayfinder
         )
     }

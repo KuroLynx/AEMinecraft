@@ -15,6 +15,11 @@ def set_rules(world ) -> None:
 
     helper = RuleHelper(world)
 
+    # Locations actually created this seed depend on options (challenge_sanity, kill_sanity,
+    # death_list). Rules are defined for every advancement/mob, so skip those whose location
+    # was not created — otherwise get_location raises KeyError.
+    existing_locations = {location.name for location in world.multiworld.get_locations(world.player)}
+
     all_advancement_rules = {
         **get_story_rules(helper),
         **get_nether_rules(helper),
@@ -24,7 +29,9 @@ def set_rules(world ) -> None:
     }
 
     for advancement_name, condition in all_advancement_rules.items():
-        set_rule(world.multiworld.get_location(f"{ADVANCEMENT_PREFIX}{advancement_name}", world.player),condition)
+        location_name = f"{ADVANCEMENT_PREFIX}{advancement_name}"
+        if location_name in existing_locations:
+            set_rule(world.multiworld.get_location(location_name, world.player), condition)
 
 
     all_mob_unlock_rules = get_entities_rules(helper)
@@ -40,4 +47,9 @@ def set_rules(world ) -> None:
         if mob_data.category == MCEntityCategory.BOSS:
             prefix = f"{BOSS_KILL_PREFIX}"
 
-        set_rule(world.multiworld.get_location(f"{prefix}{mob_name}", world.player), condition)
+        if mob_data.category == MCEntityCategory.HOSTILE:
+            condition = helper.all_of(condition, helper.can_kill())
+
+        location_name = f"{prefix}{mob_name}"
+        if location_name in existing_locations:
+            set_rule(world.multiworld.get_location(location_name, world.player), condition)

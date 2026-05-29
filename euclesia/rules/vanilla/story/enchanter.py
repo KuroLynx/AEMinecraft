@@ -17,7 +17,7 @@ def enchanter(helper: RuleHelper) -> dict:
             helper.structure(S_DESERT_PYRAMID),
             helper.structure(S_JUNGLE_PYRAMID),
             helper.structure(S_PILLAGER_OUTPOST),
-            helper.structure(S_SHIPWRECK),
+            helper.any_shipwreck(),
             helper.structure(S_DUNGEON),
             helper.reached(f"{ADVANCEMENT_PREFIX}{A_EYE_SPY}"),  # In Stronghold
             helper.structure(S_OCEAN_RUIN_COLD),

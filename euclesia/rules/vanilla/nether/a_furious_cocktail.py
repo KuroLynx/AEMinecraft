@@ -5,7 +5,7 @@ from ...helpers import RuleHelper
 def a_furious_cocktail(helper: RuleHelper) -> dict:
     return {
         A_A_FURIOUS_COCKTAIL: helper.all_of(
-            helper.reached(f"{ADVANCEMENT_PREFIX}Local Brewery"),  # Brewing Stand + Blaze Rod
+            helper.reached(f"{ADVANCEMENT_PREFIX}{A_LOCAL_BREWERY}"),  # Brewing Stand + Blaze Rod
 
             # Infestation — Stone always accessible, no condition needed
 
@@ -17,31 +17,31 @@ def a_furious_cocktail(helper: RuleHelper) -> dict:
                 helper.any_village(),  # village chests
                 helper.reached(f"{ADVANCEMENT_PREFIX}{A_THOSE_WERE_THE_DAYS}"),  # Bastion chests
                 helper.can_trade(False, 4),  # expert farmer villager trade
-                helper.structure(S_SHIPWRECK),  # Suspicious Stew
+                helper.any_shipwreck(),  # Suspicious Stew
                 # Suspicious Stew with Poppy — always accessible
             ),
 
             # Jump Boost — Rabbit's Foot or Beacon
             helper.any_of(
-                helper.entity("Rabbit"),  # Rabbit's Foot
-                helper.reached(f"{ADVANCEMENT_PREFIX}Bring Home the Beacon"),  # Beacon
+                helper.entity(E_RABBIT),  # Rabbit's Foot
+                helper.reached(f"{ADVANCEMENT_PREFIX}{A_BRING_HOME_THE_BEACON}"),  # Beacon
             ),
 
             # Oozing — Slime Block, Panda sneeze or Ominous Bottle
             helper.any_of(
-                helper.entity("Slime"),  # Slime Block
-                helper.entity("Panda"),  # Slimeball from sneeze
-                helper.all_of(helper.reached(f"{ADVANCEMENT_PREFIX}{A_TRIAL_EDITION}"), helper.entity("Pillager")),  # Ominous Bottle
+                helper.entity(E_SLIME),  # Slime Block
+                helper.entity(E_PANDA),  # Slimeball from sneeze
+                helper.all_of(helper.reached(f"{ADVANCEMENT_PREFIX}{A_TRIAL_EDITION}"), helper.entity(E_PILLAGER)),  # Ominous Bottle
             ),
 
             # Poison — Spider Eye, Witch, Pufferfish, Bee, Poisonous Potato or Suspicious Stew
             helper.any_of(
-                helper.entity("Spider"),  # Spider Eye
-                helper.entity("Cave Spider"),  # Spider Eye
+                helper.entity(E_SPIDER),  # Spider Eye
+                helper.entity(E_CAVE_SPIDER),  # Spider Eye
                 helper.entity(E_WITCH),  # Witch drop
-                helper.entity("Pufferfish"),  # Pufferfish
+                helper.entity(E_PUFFERFISH),  # Pufferfish
                 helper.knowledge(K_FISHING),  # Fish a Pufferfish
-                helper.entity("Bee"),  # Bee sting
+                helper.entity(E_BEE),  # Bee sting
                 # Poisonous Potato — always accessible
                 # Suspicious Stew with Lily of the Valley — always accessible
             ),
@@ -49,8 +49,8 @@ def a_furious_cocktail(helper: RuleHelper) -> dict:
             # Regeneration — Ghast Tear, Axolotl, Beacon, Totem, Golden Apple or Enchanted Golden Apple
             helper.any_of(
                 helper.entity(E_GHAST),  # Ghast Tear
-                helper.reached(f"{ADVANCEMENT_PREFIX}The Healing Power of Friendship!"),  # Kill mob near Axolotl
-                helper.reached(f"{ADVANCEMENT_PREFIX}Bring Home the Beacon"),  # Beacon
+                helper.reached(f"{ADVANCEMENT_PREFIX}{A_THE_HEALING_POWER_OF_FRIENDSHIP}"),  # Kill mob near Axolotl
+                helper.reached(f"{ADVANCEMENT_PREFIX}{A_BRING_HOME_THE_BEACON}"),  # Beacon
                 helper.can_get_totem(),  # Totem of Undying
                 helper.material(MAT_GOLD),  # Golden Apple craft
                 helper.any_mineshaft(),  # Golden/Enchanted Golden Apple
@@ -70,8 +70,8 @@ def a_furious_cocktail(helper: RuleHelper) -> dict:
 
             # Resistance — Turtle Shell, Beacon, Totem or Enchanted Golden Apple
             helper.any_of(
-                helper.entity("Turtle"),  # Turtle Shell
-                helper.reached(f"{ADVANCEMENT_PREFIX}Bring Home the Beacon"),  # Beacon
+                helper.entity(E_TURTLE),  # Turtle Shell
+                helper.reached(f"{ADVANCEMENT_PREFIX}{A_BRING_HOME_THE_BEACON}"),  # Beacon
                 helper.can_get_totem(),  # Totem of Undying
                 helper.any_mineshaft(),  # Enchanted Golden Apple
                 helper.structure(S_ANCIENT_CITY),  # Enchanted Golden Apple
@@ -85,7 +85,7 @@ def a_furious_cocktail(helper: RuleHelper) -> dict:
 
             # Fire Resistance — Magma Cream, Witch, Totem, Enchanted Golden Apple or Barter
             helper.any_of(
-                helper.entity("Magma Cube"),  # Magma Cream drop
+                helper.entity(E_MAGMA_CUBE),  # Magma Cream drop
                 helper.entity(E_WITCH),  # Witch drop
                 helper.can_get_totem(),  # Totem of Undying
                 helper.can_barter(),  # Piglin barter
@@ -101,14 +101,14 @@ def a_furious_cocktail(helper: RuleHelper) -> dict:
 
             # Slow Falling — Phantom Membrane or Cat morning gift
             helper.any_of(
-                helper.entity("Phantom"),  # Phantom Membrane
+                helper.entity(E_PHANTOM),  # Phantom Membrane
                 helper.entity(E_CAT),  # Cat morning gift
             ),
 
             # Slowness — Potion of Slowness, Turtle Master or Stray attack
             helper.any_of(
-                helper.has_any_entities("Spider", "Cave Spider", E_WITCH),  # Fermented Spider Eye → Potion of Slowness
-                helper.entity("Turtle"),  # Potion of Turtle Master
+                helper.has_any_entities(E_SPIDER, E_CAVE_SPIDER, E_WITCH),  # Fermented Spider Eye → Potion of Slowness
+                helper.entity(E_TURTLE),  # Potion of Turtle Master
                 helper.entity(E_STRAY),  # Stray attack
             ),
 
@@ -118,30 +118,30 @@ def a_furious_cocktail(helper: RuleHelper) -> dict:
 
             # Water Breathing — Pufferfish, Turtle Shell or Witch drop
             helper.any_of(
-                helper.entity("Pufferfish"),  # Pufferfish mob
+                helper.entity(E_PUFFERFISH),  # Pufferfish mob
                 helper.knowledge(K_FISHING),  # Fish a Pufferfish
-                helper.entity("Turtle"),  # Turtle Shell
+                helper.entity(E_TURTLE),  # Turtle Shell
                 helper.entity(E_WITCH),  # Witch drop
             ),
 
             # Weakness — Fermented Spider Eye, Witch drop, Igloo or Suspicious Stew
             helper.any_of(
-                helper.has_any_entities("Spider", "Cave Spider", E_WITCH),  # Fermented Spider Eye or Witch drop
+                helper.has_any_entities(E_SPIDER, E_CAVE_SPIDER, E_WITCH),  # Fermented Spider Eye or Witch drop
                 helper.structure(S_IGLOO),  # pre-brewed Weakness potion
                 # Suspicious Stew with Brown Mushroom — always accessible
             ),
 
             # Weaving — Cobweb (Spider drop or Mineshaft) or Ominous Bottle
             helper.any_of(
-                helper.has_any_entities("Spider", "Cave Spider"),  # String → Cobweb craft
+                helper.has_any_entities(E_SPIDER, E_CAVE_SPIDER),  # String → Cobweb craft
                 helper.any_mineshaft(),  # Cobweb naturally in Mineshaft
-                helper.all_of(helper.reached(f"{ADVANCEMENT_PREFIX}{A_TRIAL_EDITION}"), helper.entity("Pillager")),  # Ominous Bottle
+                helper.all_of(helper.reached(f"{ADVANCEMENT_PREFIX}{A_TRIAL_EDITION}"), helper.entity(E_PILLAGER)),  # Ominous Bottle
             ),
 
             # Wind Charged — Breeze Rod or Ominous Bottle
             helper.any_of(
-                helper.entity("Breeze"),  # Breeze Rod
-                helper.all_of(helper.reached(f"{ADVANCEMENT_PREFIX}{A_TRIAL_EDITION}"), helper.entity("Pillager")),  # Ominous Bottle
+                helper.entity(E_BREEZE),  # Breeze Rod
+                helper.all_of(helper.reached(f"{ADVANCEMENT_PREFIX}{A_TRIAL_EDITION}"), helper.entity(E_PILLAGER)),  # Ominous Bottle
             ),
         ),
     }

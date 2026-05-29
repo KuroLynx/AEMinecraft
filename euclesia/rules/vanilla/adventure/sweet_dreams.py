@@ -7,7 +7,7 @@ def sweet_dreams(helper: RuleHelper) -> dict:
         A_SWEET_DREAMS: helper.any_of(
             helper.can_trade(False, 2),  # Shepherd
             helper.can_get_string(),
-            helper.entity("Sheep"),
+            helper.entity(E_SHEEP),
             helper.structure(S_IGLOO),
             helper.structure(S_MANSION)
         )

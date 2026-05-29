@@ -20,6 +20,18 @@ class MCLocation(Location):
     game = "Minecraft"
 
 
+def _gate_classification(original: ItemClassification) -> ItemClassification:
+    """Classification for an unlock item used as a logic gate.
+
+    Only progression items are collected into AP's CollectionState, so any gate MUST be
+    progression. Gates that were not originally progression are "insignificant progression":
+    kept logic-bearing, but flagged skip_balancing so progression balancing leaves them alone.
+    """
+    if original == ItemClassification.progression:
+        return ItemClassification.progression
+    return ItemClassification.progression_skip_balancing
+
+
 # ---------------------------------------------------------------------------
 # WebWorld
 # ---------------------------------------------------------------------------
@@ -70,11 +82,19 @@ class MCWorld(World):
             item_data: MCItemData = ITEMS[name]
             return MCItem(name, item_data.classification, item_data.id, self.player)
 
+        # Every Entity Unlock that enters the pool gates at least its own Kill Entity location, so
+        # it must stay progression-flavoured. AP's CollectionState only collects progression items,
+        # so a useful/filler gate is invisible to the solver; _gate_classification keeps them
+        # logic-bearing (progression, or skip_balancing when not originally progression).
         if name.startswith(ENTITY_UNLOCK_PREFIX):
             mob_name = name.removeprefix(ENTITY_UNLOCK_PREFIX)
             mob_data = MOBS_ALL[mob_name]
-            return MCItem(name, mob_data.unlock_classification, BASE_ID_ENTITY_UNLOCK + mob_data.id, self.player)
+            classification = _gate_classification(mob_data.unlock_classification)
+            return MCItem(name, classification, BASE_ID_ENTITY_UNLOCK + mob_data.id, self.player)
 
+        # Structures are curated individually in structures.csv: gates are progression /
+        # progression_skip_balancing, while a structure no rule references (e.g. Nether Fossil) may
+        # be useful. Honour the CSV classification directly rather than forcing a gate upgrade.
         if name.startswith(STRUCT_UNLOCK_PREFIX):
             struct_name = name.removeprefix(STRUCT_UNLOCK_PREFIX)
             struct_data = STRUCTURES[struct_name]
@@ -86,9 +106,25 @@ class MCWorld(World):
         """Génère les données aléatoires qui doivent être disponibles dès set_rules."""
         self.selected_bosses = self._get_selected_bosses()
 
+        # Clamp to the number of mobs that exist, so the sampled list, the goal condition and the
+        # slot_data all agree, and we never ask for more unique mobs than exist.
+        if self.options.death_list_count.value > len(MOBS_ALL):
+            self.options.death_list_count.value = len(MOBS_ALL)
+
         if self.options.death_list:
-            count = min(self.options.death_list_count.value, len(MOBS_ALL))
-            self.death_list: list[str] = self.random.sample(list(MOBS_ALL.keys()), count)
+            self.death_list: list[str] = self.random.sample(
+                list(MOBS_ALL.keys()), self.options.death_list_count.value
+            )
+
+        # Clamp the advancement goal to the number of advancements that actually exist this seed
+        # (challenge_sanity drops some). Done here so the goal rule and slot_data agree, and the
+        # mod is never asked for more advancements than can be completed.
+        active_advancement_count = sum(
+            1 for loc_data in self._get_active_locations().values()
+            if loc_data.category == MCLocationCategory.ADVANCEMENT
+        )
+        if self.options.advancements_required.value > active_advancement_count:
+            self.options.advancements_required.value = active_advancement_count
 
     def _get_active_locations(self) -> dict[str, MCLocationData]:
         """Retourne les locations actives selon les options du joueur."""
@@ -152,10 +188,12 @@ class MCWorld(World):
     def create_items(self) -> None:
         pool: list[MCItem] = []
 
+        # Progression + useful only — fillers and traps are derived later
         for name, item_data in ITEMS.items():
+            if item_data.classification in (ItemClassification.filler, ItemClassification.trap):
+                continue
             if not self.options.villager_trust and name == ITEM_VILLAGER_TRUST:
                 continue
-
             for _ in range(item_data.count):
                 pool.append(self.create_item(name))
 
@@ -164,32 +202,39 @@ class MCWorld(World):
                 if mob_data.category in self.options.mob_spawn_lock_category.value:
                     pool.append(self.create_item(f"{ENTITY_UNLOCK_PREFIX}{mob_name}"))
 
+        # Structure unlocks: required by the rules (helper.structure / any_village / any_portal /
+        # any_mineshaft check for these items). Always in the pool — there is no toggle.
+        for struct_name in STRUCTURES:
+            pool.append(self.create_item(f"{STRUCT_UNLOCK_PREFIX}{struct_name}"))
+
         active_location_count = len(self._get_active_locations())
+
+        if len(pool) > active_location_count:
+            raise Exception(
+                f"Euclesia: required item pool ({len(pool)}) exceeds active locations "
+                f"({active_location_count}). Enable kill_sanity / challenge_sanity, or reduce "
+                f"mob_spawn_lock_category."
+            )
 
         filler_items = [item_name for item_name, item_data in ITEMS.items()
                         if item_data.classification == ItemClassification.filler
-                        for _ in range(item_data.count)
-                        ]
+                        for _ in range(item_data.count)]
 
-        shortage = active_location_count - len(pool)
-        if shortage > 0:
-            for _ in range(shortage):
-                pool.append(self.create_item(self.random.choice(filler_items)))
+        while len(pool) < active_location_count:
+            pool.append(self.create_item(self.random.choice(filler_items)))
 
         mc_trap_items = [item_name for item_name, item_data in ITEMS.items()
                          if item_data.classification == ItemClassification.trap
-                         for _ in range(item_data.count)
-                         ]
+                         for _ in range(item_data.count)]
 
         trap_chance = self.options.trap_chance.value
-
         if mc_trap_items and trap_chance > 0:
             for (index, item) in enumerate(pool):
                 if item.classification == ItemClassification.filler:
                     if self.random.randint(1, 100) <= trap_chance:
                         pool[index] = self.create_item(self.random.choice(mc_trap_items))
 
-        self.multiworld.itempool += pool[:active_location_count]
+        self.multiworld.itempool += pool
 
     def set_rules(self) -> None:
         set_rules(self)
@@ -217,8 +262,13 @@ class MCWorld(World):
         required_advancement_count = self.options.advancements_required.value
 
         if required_advancement_count > 0:
-            advancements_locations = list(LOCATIONS_ADVANCEMENT.keys())
-            required = required_advancement_count
+            # Only consider advancement locations that actually exist this seed (challenge_sanity
+            # may drop some), and never require more than exist — otherwise the goal is impossible.
+            advancements_locations = [
+                name for name, loc_data in self._get_active_locations().items()
+                if loc_data.category == MCLocationCategory.ADVANCEMENT
+            ]
+            required = min(required_advancement_count, len(advancements_locations))
 
             def advancement_condition(state) -> bool:
                 return sum(1 for location in advancements_locations if state.can_reach(location, "Location", self.player)
@@ -243,53 +293,61 @@ class MCWorld(World):
 
         self.multiworld.completion_condition[player] = completion_condition
 
+    # -----------------------------------------------------------------------
+    # Slot data (envoyé au mod Fabric)
+    # -----------------------------------------------------------------------
 
-# -----------------------------------------------------------------------
-# Slot data (envoyé au mod Fabric)
-# -----------------------------------------------------------------------
+    def fill_slot_data(self) -> dict:
+        return {
+            # --- Options ---
+            "boss_selection_mode"  : self.options.boss_selection_mode.value,
+            "boss_list"            : [MOBS_BOSS[name].game_id for name in self.selected_bosses],
+            "death_link"           : bool(self.options.death_link.value),
+            "villager_trust"       : bool(self.options.villager_trust.value),
+            "kill_sanity"          : bool(self.options.kill_sanity.value),
+            "death_list"           : bool(self.options.death_list.value),
+            "death_list_count"     : self.options.death_list_count.value,
+            "advancements_required": self.options.advancements_required.value,
+            "mob_spawn_lock"       : list(self.options.mob_spawn_lock_category.value),
 
-def fill_slot_data(self) -> dict:
-    return {
-        # --- Options ---
-        "boss_selection_mode"  : self.options.boss_selection_mode.value,
-        "boss_list"            : [MOBS_BOSS[name].game_id for name in self.selected_bosses],
-        "death_link"           : bool(self.options.death_link.value),
-        "villager_trust"       : bool(self.options.villager_trust.value),
-        "kill_sanity"          : bool(self.options.kill_sanity.value),
-        "death_list"           : bool(self.options.death_list.value),
-        "death_list_count"     : self.options.death_list_count.value,
-        "advancements_required": self.options.advancements_required.value,
-        "mob_spawn_lock"       : list(self.options.mob_spawn_lock_category.value),
+            # --- Mapping item ID → nom (le mod applique l'effet depuis le nom) ---
+            # Inclut les items de base ET chaque Entity/Structure unlock, pour que le mod
+            # puisse résoudre n'importe quel item reçu.
+            "items"                : {
+                item_id: name
+                for name, item_id in self.item_name_to_id.items()
+            },
 
-        # --- Mapping item ID → nom (le mod applique l'effet depuis le nom) ---
-        "items"                : {
-            item_data.id: name
-            for name, item_data in ITEMS.items()
-        },
+            # --- Mapping game_id → location ID (le mod envoie le check depuis le game_id) ---
+            "locations"            : {
+                location_data.game_id: location_data.id
+                for location_data in ALL_LOCATIONS.values()
+                if location_data.game_id  # exclut les locations sans game_id
+            },
 
-        # --- Mapping game_id → location ID (le mod envoie le check depuis le game_id) ---
-        "locations"            : {
-            location_data.game_id: location_data.id
-            for location_data in ALL_LOCATIONS.values()
-            if location_data.game_id  # exclut les locations sans game_id
-        },
+            # --- Mobs à tracker (uniquement ceux actifs selon les options) ---
+            "tracked_mobs"         : {
+                mob_data.game_id: loc_data.id
+                for loc_name, loc_data in self._get_active_locations().items()
+                if loc_data.category in (MCLocationCategory.MOB_KILL, MCLocationCategory.BOSS_KILL)
+                for mob_name, mob_data in {**MOBS_ALL}.items()
+                if f"{ENTITY_KILL_PREFIX}{mob_name}" == loc_name or f"{BOSS_KILL_PREFIX}{mob_name}" == loc_name
+            },
 
-        # --- Mobs à tracker (uniquement ceux actifs selon les options) ---
-        "tracked_mobs"         : {
-            mob_data.game_id: loc_data.id
-            for loc_name, loc_data in self._get_active_locations().items()
-            if loc_data.category in (MCLocationCategory.MOB_KILL, MCLocationCategory.BOSS_KILL)
-            for mob_name, mob_data in {**MOBS_ALL}.items()
-            if f"{ENTITY_KILL_PREFIX}{mob_name}" == loc_name or f"{BOSS_KILL_PREFIX}{mob_name}" == loc_name
-        },
+            # --- Death list ---
+            "death_list_mobs"      : [MOBS_ALL[mob_name].game_id for mob_name in self.death_list],
 
-        # --- Death list ---
-        "death_list_mobs"      : [MOBS_ALL[mob_name].game_id for mob_name in self.death_list],
+            # --- Mob spawn lock : game_id des mobs à bloquer au spawn ---
+            "mob_spawn_lock_mobs"  : {
+                mob_data.game_id: BASE_ID_ENTITY_UNLOCK + mob_data.id
+                for mob_name, mob_data in MOBS_ALL.items()
+                if mob_data.category in self.options.mob_spawn_lock_category.value
+            },
 
-        # --- Mob spawn lock : game_id des mobs à bloquer au spawn ---
-        "mob_spawn_lock_mobs"  : {
-            mob_data.game_id: BASE_ID_ENTITY_UNLOCK + mob_data.id
-            for mob_name, mob_data in MOBS_ALL.items()
-            if mob_data.category in self.options.mob_spawn_lock_category.value
-        },
-    }
+            # --- Structure lock : game_id de la structure → item ID de son unlock ---
+            # Toutes les structures sont verrouillées jusqu'à réception de leur unlock.
+            "structure_locks"      : {
+                struct_data.game_id: BASE_ID_STRUCT_UNLOCK + struct_data.id
+                for struct_data in STRUCTURES.values()
+            },
+        }

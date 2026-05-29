@@ -24,11 +24,11 @@ def zombie_doctor(helper: RuleHelper) -> dict:
             helper.any_of(
                 # Brewing
                 helper.all_of(
-                    helper.reached(f"{ADVANCEMENT_PREFIX}Local Brewery"),
-                    helper.has_any_entities("Cave Spider", "Spider"),
+                    helper.reached(f"{ADVANCEMENT_PREFIX}{A_LOCAL_BREWERY}"),
+                    helper.has_any_entities(E_CAVE_SPIDER, E_SPIDER),
                 ),
                 # Finding
-                helper.all_of(helper.knowledge("Brewing"), helper.structure(S_IGLOO)),
+                helper.all_of(helper.knowledge(K_BREWING), helper.structure(S_IGLOO)),
                 helper.reached(f"{ADVANCEMENT_PREFIX}{A_TRIAL_EDITION}"),
                 helper.entity(E_WITCH),
             ),

@@ -11,7 +11,7 @@ def acquire_hardware(helper: RuleHelper) -> dict:
                 helper.any_village(),  # Find it in any village chests
                 helper.any_mineshaft(),  # Find it in any mineshaft chests
                 helper.structure(S_BURIED_TREASURE),
-                helper.structure(S_SHIPWRECK),
+                helper.any_shipwreck(),
                 helper.structure(S_DESERT_PYRAMID),
                 helper.structure(S_JUNGLE_PYRAMID),
                 helper.structure(S_MANSION),

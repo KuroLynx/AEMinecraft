@@ -8,8 +8,8 @@ def light_as_a_rabbit(helper: RuleHelper) -> dict:
             helper.knowledge(K_ARMOR),
             helper.any_of(
                 # Leather sources → craft boots
-                helper.has_any_entities(E_COW, "Donkey", "Horse", "Llama", "Mooshroom", "Mule", "Trader Llama", "Hoglin"),
-                helper.entity("Rabbit"),  # 4 Rabbit Hide → Leather
+                helper.has_any_entities(E_COW, E_DONKEY, E_HORSE, E_LLAMA, E_MOOSHROOM, E_MULE, E_TRADER_LLAMA, E_HOGLIN),
+                helper.entity(E_RABBIT),  # 4 Rabbit Hide → Leather
                 helper.knowledge(K_FISHING),  # fishing junk
                 helper.can_barter(),  # Piglin bartering
                 helper.can_trade(False, 2),  # leatherworker trade
@@ -22,7 +22,7 @@ def light_as_a_rabbit(helper: RuleHelper) -> dict:
                 helper.reached(f"{ADVANCEMENT_PREFIX}{A_EYE_SPY}"),  # Leather in Stronghold
                 helper.any_village(),  # Leather in tannery
                 # Leather Boots directly
-                helper.structure(S_SHIPWRECK),  # Leather Boots in supply chest
+                helper.any_shipwreck(),  # Leather Boots in supply chest
             )
         )
     }

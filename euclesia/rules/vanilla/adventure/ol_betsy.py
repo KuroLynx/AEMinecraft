@@ -4,7 +4,7 @@ from ...helpers import RuleHelper
 def ol_betsy(helper: RuleHelper) -> dict:
     return {
         A_OL_BETSY: helper.all_of(
-            helper.knowledge("Sharpshooter"),
+            helper.knowledge(K_BOW),
             # Crossbow
             helper.any_of(
                 helper.all_of(helper.reached(f"{ADVANCEMENT_PREFIX}{A_ACQUIRE_HARDWARE}"), helper.can_get_string()),

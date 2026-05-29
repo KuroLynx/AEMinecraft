@@ -13,7 +13,7 @@ def diamonds(helper: RuleHelper) -> dict:
                 helper.structure(S_DESERT_PYRAMID),  # In Desert Pyramid (Chest)
                 helper.structure(S_JUNGLE_PYRAMID),
                 helper.structure(S_BURIED_TREASURE),
-                helper.structure(S_SHIPWRECK),
+                helper.any_shipwreck(),
                 helper.reached(f"{ADVANCEMENT_PREFIX}{A_A_TERRIBLE_FORTRESS}"),  # In Nether Fortress
                 helper.reached(f"{ADVANCEMENT_PREFIX}{A_THE_CITY_AT_THE_END_OF_THE_GAME}"),  # In End City
                 helper.reached(f"{ADVANCEMENT_PREFIX}{A_EYE_SPY}"),  # In Stronghold

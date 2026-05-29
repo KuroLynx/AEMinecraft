@@ -56,7 +56,7 @@ class DeathListCount(Range):
     Includes all mob types: passive, neutral, hostile and bosses.
 
     Minimum value is 1
-    Maximum value is 87
+    Maximum value is 88 (the total number of mobs)
     """
     display_name = "Death List Count"
     range_start = 1
@@ -72,11 +72,11 @@ class AdvancementsRequired(Range):
     all active conditions must be met to win.
 
     Minimum value is 0
-    Maximum value is 160
+    Maximum value is 125 (the total number of advancements)
     """
     display_name = "Advancements Required"
     range_start = 0
-    range_end = 126
+    range_end = 125
     default = 0
 
 

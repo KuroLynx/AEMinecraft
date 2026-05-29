@@ -15,7 +15,7 @@ def country_lode_take_me_home(helper: RuleHelper) -> dict:
             helper.any_of(
                 helper.reached(f"{ADVANCEMENT_PREFIX}{A_ACQUIRE_HARDWARE}"),  # craft Compass (Iron + Redstone)
                 helper.structure(S_ANCIENT_CITY),  # found in chest
-                helper.structure(S_SHIPWRECK),  # found in chest
+                helper.any_shipwreck(),  # found in chest
                 helper.reached(f"{ADVANCEMENT_PREFIX}{A_EYE_SPY}"),  # Stronghold
                 helper.reached(f"{ADVANCEMENT_PREFIX}{A_TRIAL_EDITION}"),  # found in chest
                 helper.can_trade(False, 4),  # expert cartographer trade

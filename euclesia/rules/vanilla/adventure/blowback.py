@@ -4,5 +4,5 @@ from ...helpers import RuleHelper
 
 def blowback(helper: RuleHelper) -> dict:
     return {
-        A_BLOWBACK: helper.entity("Breeze")
+        A_BLOWBACK: helper.entity(E_BREEZE)
     }

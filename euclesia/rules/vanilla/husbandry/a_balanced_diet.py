@@ -13,21 +13,21 @@ def a_balanced_diet(helper: RuleHelper) -> dict:
             # Meats
             helper.entity(E_COW),  # Beef
             helper.entity(E_CHICKEN),  # Chicken
-            helper.entity("Sheep"),  # Mutton
-            helper.entity("Pig"),  # Porkchop
-            helper.entity("Rabbit"),  # Rabbit
+            helper.entity(E_SHEEP),  # Mutton
+            helper.entity(E_PIG),  # Porkchop
+            helper.entity(E_RABBIT),  # Rabbit
 
             # Fish
             helper.any_of(
                 helper.knowledge(K_FISHING),
-                helper.has_any_entities("Cod", "Salmon", "Pufferfish", "Tropical Fish"),
+                helper.has_any_entities(E_COD, E_SALMON, E_PUFFERFISH, E_TROPICAL_FISH),
             ),
 
             # Mushroom Stew
-            helper.entity("Mooshroom"),
+            helper.entity(E_MOOSHROOM),
 
             # Honey Bottle
-            helper.entity("Bee"),
+            helper.entity(E_BEE),
 
             # Golden Apple / Golden Carrot
             helper.can_get_gold(),
@@ -36,13 +36,13 @@ def a_balanced_diet(helper: RuleHelper) -> dict:
             helper.can_get_notch_apple(),
 
             # Spider Eye
-            helper.has_any_entities("Spider", "Cave Spider", E_WITCH),
+            helper.has_any_entities(E_SPIDER, E_CAVE_SPIDER, E_WITCH),
 
             # Rotten Flesh
             helper.has_any_entities(E_ZOMBIE, E_HUSK, E_DROWNED, E_ZOMBIE_VILLAGER),
 
             # Chorus Fruit
-            helper.reached(f"{ADVANCEMENT_PREFIX}Free the End"),
+            helper.reached(f"{ADVANCEMENT_PREFIX}{A_FREE_THE_END}"),
 
             # Cake
             helper.can_get_cake(),

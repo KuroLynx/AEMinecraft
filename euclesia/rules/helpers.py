@@ -7,11 +7,42 @@ class RuleHelper:
         self.player = world.player
         # Correction : On utilise les méthodes d'instance de manière sécurisée
         self.structure_bound_mobs = {
-            E_CAT           : lambda: self.any_village(),
-            E_ALLAY         : lambda: self.any_of(self.structure(S_PILLAGER_OUTPOST), self.structure(S_MANSION)),
-            E_ELDER_GUARDIAN: lambda: self.structure(S_OCEAN_MONUMENT),
-            E_GUARDIAN      : lambda: self.structure(S_OCEAN_MONUMENT),
-            E_BREEZE        : lambda: self.reached(f"{ADVANCEMENT_PREFIX}{A_TRIAL_EDITION}"),
+            # Overworld — structure-locked
+            E_CAT            : lambda: self.any_of(self.any_village(), self.structure(S_SWAMP_HUT)),
+            E_ALLAY          : lambda: self.any_of(self.structure(S_PILLAGER_OUTPOST), self.structure(S_MANSION)),
+            E_SILVERFISH     : lambda: self.structure(S_STRONGHOLD),
+            E_WARDEN         : lambda: self.structure(S_ANCIENT_CITY),
+            E_ENDERMITE      : lambda: self.entity(E_ENDERMAN),  # spawns from Ender Pearl throws
+
+            # Ocean Monument
+            E_ELDER_GUARDIAN : lambda: self.structure(S_OCEAN_MONUMENT),
+            E_GUARDIAN       : lambda: self.structure(S_OCEAN_MONUMENT),
+
+            # Mansion + raid mobs (Mansion direct, or raid via Pillager Captain + Village)
+            E_EVOKER         : lambda: self.any_of(
+                self.structure(S_MANSION),
+                self.all_of(self.entity(E_PILLAGER), self.any_village()),
+            ),
+            E_VINDICATOR     : lambda: self.any_of(
+                self.structure(S_MANSION),
+                self.all_of(self.entity(E_PILLAGER), self.any_village()),
+            ),
+            E_VEX            : lambda: self.any_of(
+                self.structure(S_MANSION),
+                self.all_of(self.entity(E_PILLAGER), self.any_village()),
+            ),
+            E_RAVAGER        : lambda: self.all_of(self.entity(E_PILLAGER), self.any_village()),
+
+            # Nether — structure-locked (delegates to canonical advancement)
+            E_BLAZE          : lambda: self.reached(f"{ADVANCEMENT_PREFIX}{A_A_TERRIBLE_FORTRESS}"),
+            E_WITHER_SKELETON: lambda: self.reached(f"{ADVANCEMENT_PREFIX}{A_A_TERRIBLE_FORTRESS}"),
+            E_PIGLIN_BRUTE   : lambda: self.reached(f"{ADVANCEMENT_PREFIX}{A_THOSE_WERE_THE_DAYS}"),
+
+            # End — delegates to City at the End advancement (which encodes Dragon kill + End City)
+            E_SHULKER        : lambda: self.reached(f"{ADVANCEMENT_PREFIX}{A_THE_CITY_AT_THE_END_OF_THE_GAME}"),
+
+            # Trial Chambers
+            E_BREEZE         : lambda: self.reached(f"{ADVANCEMENT_PREFIX}{A_TRIAL_EDITION}"),
         }
 
     # -----------------------------------------------------------------------
@@ -54,6 +85,9 @@ class RuleHelper:
     def any_mineshaft(self):
         return self.has_any(f"{STRUCT_UNLOCK_PREFIX}{S_MINESHAFT}", f"{STRUCT_UNLOCK_PREFIX}{S_MINESHAFT_MESA}")
 
+    def any_shipwreck(self):
+        return self.has_any(f"{STRUCT_UNLOCK_PREFIX}{S_SHIPWRECK}", f"{STRUCT_UNLOCK_PREFIX}{S_SHIPWRECK_BEACHED}")
+
     # -----------------------------------------------------------------------
     # Locations
     # -----------------------------------------------------------------------
@@ -75,13 +109,7 @@ class RuleHelper:
         )
 
     def can_get_totem(self):
-        return self.all_of(
-            self.entity(E_EVOKER),
-            self.any_of(
-                self.reached(f"{ADVANCEMENT_PREFIX}{A_VOLUNTARY_EXILE}"),
-                self.structure(S_MANSION)
-            )
-        )
+        return self.entity(E_EVOKER)
 
     def can_get_string(self):
         return self.any_of(
@@ -179,7 +207,7 @@ class RuleHelper:
             self.entity(E_PARROT),  # Parrot drop
             self.entity(E_CAT),  # Cat morning gift
             self.any_village(),  # Fletcher/Plains House chest
-            self.structure(S_SHIPWRECK),  # Map chest
+            self.any_shipwreck(),  # Map chest
         )
 
     def can_get_gold(self):
@@ -196,7 +224,7 @@ class RuleHelper:
                 self.structure(S_BURIED_TREASURE),  # Gold Ingot in chest
                 self.reached(f"{ADVANCEMENT_PREFIX}{A_A_TERRIBLE_FORTRESS}"),  # Nether Fortress bridge
                 self.any_portal(True),  # Ruined Portal
-                self.structure(S_SHIPWRECK),  # Treasure chest
+                self.any_shipwreck(),  # Treasure chest
                 self.structure(S_DUNGEON),  # Gold Ingot in chest
                 self.reached(f"{ADVANCEMENT_PREFIX}{A_EYE_SPY}"),  # Stronghold chest
                 self.any_village(),  # Temple/Toolsmith/Weaponsmith
@@ -250,6 +278,23 @@ class RuleHelper:
             self.reached(f"{ADVANCEMENT_PREFIX}{A_TRIAL_EDITION}"),
         )
 
+    def can_get_bed(self):
+        return self.any_of(
+            self.entity(E_SHEEP),  # wool from sheep, plus planks → craft
+            self.can_get_string(),  # 4 string → 1 wool
+            self.any_village(),  # bed in house, shepherd chest
+            self.structure(S_MANSION),
+            self.structure(S_IGLOO),
+            self.any_shipwreck(),  # supply chest
+        )
+
+    def can_kill(self):
+        return self.any_of(
+            self.knowledge(K_SWORD),
+            self.knowledge(K_AXE),
+            self.knowledge(K_SPEAR),
+        )
+
     # -----------------------------------------------------------------------
     # Entities
     # -----------------------------------------------------------------------
@@ -265,11 +310,12 @@ class RuleHelper:
 
         entity_data = MOBS_ALL[entity_name]
         structure_condition = self.structure_bound_mobs.get(entity_name)
+        category_locked = (entity_data.category in self.world.options.mob_spawn_lock_category.value)
 
         return lambda state: (
                 state.can_reach_region(entity_data.region, self.player) and
                 (structure_condition is None or structure_condition()(state)) and
-                (not self.world.options.mob_spawn_lock_category.value or state.has(f"{ENTITY_UNLOCK_PREFIX}{entity_name}", self.player))
+                (not category_locked or state.has(f"{ENTITY_UNLOCK_PREFIX}{entity_name}", self.player))
         )
 
     # -----------------------------------------------------------------------
