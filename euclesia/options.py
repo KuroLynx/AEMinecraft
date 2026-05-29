@@ -2,6 +2,8 @@ from dataclasses import dataclass
 
 from Options import OptionSet, PerGameCommonOptions, Range, Toggle
 
+from .data import STRUCTURES
+
 
 class BossSelectionMode(Range):
     """How many bosses from Boss List you must defeat to complete your game.
@@ -107,6 +109,35 @@ class MobSpawnLockCategory(OptionSet):
     default = frozenset()
 
 
+class StructureUnlock(OptionSet):
+    """Define which structures are locked until their unlock item is received.
+
+    When a structure is locked, it cannot be used (in logic) until the corresponding
+    'Structure Unlock: <structure>' item is received from the multiworld. Structures that
+    are not locked are always available once their dimension is reachable.
+
+    Leave empty to disable structure locking entirely.
+
+    Accepts dimension presets, the special value "All", and/or individual structure names
+    (you can mix them freely):
+        - Dimension presets: "Overworld", "Nether", "The End" — lock every structure of that
+          dimension.
+        - "All" — lock every structure.
+        - Any structure name (e.g. "Ancient City", "Village (Plains)", "Nether Fortress").
+
+    Examples:
+        Lock everything in the Nether plus the Ancient City:
+            - Nether
+            - Ancient City
+
+        Lock all structures:
+            - All
+    """
+    display_name = "Structure Unlock"
+    valid_keys = {"All", "Overworld", "Nether", "The End"} | set(STRUCTURES.keys())
+    default = frozenset()
+
+
 class TrapChance(Range):
     """The probability for each filler item to be replaced with a trap item.
     Set to 0 to disable traps entirely.
@@ -146,5 +177,6 @@ class MCOptions(PerGameCommonOptions):
     villager_trust: VillagerTrust
     kill_sanity: KillSanity
     mob_spawn_lock_category: MobSpawnLockCategory
+    structure_unlock: StructureUnlock
     trap_chance: TrapChance
     challenge_sanity: ChallengeSanity

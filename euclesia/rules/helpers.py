@@ -5,6 +5,9 @@ class RuleHelper:
     def __init__(self, world: World):
         self.world = world
         self.player = world.player
+        # Structures locked behind a 'Structure Unlock' item (structure_unlock option). Others are
+        # gated by their dimension being reachable instead (see self.structure).
+        self.locked_structures = world._get_locked_structures()
         # Correction : On utilise les méthodes d'instance de manière sécurisée
         self.structure_bound_mobs = {
             # Overworld — structure-locked
@@ -71,22 +74,27 @@ class RuleHelper:
     def structure(self, struct_name: str):
         if struct_name not in STRUCTURES:
             print(f"Warning: {struct_name} not found !")
-        return lambda state: state.has(f"{STRUCT_UNLOCK_PREFIX}{struct_name}", self.player)
+            return lambda state: False
+        # Locked structures require their unlock item; unlocked ones are reachable as soon as their
+        # dimension is reachable (Overworld is always reachable, Nether/End need their access).
+        if struct_name in self.locked_structures:
+            return self.has(f"{STRUCT_UNLOCK_PREFIX}{struct_name}")
+        return self.access_region(STRUCTURES[struct_name].region)
 
     def any_village(self):
-        return self.has_any(*[f"{STRUCT_UNLOCK_PREFIX}Village ({biome})" for biome in ["Desert", "Plains", "Savanna", "Snowy", "Taiga"]])
+        return self.any_of(*[self.structure(f"Village ({biome})") for biome in ["Desert", "Plains", "Savanna", "Snowy", "Taiga"]])
 
     def any_portal(self, nether_allowed: bool = False):
         portals = [S_RUINED_PORTAL, S_RUINED_PORTAL_DESERT, S_RUINED_PORTAL_OCEAN, S_RUINED_PORTAL_MOUNTAIN, S_RUINED_PORTAL_JUNGLE, S_RUINED_PORTAL_SWAMP]
         if nether_allowed:
-            return self.any_of(self.has_any(*[f"{STRUCT_UNLOCK_PREFIX}{p}" for p in portals]), self.structure(S_RUINED_PORTAL_NETHER))
-        return self.has_any(*[f"{STRUCT_UNLOCK_PREFIX}{p}" for p in portals])
+            portals = portals + [S_RUINED_PORTAL_NETHER]
+        return self.any_of(*[self.structure(p) for p in portals])
 
     def any_mineshaft(self):
-        return self.has_any(f"{STRUCT_UNLOCK_PREFIX}{S_MINESHAFT}", f"{STRUCT_UNLOCK_PREFIX}{S_MINESHAFT_MESA}")
+        return self.any_of(self.structure(S_MINESHAFT), self.structure(S_MINESHAFT_MESA))
 
     def any_shipwreck(self):
-        return self.has_any(f"{STRUCT_UNLOCK_PREFIX}{S_SHIPWRECK}", f"{STRUCT_UNLOCK_PREFIX}{S_SHIPWRECK_BEACHED}")
+        return self.any_of(self.structure(S_SHIPWRECK), self.structure(S_SHIPWRECK_BEACHED))
 
     # -----------------------------------------------------------------------
     # Locations

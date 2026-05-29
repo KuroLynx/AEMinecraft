@@ -115,6 +115,24 @@ class MCWorld(World):
         if self.options.advancements_required.value > active_advancement_count:
             self.options.advancements_required.value = active_advancement_count
 
+    def _get_locked_structures(self) -> set[str]:
+        """Structures locked behind a 'Structure Unlock' item, per the structure_unlock option.
+
+        The option accepts dimension presets ("Overworld"/"Nether"/"The End"), "All", and/or
+        individual structure names; this resolves them to a concrete set of structure names.
+        """
+        selected = self.options.structure_unlock.value
+        if "All" in selected:
+            return set(STRUCTURES.keys())
+
+        locked: set[str] = set()
+        for entry in selected:
+            if entry in ("Overworld", "Nether", "The End"):
+                locked |= {name for name, data in STRUCTURES.items() if data.region == entry}
+            elif entry in STRUCTURES:
+                locked.add(entry)
+        return locked
+
     def _get_active_locations(self) -> dict[str, MCLocationData]:
         """Retourne les locations actives selon les options du joueur."""
         locations: dict[str, MCLocationData] = {
@@ -183,9 +201,9 @@ class MCWorld(World):
                 if mob_data.category in self.options.mob_spawn_lock_category.value:
                     pool.append(self.create_item(f"{ENTITY_UNLOCK_PREFIX}{mob_name}"))
 
-        # Structure unlocks: required by the rules (helper.structure / any_village / any_portal /
-        # any_mineshaft check for these items). Always in the pool — there is no toggle.
-        for struct_name in STRUCTURES:
+        # Structure unlocks: only the structures locked by the structure_unlock option are added.
+        # Unlocked structures are gated by their dimension instead (see RuleHelper.structure).
+        for struct_name in self._get_locked_structures():
             pool.append(self.create_item(f"{STRUCT_UNLOCK_PREFIX}{struct_name}"))
 
         active_location_count = len(self._get_active_locations())
@@ -309,9 +327,9 @@ class MCWorld(World):
             },
 
             # --- Structure lock : game_id de la structure → item ID de son unlock ---
-            # Toutes les structures sont verrouillées jusqu'à réception de leur unlock.
+            # Uniquement les structures verrouillées par l'option structure_unlock.
             "structure_locks"      : {
-                struct_data.game_id: BASE_ID_STRUCT_UNLOCK + struct_data.id
-                for struct_data in STRUCTURES.values()
+                STRUCTURES[name].game_id: BASE_ID_STRUCT_UNLOCK + STRUCTURES[name].id
+                for name in self._get_locked_structures()
             },
         }

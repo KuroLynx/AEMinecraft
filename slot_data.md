@@ -144,21 +144,25 @@ jusqu'à réception de l'item correspondant. Dict vide si `mob_spawn_lock = []`.
 ```
 
 ### `structure_locks` — `dict[str, int]`
-Mapping `game_id de la structure → item ID de son unlock`, pour **toutes** les structures (toujours
-verrouillées jusqu'à réception de leur `Structure Unlock`). Mirroir de `mob_spawn_lock_mobs` côté
-structures.
+Mapping `game_id de la structure → item ID de son unlock`, pour les structures **verrouillées par
+l'option `structure_unlock`** uniquement. Le mod bloque chaque structure listée jusqu'à réception de
+son `Structure Unlock`. Dict vide si l'option est vide. Miroir de `mob_spawn_lock_mobs` côté structures.
+
+L'option `structure_unlock` (côté YAML, non renvoyée telle quelle) accepte des presets de dimension
+(`Overworld`, `Nether`, `The End`), la valeur `All`, et/ou des noms de structures individuels ; ce
+mapping en est la résolution. Les structures non verrouillées sont accessibles dès que leur dimension
+l'est (elles ne nécessitent aucun item).
 
 ```json
+// structure_unlock = ["Nether", "Ancient City"]
 "structure_locks": {
-    "minecraft:ancient_city":    15467008,
-    "minecraft:bastion_remnant": 15467009,
-    "minecraft:buried_treasure": 15467010,
-    "minecraft:desert_pyramid":  15467011
+    "minecraft:ancient_city":     15467008,
+    "minecraft:bastion_remnant":  15467009,
+    "minecraft:fortress":         15467013,
+    "minecraft:nether_fossil":    15467020,
+    "minecraft:ruined_portal_nether": 15467028
 }
 ```
-
-> Note : une structure peut être de classification `useful` (ex. Nether Fossil) — elle reste dans
-> `structure_locks` (donc verrouillée), mais son unlock n'est requis par aucune règle de logique.
 
 ---
 

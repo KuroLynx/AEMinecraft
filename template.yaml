@@ -118,6 +118,30 @@ Minecraft:
     - "hostile"
 
   # -------------------------------------------------------------------------
+  # Structure Unlock
+  # -------------------------------------------------------------------------
+
+  structure_unlock:
+    # Define which structures are locked until their
+    # "Structure Unlock: <structure>" item is received from the multiworld.
+    # Structures that are not locked are available as soon as their dimension is reachable.
+    # Leave empty to disable structure locking entirely.
+    #
+    # Accepts dimension presets, the special value "All", and/or individual structure names
+    # (you can mix them freely):
+    #   - Dimension presets: "Overworld", "Nether", "The End"
+    #   - "All" — lock every structure
+    #   - Any structure name, e.g. "Ancient City", "Village (Plains)", "Nether Fortress"
+    #
+    # Example — lock all Nether structures plus the Ancient City:
+    #   - Nether
+    #   - Ancient City
+    #
+    # Example — lock everything:
+    #   - All
+    []
+
+  # -------------------------------------------------------------------------
   # Traps
   # -------------------------------------------------------------------------
 
