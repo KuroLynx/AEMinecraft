@@ -38,12 +38,9 @@ Il n'y a **pas** de champ `goal`. La victoire est la **conjonction** des conditi
 
 ## Options
 
-### `boss_selection_mode` — `int`
-Nombre de boss requis demandé par l'option (`1`–`4`). Informatif : `boss_list` contient déjà
-la liste effective à tuer.
-
 ### `boss_list` — `list[str]`
-`game_id` des boss à tuer pour valider la condition principale.
+`game_id` de tous les boss à tuer pour valider la condition principale (résolu depuis l'option
+`boss_list`, où `All` = tous les boss).
 
 ```json
 "boss_list": ["minecraft:ender_dragon", "minecraft:warden", "minecraft:wither", "minecraft:elder_guardian"]

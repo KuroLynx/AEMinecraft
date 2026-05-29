@@ -2,7 +2,7 @@ from BaseClasses import Item, Location, Region, Tutorial
 from worlds.AutoWorld import WebWorld, World
 
 from .data import *
-from .options import BossSelectionMode, MCOptions
+from .options import MCOptions
 from .regions import MCRegion
 from .rules.root import set_rules
 from .rules.constants import *
@@ -244,9 +244,11 @@ class MCWorld(World):
     # -----------------------------------------------------------------------
 
     def _get_selected_bosses(self) -> list[str]:
-        available_bosses = [name for name in MOBS_BOSS.keys() if name in self.options.boss_list.value]
-        count = min(self.options.boss_selection_mode.value, len(available_bosses))
-        return self.random.sample(available_bosses, count)
+        """Bosses required by the goal: every boss in boss_list ("All" = every boss)."""
+        selected = self.options.boss_list.value
+        if "All" in selected:
+            return list(MOBS_BOSS.keys())
+        return [name for name in MOBS_BOSS.keys() if name in selected]
 
     def _get_primary_condition(self):
         boss_locations = [f"{BOSS_KILL_PREFIX}{name}" for name in self.selected_bosses]
@@ -287,7 +289,6 @@ class MCWorld(World):
     def fill_slot_data(self) -> dict:
         return {
             # --- Options ---
-            "boss_selection_mode"  : self.options.boss_selection_mode.value,
             "boss_list"            : [MOBS_BOSS[name].game_id for name in self.selected_bosses],
             "death_link"           : bool(self.options.death_link.value),
             "villager_trust"       : bool(self.options.villager_trust.value),

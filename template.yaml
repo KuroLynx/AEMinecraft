@@ -28,35 +28,21 @@ Minecraft:
     items: 0
 
   # -------------------------------------------------------------------------
-  # Boss Selection
+  # Boss Goal
   # -------------------------------------------------------------------------
 
-  boss_selection_mode:
-    # How many bosses from boss_list you must defeat to complete your game.
-    # Use a number from 1 to 4 for an exact count.
-    # Use 4 to require all bosses in boss_list (equivalent to "all").
-    # Use weighted values to randomize the count at generation time.
-    #
-    # Examples:
-    #   1: 100              → always exactly 1 boss
-    #   4: 100              → always all bosses
-    #   random: 100         → random between 1 and 4
-    #   random-range-1-3: 100  → random between 1 and 3
-    1: 0
-    2: 0
-    3: 0
-    4: 50
-    random: 0
-    random-range-1-3: 0
-
   boss_list:
-    # The pool of bosses available for selection.
-    # The number of bosses actually required is determined by boss_selection_mode.
-    # Valid values: Ender Dragon, Elder Guardian, Warden, Wither
-    - Ender Dragon
-    - Elder Guardian
-    - Warden
-    - Wither
+    # The bosses you must defeat to complete your game. You must defeat every boss listed.
+    # Use the special value "All" to require every boss.
+    #
+    # Valid values: All, Ender Dragon, Elder Guardian, Warden, Wither
+    #
+    # Example — require every boss:
+    #   - All
+    #
+    # Example — require only the Ender Dragon:
+    #   - Ender Dragon
+    - All
 
   # -------------------------------------------------------------------------
   # Advancements

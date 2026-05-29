@@ -2,38 +2,26 @@ from dataclasses import dataclass
 
 from Options import OptionSet, PerGameCommonOptions, Range, Toggle
 
-from .data import STRUCTURES
-
-
-class BossSelectionMode(Range):
-    """How many bosses from Boss List you must defeat to complete your game.
-
-    Use a number from 1 to 4 for an exact count.
-    Use 4 to require all bosses in Boss List.
-    Use weighted values to randomize the count at generation time.
-
-    Examples:
-        1: 100                 → always exactly 1 boss
-        4: 100                 → always all bosses in Boss List
-        random: 100            → random between 1 and 4
-        random-range-1-3: 100  → random between 1 and 3
-    """
-    display_name = "Boss Selection Mode"
-    range_start = 1
-    range_end = 4
-    default = 4
+from .data import MOBS_BOSS, STRUCTURES
 
 
 class BossList(OptionSet):
-    """The pool of bosses available for selection.
+    """The bosses you must defeat to complete your game.
 
-    The number of bosses actually required is determined by Boss Selection Mode.
+    You must defeat every boss listed here. Use the special value "All" to require every boss.
 
-    Valid values: Ender Dragon, Elder Guardian, Warden, Wither
+    Valid values: "All", or any boss name (Ender Dragon, Elder Guardian, Warden, Wither).
+
+    Examples:
+        Require every boss:
+            - All
+
+        Require only the Ender Dragon:
+            - Ender Dragon
     """
     display_name = "Boss List"
-    valid_keys = {"Ender Dragon", "Elder Guardian", "Warden", "Wither"}
-    default = frozenset({"Ender Dragon", "Elder Guardian", "Warden", "Wither"})
+    valid_keys = {"All"} | set(MOBS_BOSS.keys())
+    default = frozenset({"All"})
 
 
 class AdvancementsRequired(Range):
@@ -170,7 +158,6 @@ class ChallengeSanity(Toggle):
 
 @dataclass
 class MCOptions(PerGameCommonOptions):
-    boss_selection_mode: BossSelectionMode
     boss_list: BossList
     advancements_required: AdvancementsRequired
     death_link: DeathLink
