@@ -33,7 +33,6 @@ Il n'y a **pas** de champ `goal`. La victoire est la **conjonction** des conditi
 
 1. **Boss** — tuer tous les boss listés dans `boss_list` (toujours actif).
 2. **Advancements** — compléter au moins `advancements_required` advancements (si `> 0`).
-3. **Death list** — tuer tous les mobs de `death_list_mobs` (si `death_list = true`).
 
 ---
 
@@ -59,12 +58,6 @@ Si `true`, les niveaux de commerce des villageois sont verrouillés jusqu'à ré
 
 ### `kill_sanity` — `bool`
 Si `true`, tuer un mob pour la première fois envoie un check. Les boss envoient toujours un check.
-
-### `death_list` — `bool`
-Si `true`, une liste de mobs (`death_list_mobs`) devient une condition de victoire supplémentaire.
-
-### `death_list_count` — `int`
-Nombre de mobs dans la death list (`1`–`88`, défaut `42`). Clampé au nombre réel de mobs si nécessaire.
 
 ### `advancements_required` — `int`
 Nombre d'advancements à compléter (`0`–`125`, défaut `0`). Clampé au nombre d'advancements réellement
@@ -134,13 +127,6 @@ Sous-ensemble de `locations` : uniquement les `game_id` de mobs/boss dont le kil
     "minecraft:ender_dragon":   15470908,
     "minecraft:allay":          15471104
 }
-```
-
-### `death_list_mobs` — `list[str]`
-`game_id` des mobs assignés par la death list. Liste vide si `death_list = false`.
-
-```json
-"death_list_mobs": ["minecraft:creeper", "minecraft:blaze", "minecraft:enderman"]
 ```
 
 ### `mob_spawn_lock_mobs` — `dict[str, int]`

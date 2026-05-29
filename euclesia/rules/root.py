@@ -15,9 +15,9 @@ def set_rules(world ) -> None:
 
     helper = RuleHelper(world)
 
-    # Locations actually created this seed depend on options (challenge_sanity, kill_sanity,
-    # death_list). Rules are defined for every advancement/mob, so skip those whose location
-    # was not created — otherwise get_location raises KeyError.
+    # Locations actually created this seed depend on options (challenge_sanity, kill_sanity).
+    # Rules are defined for every advancement/mob, so skip those whose location was not created
+    # — otherwise get_location raises KeyError.
     existing_locations = {location.name for location in world.multiworld.get_locations(world.player)}
 
     all_advancement_rules = {

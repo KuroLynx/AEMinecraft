@@ -34,42 +34,11 @@ class BossList(OptionSet):
     default = frozenset({"Ender Dragon", "Elder Guardian", "Warden", "Wither"})
 
 
-class DeathList(Toggle):
-    """If enabled, a random list of mobs will be assigned to you at generation.
-
-    Killing all of them becomes an additional victory condition
-    on top of killing the required bosses.
-
-    The number of mobs assigned is determined by Death List Count.
-    The pool includes all mob types: passive, neutral, hostile and bosses.
-    """
-    display_name = "Death List"
-    option_true = 1
-    option_false = 0
-    default = 0
-
-
-class DeathListCount(Range):
-    """Number of unique mobs assigned to your Death List when Death List is enabled.
-
-    The mobs are randomly selected from the full mob pool at generation time.
-    Includes all mob types: passive, neutral, hostile and bosses.
-
-    Minimum value is 1
-    Maximum value is 88 (the total number of mobs)
-    """
-    display_name = "Death List Count"
-    range_start = 1
-    range_end = 88
-    default = 42
-
-
 class AdvancementsRequired(Range):
     """Number of advancements you must complete as an additional victory condition.
 
     Set to 0 to disable this condition entirely.
-    This is cumulative with the boss kill condition and the death list:
-    all active conditions must be met to win.
+    This is cumulative with the boss kill condition: all active conditions must be met to win.
 
     Minimum value is 0
     Maximum value is 125 (the total number of advancements)
@@ -172,8 +141,6 @@ class ChallengeSanity(Toggle):
 class MCOptions(PerGameCommonOptions):
     boss_selection_mode: BossSelectionMode
     boss_list: BossList
-    death_list: DeathList
-    death_list_count: DeathListCount
     advancements_required: AdvancementsRequired
     death_link: DeathLink
     villager_trust: VillagerTrust

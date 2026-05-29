@@ -60,7 +60,6 @@ class MCWorld(World):
     options: MCOptions
     options_dataclass = MCOptions
     web = MCWebWorld()
-    death_list: list[str] = []
     selected_bosses: list[str] = []
 
     item_name_to_id = {
@@ -106,16 +105,6 @@ class MCWorld(World):
         """Génère les données aléatoires qui doivent être disponibles dès set_rules."""
         self.selected_bosses = self._get_selected_bosses()
 
-        # Clamp to the number of mobs that exist, so the sampled list, the goal condition and the
-        # slot_data all agree, and we never ask for more unique mobs than exist.
-        if self.options.death_list_count.value > len(MOBS_ALL):
-            self.options.death_list_count.value = len(MOBS_ALL)
-
-        if self.options.death_list:
-            self.death_list: list[str] = self.random.sample(
-                list(MOBS_ALL.keys()), self.options.death_list_count.value
-            )
-
         # Clamp the advancement goal to the number of advancements that actually exist this seed
         # (challenge_sanity drops some). Done here so the goal rule and slot_data agree, and the
         # mod is never asked for more advancements than can be completed.
@@ -135,14 +124,6 @@ class MCWorld(World):
 
         if self.options.kill_sanity:
             locations.update(LOCATIONS_MOB_KILL)
-
-        if self.options.death_list:
-            locations.update({
-                name: loc_data
-                for name, loc_data in LOCATIONS_MOB_KILL.items()
-                if any(name == f"{ENTITY_KILL_PREFIX}{mob}" for mob in self.death_list) and name not in locations
-            }
-            )
 
         if not self.options.challenge_sanity:
             locations = {
@@ -276,18 +257,6 @@ class MCWorld(World):
 
             conditions.append(advancement_condition)
 
-        if self.options.death_list:
-            death_list_locations = [
-                f"{BOSS_KILL_PREFIX}{mob_name}" if MOBS_ALL[mob_name].category == MCEntityCategory.BOSS
-                else f"{ENTITY_KILL_PREFIX}{mob_name}"
-                for mob_name in self.death_list
-            ]
-
-            def death_list_condition(state) -> bool:
-                return all(state.can_reach(location, "Location", self.player) for location in death_list_locations)
-
-            conditions.append(death_list_condition)
-
         def completion_condition(state) -> bool:
             return all(cond(state) for cond in conditions)
 
@@ -305,8 +274,6 @@ class MCWorld(World):
             "death_link"           : bool(self.options.death_link.value),
             "villager_trust"       : bool(self.options.villager_trust.value),
             "kill_sanity"          : bool(self.options.kill_sanity.value),
-            "death_list"           : bool(self.options.death_list.value),
-            "death_list_count"     : self.options.death_list_count.value,
             "advancements_required": self.options.advancements_required.value,
             "mob_spawn_lock"       : list(self.options.mob_spawn_lock_category.value),
 
@@ -333,9 +300,6 @@ class MCWorld(World):
                 for mob_name, mob_data in {**MOBS_ALL}.items()
                 if f"{ENTITY_KILL_PREFIX}{mob_name}" == loc_name or f"{BOSS_KILL_PREFIX}{mob_name}" == loc_name
             },
-
-            # --- Death list ---
-            "death_list_mobs"      : [MOBS_ALL[mob_name].game_id for mob_name in self.death_list],
 
             # --- Mob spawn lock : game_id des mobs à bloquer au spawn ---
             "mob_spawn_lock_mobs"  : {
