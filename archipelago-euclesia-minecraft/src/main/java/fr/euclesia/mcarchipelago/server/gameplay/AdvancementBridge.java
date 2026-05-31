@@ -4,6 +4,7 @@ import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.ServerAdvancementManager;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -18,6 +19,24 @@ public final class AdvancementBridge {
         if (AEM.ARCHIPELAGO.gateway().checkLocation(advancementId)) {
             player.sendSystemMessage(Component.literal("Archipelago check: " + advancementId));
         }
+    }
+
+    /**
+     * Re-sends every online player's advancements so the visibility evaluator runs again with
+     * the now-known Archipelago location set (see {@link fr.euclesia.mcarchipelago.mixin.AdvancementVisibilityEvaluatorMixin}).
+     * Called on connect: until then visibility falls back to revealing everything, so this is
+     * what makes non-check advancements disappear once the slot data is loaded.
+     */
+    public static void reloadOnlinePlayers() {
+        MinecraftServer server = AEMServerRuntime.server();
+        if (server == null) {
+            return;
+        }
+
+        server.execute(() -> {
+            ServerAdvancementManager manager = server.getAdvancements();
+            server.getPlayerList().getPlayers().forEach(player -> player.getAdvancements().reload(manager));
+        });
     }
 
     public static void scanOnlinePlayers() {

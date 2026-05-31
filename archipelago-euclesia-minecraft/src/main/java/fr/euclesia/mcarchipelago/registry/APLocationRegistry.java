@@ -37,6 +37,21 @@ public final class APLocationRegistry {
         return Optional.ofNullable(idsByGameId.get(gameId));
     }
 
+    /**
+     * Whether {@code gameId} is an Archipelago check that exists this seed. Backed by the
+     * slot-data {@code locations} map, which the apworld now ships active-only (options like
+     * challenge_sanity / kill_sanity drop some), so this is the source of truth for "should
+     * this advancement appear / be tracked".
+     */
+    public boolean isActiveLocation(String gameId) {
+        return idsByGameId.containsKey(gameId);
+    }
+
+    /** Whether any location mapping has been loaded yet (i.e. slot data is available). */
+    public boolean hasLocations() {
+        return !idsByGameId.isEmpty();
+    }
+
     public Optional<Long> idForName(String locationName) {
         return Optional.ofNullable(idsByName.get(locationName));
     }

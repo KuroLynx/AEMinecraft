@@ -5,7 +5,9 @@ from .data import *
 from .options import MCOptions
 from .regions import MCRegion
 from .rules.root import set_rules
+from .rules.ast import Const, Has, ReachLocation, and_
 from .rules.constants import *
+from .logic_export import build_logic_export
 
 
 # ---------------------------------------------------------------------------
@@ -161,26 +163,31 @@ class MCWorld(World):
             location = MCLocation(self.player, loc_name, loc_data.id, region)
             region.locations.append(location)
 
+        # Entrance rules as AST nodes (callable for AP, serializable for the mod export).
+        nether_rule = and_(
+            Has(self.player, ITEM_DIMENSION_NETHER),
+            ReachLocation(self.player, f"{ADVANCEMENT_PREFIX}{A_ICE_BUCKET_CHALLENGE}"),
+            Has(self.player, f"Knowledge: {K_PYRO}"),
+        )
+        end_rule = and_(
+            Has(self.player, ITEM_DIMENSION_END),
+            ReachLocation(self.player, f"{ADVANCEMENT_PREFIX}{A_EYE_SPY}"),
+        )
+
         added_regions[MCRegion.MENU].connect(added_regions[MCRegion.OVERWORLD])
-
-        added_regions[MCRegion.OVERWORLD].connect(
-            added_regions[MCRegion.NETHER],
-            rule = lambda state: (
-                    state.has(ITEM_DIMENSION_NETHER, self.player) and
-                    state.can_reach(f"{ADVANCEMENT_PREFIX}{A_ICE_BUCKET_CHALLENGE}", "Location", self.player) and
-                    state.has(f"Knowledge: {K_PYRO}", self.player)
-            ),
-        )
-
-        added_regions[MCRegion.OVERWORLD].connect(
-            added_regions[MCRegion.THE_END],
-            rule = lambda state: (
-                    state.has(ITEM_DIMENSION_END, self.player) and
-                    state.can_reach(f"{ADVANCEMENT_PREFIX}{A_EYE_SPY}", "Location", self.player)
-            ),
-        )
+        added_regions[MCRegion.OVERWORLD].connect(added_regions[MCRegion.NETHER], rule=nether_rule)
+        added_regions[MCRegion.OVERWORLD].connect(added_regions[MCRegion.THE_END], rule=end_rule)
 
         # If needed to add new dimensions (like TP), do it here i guess
+
+        # Captured for build_logic_export (region names as plain strings, not enum members).
+        self.logic_region_rules = {
+            MCRegion.MENU.value: [{"to": MCRegion.OVERWORLD.value, "rule": Const(True)}],
+            MCRegion.OVERWORLD.value: [
+                {"to": MCRegion.NETHER.value, "rule": nether_rule},
+                {"to": MCRegion.THE_END.value, "rule": end_rule},
+            ],
+        }
 
         self.multiworld.regions += list(added_regions.values())
 
@@ -305,9 +312,12 @@ class MCWorld(World):
             },
 
             # --- Mapping game_id → location ID (le mod envoie le check depuis le game_id) ---
+            # Uniquement les locations actives ce seed (challenge_sanity / kill_sanity filtrent
+            # certaines locations) : le mod ne doit résoudre/envoyer que de vrais checks, et ce
+            # mapping sert aussi de source de vérité "cette advancement est-elle un check".
             "locations"            : {
                 location_data.game_id: location_data.id
-                for location_data in ALL_LOCATIONS.values()
+                for location_data in self._get_active_locations().values()
                 if location_data.game_id  # exclut les locations sans game_id
             },
 
@@ -333,4 +343,8 @@ class MCWorld(World):
                 STRUCTURES[name].game_id: BASE_ID_STRUCT_UNLOCK + STRUCTURES[name].id
                 for name in self._get_locked_structures()
             },
+
+            # --- Logic graph (region graph + per-location reachability rules) ---
+            # The mod evaluates this against received items to colour advancements in/out of logic.
+            "logic"                : build_logic_export(self),
         }
