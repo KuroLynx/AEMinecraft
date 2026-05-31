@@ -1,3 +1,5 @@
+from ....data import MOBS_HOSTILE
+from ...constants import *
 from ...helpers import RuleHelper
 from .a_throwaway_joke import a_throwaway_joke
 from .adventuring_time import adventuring_time
@@ -49,6 +51,9 @@ from .who_needs_rockets import who_needs_rockets
 
 def get_adventure_rules(helper: RuleHelper) -> dict:
     return (
+            # The Adventure root validates on being killed by any mob (or killing one),
+            # so it only needs a hostile mob to be reachable — no weapon required.
+            {A_ADVENTURE: helper.has_any_entities(*MOBS_HOSTILE.keys())} |
             a_throwaway_joke(helper) |
             adventuring_time(helper) |
             arbalistic(helper) |

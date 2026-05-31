@@ -23,6 +23,9 @@ public final class ArchipelagoGameplayListener implements APEventListener {
         }
 
         AdvancementBridge.scanOnlinePlayers();
+        // Re-evaluate advancement visibility now that the active-location set is known, so
+        // non-check advancements disappear from the screen (they were revealed pre-connect).
+        AdvancementBridge.reloadOnlinePlayers();
     }
 
     @Override

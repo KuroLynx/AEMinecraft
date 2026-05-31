@@ -145,6 +145,10 @@ public final class ArchipelagoClient {
 
     private void handleReceivedItems(ArchipelagoClient client, APReceivedPacket packet) {
         ReceivedItemsPacket receivedItems = ReceivedItemsPacket.from(packet);
+        // index 0 is the full inventory (sent on (re)connect); rebuild counts from scratch.
+        if (receivedItems.index() == 0) {
+            registries.apItems().resetReceived();
+        }
         receivedItems.items().forEach(item -> {
             registries.apItems().markReceived(item);
             registries.apMobs().markUnlockedByItem(item.itemId());

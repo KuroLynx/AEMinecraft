@@ -3,6 +3,7 @@
 	"package": "fr.euclesia.mcarchipelago.client.mixin",
 	"compatibilityLevel": "JAVA_25",
 	"client": [
+		"AdvancementWidgetMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

@@ -1,14 +1,26 @@
 from .. import *
+from .ast import Const, Has, ReachRegion, ReachLocation, and_, or_
 
 
 class RuleHelper:
+    """Builds logic rules as serializable AST nodes (see ``ast.py``).
+
+    Every method returns a ``Rule`` node that is both callable against an AP
+    ``CollectionState`` (so it can be handed to ``set_rule``) and serializable for
+    export to the mod. All option-dependent branching is resolved here, at build
+    time, so the resulting tree contains only the primitive node kinds.
+    """
+
     def __init__(self, world: World):
         self.world = world
         self.player = world.player
         # Structures locked behind a 'Structure Unlock' item (structure_unlock option). Others are
         # gated by their dimension being reachable instead (see self.structure).
         self.locked_structures = world._get_locked_structures()
-        # Correction : On utilise les méthodes d'instance de manière sécurisée
+        # Options resolved once, up front, so rule nodes never carry option logic.
+        self.villager_trust = bool(world.options.villager_trust.value)
+        self.locked_categories = set(world.options.mob_spawn_lock_category.value)
+        # Thunks (deferred so cross-referencing mobs don't recurse at construction).
         self.structure_bound_mobs = {
             # Overworld — structure-locked
             E_CAT            : lambda: self.any_of(self.any_village(), self.structure(S_SWAMP_HUT)),
@@ -52,21 +64,19 @@ class RuleHelper:
     # Global
     # -----------------------------------------------------------------------
     def has(self, item: str, count: int = 1):
-        return lambda state: state.has(item, self.player, count)
+        return Has(self.player, item, count)
 
     def has_all(self, *items: str):
-        return lambda state: state.has_all(items, self.player)
+        return and_(*[Has(self.player, item) for item in items])
 
     def has_any(self, *items: str):
-        return lambda state: state.has_any(items, self.player)
+        return or_(*[Has(self.player, item) for item in items])
 
-    # Correction : Ajout de self pour respecter l'accès aux méthodes d'instance
     def any_of(self, *conditions):
-        return lambda state: any(cond(state) for cond in conditions)
+        return or_(*conditions)
 
-    # Correction : Ajout de self pour respecter l'accès aux méthodes d'instance
     def all_of(self, *conditions):
-        return lambda state: all(cond(state) for cond in conditions)
+        return and_(*conditions)
 
     # -----------------------------------------------------------------------
     # Structures
@@ -74,7 +84,7 @@ class RuleHelper:
     def structure(self, struct_name: str):
         if struct_name not in STRUCTURES:
             print(f"Warning: {struct_name} not found !")
-            return lambda state: False
+            return Const(False)
         # Locked structures require their unlock item; unlocked ones are reachable as soon as their
         # dimension is reachable (Overworld is always reachable, Nether/End need their access).
         if struct_name in self.locked_structures:
@@ -100,10 +110,10 @@ class RuleHelper:
     # Locations
     # -----------------------------------------------------------------------
     def access_region(self, region_name: str):
-        return lambda state: state.can_reach_region(region_name, self.player)
+        return ReachRegion(self.player, region_name)
 
     def reached(self, location: str):
-        return lambda state: state.can_reach_location(location, self.player)
+        return ReachLocation(self.player, location)
 
     # -----------------------------------------------------------------------
     # Items
@@ -317,13 +327,15 @@ class RuleHelper:
             print(f"Warning: {entity_name} not found !")
 
         entity_data = MOBS_ALL[entity_name]
-        structure_condition = self.structure_bound_mobs.get(entity_name)
-        category_locked = (entity_data.category in self.world.options.mob_spawn_lock_category.value)
+        structure_thunk = self.structure_bound_mobs.get(entity_name)
+        structure_node = structure_thunk() if structure_thunk is not None else Const(True)
+        category_locked = (entity_data.category in self.locked_categories)
+        unlock_node = self.has(f"{ENTITY_UNLOCK_PREFIX}{entity_name}") if category_locked else Const(True)
 
-        return lambda state: (
-                state.can_reach_region(entity_data.region, self.player) and
-                (structure_condition is None or structure_condition()(state)) and
-                (not category_locked or state.has(f"{ENTITY_UNLOCK_PREFIX}{entity_name}", self.player))
+        return self.all_of(
+            self.access_region(entity_data.region),
+            structure_node,
+            unlock_node,
         )
 
     # -----------------------------------------------------------------------
@@ -336,7 +348,7 @@ class RuleHelper:
 
         base = self.any_of(*traders)
 
-        if self.world.options.villager_trust:
+        if self.villager_trust:
             return self.all_of(base, self.has(ITEM_VILLAGER_TRUST, tier))
         return base
 
@@ -351,7 +363,7 @@ class RuleHelper:
     # AP Items
     # -----------------------------------------------------------------------
     def material(self, tier: int):
-        return lambda state: state.has(ITEM_MATERIAL_HANDLING, self.player, tier)
+        return Has(self.player, ITEM_MATERIAL_HANDLING, tier)
 
     def knowledge(self, item: str):
-        return lambda state: state.has(f"Knowledge: {item}", self.player)
+        return Has(self.player, f"Knowledge: {item}")
