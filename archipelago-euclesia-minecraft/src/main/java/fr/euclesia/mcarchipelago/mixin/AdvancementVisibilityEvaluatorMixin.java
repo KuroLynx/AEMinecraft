@@ -2,6 +2,7 @@ package fr.euclesia.mcarchipelago.mixin;
 
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.archipelago.ArchipelagoClient;
+import fr.euclesia.mcarchipelago.registry.APTrackerRegistry;
 import net.minecraft.advancements.AdvancementNode;
 import net.minecraft.server.advancements.AdvancementVisibilityEvaluator;
 import org.spongepowered.asm.mixin.Mixin;
@@ -42,6 +43,17 @@ public class AdvancementVisibilityEvaluatorMixin {
         if (!client.state().isConnected() || !client.registries().apLocations().hasLocations()) {
             return true; // not connected / no data yet: reveal all (re-evaluated on connect)
         }
-        return client.registries().apLocations().isActiveLocation(node.holder().id().toString());
+        String id = node.holder().id().toString();
+        // Real advancement checks this seed.
+        if (client.registries().apLocations().isActiveLocation(id)) {
+            return true;
+        }
+        // Tracker tab: each active tracker tile, the non-empty category sub-roots, and the tab
+        // root when the tab has any content.
+        APTrackerRegistry trackers = client.registries().apTrackers();
+        if (trackers.isTracker(id) || trackers.isActiveCategory(id)) {
+            return true;
+        }
+        return id.equals(APTrackerRegistry.TAB_ROOT_ID) && trackers.hasAny();
     }
 }

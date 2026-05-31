@@ -1,0 +1,24 @@
+{
+  "parent": "aem:unlock_mob/dolphin",
+  "criteria": {
+    "never": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "never"
+    ]
+  ],
+  "display": {
+    "icon": {
+      "id": "minecraft:drowned_spawn_egg"
+    },
+    "title": "Drowned",
+    "description": "Unlock Drowned spawns",
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": false
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "parent": "aem:category/structure_unlocks",
+  "criteria": {
+    "never": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "never"
+    ]
+  ],
+  "display": {
+    "icon": {
+      "id": "minecraft:emerald"
+    },
+    "title": "Village (Snowy)",
+    "description": "Unlock Village (Snowy)",
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": false
+  }
+}

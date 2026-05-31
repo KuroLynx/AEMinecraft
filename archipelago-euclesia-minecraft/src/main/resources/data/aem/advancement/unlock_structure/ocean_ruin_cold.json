@@ -1,0 +1,24 @@
+{
+  "parent": "aem:unlock_structure/nether_fossil",
+  "criteria": {
+    "never": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "never"
+    ]
+  ],
+  "display": {
+    "icon": {
+      "id": "minecraft:prismarine_bricks"
+    },
+    "title": "Ocean Ruin (Cold)",
+    "description": "Unlock Ocean Ruin (Cold)",
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": false
+  }
+}

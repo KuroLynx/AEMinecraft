@@ -3,12 +3,14 @@ package fr.euclesia.mcarchipelago.client.mixin;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import fr.euclesia.mcarchipelago.client.logic.LogicColors;
 import fr.euclesia.mcarchipelago.client.logic.LogicProviders;
+import fr.euclesia.mcarchipelago.client.render.TrackerIconRenderer;
 import net.minecraft.advancements.AdvancementNode;
 import net.minecraft.advancements.AdvancementProgress;
 import net.minecraft.advancements.DisplayInfo;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.advancements.AdvancementWidget;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -43,6 +45,25 @@ public abstract class AdvancementWidgetMixin {
         } else {
             graphics.blitSprite(pipeline, sprite, x, y, width, height, 0xFF000000 | rgb);
         }
+    }
+
+    /**
+     * Draw a live mob as the icon for tracker-tab tiles (kill/boss/mob-unlock). The vanilla code
+     * draws the JSON item icon via {@code fakeItem}; we redirect it and render the actual entity
+     * instead, falling back to the item icon for structures, the tab root, and anything that
+     * can't resolve to a living entity.
+     */
+    @Redirect(
+            method = "extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;II)V",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;fakeItem(Lnet/minecraft/world/item/ItemStack;II)V"))
+    private void archipelago_euclesia$trackerIcon(GuiGraphicsExtractor graphics, ItemStack icon, int x, int y) {
+        if (advancementNode != null
+                && TrackerIconRenderer.tryRenderIcon(graphics, advancementNode.holder().id(), x, y)) {
+            return;
+        }
+        graphics.fakeItem(icon, x, y);
     }
 
     /**

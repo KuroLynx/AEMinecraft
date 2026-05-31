@@ -1,0 +1,24 @@
+{
+  "parent": "aem:unlock_mob/pig",
+  "criteria": {
+    "never": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "never"
+    ]
+  ],
+  "display": {
+    "icon": {
+      "id": "minecraft:rabbit_spawn_egg"
+    },
+    "title": "Rabbit",
+    "description": "Unlock Rabbit spawns",
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": false
+  }
+}
