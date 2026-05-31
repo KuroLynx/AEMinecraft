@@ -1,0 +1,24 @@
+{
+  "parent": "aem:unlock_structure/trail_ruins",
+  "criteria": {
+    "never": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "never"
+    ]
+  ],
+  "display": {
+    "icon": {
+      "id": "minecraft:trial_key"
+    },
+    "title": "Trial Chambers",
+    "description": "Unlock Trial Chambers",
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": false
+  }
+}

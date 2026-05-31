@@ -1,0 +1,24 @@
+{
+  "parent": "aem:unlock_structure/ruined_portal_desert",
+  "criteria": {
+    "never": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "never"
+    ]
+  ],
+  "display": {
+    "icon": {
+      "id": "minecraft:obsidian"
+    },
+    "title": "Ruined Portal (Jungle)",
+    "description": "Unlock Ruined Portal (Jungle)",
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": false
+  }
+}

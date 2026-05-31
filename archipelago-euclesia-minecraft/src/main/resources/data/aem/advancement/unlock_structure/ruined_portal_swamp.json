@@ -1,0 +1,24 @@
+{
+  "parent": "aem:unlock_structure/ruined_portal_ocean",
+  "criteria": {
+    "never": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "never"
+    ]
+  ],
+  "display": {
+    "icon": {
+      "id": "minecraft:obsidian"
+    },
+    "title": "Ruined Portal (Swamp)",
+    "description": "Unlock Ruined Portal (Swamp)",
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": false
+  }
+}

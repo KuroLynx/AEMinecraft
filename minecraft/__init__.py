@@ -8,6 +8,7 @@ from .rules.root import set_rules
 from .rules.ast import Const, Has, ReachLocation, and_
 from .rules.constants import *
 from .logic_export import build_logic_export
+from .trackers import build_trackers_export
 
 
 # ---------------------------------------------------------------------------
@@ -347,4 +348,8 @@ class MCWorld(World):
             # --- Logic graph (region graph + per-location reachability rules) ---
             # The mod evaluates this against received items to colour advancements in/out of logic.
             "logic"                : build_logic_export(self),
+
+            # --- Tracker tab (active mob/boss kills + mob/structure unlocks) ---
+            # Active-only; maps each tracker advancement id to its AP location/item (see trackers.py).
+            "trackers"             : build_trackers_export(self),
         }

@@ -1,0 +1,24 @@
+{
+  "parent": "aem:category/kills",
+  "criteria": {
+    "never": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "never"
+    ]
+  ],
+  "display": {
+    "icon": {
+      "id": "minecraft:villager_spawn_egg"
+    },
+    "title": "Villager",
+    "description": "Kill a Villager",
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": false
+  }
+}

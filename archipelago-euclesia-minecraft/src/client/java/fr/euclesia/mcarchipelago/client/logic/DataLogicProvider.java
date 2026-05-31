@@ -6,6 +6,7 @@ import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.archipelago.ArchipelagoClient;
 import fr.euclesia.mcarchipelago.registry.APItemRegistry;
 import fr.euclesia.mcarchipelago.registry.APLocationRegistry;
+import fr.euclesia.mcarchipelago.registry.APTrackerRegistry;
 import net.minecraft.resources.Identifier;
 
 import java.util.Optional;
@@ -35,12 +36,20 @@ public final class DataLogicProvider implements LogicProvider {
         if (!client.state().isConnected()) {
             return LogicState.UNKNOWN;
         }
+
+        String gameId = advancementId.toString();
+
+        // Tracker-tab tiles (aem:*) are coloured from their AP linkage, not the logic graph.
+        APTrackerRegistry.Tracker tracker = client.registries().apTrackers().get(gameId);
+        if (tracker != null) {
+            return trackerState(client, tracker);
+        }
+
         LogicGraph graph = currentGraph(client);
         if (graph == null) {
             return LogicState.UNKNOWN;
         }
 
-        String gameId = advancementId.toString();
         String locationName = graph.locationNameForGameId(gameId);
         if (locationName == null) {
             return LogicState.UNKNOWN; // not an Archipelago location for this slot
@@ -52,6 +61,35 @@ public final class DataLogicProvider implements LogicProvider {
             return LogicState.CHECKED;
         }
 
+        return currentEvaluation(client, graph).canReachLocation(locationName)
+                ? LogicState.IN_LOGIC
+                : LogicState.OUT_OF_LOGIC;
+    }
+
+    /**
+     * Colour a tracker-tab tile. Unlock tiles are AP items: green once received, red otherwise.
+     * Kill/boss tiles are AP locations: gray when checked, else green/red by reachability (reusing
+     * the same logic evaluation as advancement tiles).
+     */
+    private LogicState trackerState(ArchipelagoClient client, APTrackerRegistry.Tracker tracker) {
+        if (APTrackerRegistry.KIND_UNLOCK.equals(tracker.kind())) {
+            Long itemId = tracker.itemId();
+            boolean received = itemId != null && client.registries().apItems().receivedCount(itemId) > 0;
+            // Received = obtained: gray it out like a checked location. Not yet received = red.
+            return received ? LogicState.CHECKED : LogicState.OUT_OF_LOGIC;
+        }
+
+        APLocationRegistry locations = client.registries().apLocations();
+        Long locationId = tracker.locationId();
+        if (locationId != null && locations.isChecked(locationId)) {
+            return LogicState.CHECKED;
+        }
+
+        LogicGraph graph = currentGraph(client);
+        String locationName = tracker.locationName();
+        if (graph == null || locationName == null) {
+            return LogicState.OUT_OF_LOGIC;
+        }
         return currentEvaluation(client, graph).canReachLocation(locationName)
                 ? LogicState.IN_LOGIC
                 : LogicState.OUT_OF_LOGIC;

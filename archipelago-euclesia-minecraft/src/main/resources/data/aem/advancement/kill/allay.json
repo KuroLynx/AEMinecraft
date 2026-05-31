@@ -1,0 +1,24 @@
+{
+  "parent": "aem:category/kills",
+  "criteria": {
+    "never": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "never"
+    ]
+  ],
+  "display": {
+    "icon": {
+      "id": "minecraft:allay_spawn_egg"
+    },
+    "title": "Allay",
+    "description": "Kill a Allay",
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": false
+  }
+}

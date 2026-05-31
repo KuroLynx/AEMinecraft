@@ -124,6 +124,7 @@ public final class ArchipelagoClient {
             registries.apItems().loadSlotData(state.parsedSlotData());
             registries.apLocations().loadSlotData(state.parsedSlotData());
             registries.apMobs().loadSlotData(state.parsedSlotData());
+            registries.apTrackers().loadFromSlotData(state.slotData());
         }
 
         state.missingLocations().clear();

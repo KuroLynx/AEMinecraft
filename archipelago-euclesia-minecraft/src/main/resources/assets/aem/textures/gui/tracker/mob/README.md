@@ -1,0 +1,96 @@
+# Tracker mob head icons
+
+Drop a 16x16 PNG per mob here, named `<slug>.png`. It is used as the icon for that
+mob's kill / boss / unlock tiles in the Archipelago tracker tab. Missing files fall back
+to the spawn-egg item icon automatically (see TrackerIconRenderer).
+
+Expected filenames (88 mobs):
+
+- allay.png
+- armadillo.png
+- axolotl.png
+- baby_zombie.png
+- bat.png
+- bee.png
+- blaze.png
+- bogged.png
+- breeze.png
+- camel.png
+- camel_husk.png
+- cat.png
+- cave_spider.png
+- chicken.png
+- cod.png
+- copper_golem.png
+- cow.png
+- creaking.png
+- creeper.png
+- dolphin.png
+- donkey.png
+- drowned.png
+- elder_guardian.png
+- ender_dragon.png
+- enderman.png
+- endermite.png
+- evoker.png
+- fox.png
+- frog.png
+- ghast.png
+- glow_squid.png
+- goat.png
+- guardian.png
+- happy_ghast.png
+- hoglin.png
+- horse.png
+- husk.png
+- iron_golem.png
+- llama.png
+- magma_cube.png
+- mooshroom.png
+- mule.png
+- nautilus.png
+- ocelot.png
+- panda.png
+- parched.png
+- parrot.png
+- phantom.png
+- pig.png
+- piglin.png
+- piglin_brute.png
+- pillager.png
+- polar_bear.png
+- pufferfish.png
+- rabbit.png
+- ravager.png
+- salmon.png
+- sheep.png
+- shulker.png
+- silverfish.png
+- skeleton.png
+- skeleton_horse.png
+- slime.png
+- sniffer.png
+- snow_golem.png
+- spider.png
+- squid.png
+- stray.png
+- strider.png
+- tadpole.png
+- trader_llama.png
+- tropical_fish.png
+- turtle.png
+- vex.png
+- villager.png
+- vindicator.png
+- wandering_trader.png
+- warden.png
+- witch.png
+- wither.png
+- wither_skeleton.png
+- wolf.png
+- zoglin.png
+- zombie.png
+- zombie_horse.png
+- zombie_nautilus.png
+- zombie_villager.png
+- zombified_piglin.png

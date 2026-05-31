@@ -1,0 +1,24 @@
+{
+  "parent": "aem:boss/wither",
+  "criteria": {
+    "never": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "never"
+    ]
+  ],
+  "display": {
+    "icon": {
+      "id": "minecraft:wither_skeleton_spawn_egg"
+    },
+    "title": "Wither Skeleton",
+    "description": "Kill a Wither Skeleton",
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": false
+  }
+}
