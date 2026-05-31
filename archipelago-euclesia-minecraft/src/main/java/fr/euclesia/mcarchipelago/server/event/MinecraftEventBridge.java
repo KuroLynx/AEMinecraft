@@ -1,6 +1,7 @@
 package fr.euclesia.mcarchipelago.server.event;
 
 import fr.euclesia.mcarchipelago.AEM;
+import fr.euclesia.mcarchipelago.protocol.packet.outbound.SayPacket;
 import fr.euclesia.mcarchipelago.server.gameplay.AdvancementBridge;
 import fr.euclesia.mcarchipelago.server.gameplay.MobKillBridge;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
@@ -9,6 +10,7 @@ import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.minecraft.server.level.ServerPlayer;
 
 public final class MinecraftEventBridge {
@@ -30,6 +32,17 @@ public final class MinecraftEventBridge {
             if (entity instanceof ServerPlayer player) {
                 DeathLinkService.onLocalPlayerDeath(player);
             }
+        });
+
+        // Forward in-game chat to Archipelago (Say) so it reaches every text client. When
+        // connected we suppress the vanilla local broadcast and let the server's PrintJSON echo
+        // render it back, so chat shows once and consistently through Archipelago.
+        ServerMessageEvents.ALLOW_CHAT_MESSAGE.register((message, sender, params) -> {
+            if (!AEMServerRuntime.isArchipelagoReady()) {
+                return true;
+            }
+            AEM.ARCHIPELAGO.client().send(new SayPacket(message.signedContent()));
+            return false;
         });
     }
 }

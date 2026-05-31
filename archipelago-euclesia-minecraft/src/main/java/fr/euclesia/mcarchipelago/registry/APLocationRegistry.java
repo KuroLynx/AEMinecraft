@@ -12,6 +12,7 @@ import java.util.Set;
 public final class APLocationRegistry {
     private final Map<String, Long> idsByGameId = new HashMap<>();
     private final Map<String, Long> idsByName = new HashMap<>();
+    private final Map<Long, String> namesById = new HashMap<>();
     private final Set<Long> missing = new HashSet<>();
     private final Set<Long> checked = new HashSet<>();
 
@@ -21,6 +22,12 @@ public final class APLocationRegistry {
 
     public void registerNameToId(Map<String, Long> locationIdsByName) {
         idsByName.putAll(locationIdsByName);
+        locationIdsByName.forEach((name, id) -> namesById.putIfAbsent(id, name));
+    }
+
+    /** The Archipelago location name for an id (from the data package), if known. */
+    public Optional<String> nameForId(long locationId) {
+        return Optional.ofNullable(namesById.get(locationId));
     }
 
     public void replaceMissing(Collection<Long> locations) {

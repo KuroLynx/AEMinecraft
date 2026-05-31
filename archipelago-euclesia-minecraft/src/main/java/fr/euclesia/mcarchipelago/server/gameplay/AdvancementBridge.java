@@ -5,7 +5,6 @@ import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.ServerAdvancementManager;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
 public final class AdvancementBridge {
@@ -16,9 +15,9 @@ public final class AdvancementBridge {
             return;
         }
 
-        if (AEM.ARCHIPELAGO.gateway().checkLocation(advancementId)) {
-            player.sendSystemMessage(Component.literal("Archipelago check: " + advancementId));
-        }
+        // The check result is reported back through Archipelago's PrintJSON (rendered to chat by
+        // ArchipelagoChatListener), so no local confirmation message is needed here.
+        AEM.ARCHIPELAGO.gateway().checkLocation(advancementId);
     }
 
     /**

@@ -3,7 +3,9 @@ package fr.euclesia.mcarchipelago.archipelago;
 import com.google.gson.JsonObject;
 import fr.euclesia.mcarchipelago.archipelago.slot.APSlotData;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 public final class APSessionState {
@@ -14,6 +16,8 @@ public final class APSessionState {
     private APSlotData parsedSlotData = APSlotData.empty();
     private final Set<Long> missingLocations = new HashSet<>();
     private final Set<Long> checkedLocations = new HashSet<>();
+    // Slot number -> display name (alias), from the Connected packet's players list.
+    private final Map<Integer, String> playerNamesBySlot = new HashMap<>();
 
     public boolean isConnected() {
         return connected;
@@ -58,5 +62,14 @@ public final class APSessionState {
 
     public Set<Long> checkedLocations() {
         return checkedLocations;
+    }
+
+    public Map<Integer, String> playerNamesBySlot() {
+        return playerNamesBySlot;
+    }
+
+    /** Display name for a slot, or {@code null} if unknown. */
+    public String playerName(int slot) {
+        return playerNamesBySlot.get(slot);
     }
 }

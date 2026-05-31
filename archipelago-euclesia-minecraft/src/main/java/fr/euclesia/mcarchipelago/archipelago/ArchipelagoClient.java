@@ -127,6 +127,21 @@ public final class ArchipelagoClient {
             registries.apTrackers().loadFromSlotData(state.slotData());
         }
 
+        state.playerNamesBySlot().clear();
+        if (payload.has("players") && payload.get("players").isJsonArray()) {
+            for (JsonElement element : payload.getAsJsonArray("players")) {
+                if (!element.isJsonObject()) {
+                    continue;
+                }
+                JsonObject player = element.getAsJsonObject();
+                int playerSlot = APJson.getInt(player, "slot", -1);
+                String alias = APJson.getString(player, "alias", APJson.getString(player, "name", ""));
+                if (playerSlot >= 0 && !alias.isEmpty()) {
+                    state.playerNamesBySlot().put(playerSlot, alias);
+                }
+            }
+        }
+
         state.missingLocations().clear();
         state.checkedLocations().clear();
         readLocations(payload, "missing_locations", state.missingLocations());
