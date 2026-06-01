@@ -1,3 +1,4 @@
+from ...constants import *
 from ...helpers import RuleHelper
 from .a_balanced_diet import a_balanced_diet
 from .a_complete_catalogue import a_complete_catalogue
@@ -32,6 +33,15 @@ from .you_ve_got_a_friend_in_me import you_ve_got_a_friend_in_me
 
 def get_husbandry_rules(helper: RuleHelper) -> dict:
     return (
+            # The Husbandry root validates on eating any food. In the Overworld food is trivially
+            # free (apples, crops, animals), but the Nether has none growing — you must kill a
+            # hoglin (raw porkchop) or a rotten-flesh source (zombified piglin) to eat. Both Nether
+            # mobs carry their own region/spawn-lock gate via entity().
+            {A_HUSBANDRY: helper.any_of(
+                helper.access_region(REGION_OVERWORLD),
+                helper.entity(E_HOGLIN),
+                helper.entity(E_ZOMBIFIED_PIGLIN),
+            )} |
             a_balanced_diet(helper) |
             a_complete_catalogue(helper) |
             a_seedy_place(helper) |

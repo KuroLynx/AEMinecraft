@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from Options import OptionSet, PerGameCommonOptions, Range, Toggle
+from Options import Choice, OptionSet, PerGameCommonOptions, Range, Toggle
 
 from .data import MOBS_BOSS, STRUCTURES
 
@@ -156,9 +156,29 @@ class ChallengeSanity(Toggle):
     default = 0
 
 
+class StartDimension(Choice):
+    """The dimension you spawn in at the start of the game.
+
+    - overworld (default): the classic start. The Nether and The End each require their
+      'Dimension Unlock' item to reach.
+    - nether: you spawn in the Nether (no Nether unlock item is added — you start there).
+      Reaching the Overworld then requires the 'Dimension Unlock: Overworld' item, a Nether
+      ruined portal (the obsidian to build the return portal) and the means to light it
+      (Knowledge: Pyromaniac). The End is still reached from the Overworld.
+
+    The End cannot be a start dimension: it has no resources to gear up with, so the seed
+    would not be logically completable.
+    """
+    display_name = "Start Dimension"
+    option_overworld = 0
+    option_nether = 1
+    default = 0
+
+
 @dataclass
 class MCOptions(PerGameCommonOptions):
     boss_list: BossList
+    start_dimension: StartDimension
     advancements_required: AdvancementsRequired
     death_link: DeathLink
     villager_trust: VillagerTrust

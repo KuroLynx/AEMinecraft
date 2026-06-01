@@ -181,6 +181,20 @@ class RuleHelper:
     # -----------------------------------------------------------------------
     # Items
     # -----------------------------------------------------------------------
+    def can_get_obsidian(self):
+        # Obtain obsidian (e.g. to build a portal). Every source is region-gated, so this resolves
+        # correctly per dimension: from the Nether only the Nether ruined portal / Bastion / Nether
+        # Fortress / Piglin barter count — the Overworld paths (mining diamonds for the pickaxe,
+        # village chests) are unreachable until the Overworld itself is.
+        return self.any_of(
+            self.reached(f"{ADVANCEMENT_PREFIX}{A_DIAMONDS}"),    # mine it (diamond pickaxe)
+            self.reached(f"{ADVANCEMENT_PREFIX}{A_THOSE_WERE_THE_DAYS}"),  # Bastion Remnant chest
+            self.reached(f"{ADVANCEMENT_PREFIX}{A_A_TERRIBLE_FORTRESS}"),  # Nether Fortress
+            self.any_portal(True),                                        # any ruined portal (incl. Nether)
+            self.can_barter(),                                            # Piglin bartering
+            self.any_village(),                                           # village chest
+        )
+
     def can_craft_bucket(self):
         return self.any_of(
             self.reached(f"{ADVANCEMENT_PREFIX}{A_ACQUIRE_HARDWARE}"),  # Craft it yourself
@@ -264,19 +278,23 @@ class RuleHelper:
         )
 
     def can_get_redstone(self):
-        return self.any_of(
-            self.all_of(
-                self.knowledge(K_PICKAXE),
-                self.material(MAT_IRON),
-            ),  # mine Redstone Ore
-            self.any_mineshaft(),  # chest
-            self.structure(S_DUNGEON),  # chest
-            self.reached(f"{ADVANCEMENT_PREFIX}{A_EYE_SPY}"),  # Stronghold chest
-            self.any_village(),  # temple chest
-            self.structure(S_MANSION),  # chest
-            self.entity(E_WITCH),  # Witch drop
-            self.reached(f"{ADVANCEMENT_PREFIX}{A_HERO_OF_THE_VILLAGE}"),  # Cleric gift
-            self.can_trade_villager(1),  # Cleric novice trade (cleric/1/emerald_redstone)
+        # Redstone has no Nether/End source at all (ore, chests, mobs and trades are all Overworld).
+        return self.all_of(
+            self.access_region(REGION_OVERWORLD),
+            self.any_of(
+                self.all_of(
+                    self.knowledge(K_PICKAXE),
+                    self.material(MAT_IRON),
+                ),  # mine Redstone Ore
+                self.any_mineshaft(),  # chest
+                self.structure(S_DUNGEON),  # chest
+                self.reached(f"{ADVANCEMENT_PREFIX}{A_EYE_SPY}"),  # Stronghold chest
+                self.any_village(),  # temple chest
+                self.structure(S_MANSION),  # chest
+                self.entity(E_WITCH),  # Witch drop
+                self.reached(f"{ADVANCEMENT_PREFIX}{A_HERO_OF_THE_VILLAGE}"),  # Cleric gift
+                self.can_trade_villager(1),  # Cleric novice trade (cleric/1/emerald_redstone)
+            ),
         )
 
     def can_get_snowball(self, include_snow_golem: bool = True):
@@ -364,6 +382,7 @@ class RuleHelper:
             sources.append(self.entity(E_COPPER_GOLEM))  # Copper Golem drop
         return self.all_of(
             self.material(MAT_COPPER),  # always needed — unlock copper tier
+            self.access_region(REGION_OVERWORLD),  # no copper of any kind in the Nether/End
             self.any_of(*sources),
         )
 
@@ -371,7 +390,7 @@ class RuleHelper:
         # ``include_iron_golem`` must be False when building the Iron Golem gate itself, otherwise
         # entity(Iron Golem) → this helper → entity(Iron Golem) recurses at rule-build time.
         sources = [
-            self.knowledge(K_PICKAXE),  # mine Iron Ore
+            self.all_of(self.knowledge(K_PICKAXE), self.access_region(REGION_OVERWORLD)),  # mine Iron Ore (Overworld only)
             self.all_of(self.can_kill(), self.has_any_entities(E_HUSK, E_ZOMBIE, E_ZOMBIE_VILLAGER)),  # mob drops
             self.any_mineshaft(),  # chest
             self.structure(S_DESERT_PYRAMID),  # chest
@@ -643,7 +662,7 @@ class RuleHelper:
 
     def can_barter(self):
         return self.all_of(
-            self.access_region(MCRegion.NETHER),
+            self.access_region(REGION_NETHER),
             self.entity(E_PIGLIN),
             self.material(MAT_GOLD),
         )

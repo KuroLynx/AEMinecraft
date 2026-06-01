@@ -1,4 +1,11 @@
 # -----------------------------------------------------------------------
+# Region names (must match the MCRegion enum values in regions.py)
+# -----------------------------------------------------------------------
+REGION_OVERWORLD = "Overworld"
+REGION_NETHER = "Nether"
+REGION_END = "The End"
+
+# -----------------------------------------------------------------------
 # Knowledge items
 # -----------------------------------------------------------------------
 
@@ -195,6 +202,7 @@ A_ZOMBIE_DOCTOR = "Zombie Doctor"
 # Items
 # -----------------------------------------------------------------------
 
+ITEM_DIMENSION_OVERWORLD = "Dimension Unlock: Overworld"
 ITEM_DIMENSION_NETHER = "Dimension Unlock: Nether"
 ITEM_DIMENSION_END = "Dimension Unlock: The End"
 ITEM_VILLAGER_TRUST = "Progressive Villager Trust"

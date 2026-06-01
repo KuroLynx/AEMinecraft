@@ -45,6 +45,20 @@ Minecraft:
     - All
 
   # -------------------------------------------------------------------------
+  # Start Dimension
+  # -------------------------------------------------------------------------
+
+  start_dimension:
+    # The dimension you spawn in.
+    #   overworld: classic start. The Nether and The End each need their Dimension Unlock item.
+    #   nether:    spawn in the Nether (no Nether unlock item is added). Reaching the Overworld
+    #              then needs the "Dimension Unlock: Overworld" item, a Nether ruined portal, and
+    #              Knowledge: Pyromaniac to light it. The End is still reached from the Overworld.
+    # The End cannot be a start dimension (no resources to gear up — not completable).
+    overworld: 50
+    nether: 0
+
+  # -------------------------------------------------------------------------
   # Advancements
   # -------------------------------------------------------------------------
 

@@ -46,6 +46,17 @@ Il n'y a **pas** de champ `goal`. La victoire est la **conjonction** des conditi
 "boss_list": ["minecraft:ender_dragon", "minecraft:warden", "minecraft:wither", "minecraft:elder_guardian"]
 ```
 
+### `start_dimension` — `str`
+La dimension où le joueur apparaît : `"overworld"` (défaut) ou `"nether"`. Le mod doit faire
+apparaître le joueur dans cette dimension. La dimension de départ n'a pas d'item `Dimension Unlock`
+(on y commence) ; les deux autres gardent le leur. Un départ `nether` n'ajoute donc pas
+`Dimension Unlock: Nether` mais ajoute `Dimension Unlock: Overworld`. `"the_end"` n'est pas un
+départ valide.
+
+```json
+"start_dimension": "nether"
+```
+
 ### `death_link` — `bool`
 Si `true`, la mort d'un joueur tue tous les joueurs DeathLink (et inversement).
 

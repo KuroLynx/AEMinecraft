@@ -7,7 +7,13 @@ def acquire_hardware(helper: RuleHelper) -> dict:
         A_ACQUIRE_HARDWARE: helper.all_of(
             helper.material(MAT_IRON),  # You always need to have unlocked iron handling
             helper.any_of(
-                helper.reached(f"{ADVANCEMENT_PREFIX}{A_STONE_AGE}"),  # You can mine iron ore
+                # Mine iron ore with a stone pickaxe — iron ore is Overworld-only (the Nether yields
+                # iron only from chests/barter, handled by the branches below), so gate the mining
+                # proxy on the Overworld now that the advancement is no longer region-locked.
+                helper.all_of(
+                    helper.reached(f"{ADVANCEMENT_PREFIX}{A_STONE_AGE}"),
+                    helper.access_region(REGION_OVERWORLD),
+                ),
                 helper.any_village(),  # Find it in any village chests
                 helper.any_mineshaft(),  # Find it in any mineshaft chests
                 helper.structure(S_BURIED_TREASURE),

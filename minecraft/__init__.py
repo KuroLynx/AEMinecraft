@@ -2,10 +2,10 @@ from BaseClasses import Item, Location, Region, Tutorial
 from worlds.AutoWorld import WebWorld, World
 
 from .data import *
-from .options import MCOptions
+from .options import MCOptions, StartDimension
 from .regions import MCRegion
 from .rules.root import set_rules
-from .rules.ast import Const, Has, ReachLocation, and_
+from .rules.ast import Const
 from .rules.constants import *
 from .logic_export import build_logic_export
 from .trackers import build_trackers_export
@@ -153,7 +153,22 @@ class MCWorld(World):
 
         return locations
 
+    def _start_region(self) -> MCRegion:
+        """The dimension the player spawns in — the free origin of the region graph."""
+        if self.options.start_dimension.value == StartDimension.option_nether:
+            return MCRegion.NETHER
+        return MCRegion.OVERWORLD
+
+    def _start_dimension_item(self) -> str:
+        """The 'Dimension Unlock' item for the start dimension. It is NOT added to the pool
+        (you start there for free); the other two dimensions keep theirs."""
+        if self.options.start_dimension.value == StartDimension.option_nether:
+            return ITEM_DIMENSION_NETHER
+        return ITEM_DIMENSION_OVERWORLD
+
     def create_regions(self) -> None:
+        from .rules.helpers import RuleHelper  # local import: avoids a top-level import cycle
+
         added_regions: dict[str, Region] = {}
 
         for region in MCRegion:
@@ -164,42 +179,77 @@ class MCWorld(World):
             location = MCLocation(self.player, loc_name, loc_data.id, region)
             region.locations.append(location)
 
-        # Entrance rules as AST nodes (callable for AP, serializable for the mod export).
-        nether_rule = and_(
-            Has(self.player, ITEM_DIMENSION_NETHER),
-            ReachLocation(self.player, f"{ADVANCEMENT_PREFIX}{A_ICE_BUCKET_CHALLENGE}"),
-            Has(self.player, f"Knowledge: {K_PYRO}"),
-        )
-        end_rule = and_(
-            Has(self.player, ITEM_DIMENSION_END),
-            ReachLocation(self.player, f"{ADVANCEMENT_PREFIX}{A_EYE_SPY}"),
-        )
+        # Inter-dimension portal gates as AST nodes (callable for AP, serializable for the mod).
+        # The Overworld is always the travel hub and the End is always entered from it; only the
+        # Overworld↔Nether link's direction and gate depend on the chosen start dimension. The
+        # start dimension is free (Menu → start) and needs no unlock item; the others need theirs.
+        helper = RuleHelper(self)
+        start_region = self._start_region()
 
-        added_regions[MCRegion.MENU].connect(added_regions[MCRegion.OVERWORLD])
-        added_regions[MCRegion.OVERWORLD].connect(added_regions[MCRegion.NETHER], rule=nether_rule)
-        added_regions[MCRegion.OVERWORLD].connect(added_regions[MCRegion.THE_END], rule=end_rule)
+        # (from_region, to_region, rule). The Overworld↔Nether link is emitted FIRST because the
+        # End gate (Eye Spy → blaze powder) depends on the Nether, and AP's region sweep is
+        # order-sensitive for entrance rules that reference locations: the Nether must be wired
+        # before the End edge or AP evaluates the End gate too early and never reaches the End.
+        edges = []
 
-        # If needed to add new dimensions (like TP), do it here i guess
+        if start_region == MCRegion.NETHER:
+            # Spawn in the Nether: build the return portal — obtain obsidian and light it (Pyromaniac).
+            # can_get_obsidian is region-gated, so from the Nether it resolves only to Nether sources
+            # (Nether ruined portal / Bastion / Fortress / barter), exactly as the dimension allows.
+            edges.append((
+                MCRegion.NETHER, MCRegion.OVERWORLD,
+                helper.all_of(
+                    helper.has(ITEM_DIMENSION_OVERWORLD),
+                    helper.can_get_obsidian(),
+                    helper.knowledge(K_PYRO),
+                ),
+            ))
+        else:
+            # Overworld start (classic): build the Nether portal from the Overworld.
+            edges.append((
+                MCRegion.OVERWORLD, MCRegion.NETHER,
+                helper.all_of(
+                    helper.has(ITEM_DIMENSION_NETHER),
+                    helper.reached(f"{ADVANCEMENT_PREFIX}{A_ICE_BUCKET_CHALLENGE}"),
+                    helper.knowledge(K_PYRO),
+                ),
+            ))
 
-        # Captured for build_logic_export (region names as plain strings, not enum members).
+        # The End is always entered from the Overworld — emitted last (see ordering note above).
+        edges.append((
+            MCRegion.OVERWORLD, MCRegion.THE_END,
+            helper.all_of(
+                helper.has(ITEM_DIMENSION_END),
+                helper.reached(f"{ADVANCEMENT_PREFIX}{A_EYE_SPY}"),
+            ),
+        ))
+
+        # Menu → start dimension is always free; the rest are the gated portal edges.
+        added_regions[MCRegion.MENU].connect(added_regions[start_region])
         self.logic_region_rules = {
-            MCRegion.MENU.value: [{"to": MCRegion.OVERWORLD.value, "rule": Const(True)}],
-            MCRegion.OVERWORLD.value: [
-                {"to": MCRegion.NETHER.value, "rule": nether_rule},
-                {"to": MCRegion.THE_END.value, "rule": end_rule},
-            ],
+            MCRegion.MENU.value: [{"to": start_region.value, "rule": Const(True)}],
         }
+        for from_region, to_region, rule in edges:
+            added_regions[from_region].connect(added_regions[to_region], rule=rule)
+            self.logic_region_rules.setdefault(from_region.value, []).append(
+                {"to": to_region.value, "rule": rule}
+            )
 
         self.multiworld.regions += list(added_regions.values())
 
     def create_items(self) -> None:
         pool: list[MCItem] = []
 
+        # The start dimension is reached for free (Menu → start), so its unlock item is never added.
+        start_dimension_item = self._start_dimension_item()
+
         # Progression + useful only — fillers and traps are derived later
         for name, item_data in ITEMS.items():
             if item_data.classification in (ItemClassification.filler, ItemClassification.trap):
                 continue
             if not self.options.villager_trust and name == ITEM_VILLAGER_TRUST:
+                continue
+            if name == start_dimension_item:
                 continue
             for _ in range(item_data.count):
                 pool.append(self.create_item(name))
@@ -298,6 +348,7 @@ class MCWorld(World):
         return {
             # --- Options ---
             "boss_list"            : [MOBS_BOSS[name].game_id for name in self.selected_bosses],
+            "start_dimension"      : self.options.start_dimension.current_key,  # "overworld" | "nether"
             "death_link"           : bool(self.options.death_link.value),
             "villager_trust"       : bool(self.options.villager_trust.value),
             "kill_sanity"          : bool(self.options.kill_sanity.value),

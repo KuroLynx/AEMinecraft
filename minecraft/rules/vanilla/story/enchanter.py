@@ -5,8 +5,11 @@ def enchanter(helper: RuleHelper) -> dict:
     return {
         A_ENCHANTER: helper.all_of(
         helper.knowledge(K_ENCHANT),
-        helper.reached(f"{ADVANCEMENT_PREFIX}{A_ICE_BUCKET_CHALLENGE}"),
-        helper.reached(f"{ADVANCEMENT_PREFIX}{A_DIAMONDS}"),  # In case we don't get obsidian by mining
+        # Enchanting table = obsidian + diamonds + book. Use the region-aware obsidian rule rather
+        # than the Overworld-only Ice Bucket Challenge (water-on-lava) advancement, so a Nether
+        # player who sources obsidian from a bastion/fortress/portal/barter can still enchant.
+        helper.can_get_obsidian(),
+        helper.reached(f"{ADVANCEMENT_PREFIX}{A_DIAMONDS}"),  # diamonds for the table
         # Book: (Make assumption that we have a grindstone for enchanted book)
         helper.any_of(
             helper.entity(E_COW),

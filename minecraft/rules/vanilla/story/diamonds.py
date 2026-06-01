@@ -7,7 +7,10 @@ def diamonds(helper: RuleHelper) -> dict:
         A_DIAMONDS: helper.all_of(
             helper.material(MAT_DIAMOND),
             helper.any_of(
-                helper.knowledge(K_PICKAXE),  # Mine it yourself
+                # Mine it yourself — diamond ore is Overworld-only (no ore in the Nether/End), so
+                # this branch must be gated on the Overworld now that the advancement itself is no
+                # longer region-locked. Nether players reach diamonds via the chest branches below.
+                helper.all_of(helper.knowledge(K_PICKAXE), helper.access_region(REGION_OVERWORLD)),
                 helper.any_mineshaft(),  # In Mineshaft
                 helper.reached(f"{ADVANCEMENT_PREFIX}{A_THOSE_WERE_THE_DAYS}"),  # In Bastion Remnant
                 helper.structure(S_DESERT_PYRAMID),  # In Desert Pyramid (Chest)
