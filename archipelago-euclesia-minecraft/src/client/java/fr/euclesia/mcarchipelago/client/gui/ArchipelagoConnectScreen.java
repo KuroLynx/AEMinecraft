@@ -27,6 +27,9 @@ public final class ArchipelagoConnectScreen extends Screen {
     private EditBox slotField;
     private EditBox passwordField;
 
+    /** Set when the user pressed Connect, so we only auto-close on a connection we initiated. */
+    private boolean connectRequested;
+
     public ArchipelagoConnectScreen(Screen parent) {
         super(Minecraft.getInstance(), Minecraft.getInstance().font, Component.literal("Connect to Archipelago"));
         this.parent = parent;
@@ -73,7 +76,17 @@ public final class ArchipelagoConnectScreen extends Screen {
         config.password = passwordField.getValue();
         config.save();
 
+        connectRequested = true;
         APConnectController.INSTANCE.connect(config.address, config.port, config.slot, config.password);
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        // Close the screen once the connection we requested succeeds.
+        if (connectRequested && APConnectController.INSTANCE.status() == APConnectController.Status.CONNECTED) {
+            onClose();
+        }
     }
 
     @Override

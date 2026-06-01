@@ -28,10 +28,14 @@ public final class APConnectController implements APEventListener {
 
     public enum Status { IDLE, CONNECTING, CONNECTED, FAILED }
 
+    /** Status-indicator colour state: never connected, currently connected, or connection lost. */
+    public enum Indicator { GRAY, GREEN, RED }
+
     public static final APConnectController INSTANCE = new APConnectController();
 
     private volatile Status status = Status.IDLE;
     private volatile String message = "";
+    private volatile boolean everConnected;
 
     private APConnectController() {}
 
@@ -46,6 +50,17 @@ public final class APConnectController implements APEventListener {
 
     public String message() {
         return message;
+    }
+
+    /**
+     * Indicator colour: green while the session is live, red once a previously live session has
+     * dropped, grey before any successful connection.
+     */
+    public Indicator indicator() {
+        if (AEM.ARCHIPELAGO.client().state().isConnected()) {
+            return Indicator.GREEN;
+        }
+        return everConnected ? Indicator.RED : Indicator.GRAY;
     }
 
     /** Reflects an already-live session when the screen opens without a fresh connect attempt. */
@@ -131,6 +146,7 @@ public final class APConnectController implements APEventListener {
     @Override
     public void onConnected(ArchipelagoClient client, APReceivedPacket packet) {
         status = Status.CONNECTED;
+        everConnected = true;
         message = "Connected as slot " + client.state().slot();
     }
 

@@ -1,5 +1,6 @@
 package fr.euclesia.mcarchipelago.client.gui;
 
+import fr.euclesia.mcarchipelago.client.render.ConnectionStatusIndicator;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
 import net.minecraft.client.gui.components.SpriteIconButton;
@@ -26,6 +27,11 @@ public final class AEMScreenButtons {
 
     public static void register() {
         ScreenEvents.AFTER_INIT.register((client, screen, width, height) -> {
+            // Draw the connection sphere over every screen, so it stays visible in menus where the
+            // in-game HUD does not render.
+            ScreenEvents.afterExtract(screen).register((s, graphics, mouseX, mouseY, tickDelta) ->
+                    ConnectionStatusIndicator.draw(graphics));
+
             if (!(screen instanceof TitleScreen) && !(screen instanceof OptionsScreen)) {
                 return;
             }
