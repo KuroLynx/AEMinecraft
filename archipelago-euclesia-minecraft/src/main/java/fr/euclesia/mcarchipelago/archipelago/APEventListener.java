@@ -7,6 +7,8 @@ import fr.euclesia.mcarchipelago.protocol.packet.inbound.ReceivedItemsPacket;
 public interface APEventListener {
     default void onConnected(ArchipelagoClient client, APReceivedPacket packet) {}
 
+    default void onConnectionRefused(ArchipelagoClient client, APReceivedPacket packet) {}
+
     default void onReceivedItems(ArchipelagoClient client, APReceivedPacket packet) {}
 
     default void onReceivedItems(ArchipelagoClient client, ReceivedItemsPacket packet) {}

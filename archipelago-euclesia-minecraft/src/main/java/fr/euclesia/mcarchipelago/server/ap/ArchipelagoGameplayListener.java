@@ -10,6 +10,7 @@ import fr.euclesia.mcarchipelago.protocol.APJson;
 import fr.euclesia.mcarchipelago.protocol.APReceivedPacket;
 import fr.euclesia.mcarchipelago.protocol.packet.outbound.ConnectUpdatePacket;
 import fr.euclesia.mcarchipelago.server.gameplay.AdvancementBridge;
+import fr.euclesia.mcarchipelago.server.gameplay.StartDimensionService;
 import fr.euclesia.mcarchipelago.server.service.DeathLinkService;
 
 import java.util.List;
@@ -21,6 +22,10 @@ public final class ArchipelagoGameplayListener implements APEventListener {
         if (slotData.deathLink()) {
             client.send(new ConnectUpdatePacket(APBounceType.tags(APBounceType.DEATH_LINK), APItemsHandling.ALL));
         }
+
+        // Covers the connect-after-join path (/archipelago connect): now that the slot data is
+        // known, relocate any online player who still needs their start dimension applied.
+        StartDimensionService.applyToOnlinePlayers();
 
         AdvancementBridge.scanOnlinePlayers();
         // Re-evaluate advancement visibility now that the active-location set is known, so

@@ -157,6 +157,7 @@ public final class ArchipelagoClient {
 
     private void handleConnectionRefused(ArchipelagoClient client, APReceivedPacket packet) {
         AEM.LOGGER.error("Archipelago connection refused: {}", packet.payload().get("errors"));
+        listeners.forEach(listener -> listener.onConnectionRefused(client, packet));
     }
 
     private void handleReceivedItems(ArchipelagoClient client, APReceivedPacket packet) {
