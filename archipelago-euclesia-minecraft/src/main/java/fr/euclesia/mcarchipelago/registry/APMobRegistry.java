@@ -23,6 +23,9 @@ public final class APMobRegistry {
 
         spawnUnlockItemIds.clear();
         spawnUnlockItemIds.putAll(slotData.mobSpawnLockMobs());
+
+        // Reset which mobs are unlocked; the full ReceivedItems sent on connect re-applies them.
+        unlockedMobs.clear();
     }
 
     public Optional<Long> trackedLocationId(String mobGameId) {
