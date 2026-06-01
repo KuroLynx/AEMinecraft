@@ -5,5 +5,5 @@ from ...helpers import RuleHelper
 
 def best_friends_forever(helper: RuleHelper) -> dict:
     return {
-        A_BEST_FRIENDS_FOREVER: helper.has_any_entities(*MOBS_TAMEABLE.keys())
+        A_BEST_FRIENDS_FOREVER: helper.any_of(*[helper.can_tame(mob) for mob in MOBS_TAMEABLE.keys()])
     }

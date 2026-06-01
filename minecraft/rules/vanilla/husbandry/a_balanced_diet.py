@@ -29,8 +29,8 @@ def a_balanced_diet(helper: RuleHelper) -> dict:
             # Honey Bottle
             helper.entity(E_BEE),
 
-            # Golden Apple / Golden Carrot
-            helper.can_get_gold(),
+            # Golden Apple
+            helper.can_get_golden_apple(),
 
             # Enchanted golden apple
             helper.can_get_notch_apple(),

@@ -12,7 +12,7 @@ def light_as_a_rabbit(helper: RuleHelper) -> dict:
                 helper.entity(E_RABBIT),  # 4 Rabbit Hide → Leather
                 helper.knowledge(K_FISHING),  # fishing junk
                 helper.can_barter(),  # Piglin bartering
-                helper.can_trade(False, 2),  # leatherworker trade
+                helper.can_trade_villager(2),  # leatherworker trade
                 helper.reached(f"{ADVANCEMENT_PREFIX}{A_HERO_OF_THE_VILLAGE}"),  # leatherworker gift
                 helper.structure(S_ANCIENT_CITY),  # Leather in chest
                 helper.reached(f"{ADVANCEMENT_PREFIX}{A_THOSE_WERE_THE_DAYS}"),  # Leather in Bastion

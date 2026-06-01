@@ -8,7 +8,7 @@ def cover_me_with_diamonds(helper: RuleHelper) -> dict:
             helper.knowledge(K_ARMOR),  # Must always have that
             helper.any_of(
                 helper.reached(f"{ADVANCEMENT_PREFIX}{A_DIAMONDS}"),  # Craft it yourself
-                helper.can_trade(False, 4),  # Villager trade toolsmith
+                helper.can_trade_villager(4),  # Villager trade toolsmith
                 helper.reached(f"{ADVANCEMENT_PREFIX}{A_THOSE_WERE_THE_DAYS}"),  # In Bastion Remnant
                 helper.reached(f"{ADVANCEMENT_PREFIX}{A_THE_CITY_AT_THE_END_OF_THE_GAME}"),  # In End City
                 helper.structure(S_MANSION),

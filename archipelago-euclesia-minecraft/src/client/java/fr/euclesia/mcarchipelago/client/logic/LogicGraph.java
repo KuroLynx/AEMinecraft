@@ -87,4 +87,8 @@ public final class LogicGraph {
     LocationEntry location(String name) {
         return locations.get(name);
     }
+
+    Map<String, LocationEntry> locations() {
+        return locations;
+    }
 }

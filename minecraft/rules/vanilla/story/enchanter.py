@@ -10,7 +10,7 @@ def enchanter(helper: RuleHelper) -> dict:
         # Book: (Make assumption that we have a grindstone for enchanted book)
         helper.any_of(
             helper.entity(E_COW),
-            helper.can_trade(False),  # bookshelf from librarian
+            helper.can_trade_villager(),  # bookshelf from librarian
             helper.any_mineshaft(),
             helper.structure(S_ANCIENT_CITY),
             helper.reached(f"{ADVANCEMENT_PREFIX}{A_THOSE_WERE_THE_DAYS}"),  # In Bastion Remnant

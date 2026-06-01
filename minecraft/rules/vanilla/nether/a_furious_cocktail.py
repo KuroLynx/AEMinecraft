@@ -16,7 +16,7 @@ def a_furious_cocktail(helper: RuleHelper) -> dict:
                 helper.can_barter(),  # Piglin barter
                 helper.any_village(),  # village chests
                 helper.reached(f"{ADVANCEMENT_PREFIX}{A_THOSE_WERE_THE_DAYS}"),  # Bastion chests
-                helper.can_trade(False, 4),  # expert farmer villager trade
+                helper.can_trade_villager(4),  # expert farmer villager trade
                 helper.any_shipwreck(),  # Suspicious Stew
                 # Suspicious Stew with Poppy — always accessible
             ),

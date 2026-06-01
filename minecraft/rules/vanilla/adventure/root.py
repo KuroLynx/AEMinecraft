@@ -1,6 +1,3 @@
-from ....data import MOBS_HOSTILE
-from ...constants import *
-from ...helpers import RuleHelper
 from .a_throwaway_joke import a_throwaway_joke
 from .adventuring_time import adventuring_time
 from .arbalistic import arbalistic
@@ -30,6 +27,7 @@ from .postmortal import postmortal
 from .respecting_the_remnants import respecting_the_remnants
 from .revaulting import revaulting
 from .smithing_with_style import smithing_with_style
+from .sneak_100 import sneak_100
 from .sniper_duel import sniper_duel
 from .sound_of_music import sound_of_music
 from .star_trader import star_trader
@@ -45,15 +43,17 @@ from .very_very_frightening import very_very_frightening
 from .voluntary_exile import voluntary_exile
 from .what_a_deal import what_a_deal
 from .who_is_the_pillager_now import who_is_the_pillager_now
-from .sneak_100 import sneak_100
 from .who_needs_rockets import who_needs_rockets
+from ...constants import *
+from ...helpers import RuleHelper
+from ....data import MOBS_ALL
 
 
 def get_adventure_rules(helper: RuleHelper) -> dict:
     return (
             # The Adventure root validates on being killed by any mob (or killing one),
-            # so it only needs a hostile mob to be reachable — no weapon required.
-            {A_ADVENTURE: helper.has_any_entities(*MOBS_HOSTILE.keys())} |
+            # so it only needs a mob to be reachable — no weapon required.
+            {A_ADVENTURE: helper.has_any_entities(*MOBS_ALL.keys())} |
             a_throwaway_joke(helper) |
             adventuring_time(helper) |
             arbalistic(helper) |

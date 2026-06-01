@@ -1,5 +1,9 @@
-from .. import *
+import itertools
+
+# AST primitives must be imported directly: `from .. import *` cannot supply them because the
+# package __init__ imports this module (via set_rules) before it defines Const/Has/and_/… .
 from .ast import Const, Has, ReachRegion, ReachLocation, and_, or_
+from .. import *
 
 
 class RuleHelper:
@@ -60,6 +64,62 @@ class RuleHelper:
             E_BREEZE         : lambda: self.reached(f"{ADVANCEMENT_PREFIX}{A_TRIAL_EDITION}"),
         }
 
+        # Extra food/item gate required to *tame* a mob, on top of reaching it (see can_tame).
+        # Mobs absent from the map are itemless (mount-tamed) and need only the entity itself.
+        self.taming_food = {
+            E_WOLF           : lambda: self.can_get_bone(),  # bones
+            E_CAT            : lambda: self.can_get_raw_fish(),  # raw cod / salmon
+            E_NAUTILUS       : lambda: self.entity(E_PUFFERFISH),
+            E_ZOMBIE_NAUTILUS: lambda: self.entity(E_PUFFERFISH),
+        }
+        # Extra food/item gate required to *breed* a mob, on top of reaching it (see can_breed).
+        # Mobs absent from the map breed with a food co-located with them (seeds, flowers, nether
+        # fungi, jungle bamboo, …) and so need only the entity itself.
+        self.breeding_food = {
+            E_ALLAY    : lambda: self.can_duplicate_allay(),  # amethyst + jukebox/disc
+            E_ARMADILLO: lambda: self.can_get_spider_eye(),  # spider eye
+            E_AXOLOTL  : lambda: self.all_of(self.can_craft_bucket(),
+                                             self.entity(E_TROPICAL_FISH)
+                                             ),  # bucket of tropical fish
+            E_CAT      : lambda: self.can_get_raw_fish(),  # raw cod / salmon
+            E_OCELOT   : lambda: self.can_get_raw_fish(),  # raw cod / salmon
+            E_COW      : lambda: self.can_get_wheat(),  # wheat
+            E_MOOSHROOM: lambda: self.can_get_wheat(),  # wheat
+            E_SHEEP    : lambda: self.can_get_wheat(),  # wheat
+            E_GOAT     : lambda: self.can_get_wheat(),  # wheat
+            E_LLAMA    : lambda: self.can_get_wheat(),  # hay bale = 9 wheat
+            E_HORSE    : lambda: self.can_get_golden_food(),  # golden carrot / apple
+            E_DONKEY   : lambda: self.can_get_golden_food(),  # golden carrot / apple
+            E_PIG      : lambda: self.can_get_pig_food(),  # carrot / potato / beetroot
+            E_FROG     : lambda: self.can_get_slimeball(),  # slimeball
+            E_TURTLE   : lambda: self.can_get_seagrass(),  # seagrass (shears)
+            E_WOLF     : lambda: self.can_get_meat(),  # any meat
+            E_NAUTILUS : lambda: self.can_get_all_fish(),
+        }
+        # Player-constructed mobs: gated by their build materials (snow / copper / iron blocks) +
+        # a carved pumpkin, on top of reaching their region (see entity). The material helpers are
+        # called with their golem-drop branch disabled, since that branch references the very golem
+        # being built → infinite recursion at rule-build time.
+        self.constructed_mobs = {
+            # Build-only (never spawn naturally): N blocks + a carved pumpkin.
+            E_SNOW_GOLEM  : lambda: self.all_of(
+                self.can_get_snowball(include_snow_golem=False),  # → snow blocks
+                self.can_get_carved_pumpkin(),
+            ),
+            E_COPPER_GOLEM: lambda: self.all_of(
+                self.can_get_copper(include_copper_golem=False),  # → copper block
+                self.can_get_carved_pumpkin(),
+            ),
+            # Iron Golem also spawns naturally in villages, so either suffices.
+            E_IRON_GOLEM  : lambda: self.any_of(
+                self.any_village(),  # natural village spawn
+                self.all_of(  # built: iron blocks + carved pumpkin
+                    self.can_get_iron(include_iron_golem=False),
+                    self.can_get_carved_pumpkin(),
+                ),
+            ),
+        }
+
     # -----------------------------------------------------------------------
     # Global
     # -----------------------------------------------------------------------
@@ -95,7 +155,10 @@ class RuleHelper:
         return self.any_of(*[self.structure(f"Village ({biome})") for biome in ["Desert", "Plains", "Savanna", "Snowy", "Taiga"]])
 
     def any_portal(self, nether_allowed: bool = False):
-        portals = [S_RUINED_PORTAL, S_RUINED_PORTAL_DESERT, S_RUINED_PORTAL_OCEAN, S_RUINED_PORTAL_MOUNTAIN, S_RUINED_PORTAL_JUNGLE, S_RUINED_PORTAL_SWAMP]
+        portals = [
+            S_RUINED_PORTAL, S_RUINED_PORTAL_DESERT, S_RUINED_PORTAL_OCEAN, S_RUINED_PORTAL_MOUNTAIN, S_RUINED_PORTAL_JUNGLE,
+            S_RUINED_PORTAL_SWAMP
+        ]
         if nether_allowed:
             portals = portals + [S_RUINED_PORTAL_NETHER]
         return self.any_of(*[self.structure(p) for p in portals])
@@ -124,6 +187,7 @@ class RuleHelper:
             self.structure(S_MANSION),
             self.structure(S_DUNGEON),
             self.any_village(),
+            self.reached(f"{ADVANCEMENT_PREFIX}{A_TRIAL_EDITION}"),  # Trial Chambers barrel
         )
 
     def can_get_totem(self):
@@ -135,10 +199,13 @@ class RuleHelper:
             self.knowledge(K_FISHING),  # fishing junk
             self.can_barter(),  # Piglin bartering
             self.structure(S_DESERT_PYRAMID),  # chest
-            self.structure(S_JUNGLE_PYRAMID),  # string inside
+            self.structure(S_JUNGLE_PYRAMID),  # tripwire trap → string
             self.structure(S_PILLAGER_OUTPOST),  # chest
             self.structure(S_TRAIL_RUINS),  # chest
-            self.any_mineshaft(),  # cobweb → string
+            self.all_of(
+                self.knowledge(K_SWORD),
+                self.any_mineshaft(),  # cobweb → string
+            ),
             self.reached(f"{ADVANCEMENT_PREFIX}{A_THOSE_WERE_THE_DAYS}"),  # Bastion chests
             self.structure(S_DUNGEON),  # chest
             self.structure(S_MANSION),  # chest
@@ -153,14 +220,15 @@ class RuleHelper:
             self.structure(S_JUNGLE_PYRAMID),  # Temple Dispenser
             self.reached(f"{ADVANCEMENT_PREFIX}{A_TRIAL_EDITION}"),  # Entrance/Supply/Common chest | Also tipped arrow
             self.any_village(),  # Fletcher chest
-            self.can_trade(False),  # Fletcher trade
+            self.can_trade_villager(),  # Fletcher trade
             self.reached(f"{ADVANCEMENT_PREFIX}{A_HERO_OF_THE_VILLAGE}"),  # Fletcher gift
             self.can_barter(),  # Spectral Arrow
         )
 
     def can_get_disc(self):
         return self.any_of(
-            self.all_of(self.has_any_entities(E_SKELETON, E_STRAY, E_BOGGED, E_PARCHED), self.entity(E_CREEPER)),  # skeleton variant kills Creeper
+            self.all_of(self.has_any_entities(E_SKELETON, E_STRAY, E_BOGGED, E_PARCHED), self.entity(E_CREEPER)),
+            # skeleton variant kills Creeper
             self.entity(E_GHAST),  # Tears disc — deflect fireball
             self.all_of(self.has_brush(), self.structure(S_TRAIL_RUINS)),  # Relic disc — archaeology
             self.structure(S_DUNGEON),  # 13, cat, otherside
@@ -171,12 +239,19 @@ class RuleHelper:
             self.reached(f"{ADVANCEMENT_PREFIX}{A_TRIAL_EDITION}"),  # Creator (Music Box) — decorated pots
             self.reached(f"{ADVANCEMENT_PREFIX}{A_UNDER_LOCK_AND_KEY}"),  # Precipice/Creator — Vault
             self.reached(f"{ADVANCEMENT_PREFIX}{A_REVAULTING}"),  # Creator — Ominous Vault
+            # NOTE: a Chicken Jockey (Baby Zombie riding a Chicken) can drop music_disc_lava_chicken.
+            # Not in logic — revisit if mob-lock variants (e.g. Chicken Jockey) are introduced.
         )
 
     def can_get_spyglass(self):
+        # Spyglass = 2 amethyst shards + 1 copper ingot.
         return self.all_of(
-            self.material(MAT_COPPER),
-            self.knowledge(K_PICKAXE),
+            self.can_get_copper(),
+            self.any_of(
+                self.knowledge(K_PICKAXE),       # mine an amethyst geode
+                self.structure(S_ANCIENT_CITY),  # chest
+                self.reached(f"{ADVANCEMENT_PREFIX}{A_TRIAL_EDITION}"),  # Trial Chambers
+            ),
         )
 
     def can_get_trident(self):
@@ -201,15 +276,30 @@ class RuleHelper:
             self.structure(S_MANSION),  # chest
             self.entity(E_WITCH),  # Witch drop
             self.reached(f"{ADVANCEMENT_PREFIX}{A_HERO_OF_THE_VILLAGE}"),  # Cleric gift
+            self.can_trade_villager(1),  # Cleric novice trade (cleric/1/emerald_redstone)
         )
 
-    def can_get_snowball(self):
-        return self.any_of(
-            self.knowledge(K_SHOVEL),
-            self.entity(E_SNOW_GOLEM),  # Snow Golem drop
+    def can_get_snowball(self, include_snow_golem: bool = True):
+        # ``include_snow_golem`` must be False when building the Snow Golem gate itself, otherwise
+        # entity(Snow Golem) → this helper → entity(Snow Golem) recurses at rule-build time.
+        sources = [
+            self.knowledge(K_SHOVEL),  # dig snow layers / snow blocks
             self.structure(S_ANCIENT_CITY),  # Ice Box chest
-            self.any_village(),  # Snowy village house
+            self.any_village(),  # Snowy village house / chest
             self.reached(f"{ADVANCEMENT_PREFIX}{A_TRIAL_EDITION}"),  # chamber chest
+            self.structure(S_IGLOO),  # snow blocks in igloo
+        ]
+        if include_snow_golem:
+            sources.append(self.entity(E_SNOW_GOLEM))  # Snow Golem drop
+        return self.any_of(*sources)
+
+    def can_get_carved_pumpkin(self):
+        # Carve a wild pumpkin with shears (pumpkins grow freely in the Overworld), or find one
+        # already carved and placed in a structure.
+        return self.any_of(
+            self.knowledge(K_SHEAR),             # shears + naturally-grown pumpkin
+            self.structure(S_PILLAGER_OUTPOST),  # placed in structure
+            self.structure(S_MANSION),           # placed in structure
         )
 
     def can_get_egg(self):
@@ -256,20 +346,53 @@ class RuleHelper:
         )
 
     def has_brush(self):
+        # Brush = copper ingot + feather + stick.
         return self.all_of(
             self.knowledge(K_BRUSH),
-            self.material(MAT_COPPER),
+            self.can_get_copper(),
             self.can_get_feather(),
         )
 
-    def can_get_copper(self):
+    def can_get_copper(self, include_copper_golem: bool = True):
+        # ``include_copper_golem`` must be False when building the Copper Golem gate itself,
+        # otherwise entity(Copper Golem) → this helper → entity(Copper Golem) recurses.
+        sources = [
+            self.knowledge(K_PICKAXE),  # mine Copper Ore
+            self.entity(E_DROWNED),  # Copper Ingot drop
+        ]
+        if include_copper_golem:
+            sources.append(self.entity(E_COPPER_GOLEM))  # Copper Golem drop
         return self.all_of(
             self.material(MAT_COPPER),  # always needed — unlock copper tier
-            self.any_of(
-                self.knowledge(K_PICKAXE),  # mine Copper Ore
-                self.entity(E_DROWNED),  # Copper Ingot drop
-                self.entity(E_COPPER_GOLEM),  # Copper Golem drop
-            ),
+            self.any_of(*sources),
+        )
+
+    def can_get_iron(self, include_iron_golem: bool = True):
+        # ``include_iron_golem`` must be False when building the Iron Golem gate itself, otherwise
+        # entity(Iron Golem) → this helper → entity(Iron Golem) recurses at rule-build time.
+        sources = [
+            self.knowledge(K_PICKAXE),  # mine Iron Ore
+            self.all_of(self.can_kill(), self.has_any_entities(E_HUSK, E_ZOMBIE, E_ZOMBIE_VILLAGER)),  # mob drops
+            self.any_mineshaft(),  # chest
+            self.structure(S_DESERT_PYRAMID),  # chest
+            self.structure(S_JUNGLE_PYRAMID),  # chest
+            self.structure(S_PILLAGER_OUTPOST),  # chest
+            self.reached(f"{ADVANCEMENT_PREFIX}{A_THOSE_WERE_THE_DAYS}"),  # Bastion chests
+            self.structure(S_BURIED_TREASURE),  # chest
+            self.reached(f"{ADVANCEMENT_PREFIX}{A_A_TERRIBLE_FORTRESS}"),  # Nether Fortress chest
+            self.any_shipwreck(),  # Treasure chest
+            self.structure(S_DUNGEON),  # chest
+            self.reached(f"{ADVANCEMENT_PREFIX}{A_EYE_SPY}"),  # Stronghold chest
+            self.reached(f"{ADVANCEMENT_PREFIX}{A_TRIAL_EDITION}"),  # Trial Chambers chest
+            self.any_village(),  # Toolsmith/Weaponsmith/Armorer chest
+            self.structure(S_MANSION),  # chest
+            self.reached(f"{ADVANCEMENT_PREFIX}{A_THE_CITY_AT_THE_END_OF_THE_GAME}"),  # End City chest
+        ]
+        if include_iron_golem:
+            sources.append(self.entity(E_IRON_GOLEM))  # Iron Golem drop
+        return self.all_of(
+            self.material(MAT_IRON),  # always needed — unlock iron tier
+            self.any_of(*sources),
         )
 
     def can_get_notch_apple(self):
@@ -286,14 +409,16 @@ class RuleHelper:
 
     def can_get_cake(self):
         return self.any_of(
-            # Crafting the cake
+            # Crafting the cake: 3 milk buckets + 2 sugar + 1 egg + 3 wheat (sugar cane is trivial).
             self.all_of(
                 self.entity(E_COW),
                 self.can_craft_bucket(),
                 self.can_get_egg(),
+                self.can_get_wheat(),
             ),
             # Getting it
             self.reached(f"{ADVANCEMENT_PREFIX}{A_TRIAL_EDITION}"),
+            self.can_trade_villager(4),  # Farmer expert trade (farmer/4/emerald_cake)
         )
 
     def can_get_bed(self):
@@ -304,6 +429,7 @@ class RuleHelper:
             self.structure(S_MANSION),
             self.structure(S_IGLOO),
             self.any_shipwreck(),  # supply chest
+            self.can_trade_villager(2),  # Shepherd sells beds
         )
 
     def can_kill(self):
@@ -311,6 +437,135 @@ class RuleHelper:
             self.knowledge(K_SWORD),
             self.knowledge(K_AXE),
             self.knowledge(K_SPEAR),
+        )
+
+    # -----------------------------------------------------------------------
+    # Breeding / taming foods
+    # -----------------------------------------------------------------------
+    def can_get_bone(self):
+        return self.any_of(
+            self.has_any_entities(E_SKELETON, E_STRAY, E_BOGGED, E_PARCHED),  # mob drops
+            self.knowledge(K_FISHING),       # fishing junk
+            self.structure(S_DESERT_PYRAMID),  # chest
+            self.structure(S_JUNGLE_PYRAMID),  # chest
+            self.structure(S_DUNGEON),         # chest
+            self.structure(S_MANSION),         # chest
+            self.structure(S_ANCIENT_CITY),    # chest
+        )
+
+    def can_get_raw_fish(self):
+        # Raw cod / salmon (cat & ocelot food).
+        return self.any_of(
+            self.has_any_entities(E_COD, E_SALMON),                 # punch/kill the fish
+            self.knowledge(K_FISHING),                              # rod
+            self.has_any_entities(E_GUARDIAN, E_DOLPHIN, E_POLAR_BEAR),  # mob drops
+            self.any_village(),                                     # village chest
+            self.reached(f"{ADVANCEMENT_PREFIX}{A_HERO_OF_THE_VILLAGE}"),  # Fisherman gift
+        )
+
+    def can_get_all_fish(self):
+        # Any fish item, including the puffer/tropical variants used to breed nautili.
+        return self.any_of(
+            self.can_get_raw_fish(),
+            self.entity(E_PUFFERFISH),
+            self.entity(E_TROPICAL_FISH),
+        )
+
+    def can_get_wheat(self):
+        # Till + harvest needs a hoe; otherwise wheat is found ready-made in many chests.
+        return self.any_of(
+            self.knowledge(K_HOE),
+            self.any_village(),               # farms / chests
+            self.any_shipwreck(),             # supply chest
+            self.structure(S_PILLAGER_OUTPOST),
+            self.structure(S_DUNGEON),
+            self.structure(S_IGLOO),
+            self.structure(S_TRAIL_RUINS),
+            self.structure(S_MANSION),
+            self.structure(S_OCEAN_RUIN_COLD),
+            self.structure(S_OCEAN_RUIN_WARM),
+        )
+
+    def can_get_carrot(self):
+        return self.any_of(
+            self.any_village(),                 # village farms / chests
+            self.structure(S_PILLAGER_OUTPOST),  # chest
+            self.any_shipwreck(),               # chest
+            self.all_of(self.can_kill(), self.has_any_entities(E_ZOMBIE, E_HUSK, E_ZOMBIE_VILLAGER)),  # rare drop
+        )
+
+    def can_get_golden_apple(self):
+        # Craft (gold + apple; apples drop freely from oak/dark-oak leaves) or find ready-made.
+        return self.any_of(
+            self.can_get_gold(),                                            # craft it
+            self.any_mineshaft(),                                           # chest
+            self.structure(S_DESERT_PYRAMID),                               # chest
+            self.reached(f"{ADVANCEMENT_PREFIX}{A_THOSE_WERE_THE_DAYS}"),   # Bastion chest
+            self.structure(S_IGLOO),                                        # chest
+            self.any_portal(True),                                          # Ruined Portal chest
+            self.structure(S_DUNGEON),                                      # chest
+            self.reached(f"{ADVANCEMENT_PREFIX}{A_EYE_SPY}"),               # Stronghold chest
+            self.reached(f"{ADVANCEMENT_PREFIX}{A_TRIAL_EDITION}"),         # Trial Chambers chest
+            self.structure(S_OCEAN_RUIN_COLD),                             # Underwater Ruin chest
+            self.structure(S_OCEAN_RUIN_WARM),
+            self.structure(S_MANSION),                                      # chest
+            self.structure(S_ANCIENT_CITY),                                # placed in city center
+        )
+
+    def can_get_golden_carrot(self):
+        # Craft (gold nuggets + carrot) or find ready-made.
+        return self.any_of(
+            self.all_of(self.can_get_gold(), self.can_get_carrot()),       # craft it
+            self.structure(S_ANCIENT_CITY),                                # ice box chest
+            self.reached(f"{ADVANCEMENT_PREFIX}{A_THOSE_WERE_THE_DAYS}"),   # Bastion chest
+            self.any_portal(True),                                          # Ruined Portal chest
+            self.reached(f"{ADVANCEMENT_PREFIX}{A_TRIAL_EDITION}"),         # Trial Chambers chest
+            self.can_trade_villager(5),                                     # Farmer master trade (farmer/5/emerald_golden_carrot)
+        )
+
+    def can_get_golden_food(self):
+        # Either golden apple or golden carrot (e.g. horse/donkey breeding accepts both).
+        return self.any_of(self.can_get_golden_apple(), self.can_get_golden_carrot())
+
+    def can_get_pig_food(self):
+        # Carrot / potato / beetroot share the same sources (village farms, chests, zombie drops).
+        return self.can_get_carrot()
+
+    def can_get_spider_eye(self):
+        return self.any_of(
+            self.all_of(self.can_kill(), self.has_any_entities(E_SPIDER, E_CAVE_SPIDER, E_WITCH)),  # drops
+            self.structure(S_DESERT_PYRAMID),  # chest
+        )
+
+    def can_get_slimeball(self):
+        return self.any_of(
+            self.all_of(self.can_kill(), self.entity(E_SLIME)),  # Slime drop
+            self.can_trade_wandering_trader(),  # Wandering Trader sells slime balls
+        )
+
+    def can_get_seagrass(self):
+        return self.any_of(
+            self.knowledge(K_SHEAR),                            # shear seagrass
+            self.all_of(self.can_kill(), self.entity(E_TURTLE)),  # Turtle drop
+        )
+
+    def can_get_meat(self):
+        # Wolves accept any meat, including rotten flesh.
+        return self.all_of(
+            self.can_kill(),
+            self.has_any_entities(E_COW, E_PIG, E_SHEEP, E_CHICKEN, E_RABBIT, E_ZOMBIE),
+        )
+
+    def can_duplicate_allay(self):
+        # Allay duplicate: hand it an Amethyst Shard while it dances to a jukebox.
+        return self.all_of(
+            self.any_of(
+                self.knowledge(K_PICKAXE),       # mine an amethyst geode
+                self.structure(S_ANCIENT_CITY),  # chest
+                self.reached(f"{ADVANCEMENT_PREFIX}{A_TRIAL_EDITION}"),  # Trial Chambers
+            ),
+            self.material(MAT_DIAMOND),  # jukebox needs a diamond
+            self.can_get_disc(),         # disc to play
         )
 
     # -----------------------------------------------------------------------
@@ -322,6 +577,14 @@ class RuleHelper:
     def has_any_entities(self, *entity_names: str):
         return self.any_of(*[self.entity(name) for name in entity_names])
 
+    def has_n_entities(self, n: int, *entity_names: str):
+        """Reach at least ``n`` distinct mobs from the pool (OR over every n-combination).
+        Keep the pool small — the term count is C(len(pool), n)."""
+        return self.any_of(*[
+            self.all_of(*[self.entity(name) for name in combo])
+            for combo in itertools.combinations(entity_names, n)
+        ])
+
     def entity(self, entity_name: str):
         if entity_name not in MOBS_ALL:
             print(f"Warning: {entity_name} not found !")
@@ -329,28 +592,54 @@ class RuleHelper:
         entity_data = MOBS_ALL[entity_name]
         structure_thunk = self.structure_bound_mobs.get(entity_name)
         structure_node = structure_thunk() if structure_thunk is not None else Const(True)
+        build_thunk = self.constructed_mobs.get(entity_name)
+        build_node = build_thunk() if build_thunk is not None else Const(True)
         category_locked = (entity_data.category in self.locked_categories)
         unlock_node = self.has(f"{ENTITY_UNLOCK_PREFIX}{entity_name}") if category_locked else Const(True)
 
         return self.all_of(
             self.access_region(entity_data.region),
             structure_node,
+            build_node,
             unlock_node,
         )
+
+    def can_tame(self, entity_name: str):
+        """Reach the mob *and* hold its taming item (bones, fish, …). Mobs with no taming
+        item (mount-tamed: horses, llamas, …) reduce to plain reachability."""
+        food_thunk = self.taming_food.get(entity_name)
+        food_node = food_thunk() if food_thunk is not None else Const(True)
+        return self.all_of(self.entity(entity_name), food_node)
+
+    def can_breed(self, entity_name: str):
+        """Reach the mob *and* hold its breeding food. Mobs whose food is co-located with them
+        (seeds, flowers, nether fungi, …) reduce to plain reachability."""
+        food_thunk = self.breeding_food.get(entity_name)
+        food_node = food_thunk() if food_thunk is not None else Const(True)
+        return self.all_of(self.entity(entity_name), food_node)
 
     # -----------------------------------------------------------------------
     # Trades
     # -----------------------------------------------------------------------
-    def can_trade(self, include_trader: bool = True, tier: int = 1):
-        traders = [self.all_of(self.entity(E_VILLAGER), self.any_village())]
-        if include_trader:
-            traders.append(self.entity(E_WANDERING_TRADER))
-
-        base = self.any_of(*traders)
-
+    def can_trade_villager(self, tier: int = 1):
+        """Trade with a profession villager in a village at trade level ``tier``
+        (novice = 1 … master = 5). When the villager_trust option is on, the level
+        is gated behind that many Progressive Villager Trust items."""
+        base = self.all_of(self.entity(E_VILLAGER), self.any_village())
         if self.villager_trust:
             return self.all_of(base, self.has(ITEM_VILLAGER_TRUST, tier))
         return base
+
+    def can_trade_wandering_trader(self):
+        """Trade with a Wandering Trader. It has no trade levels, so it is never
+        gated by villager_trust — only by reaching the mob."""
+        return self.entity(E_WANDERING_TRADER)
+
+    def can_trade(self):
+        """The player can perform *some* trade — a novice (min-level) villager or a
+        Wandering Trader. Use for rules that only need "a trade happened" with no
+        specific profession/level (e.g. What a Deal!, Star Trader)."""
+        return self.any_of(self.can_trade_villager(), self.can_trade_wandering_trader())
 
     def can_barter(self):
         return self.all_of(

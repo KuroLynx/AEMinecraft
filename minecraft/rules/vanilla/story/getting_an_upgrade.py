@@ -8,6 +8,6 @@ def getting_an_upgrade(helper: RuleHelper) -> dict:
             helper.reached(f"{ADVANCEMENT_PREFIX}{A_STONE_AGE}"),
             helper.reached(f"{ADVANCEMENT_PREFIX}{A_TRIAL_EDITION}"),
             helper.reached(f"{ADVANCEMENT_PREFIX}{A_HERO_OF_THE_VILLAGE}"),
-            helper.can_trade(False),  # A toolsmith
+            helper.can_trade_villager(),  # A toolsmith
         ),
     }

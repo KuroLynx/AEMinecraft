@@ -12,7 +12,7 @@ def isnt_it_iron_pick(helper: RuleHelper) -> dict:
                 helper.reached(f"{ADVANCEMENT_PREFIX}{A_THE_CITY_AT_THE_END_OF_THE_GAME}"),  # In End City
                 helper.reached(f"{ADVANCEMENT_PREFIX}{A_EYE_SPY}"),  # In Stronghold
                 helper.any_village(),
-                helper.can_trade(False, 3),  # A toolsmith
+                helper.can_trade_villager(3),  # A toolsmith
             ),
         ),
     }
