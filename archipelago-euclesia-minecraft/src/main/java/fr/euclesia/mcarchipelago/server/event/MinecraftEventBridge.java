@@ -7,7 +7,6 @@ import fr.euclesia.mcarchipelago.server.gameplay.MobKillBridge;
 import fr.euclesia.mcarchipelago.server.gameplay.StartDimensionService;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
 import fr.euclesia.mcarchipelago.server.service.DeathLinkService;
-import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -24,9 +23,6 @@ public final class MinecraftEventBridge {
             AEM.ARCHIPELAGO.client().close();
         });
 
-        ServerEntityCombatEvents.AFTER_KILLED_OTHER_ENTITY.register((level, killer, killed, damageSource) ->
-                MobKillBridge.onMobKilled(killed));
-
         ServerPlayerEvents.JOIN.register(player -> {
             // Covers the connect-before-join path (e.g. main-menu connect): if the slot data is
             // already known, place the player in their start dimension before anything else.
@@ -37,6 +33,9 @@ public final class MinecraftEventBridge {
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, damageSource) -> {
             if (entity instanceof ServerPlayer player) {
                 DeathLinkService.onLocalPlayerDeath(player);
+            } else {
+                // Fires for every mob death; the bridge filters to player-credited kills.
+                MobKillBridge.onMobKilled(entity, damageSource);
             }
         });
 

@@ -1,5 +1,4 @@
 from ....helpers import RuleHelper
-from .baby_zombie import baby_zombie
 from .blaze import blaze
 from .bogged import bogged
 from .breeze import breeze
@@ -33,7 +32,6 @@ from .zombie_villager import zombie_villager
 
 def get_hostile_rules(helper: RuleHelper) -> dict:
     return (
-        baby_zombie(helper) |
         blaze(helper) |
         bogged(helper) |
         breeze(helper) |
