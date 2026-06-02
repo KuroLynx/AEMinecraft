@@ -11,6 +11,7 @@
     "ItemEntityMixin",
     "PlacedFeatureMixin",
     "PlayerAdvancementsMixin",
+    "ServerAdvancementManagerAccessor",
     "ServerLevelMixin",
     "SlotMixin",
     "StructureStartMixin",
