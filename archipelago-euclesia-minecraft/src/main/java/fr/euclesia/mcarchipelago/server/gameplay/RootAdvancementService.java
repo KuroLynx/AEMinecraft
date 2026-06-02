@@ -1,7 +1,9 @@
 package fr.euclesia.mcarchipelago.server.gameplay;
 
+import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.mixin.ServerAdvancementManagerAccessor;
 import fr.euclesia.mcarchipelago.registry.APTrackerRegistry;
+import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
 import net.minecraft.advancements.Advancement;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.advancements.AdvancementProgress;
@@ -80,6 +82,23 @@ public final class RootAdvancementService {
         AdvancementTree tree = manager.tree();
         tree.clear();
         tree.addAll(accessor.archipelago_euclesia$getAdvancements().values());
+        AEM.LOGGER.info("Rebuilt Archipelago tab root with {} goal criteria", required);
+    }
+
+    /**
+     * Applies the rebuilt root to a player as they join. Covers the connect-before-join path
+     * (main-menu connect): at connect time the player isn't online yet, so the connect-time reload
+     * is a no-op and the player would otherwise initialise from the still-static (or not-yet-swapped)
+     * root. Rebuilding (idempotent) and reloading here guarantees the client receives the goal-count
+     * version. Runs on the server thread (the JOIN event fires there).
+     */
+    public static void applyOnJoin(ServerPlayer player) {
+        MinecraftServer server = AEMServerRuntime.server();
+        if (server == null || !AEMServerRuntime.isArchipelagoReady()) {
+            return;
+        }
+        rebuild(server, AEM.ARCHIPELAGO.client().state().parsedSlotData().advancementsRequired());
+        player.getAdvancements().reload(server.getAdvancements());
     }
 
     /** Awards the next ungranted root criterion. Called when an active advancement is completed. */
