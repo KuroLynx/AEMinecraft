@@ -17,10 +17,14 @@ public final class MobSpawnLockService {
     private MobSpawnLockService() {}
 
     public static boolean shouldBlockSpawn(Entity entity) {
+        return isMobLocked(AEMServerRuntime.entityGameId(entity));
+    }
+
+    /** Id-based variant, for callers that gate on a specific mob (e.g. the Ender Dragon fight). */
+    public static boolean isMobLocked(String mobGameId) {
         if (!AEMServerRuntime.isArchipelagoReady()) {
             return false;
         }
-        String mobGameId = AEMServerRuntime.entityGameId(entity);
         return AEM.ARCHIPELAGO.client().registries().apMobs().isSpawnLocked(mobGameId);
     }
 }

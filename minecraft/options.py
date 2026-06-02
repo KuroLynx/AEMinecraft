@@ -81,19 +81,26 @@ class MobSpawnLockCategory(OptionSet):
 
     Leave empty to disable mob spawn locking entirely.
 
-    Valid values: passive, neutral, hostile
+    Locking "boss" gates the bosses (Ender Dragon, Elder Guardian, Warden, Wither) behind their
+    'Entity Unlock: <boss>' item: they cannot spawn — and so their kill check and the goal that
+    depends on them stays out of logic — until that item is received. Note that an Ocean Monument
+    that generates while Elder Guardian is locked stays without its elder guardians (monument mobs
+    are not retro-spawned); pair a boss lock with sensible logic if that matters to you.
+
+    Valid values: passive, neutral, hostile, boss
 
     Examples:
         Lock only hostiles:
             - hostile
 
-        Lock everything:
+        Lock everything including bosses:
             - passive
             - neutral
             - hostile
+            - boss
     """
     display_name = "Mob Spawn Lock Category"
-    valid_keys = {"passive", "neutral", "hostile"}
+    valid_keys = {"passive", "neutral", "hostile", "boss"}
     default = frozenset()
 
 
