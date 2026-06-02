@@ -1,4 +1,4 @@
-from ....data import MOBS_PASSIVE
+from ....data import MOBS_ALL
 from ...constants import *
 from ...helpers import RuleHelper
 
@@ -10,6 +10,6 @@ def arbalistic(helper: RuleHelper) -> dict:
         A_ARBALISTIC: helper.all_of(
             helper.reached(f"{ADVANCEMENT_PREFIX}{A_OL_BETSY}"),
             helper.knowledge(K_ENCHANT),
-            helper.has_n_entities(5, *MOBS_PASSIVE.keys()),
+            helper.has_n_entities(5, *MOBS_ALL.keys()),
         ),
     }

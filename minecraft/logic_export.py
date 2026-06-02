@@ -21,8 +21,12 @@ All keys/strings are plain (region names are normalised away from enum members i
 """
 from __future__ import annotations
 
-from .data import ALL_LOCATIONS
+from .data import ALL_LOCATIONS, MCLocationCategory
 from .regions import MCRegion
+from .rules.ast import ReachLocation, at_least
+
+# game_id of the Archipelago advancement-tab root tile (mirrors APTrackerRegistry.TAB_ROOT_ID).
+AP_TAB_ROOT_GAME_ID = "aem:archipelago"
 
 
 def build_logic_export(world) -> dict:
@@ -44,8 +48,27 @@ def build_logic_export(world) -> dict:
             for entrance in entrances
         ]
 
+    origin = MCRegion.MENU.value
+
+    # Synthetic entry for the Archipelago tab root tile: it's a datapack advancement, not an AP
+    # location, so without this it would never be coloured. Its rule mirrors the goal's advancement
+    # gate — "at least `advancements_required` advancement locations reachable" — so the root tile
+    # turns in-logic exactly when enough advancements become completable. Region is the always-reachable
+    # origin, leaving the count rule as the only gate. (Bosses are tracked by their own kill tiles.)
+    advancement_names = [
+        name for name in locations
+        if ALL_LOCATIONS[name].category == MCLocationCategory.ADVANCEMENT
+    ]
+    required = min(world.options.advancements_required.value, len(advancement_names))
+    root_rule = at_least(required, [ReachLocation(world.player, name) for name in advancement_names])
+    locations[f"__{AP_TAB_ROOT_GAME_ID}__"] = {
+        "game_id": AP_TAB_ROOT_GAME_ID,
+        "region": origin,
+        "rule": root_rule.to_dict(),
+    }
+
     return {
-        "origin": MCRegion.MENU.value,
+        "origin": origin,
         "regions": regions,
         "locations": locations,
     }

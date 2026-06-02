@@ -28,7 +28,9 @@ public record APSlotData(
         Map<String, Long> mobSpawnLockMobs,
         Map<String, Long> structureLocks,
         Map<String, Long> materialHandlingLocks,
-        Map<String, ToolLock> toolLocks
+        Map<String, ToolLock> toolLocks,
+        Map<String, String> stationKnowledgeLocks,
+        Map<String, String> dimensionLocks
 ) {
     /** A tool/armor pickup gate: the player needs {@code knowledge} AND {@code material} tiers. */
     public record ToolLock(String knowledge, int material) {}
@@ -49,6 +51,8 @@ public record APSlotData(
                 Map.of(),
                 Map.of(),
                 List.of(),
+                Map.of(),
+                Map.of(),
                 Map.of(),
                 Map.of(),
                 Map.of(),
@@ -75,7 +79,9 @@ public record APSlotData(
                 APJson.stringLongMap(json, "mob_spawn_lock_mobs"),
                 APJson.stringLongMap(json, "structure_locks"),
                 APJson.stringLongMap(json, "material_handling_locks"),
-                parseToolLocks(json)
+                parseToolLocks(json),
+                APJson.stringStringMap(json, "station_knowledge_locks"),
+                APJson.stringStringMap(json, "dimension_locks")
         );
     }
 

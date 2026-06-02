@@ -12,7 +12,7 @@ import java.util.List;
  *
  * <p>Mirrors {@code minecraft/rules/ast.py}: the only kinds that ever reach
  * serialization are {@code const}, {@code has}, {@code region}, {@code loc},
- * {@code and} and {@code or}. The JSON is parsed once into this tree (via
+ * {@code and}, {@code or} and {@code atleast}. The JSON is parsed once into this tree (via
  * {@link #parse(JsonElement)}); evaluation then walks the tree against a
  * {@link LogicEvaluation} the same way {@code ExportEvaluator.eval} does in
  * {@code tools/logic_selfcheck.py}.
@@ -30,6 +30,7 @@ public sealed interface RuleNode {
             case "loc" -> new Loc(node.get("l").getAsString());
             case "and" -> new And(parseChildren(node.getAsJsonArray("c")));
             case "or" -> new Or(parseChildren(node.getAsJsonArray("c")));
+            case "atleast" -> new AtLeast(node.get("n").getAsInt(), parseChildren(node.getAsJsonArray("c")));
             default -> throw new IllegalArgumentException("unknown rule node kind: " + kind);
         };
     }
@@ -87,6 +88,20 @@ public sealed interface RuleNode {
         public boolean eval(LogicEvaluation evaluation) {
             for (RuleNode child : children) {
                 if (child.eval(evaluation)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    /** True once at least {@code n} of {@code children} evaluate true. */
+    record AtLeast(int n, List<RuleNode> children) implements RuleNode {
+        @Override
+        public boolean eval(LogicEvaluation evaluation) {
+            int satisfied = 0;
+            for (RuleNode child : children) {
+                if (child.eval(evaluation) && ++satisfied >= n) {
                     return true;
                 }
             }

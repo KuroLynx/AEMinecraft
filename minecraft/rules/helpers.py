@@ -1,8 +1,6 @@
-import itertools
-
 # AST primitives must be imported directly: `from .. import *` cannot supply them because the
 # package __init__ imports this module (via set_rules) before it defines Const/Has/and_/… .
-from .ast import Const, Has, ReachRegion, ReachLocation, and_, or_
+from .ast import Const, Has, ReachRegion, ReachLocation, and_, or_, at_least
 from .. import *
 
 
@@ -401,7 +399,7 @@ class RuleHelper:
         # entity(Iron Golem) → this helper → entity(Iron Golem) recurses at rule-build time.
         sources = [
             self.all_of(self.knowledge(K_PICKAXE), self.access_region(REGION_OVERWORLD)),  # mine Iron Ore (Overworld only)
-            self.all_of(self.can_kill(), self.has_any_entities(E_HUSK, E_ZOMBIE, E_ZOMBIE_VILLAGER)),  # mob drops
+            self.all_of(self.can_kill_with_fist(), self.has_any_entities(E_HUSK, E_ZOMBIE, E_ZOMBIE_VILLAGER)),  # mob drops (zombies punchable)
             self.any_mineshaft(),  # chest
             self.structure(S_DESERT_PYRAMID),  # chest
             self.structure(S_JUNGLE_PYRAMID),  # chest
@@ -462,11 +460,19 @@ class RuleHelper:
         )
 
     def can_kill(self):
+        """Kill a mob that requires a real weapon to fight safely — needs a melee weapon Knowledge
+        (sword / axe / spear). Use for hostile/tanky mobs and bosses."""
         return self.any_of(
             self.knowledge(K_SWORD),
             self.knowledge(K_AXE),
             self.knowledge(K_SPEAR),
         )
+
+    def can_kill_with_fist(self):
+        """Low-level mobs (passive animals, weak mobs) can be punched to death — no weapon Knowledge
+        required. Bare hands are always available, so this is unconditionally true; it exists to mark
+        at the call site that the kill needs no weapon (vs can_kill())."""
+        return Const(True)
 
     # -----------------------------------------------------------------------
     # Breeding / taming foods
@@ -520,7 +526,7 @@ class RuleHelper:
             self.any_village(),                 # village farms / chests
             self.structure(S_PILLAGER_OUTPOST),  # chest
             self.any_shipwreck(),               # chest
-            self.all_of(self.can_kill(), self.has_any_entities(E_ZOMBIE, E_HUSK, E_ZOMBIE_VILLAGER)),  # rare drop
+            self.all_of(self.can_kill_with_fist(), self.has_any_entities(E_ZOMBIE, E_HUSK, E_ZOMBIE_VILLAGER)),  # rare drop (zombies punchable)
         )
 
     def can_get_golden_apple(self):
@@ -562,26 +568,27 @@ class RuleHelper:
 
     def can_get_spider_eye(self):
         return self.any_of(
-            self.all_of(self.can_kill(), self.has_any_entities(E_SPIDER, E_CAVE_SPIDER, E_WITCH)),  # drops
+            self.all_of(self.can_kill_with_fist(), self.has_any_entities(E_SPIDER, E_CAVE_SPIDER, E_WITCH)),  # drops (spiders are punchable)
             self.structure(S_DESERT_PYRAMID),  # chest
         )
 
     def can_get_slimeball(self):
         return self.any_of(
-            self.all_of(self.can_kill(), self.entity(E_SLIME)),  # Slime drop
+            self.all_of(self.can_kill_with_fist(), self.entity(E_SLIME)),  # Slime drop (punchable)
             self.can_trade_wandering_trader(),  # Wandering Trader sells slime balls
         )
 
     def can_get_seagrass(self):
         return self.any_of(
             self.knowledge(K_SHEAR),                            # shear seagrass
-            self.all_of(self.can_kill(), self.entity(E_TURTLE)),  # Turtle drop
+            self.all_of(self.can_kill_with_fist(), self.entity(E_TURTLE)),  # Turtle drop (passive)
         )
 
     def can_get_meat(self):
-        # Wolves accept any meat, including rotten flesh.
+        # Wolves accept any meat, including rotten flesh. Passive animals in the pool are punchable,
+        # so no weapon is required to obtain meat.
         return self.all_of(
-            self.can_kill(),
+            self.can_kill_with_fist(),
             self.has_any_entities(E_COW, E_PIG, E_SHEEP, E_CHICKEN, E_RABBIT, E_ZOMBIE),
         )
 
@@ -607,12 +614,10 @@ class RuleHelper:
         return self.any_of(*[self.entity(name) for name in entity_names])
 
     def has_n_entities(self, n: int, *entity_names: str):
-        """Reach at least ``n`` distinct mobs from the pool (OR over every n-combination).
-        Keep the pool small — the term count is C(len(pool), n)."""
-        return self.any_of(*[
-            self.all_of(*[self.entity(name) for name in combo])
-            for combo in itertools.combinations(entity_names, n)
-        ])
+        """Reach at least ``n`` distinct mobs from the pool. Uses an AtLeast node so the rule
+        stays O(len(pool)) instead of an OR over C(len(pool), n) combinations (which blew the
+        serialized export up to ~500MB for Arbalistic's 35-mob pool)."""
+        return at_least(n, [self.entity(name) for name in entity_names])
 
     def entity(self, entity_name: str):
         if entity_name not in MOBS_ALL:

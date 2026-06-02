@@ -170,8 +170,21 @@ TOOL_LOCKS.update({
     "fishing_rod"   : (K_FISHING, MAT_WOOD),
     "shield"        : (K_SHIELD, MAT_IRON),
     "flint_and_steel": (K_PYRO, MAT_IRON),
+    "fire_charge"   : (K_PYRO, MAT_WOOD),  # blaze powder + coal + gunpowder (no metal)
     "elytra"        : (K_FLYING, MAT_WOOD),
+    # Crafting stations: gated like tools so they can't be crafted/picked up without the Knowledge
+    # (plus their recipe's material tier). Their *use* is additionally gated below.
+    "enchanting_table": (K_ENCHANT, MAT_DIAMOND),  # 4 obsidian + 2 diamond + book
+    "brewing_stand"   : (K_BREWING, MAT_STONE),    # blaze rod + 3 cobblestone
 })
+
+# Crafting stations whose *use* (right-click to open the GUI) is gated behind a Knowledge item: the
+# mod blocks interacting with a placed block until the Knowledge is received, so tables/stands found
+# in villages/strongholds are inert too. Value is the bare knowledge name (rules.constants K_*).
+STATION_KNOWLEDGE_LOCKS: dict[str, str] = {
+    "enchanting_table": K_ENCHANT,
+    "brewing_stand"   : K_BREWING,
+}
 
 MOBS_PASSIVE  = {k: v for k, v in MOBS_ALL.items() if v.category == MCEntityCategory.PASSIVE}
 MOBS_NEUTRAL  = {k: v for k, v in MOBS_ALL.items() if v.category == MCEntityCategory.NEUTRAL}

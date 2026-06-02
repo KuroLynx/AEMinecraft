@@ -53,7 +53,8 @@ def set_rules(world ) -> None:
         if mob_data.category == MCEntityCategory.BOSS:
             prefix = f"{BOSS_KILL_PREFIX}"
 
-        if mob_data.category == MCEntityCategory.HOSTILE:
+        # Hostile mobs need a real weapon to fight, except low-level ones that can be punched.
+        if mob_data.category == MCEntityCategory.HOSTILE and mob_name not in FIST_KILLABLE_MOBS:
             condition = helper.all_of(condition, helper.can_kill())
 
         location_name = f"{prefix}{mob_name}"
