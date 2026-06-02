@@ -1,5 +1,6 @@
 package fr.euclesia.mcarchipelago.mixin;
 
+import fr.euclesia.mcarchipelago.server.gameplay.MobSpawnLockService;
 import fr.euclesia.mcarchipelago.server.gameplay.StructureCapture;
 import fr.euclesia.mcarchipelago.server.gameplay.StructureCapture.CaptureSession;
 import net.minecraft.core.BlockPos;
@@ -60,6 +61,13 @@ public abstract class WorldGenRegionMixin {
         if (session != null) {
             session.captureEntity(entity);
             cir.setReturnValue(true);
+            return;
+        }
+        // Worldgen-time spawns (chunk-generation animals such as rabbits/camels, and structure mobs of
+        // an already-unlocked structure) bypass ServerLevel#addEntity, so the mob-spawn-lock must be
+        // enforced here too. Returning false is vanilla's "add refused" signal.
+        if (MobSpawnLockService.shouldBlockSpawn(entity)) {
+            cir.setReturnValue(false);
         }
     }
 }
