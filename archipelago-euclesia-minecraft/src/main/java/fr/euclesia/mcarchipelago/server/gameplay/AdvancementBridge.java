@@ -24,7 +24,7 @@ public final class AdvancementBridge {
         // but only for real advancement checks this seed — not the root tile itself.
         if (!APTrackerRegistry.TAB_ROOT_ID.equals(advancementId)
                 && AEM.ARCHIPELAGO.client().registries().apLocations().isActiveLocation(advancementId)) {
-            RootAdvancementService.awardProgress(player);
+            RootAdvancementService.syncProgress(player);
         }
     }
 

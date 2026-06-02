@@ -2,6 +2,7 @@ package fr.euclesia.mcarchipelago.server.gameplay;
 
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.mixin.ServerAdvancementManagerAccessor;
+import fr.euclesia.mcarchipelago.registry.APLocationRegistry;
 import fr.euclesia.mcarchipelago.registry.APTrackerRegistry;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
 import net.minecraft.advancements.Advancement;
@@ -99,21 +100,48 @@ public final class RootAdvancementService {
         }
         rebuild(server, AEM.ARCHIPELAGO.client().state().parsedSlotData().advancementsRequired());
         player.getAdvancements().reload(server.getAdvancements());
+        syncProgress(player);
     }
 
-    /** Awards the next ungranted root criterion. Called when an active advancement is completed. */
-    public static void awardProgress(ServerPlayer player) {
+    /**
+     * Reconciles the root's granted criteria to exactly the number of completed active advancements
+     * (capped at the criteria count). Idempotent and self-correcting, so it is safe to call live on
+     * each completion AND on (re)join — unlike a plain "award the next criterion", which would
+     * double-count when {@code scanPlayer} re-fires completions on top of disk-restored progress.
+     */
+    public static void syncProgress(ServerPlayer player) {
         AdvancementHolder holder = rootHolder;
         if (holder == null || holder.value().requirements().size() <= 1) {
             return; // not rebuilt with a goal count
         }
+        MinecraftServer server = AEMServerRuntime.server();
+        if (server == null) {
+            return;
+        }
+        List<String> names = new ArrayList<>(holder.value().criteria().keySet());
+        int target = Math.min(countCompletedAdvancements(server, player), names.size());
         AdvancementProgress progress = player.getAdvancements().getOrStartProgress(holder);
-        for (String name : holder.value().criteria().keySet()) {
-            CriterionProgress criterion = progress.getCriterion(name);
-            if (criterion == null || !criterion.isDone()) {
-                player.getAdvancements().award(holder, name);
-                return;
+        for (int i = 0; i < names.size(); i++) {
+            CriterionProgress criterion = progress.getCriterion(names.get(i));
+            boolean granted = criterion != null && criterion.isDone();
+            if (i < target && !granted) {
+                player.getAdvancements().award(holder, names.get(i));
+            } else if (i >= target && granted) {
+                player.getAdvancements().revoke(holder, names.get(i));
             }
         }
+    }
+
+    /** Counts the player's completed advancements that are active Archipelago checks this seed. */
+    private static int countCompletedAdvancements(MinecraftServer server, ServerPlayer player) {
+        APLocationRegistry locations = AEM.ARCHIPELAGO.client().registries().apLocations();
+        int count = 0;
+        for (AdvancementHolder advancement : server.getAdvancements().getAllAdvancements()) {
+            if (locations.isActiveLocation(advancement.id().toString())
+                    && player.getAdvancements().getOrStartProgress(advancement).isDone()) {
+                count++;
+            }
+        }
+        return count;
     }
 }
