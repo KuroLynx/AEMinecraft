@@ -2,6 +2,8 @@ package fr.euclesia.mcarchipelago.server.event;
 
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.protocol.packet.outbound.SayPacket;
+import fr.euclesia.mcarchipelago.server.connect.APWorldConnection;
+import fr.euclesia.mcarchipelago.server.connect.APWorldConnector;
 import fr.euclesia.mcarchipelago.server.gameplay.AdvancementBridge;
 import fr.euclesia.mcarchipelago.server.gameplay.MobKillBridge;
 import fr.euclesia.mcarchipelago.server.gameplay.StartDimensionService;
@@ -12,11 +14,39 @@ import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.storage.LevelResource;
 
 public final class MinecraftEventBridge {
+    private static final long CONNECT_TIMEOUT_MS = 20_000L;
+
     private MinecraftEventBridge() {}
 
     public static void register() {
+        // Connect-on-join gate. A world created via the Archipelago tab stages its connection here;
+        // persist it into the new world's folder, then require a live Archipelago session before the
+        // world finishes loading. If the connection fails, abort the load — you cannot enter a world
+        // without being connected.
+        ServerLifecycleEvents.SERVER_STARTING.register(server -> {
+            java.nio.file.Path worldDir = server.getWorldPath(LevelResource.ROOT);
+
+            APWorldConnection pending = APWorldConnection.takePending();
+            if (pending != null) {
+                pending.write(worldDir);
+            }
+
+            APWorldConnection connection = APWorldConnection.read(worldDir);
+            if (connection == null || !connection.hasSlot()) {
+                return;
+            }
+            if (AEM.ARCHIPELAGO.client().state().isConnected()) {
+                return;
+            }
+            if (!APWorldConnector.connectBlocking(connection, CONNECT_TIMEOUT_MS)) {
+                throw new IllegalStateException("Archipelago connection failed for " + connection.address
+                        + ":" + connection.port + " (slot " + connection.slot + "); cannot enter the world.");
+            }
+        });
+
         ServerLifecycleEvents.SERVER_STARTED.register(AEMServerRuntime::setServer);
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
             AEMServerRuntime.clearServer(server);

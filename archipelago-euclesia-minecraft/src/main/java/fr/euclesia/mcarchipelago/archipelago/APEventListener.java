@@ -9,6 +9,9 @@ public interface APEventListener {
 
     default void onConnectionRefused(ArchipelagoClient client, APReceivedPacket packet) {}
 
+    /** Fired when a previously-live session drops (not for failed initial connect attempts). */
+    default void onDisconnected(ArchipelagoClient client) {}
+
     default void onReceivedItems(ArchipelagoClient client, APReceivedPacket packet) {}
 
     default void onReceivedItems(ArchipelagoClient client, ReceivedItemsPacket packet) {}

@@ -396,6 +396,22 @@ class MCWorld(World):
                 for name in self._get_locked_structures()
             },
 
+            # --- Material handling : item MC → nombre de "Progressive Material Handling" requis ---
+            # Le mod bloque le ramassage de ces items tant que ce nombre de copies n'est pas reçu.
+            "material_handling_locks": {
+                f"minecraft:{path}": count
+                for count, paths in MATERIAL_HANDLING_ITEMS.items()
+                for path in paths
+            },
+
+            # --- Tool/armor locks : item MC → {knowledge AP requise, palier de matériau requis} ---
+            # Le mod bloque le ramassage/craft tant que le joueur n'a pas reçu la Knowledge ET assez
+            # de "Progressive Material Handling" (ex. épée diamant = Sword Handling + 5).
+            "tool_locks"           : {
+                f"minecraft:{path}": {"knowledge": f"Knowledge: {knowledge}", "material": tier}
+                for path, (knowledge, tier) in TOOL_LOCKS.items()
+            },
+
             # --- Logic graph (region graph + per-location reachability rules) ---
             # The mod evaluates this against received items to colour advancements in/out of logic.
             "logic"                : build_logic_export(self),

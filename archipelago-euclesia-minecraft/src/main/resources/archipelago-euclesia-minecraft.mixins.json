@@ -5,9 +5,11 @@
   "mixins": [
     "AdvancementVisibilityEvaluatorMixin",
     "EnderDragonFightMixin",
+    "ItemEntityMixin",
     "PlacedFeatureMixin",
     "PlayerAdvancementsMixin",
     "ServerLevelMixin",
+    "SlotMixin",
     "StructureStartMixin",
     "WorldGenRegionMixin"
   ],

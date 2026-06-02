@@ -96,6 +96,16 @@ class RuleHelper:
             E_WOLF     : lambda: self.can_get_meat(),  # any meat
             E_NAUTILUS : lambda: self.can_get_all_fish(),
         }
+        # Mobs that never spawn naturally and only come from another mob: a breeding cross, a
+        # transformation, or a companion spawn. Gated by reaching (and, for the bred ones, being
+        # able to breed) their parent(s), on top of reaching their own region. No entry references
+        # itself, so there is no rule-build recursion.
+        self.parent_bound_mobs = {
+            E_MULE           : lambda: self.all_of(self.can_breed(E_HORSE), self.can_breed(E_DONKEY)),  # Horse × Donkey
+            E_TADPOLE        : lambda: self.can_breed(E_FROG),                # Frog spawn
+            E_TRADER_LLAMA   : lambda: self.entity(E_WANDERING_TRADER),       # spawns leashed to a Wandering Trader
+            E_ZOMBIE_NAUTILUS: lambda: self.entity(E_DROWNED),                # drowned-converted variant
+        }
         # Player-constructed mobs: gated by their build materials (snow / copper / iron blocks) +
         # a carved pumpkin, on top of reaching their region (see entity). The material helpers are
         # called with their golem-drop branch disabled, since that branch references the very golem
@@ -613,6 +623,8 @@ class RuleHelper:
         structure_node = structure_thunk() if structure_thunk is not None else Const(True)
         build_thunk = self.constructed_mobs.get(entity_name)
         build_node = build_thunk() if build_thunk is not None else Const(True)
+        parent_thunk = self.parent_bound_mobs.get(entity_name)
+        parent_node = parent_thunk() if parent_thunk is not None else Const(True)
         category_locked = (entity_data.category in self.locked_categories)
         unlock_node = self.has(f"{ENTITY_UNLOCK_PREFIX}{entity_name}") if category_locked else Const(True)
 
@@ -620,6 +632,7 @@ class RuleHelper:
             self.access_region(entity_data.region),
             structure_node,
             build_node,
+            parent_node,
             unlock_node,
         )
 

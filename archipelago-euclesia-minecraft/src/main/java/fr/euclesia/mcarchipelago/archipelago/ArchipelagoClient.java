@@ -130,6 +130,7 @@ public final class ArchipelagoClient {
             registries.apLocations().loadSlotData(state.parsedSlotData());
             registries.apMobs().loadSlotData(state.parsedSlotData());
             registries.apStructures().loadSlotData(state.parsedSlotData());
+            registries.apMaterials().loadSlotData(state.parsedSlotData());
             registries.apTrackers().loadFromSlotData(state.slotData());
         }
 
@@ -284,8 +285,14 @@ public final class ArchipelagoClient {
 
         @Override
         public void onClose(int statusCode, String reason) {
+            boolean wasConnected = state.isConnected();
             state.setConnected(false);
             AEM.LOGGER.info("Archipelago WebSocket closed: {} {}", statusCode, reason);
+            // Only a drop of a live session counts; ignore closes from failed connect attempts (the
+            // wss:// -> ws:// fallback) so they don't trigger a kick.
+            if (wasConnected) {
+                listeners.forEach(listener -> listener.onDisconnected(ArchipelagoClient.this));
+            }
         }
     }
 }
