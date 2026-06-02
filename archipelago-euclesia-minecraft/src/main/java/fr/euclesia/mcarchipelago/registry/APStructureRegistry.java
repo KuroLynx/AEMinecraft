@@ -27,6 +27,11 @@ public final class APStructureRegistry {
         return lockItemIds.containsKey(structureGameId) && !unlocked.contains(structureGameId);
     }
 
+    /** Cheap guard so worldgen can skip the per-placement id lookup when nothing is locked at all. */
+    public boolean hasLocks() {
+        return !lockItemIds.isEmpty();
+    }
+
     /**
      * Marks every structure gated behind {@code itemId} as unlocked, returning the ones that were not
      * already unlocked so the caller can replay their skipped placements.

@@ -1,18 +1,23 @@
 package fr.euclesia.mcarchipelago.server.gameplay;
 
 import fr.euclesia.mcarchipelago.AEM;
+import fr.euclesia.mcarchipelago.registry.APStructureRegistry;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 import net.minecraft.world.level.levelgen.structure.Structure;
 
 /**
- * Decides whether a structure is currently forbidden by the Archipelago structure-lock option.
- * Queried from {@code StructureStartMixin} at {@code StructureStart#placeInChunk}: a locked structure
- * still computes its placement (so terrain/heightmap context is correct), but its writes are captured
- * instead of applied (see {@link StructureCapture} / {@link StructureCaptureService}) until the unlock
- * item arrives.
+ * Decides whether a structure (or a structure-like placed feature, e.g. {@code minecraft:desert_well})
+ * is currently forbidden by the Archipelago structure-lock option. A locked thing still computes its
+ * placement (so terrain/heightmap context is correct), but its writes are captured instead of applied
+ * (see {@link StructureCapture} / {@link StructureCaptureService}) until the unlock item arrives.
+ *
+ * <p>Some entries in the {@code structure_locks} list are real {@code StructureStart} structures
+ * (handled at {@code StructureStartMixin}); others — like the Desert Well — are vanilla
+ * {@link PlacedFeature}s placed during biome decoration (handled at {@code PlacedFeatureMixin}).
  */
 public final class StructureLockService {
     private StructureLockService() {}
@@ -22,14 +27,34 @@ public final class StructureLockService {
      * {@code null} when it may generate normally.
      */
     public static String lockedStructureId(WorldGenLevel level, Structure structure) {
-        if (!AEMServerRuntime.isArchipelagoReady()) {
+        APStructureRegistry registry = lockRegistry();
+        if (registry == null) {
             return null;
         }
         Identifier id = level.registryAccess().lookupOrThrow(Registries.STRUCTURE).getKey(structure);
-        if (id == null) {
+        return id != null && registry.isLocked(id.toString()) ? id.toString() : null;
+    }
+
+    /**
+     * Returns the placed feature's game id when its placement should be captured rather than applied,
+     * or {@code null} when it may generate normally. Lets feature-based "structures" (Desert Well,
+     * fossils, ...) be locked the same way as real structures.
+     */
+    public static String lockedFeatureId(WorldGenLevel level, PlacedFeature feature) {
+        APStructureRegistry registry = lockRegistry();
+        if (registry == null) {
             return null;
         }
-        String structureId = id.toString();
-        return AEM.ARCHIPELAGO.client().registries().apStructures().isLocked(structureId) ? structureId : null;
+        Identifier id = level.registryAccess().lookupOrThrow(Registries.PLACED_FEATURE).getKey(feature);
+        return id != null && registry.isLocked(id.toString()) ? id.toString() : null;
+    }
+
+    /** The lock registry only when Archipelago is connected and something is actually locked. */
+    private static APStructureRegistry lockRegistry() {
+        if (!AEMServerRuntime.isArchipelagoReady()) {
+            return null;
+        }
+        APStructureRegistry registry = AEM.ARCHIPELAGO.client().registries().apStructures();
+        return registry.hasLocks() ? registry : null;
     }
 }
