@@ -24,11 +24,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class WorldGenRegionMixin {
 
     @Inject(method = "setBlock", at = @At("HEAD"), cancellable = true)
-    private void archipelago_euclesia$captureSetBlock(BlockPos pos, BlockState state, int flags, int recursionLeft,
+    private void archipelago_euclesia$captureSetBlock(BlockPos pos, BlockState blockState, int updateFlags, int updateLimit,
                                                       CallbackInfoReturnable<Boolean> cir) {
         CaptureSession session = StructureCapture.current();
         if (session != null) {
-            session.captureBlock(pos.immutable(), state);
+            session.captureBlock(pos.immutable(), blockState);
             cir.setReturnValue(true);
         }
     }
