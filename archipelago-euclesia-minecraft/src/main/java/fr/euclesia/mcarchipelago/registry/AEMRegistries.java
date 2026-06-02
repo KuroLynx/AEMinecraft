@@ -7,6 +7,7 @@ public final class AEMRegistries {
     private final APItemRegistry apItems = new APItemRegistry();
     private final APLocationRegistry apLocations = new APLocationRegistry();
     private final APMobRegistry apMobs = new APMobRegistry();
+    private final APStructureRegistry apStructures = new APStructureRegistry();
     private final APTrackerRegistry apTrackers = new APTrackerRegistry();
 
     public APHandlerRegistry apHandlers() {
@@ -23,6 +24,10 @@ public final class AEMRegistries {
 
     public APMobRegistry apMobs() {
         return apMobs;
+    }
+
+    public APStructureRegistry apStructures() {
+        return apStructures;
     }
 
     public APTrackerRegistry apTrackers() {

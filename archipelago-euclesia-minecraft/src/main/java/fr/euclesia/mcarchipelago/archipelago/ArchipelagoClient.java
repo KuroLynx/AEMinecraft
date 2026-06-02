@@ -20,11 +20,16 @@ import fr.euclesia.mcarchipelago.protocol.registry.APHandlerRegistry;
 import fr.euclesia.mcarchipelago.protocol.transport.APTransport;
 import fr.euclesia.mcarchipelago.protocol.transport.APTransportListener;
 import fr.euclesia.mcarchipelago.registry.AEMRegistries;
+import fr.euclesia.mcarchipelago.server.gameplay.StructureCaptureService;
+import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
+import net.minecraft.server.MinecraftServer;
 
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 public final class ArchipelagoClient {
@@ -124,6 +129,7 @@ public final class ArchipelagoClient {
             registries.apItems().loadSlotData(state.parsedSlotData());
             registries.apLocations().loadSlotData(state.parsedSlotData());
             registries.apMobs().loadSlotData(state.parsedSlotData());
+            registries.apStructures().loadSlotData(state.parsedSlotData());
             registries.apTrackers().loadFromSlotData(state.slotData());
         }
 
@@ -166,14 +172,34 @@ public final class ArchipelagoClient {
         if (receivedItems.index() == 0) {
             registries.apItems().resetReceived();
         }
+        Set<String> newlyUnlockedStructures = new HashSet<>();
+        Set<String> newlyUnlockedMobs = new HashSet<>();
         receivedItems.items().forEach(item -> {
             registries.apItems().markReceived(item);
-            registries.apMobs().markUnlockedByItem(item.itemId());
+            newlyUnlockedMobs.addAll(registries.apMobs().markUnlockedByItem(item.itemId()));
+            newlyUnlockedStructures.addAll(registries.apStructures().markUnlockedByItem(item.itemId()));
         });
+        applyStructureUnlocks(newlyUnlockedStructures, newlyUnlockedMobs);
 
         listeners.forEach(listener -> {
             listener.onReceivedItems(client, packet);
             listener.onReceivedItems(client, receivedItems);
+        });
+    }
+
+    private void applyStructureUnlocks(Set<String> newlyUnlockedStructures, Set<String> newlyUnlockedMobs) {
+        if (newlyUnlockedStructures.isEmpty() && newlyUnlockedMobs.isEmpty()) {
+            return;
+        }
+        MinecraftServer server = AEMServerRuntime.server();
+        if (server == null) {
+            return;
+        }
+        // Hop off the network thread: world mutation must run on the server thread. Apply structures
+        // first so any held mobs unlocked in the same batch can populate the freshly-placed structures.
+        server.execute(() -> {
+            StructureCaptureService.applyUnlocked(server, newlyUnlockedStructures);
+            StructureCaptureService.spawnPendingMobs(server, newlyUnlockedMobs);
         });
     }
 

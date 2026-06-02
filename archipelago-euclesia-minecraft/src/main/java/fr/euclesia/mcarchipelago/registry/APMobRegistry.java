@@ -52,10 +52,17 @@ public final class APMobRegistry {
         unlockedMobs.add(mobGameId);
     }
 
-    public void markUnlockedByItem(long itemId) {
-        spawnUnlockItemIds.entrySet().stream()
-                .filter(entry -> entry.getValue() == itemId)
-                .map(Map.Entry::getKey)
-                .forEach(unlockedMobs::add);
+    /**
+     * Marks every mob gated behind {@code itemId} as spawn-unlocked, returning the ones that were not
+     * already unlocked so the caller can spawn any structure mobs that were waiting on them.
+     */
+    public Set<String> markUnlockedByItem(long itemId) {
+        Set<String> newlyUnlocked = new HashSet<>();
+        spawnUnlockItemIds.forEach((mobId, lockItemId) -> {
+            if (lockItemId == itemId && unlockedMobs.add(mobId)) {
+                newlyUnlocked.add(mobId);
+            }
+        });
+        return newlyUnlocked;
     }
 }

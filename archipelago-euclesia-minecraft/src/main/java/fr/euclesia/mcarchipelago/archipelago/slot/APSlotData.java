@@ -23,7 +23,8 @@ public record APSlotData(
         Map<String, Long> locationIdsByGameId,
         Map<String, Long> trackedMobs,
         List<String> deathListMobs,
-        Map<String, Long> mobSpawnLockMobs
+        Map<String, Long> mobSpawnLockMobs,
+        Map<String, Long> structureLocks
 ) {
     public static APSlotData empty() {
         return new APSlotData(
@@ -41,6 +42,7 @@ public record APSlotData(
                 Map.of(),
                 Map.of(),
                 List.of(),
+                Map.of(),
                 Map.of()
         );
     }
@@ -61,7 +63,8 @@ public record APSlotData(
                 APJson.stringLongMap(json, "locations"),
                 APJson.stringLongMap(json, "tracked_mobs"),
                 APJson.stringList(json, "death_list_mobs"),
-                APJson.stringLongMap(json, "mob_spawn_lock_mobs")
+                APJson.stringLongMap(json, "mob_spawn_lock_mobs"),
+                APJson.stringLongMap(json, "structure_locks")
         );
     }
 }
