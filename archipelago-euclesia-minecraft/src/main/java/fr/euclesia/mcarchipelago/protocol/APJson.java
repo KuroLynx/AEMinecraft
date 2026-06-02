@@ -93,6 +93,21 @@ public final class APJson {
         return Map.copyOf(values);
     }
 
+    public static Map<String, String> stringStringMap(JsonObject json, String key) {
+        JsonElement element = json.get(key);
+        if (element == null || !element.isJsonObject()) {
+            return Map.of();
+        }
+
+        Map<String, String> values = new LinkedHashMap<>();
+        for (Map.Entry<String, JsonElement> entry : element.getAsJsonObject().entrySet()) {
+            if (entry.getValue().isJsonPrimitive()) {
+                values.put(entry.getKey(), entry.getValue().getAsString());
+            }
+        }
+        return Map.copyOf(values);
+    }
+
     public static Map<Long, String> longStringMap(JsonObject json, String key) {
         JsonElement element = json.get(key);
         if (element == null || !element.isJsonObject()) {

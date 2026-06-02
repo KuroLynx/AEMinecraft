@@ -412,6 +412,27 @@ class MCWorld(World):
                 for path, (knowledge, tier) in TOOL_LOCKS.items()
             },
 
+            # --- Station locks : block MC → Knowledge AP requise pour l'utiliser (ouvrir le GUI) ---
+            # Le mod bloque le clic-droit sur la table d'enchantement / l'alambic tant que la
+            # Knowledge n'est pas reçue (même ceux trouvés dans les structures).
+            "station_knowledge_locks": {
+                f"minecraft:{block}": f"Knowledge: {knowledge}"
+                for block, knowledge in STATION_KNOWLEDGE_LOCKS.items()
+            },
+
+            # --- Dimension gating : dimension MC → item AP requis pour y entrer (portail) ---
+            # La dimension de départ est gratuite (son item n'existe pas dans le pool) donc exclue ;
+            # les autres exigent leur "Dimension Unlock". Le mod bloque le passage du portail sinon.
+            "dimension_locks"      : {
+                dim_id: item
+                for dim_id, item in {
+                    "minecraft:overworld" : ITEM_DIMENSION_OVERWORLD,
+                    "minecraft:the_nether": ITEM_DIMENSION_NETHER,
+                    "minecraft:the_end"   : ITEM_DIMENSION_END,
+                }.items()
+                if item != self._start_dimension_item()
+            },
+
             # --- Logic graph (region graph + per-location reachability rules) ---
             # The mod evaluates this against received items to colour advancements in/out of logic.
             "logic"                : build_logic_export(self),

@@ -4,7 +4,10 @@
   "compatibilityLevel": "JAVA_25",
   "mixins": [
     "AdvancementVisibilityEvaluatorMixin",
+    "BrewingStandBlockMixin",
+    "EnchantingTableBlockMixin",
     "EnderDragonFightMixin",
+    "EntityMixin",
     "ItemEntityMixin",
     "PlacedFeatureMixin",
     "PlayerAdvancementsMixin",

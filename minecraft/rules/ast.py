@@ -21,6 +21,7 @@ Serialized form (compact, mirrored by the Java parser):
     loc    : {"k": "loc",    "l": <AP location name>}
     and    : {"k": "and",    "c": [<node>, ...]}
     or     : {"k": "or",     "c": [<node>, ...]}
+    atleast: {"k": "atleast", "n": <count>, "c": [<node>, ...]}
 """
 from __future__ import annotations
 
@@ -85,6 +86,27 @@ class ReachLocation(Rule):
 
     def to_dict(self) -> dict:
         return {"k": "loc", "l": self.location}
+
+
+class AtLeast(Rule):
+    """True iff at least ``n`` of ``children`` are true. Compact alternative to an OR over
+    every n-combination (which is C(len, n) terms and explodes the serialized tree)."""
+
+    def __init__(self, n: int, children: list[Rule]):
+        self.n = n
+        self.children = children
+
+    def __call__(self, state) -> bool:
+        satisfied = 0
+        for child in self.children:
+            if child(state):
+                satisfied += 1
+                if satisfied >= self.n:
+                    return True
+        return False
+
+    def to_dict(self) -> dict:
+        return {"k": "atleast", "n": self.n, "c": [child.to_dict() for child in self.children]}
 
 
 class And(Rule):
@@ -155,6 +177,30 @@ def or_(*rules: Rule) -> Rule:
     if len(children) == 1:
         return children[0]
     return Or(children)
+
+
+def at_least(n: int, rules: Iterable[Rule]) -> Rule:
+    """At least ``n`` of ``rules`` hold. Resolves Const children at build time, then degrades to
+    the simplest equivalent node: Const, Or (n==1) or And (n==count) where possible, else AtLeast.
+    Keeps the serialized tree O(len(rules)) instead of O(C(len, n))."""
+    children: list[Rule] = []
+    always_true = 0
+    for rule in rules:
+        if isinstance(rule, Const):
+            if rule.value:
+                always_true += 1
+            continue  # Const(False) can never count toward the threshold — drop it.
+        children.append(rule)
+    need = n - always_true
+    if need <= 0:
+        return Const(True)
+    if need > len(children):
+        return Const(False)  # not enough candidates left to reach the threshold
+    if need == 1:
+        return or_(*children)
+    if need == len(children):
+        return and_(*children)
+    return AtLeast(need, children)
 
 
 def and_of(rules: Iterable[Rule]) -> Rule:
