@@ -10,9 +10,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Icons for the Structure-Finder bar. The main icon is the structure's representative item, kept in
- * sync with {@code tools/gen_tracker_advancements.py} {@code STRUCTURE_ICONS} so the bar and the
- * tracker tiles agree. Because biome variants share a main icon (every village is an emerald, every
+ * Icons for the Structure-Finder bar. The main icon is the structure's representative item, mirroring
+ * {@code tools/gen_tracker_advancements.py} {@code STRUCTURE_ICONS} so the bar and the tracker tiles
+ * agree — except the two decoration features (Dungeon, Desert Well) the finder cannot locate, which
+ * are omitted here (see the note in the map). Because biome variants share a main icon (every village is an emerald, every
  * ruined portal is obsidian, …), a small <em>badge</em> item is overlaid to show the variant's biome
  * (desert → sand, snowy → snow, savanna → acacia sapling, …). Keyed by structure path (after
  * {@code namespace:}); resolved stacks are cached and reused for rendering.
@@ -54,9 +55,11 @@ public final class StructureIcons {
             Map.entry("village_plains", "minecraft:emerald"),
             Map.entry("village_savanna", "minecraft:emerald"),
             Map.entry("village_snowy", "minecraft:emerald"),
-            Map.entry("village_taiga", "minecraft:emerald"),
-            Map.entry("monster_room", "minecraft:spawner"),
-            Map.entry("desert_well", "minecraft:sandstone_slab")
+            Map.entry("village_taiga", "minecraft:emerald")
+            // NOTE: monster_room (Dungeon) and desert_well are intentionally absent. They are
+            // decoration features, not Structures, so findNearestMapStructure cannot locate them
+            // (neither can vanilla /locate) and they never reach the finder bar. The tracker tiles
+            // still use them (gen_tracker_advancements STRUCTURE_ICONS), hence the maps differ here.
     );
 
     /** Small biome badge per variant, overlaid on the main icon to disambiguate shared icons. */
