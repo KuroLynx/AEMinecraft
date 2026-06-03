@@ -26,10 +26,10 @@ public final class GoalTracker {
 
     public static void evaluate() {
         APSlotData slotData = AEM.ARCHIPELAGO.client().state().parsedSlotData();
-        boolean mainGoalComplete = switch (slotData.goal()) {
-            case KILL_ENDER_DRAGON -> killedBosses.contains("minecraft:ender_dragon") || killedBosses.contains("ender_dragon");
-            case KILL_ALL_BOSSES -> killedBosses.containsAll(slotData.bossSelection());
-        };
+        // The win condition is "kill every boss in boss_list" (the slot's selected bosses). The
+        // separate KILL_ENDER_DRAGON/KILL_ALL_BOSSES enum is not part of the slot data, so a dragon-
+        // only seed simply has boss_list = [ender_dragon] and this collapses to "kill the dragon".
+        boolean mainGoalComplete = killedBosses.containsAll(slotData.bossSelection());
         boolean deathListComplete = !slotData.deathList() || killedDeathListMobs.containsAll(slotData.deathListMobs());
 
         if (mainGoalComplete && deathListComplete) {

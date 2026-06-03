@@ -6,7 +6,6 @@ def hired_help(helper: RuleHelper) -> dict:
     return {
         A_HIRED_HELP: helper.all_of(
             helper.entity(E_IRON_GOLEM),
-            helper.knowledge(K_SHEAR),
             helper.any_of(
                 helper.reached(f"{ADVANCEMENT_PREFIX}{A_ACQUIRE_HARDWARE}"),
                 helper.reached(f"{ADVANCEMENT_PREFIX}{A_REVAULTING}"),

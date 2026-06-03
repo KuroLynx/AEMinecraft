@@ -153,11 +153,14 @@ class RuleHelper:
         if struct_name not in STRUCTURES:
             print(f"Warning: {struct_name} not found !")
             return Const(False)
-        # Locked structures require their unlock item; unlocked ones are reachable as soon as their
-        # dimension is reachable (Overworld is always reachable, Nether/End need their access).
+        # A structure is reachable only once its dimension is reachable (Overworld is always
+        # reachable, Nether/End need their access). Locked structures additionally require their
+        # unlock item — but the dimension gate still applies, so e.g. the Nether ruined portal is
+        # not reachable from the Overworld just because its unlock item was received.
+        region = self.access_region(STRUCTURES[struct_name].region)
         if struct_name in self.locked_structures:
-            return self.has(f"{STRUCT_UNLOCK_PREFIX}{struct_name}")
-        return self.access_region(STRUCTURES[struct_name].region)
+            return self.all_of(self.has(f"{STRUCT_UNLOCK_PREFIX}{struct_name}"), region)
+        return region
 
     def any_village(self):
         return self.any_of(*[self.structure(f"Village ({biome})") for biome in ["Desert", "Plains", "Savanna", "Snowy", "Taiga"]])
@@ -308,12 +311,16 @@ class RuleHelper:
     def can_get_snowball(self, include_snow_golem: bool = True):
         # ``include_snow_golem`` must be False when building the Snow Golem gate itself, otherwise
         # entity(Snow Golem) → this helper → entity(Snow Golem) recurses at rule-build time.
+        # Sources verified against the 26.1.2 jar (acquisition indexer + loot tables): snow layers /
+        # snow blocks drop snowballs only when mined with a SHOVEL (block tool gate → K_SHOVEL); the
+        # only snowball *chest* tables are the Ancient City ice box, the snowy village house, and the
+        # Trial Chambers. Igloos have no snowball table — their snow is just snow-block mining, so it
+        # is already covered by K_SHOVEL and must not appear as a shovel-free source.
         sources = [
-            self.knowledge(K_SHOVEL),  # dig snow layers / snow blocks
+            self.knowledge(K_SHOVEL),  # dig snow layers / snow blocks (incl. igloo / snowy-village blocks)
             self.structure(S_ANCIENT_CITY),  # Ice Box chest
-            self.any_village(),  # Snowy village house / chest
+            self.any_village(),  # Snowy village house chest
             self.reached(f"{ADVANCEMENT_PREFIX}{A_TRIAL_EDITION}"),  # chamber chest
-            self.structure(S_IGLOO),  # snow blocks in igloo
         ]
         if include_snow_golem:
             sources.append(self.entity(E_SNOW_GOLEM))  # Snow Golem drop
@@ -323,7 +330,7 @@ class RuleHelper:
         # Carve a wild pumpkin with shears (pumpkins grow freely in the Overworld), or find one
         # already carved and placed in a structure.
         return self.any_of(
-            self.knowledge(K_SHEAR),             # shears + naturally-grown pumpkin
+            self.can_get_shear(),                # shears + naturally-grown pumpkin
             self.structure(S_PILLAGER_OUTPOST),  # placed in structure
             self.structure(S_MANSION),           # placed in structure
         )
@@ -422,6 +429,32 @@ class RuleHelper:
             self.any_of(*sources),
         )
 
+    def can_get_shear(self):
+        # Shears = 2 iron ingots (verified against the 26.1.2 jar). They are also sold by a Shepherd
+        # (shepherd/1 trade) and found in the snowy-village shepherd house chest, but both of those
+        # require reaching a village — which is itself an iron source (see can_get_iron) — so iron
+        # access already subsumes them, no extra branch needed. The mod additionally gates shears
+        # behind Knowledge: Shear Handling + the iron material tier (data.py TOOL_LOCKS), enforced on
+        # craft *and* pickup, so the Knowledge is always required regardless of how shears are got.
+        # Iron is taken with the Iron Golem drop disabled: building that golem already needs iron, so
+        # it is never a unique iron source here, and leaving it on would recurse through the carved-
+        # pumpkin gate (entity(Iron Golem) → carved pumpkin → shears → iron → entity(Iron Golem)).
+        return self.all_of(
+            self.knowledge(K_SHEAR),
+            self.can_get_iron(include_iron_golem=False),
+        )
+
+    def can_get_honeycomb(self):
+        # Honeycomb (verified against the 26.1.2 jar) comes from exactly two sources: shearing a
+        # full beehive/bee-nest (needs shears + bees) or the Trial Chambers corridor/entrance chests.
+        return self.any_of(
+            self.all_of(
+                self.can_get_shear(),
+                self.entity(E_BEE),
+            ),
+            self.reached(f"{ADVANCEMENT_PREFIX}{A_TRIAL_EDITION}"),
+        )
+
     def can_get_notch_apple(self):
         return self.any_of(
             self.any_mineshaft(),  # Mineshaft chest
@@ -456,7 +489,7 @@ class RuleHelper:
             self.structure(S_MANSION),
             self.structure(S_IGLOO),
             self.any_shipwreck(),  # supply chest
-            self.can_trade_villager(2),  # Shepherd sells beds
+            self.can_trade_villager(2),  # Shepherd sells wool @lvl2 → craft bed (beds direct @lvl3)
         )
 
     def can_kill(self):
@@ -493,7 +526,7 @@ class RuleHelper:
         return self.any_of(
             self.has_any_entities(E_COD, E_SALMON),                 # punch/kill the fish
             self.knowledge(K_FISHING),                              # rod
-            self.has_any_entities(E_GUARDIAN, E_DOLPHIN, E_POLAR_BEAR),  # mob drops
+            self.has_any_entities(E_GUARDIAN, E_ELDER_GUARDIAN, E_DOLPHIN, E_POLAR_BEAR),  # mob drops
             self.any_village(),                                     # village chest
             self.reached(f"{ADVANCEMENT_PREFIX}{A_HERO_OF_THE_VILLAGE}"),  # Fisherman gift
         )
@@ -580,7 +613,7 @@ class RuleHelper:
 
     def can_get_seagrass(self):
         return self.any_of(
-            self.knowledge(K_SHEAR),                            # shear seagrass
+            self.can_get_shear(),                               # shear seagrass
             self.all_of(self.can_kill_with_fist(), self.entity(E_TURTLE)),  # Turtle drop (passive)
         )
 

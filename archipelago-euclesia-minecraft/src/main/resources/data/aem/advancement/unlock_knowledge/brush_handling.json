@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_mob/zombie_villager",
+  "parent": "aem:unlock_knowledge/trident_handling",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"
@@ -12,10 +12,10 @@
   ],
   "display": {
     "icon": {
-      "id": "minecraft:zombie_spawn_egg"
+      "id": "minecraft:brush"
     },
-    "title": "Baby Zombie",
-    "description": "Unlock Baby Zombie spawns",
+    "title": "Knowledge: Brush Handling",
+    "description": "Unlock Knowledge: Brush Handling",
     "frame": "task",
     "show_toast": false,
     "announce_to_chat": false,

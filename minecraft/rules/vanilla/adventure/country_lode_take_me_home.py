@@ -18,7 +18,7 @@ def country_lode_take_me_home(helper: RuleHelper) -> dict:
                 helper.any_shipwreck(),  # found in chest
                 helper.reached(f"{ADVANCEMENT_PREFIX}{A_EYE_SPY}"),  # Stronghold
                 helper.reached(f"{ADVANCEMENT_PREFIX}{A_TRIAL_EDITION}"),  # found in chest
-                helper.can_trade_villager(4),  # expert cartographer trade
+                helper.can_trade_villager(4),  # Librarian sells a Compass at lvl 4
             ),
         ),
     }

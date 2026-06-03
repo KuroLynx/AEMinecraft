@@ -1,6 +1,9 @@
 package fr.euclesia.mcarchipelago.mixin;
 
+import fr.euclesia.mcarchipelago.server.gameplay.LockFeedback;
 import fr.euclesia.mcarchipelago.server.gameplay.MaterialLockService;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.Slot;
@@ -37,8 +40,12 @@ public abstract class SlotMixin {
         if (this.container == player.getInventory()) {
             return;
         }
-        if (MaterialLockService.isPickupBlocked(getItem())) {
+        Component reason = MaterialLockService.blockReason(getItem());
+        if (reason != null) {
             cir.setReturnValue(false);
+            if (player instanceof ServerPlayer serverPlayer) {
+                LockFeedback.notify(serverPlayer, reason);
+            }
         }
     }
 }

@@ -1,5 +1,6 @@
 package fr.euclesia.mcarchipelago.client.logic;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import fr.euclesia.mcarchipelago.AEM;
@@ -9,6 +10,7 @@ import fr.euclesia.mcarchipelago.registry.APLocationRegistry;
 import fr.euclesia.mcarchipelago.registry.APTrackerRegistry;
 import net.minecraft.resources.Identifier;
 
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -38,6 +40,22 @@ public final class DataLogicProvider implements LogicProvider {
         }
 
         String gameId = advancementId.toString();
+
+        // Structural tiles of the main tab carry no logic meaning: the hub root and the category
+        // tab-roots are never coloured (the goal tiles below are the only coloured main-tab tiles).
+        if (gameId.equals(APTrackerRegistry.TAB_ROOT_ID) || isCategoryRoot(gameId)) {
+            return LogicState.UNKNOWN;
+        }
+
+        // Goal tiles: coloured by how many of their targets are reachable / reached vs required —
+        // red while fewer than required can be reached, green once enough are reachable, gray once
+        // enough have been reached. Driven by the same logic evaluation as the per-location tiles.
+        if (gameId.equals(APTrackerRegistry.GOAL_ADVANCEMENTS_ID)) {
+            return goalAdvancementsState(client);
+        }
+        if (gameId.equals(APTrackerRegistry.GOAL_BOSSES_ID)) {
+            return goalBossesState(client);
+        }
 
         // Tracker-tab tiles (aem:*) are coloured from their AP linkage, not the logic graph.
         APTrackerRegistry.Tracker tracker = client.registries().apTrackers().get(gameId);
@@ -93,6 +111,97 @@ public final class DataLogicProvider implements LogicProvider {
         return currentEvaluation(client, graph).canReachLocation(locationName)
                 ? LogicState.IN_LOGIC
                 : LogicState.OUT_OF_LOGIC;
+    }
+
+    private static boolean isCategoryRoot(String gameId) {
+        return gameId.equals(APTrackerRegistry.CATEGORY_KILLS)
+                || gameId.equals(APTrackerRegistry.CATEGORY_ENTITY_UNLOCKS)
+                || gameId.equals(APTrackerRegistry.CATEGORY_STRUCTURE_UNLOCKS)
+                || gameId.equals(APTrackerRegistry.CATEGORY_KNOWLEDGE);
+    }
+
+    /**
+     * Colour for a goal tile from its counts. {@code required <= 0} means there is nothing to do for
+     * this goal, so it stays neutral (no tint). Otherwise: gray once enough targets are reached,
+     * green once enough are reachable, red while fewer than required can be reached.
+     */
+    private static LogicState goalState(int reachable, int reached, int required) {
+        if (required <= 0) {
+            return LogicState.UNKNOWN;
+        }
+        if (reached >= required) {
+            return LogicState.CHECKED;
+        }
+        return reachable >= required ? LogicState.IN_LOGIC : LogicState.OUT_OF_LOGIC;
+    }
+
+    /** Counts over every "Advancement: …" location: how many are reachable and how many are checked. */
+    private LogicState goalAdvancementsState(ArchipelagoClient client) {
+        LogicGraph graph = currentGraph(client);
+        if (graph == null) {
+            return LogicState.UNKNOWN;
+        }
+        LogicEvaluation evaluation = currentEvaluation(client, graph);
+        APLocationRegistry locations = client.registries().apLocations();
+        int reachable = 0;
+        int reached = 0;
+        int total = 0;
+        for (Map.Entry<String, LogicGraph.LocationEntry> entry : graph.locations().entrySet()) {
+            if (!entry.getKey().startsWith("Advancement: ")) {
+                continue;
+            }
+            total++;
+            if (evaluation.canReachLocation(entry.getKey())) {
+                reachable++;
+            }
+            if (isChecked(locations, entry.getValue().gameId())) {
+                reached++;
+            }
+        }
+        // The goal can never need more advancements than exist this seed (mirrors the apworld clamp).
+        int required = Math.min(intFromSlotData(client, "advancements_required"), total);
+        return goalState(reachable, reached, required);
+    }
+
+    /** Counts over the slot's {@code boss_list}: how many goal bosses are reachable and killed. */
+    private LogicState goalBossesState(ArchipelagoClient client) {
+        LogicGraph graph = currentGraph(client);
+        if (graph == null) {
+            return LogicState.UNKNOWN;
+        }
+        JsonObject slotData = client.state().slotData();
+        if (slotData == null || !slotData.has("boss_list") || !slotData.get("boss_list").isJsonArray()) {
+            return LogicState.UNKNOWN;
+        }
+        JsonArray bossList = slotData.getAsJsonArray("boss_list");
+        LogicEvaluation evaluation = currentEvaluation(client, graph);
+        APLocationRegistry locations = client.registries().apLocations();
+        int reachable = 0;
+        int reached = 0;
+        for (JsonElement element : bossList) {
+            String bossGameId = element.getAsString();
+            String locationName = graph.locationNameForGameId(bossGameId);
+            if (locationName != null && evaluation.canReachLocation(locationName)) {
+                reachable++;
+            }
+            if (isChecked(locations, bossGameId)) {
+                reached++;
+            }
+        }
+        return goalState(reachable, reached, bossList.size());
+    }
+
+    private static boolean isChecked(APLocationRegistry locations, String gameId) {
+        Optional<Long> id = locations.idForGameId(gameId);
+        return id.isPresent() && locations.isChecked(id.get());
+    }
+
+    private static int intFromSlotData(ArchipelagoClient client, String key) {
+        JsonObject slotData = client.state().slotData();
+        if (slotData == null || !slotData.has(key) || !slotData.get(key).isJsonPrimitive()) {
+            return 0;
+        }
+        return slotData.get(key).getAsInt();
     }
 
     private LogicGraph currentGraph(ArchipelagoClient client) {

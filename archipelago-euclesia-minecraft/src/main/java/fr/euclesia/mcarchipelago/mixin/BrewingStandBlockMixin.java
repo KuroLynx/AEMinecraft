@@ -1,7 +1,10 @@
 package fr.euclesia.mcarchipelago.mixin;
 
 import fr.euclesia.mcarchipelago.server.gameplay.KnowledgeLockService;
+import fr.euclesia.mcarchipelago.server.gameplay.LockFeedback;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -23,8 +26,12 @@ public abstract class BrewingStandBlockMixin {
     private void archipelago_euclesia$gateBrewing(BlockState state, Level level, BlockPos pos,
                                                   Player player, BlockHitResult hit,
                                                   CallbackInfoReturnable<InteractionResult> cir) {
-        if (KnowledgeLockService.isStationUseBlocked("minecraft:brewing_stand")) {
+        Component reason = KnowledgeLockService.stationBlockReason("minecraft:brewing_stand");
+        if (reason != null) {
             cir.setReturnValue(InteractionResult.CONSUME);
+            if (!level.isClientSide() && player instanceof ServerPlayer serverPlayer) {
+                LockFeedback.notify(serverPlayer, reason);
+            }
         }
     }
 }

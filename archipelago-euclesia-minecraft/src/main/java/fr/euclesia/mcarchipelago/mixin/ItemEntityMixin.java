@@ -1,6 +1,9 @@
 package fr.euclesia.mcarchipelago.mixin;
 
+import fr.euclesia.mcarchipelago.server.gameplay.LockFeedback;
 import fr.euclesia.mcarchipelago.server.gameplay.MaterialLockService;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
@@ -24,8 +27,15 @@ public abstract class ItemEntityMixin {
     @Inject(method = "playerTouch", at = @At("HEAD"), cancellable = true)
     private void archipelago_euclesia$blockLockedPickup(Player player, CallbackInfo ci) {
         // playerTouch only does anything server-side; the lock check needs the connected session.
-        if (!player.level().isClientSide() && MaterialLockService.isPickupBlocked(getItem())) {
+        if (player.level().isClientSide()) {
+            return;
+        }
+        Component reason = MaterialLockService.blockReason(getItem());
+        if (reason != null) {
             ci.cancel();
+            if (player instanceof ServerPlayer serverPlayer) {
+                LockFeedback.notify(serverPlayer, reason);
+            }
         }
     }
 }

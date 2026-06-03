@@ -18,6 +18,7 @@ from __future__ import annotations
 from .data import (
     BASE_ID_ENTITY_UNLOCK,
     BASE_ID_STRUCT_UNLOCK,
+    ITEMS,
     MCLocationCategory,
     MOBS_ALL,
     STRUCTURES,
@@ -31,12 +32,18 @@ KIND_KILL = "kill"
 KIND_BOSS = "boss"
 KIND_UNLOCK_MOB = "unlock_mob"
 KIND_UNLOCK_STRUCTURE = "unlock_structure"
+KIND_UNLOCK_KNOWLEDGE = "unlock_knowledge"
 
-# Category sub-roots under the tab root, one branch per type so the tree lays out cleanly.
-# (Kept in sync with APTrackerRegistry on the Java side.)
+# Category roots — each is its own advancement-screen tab (a root with a background; see
+# tools/gen_tracker_advancements.py). Kept in sync with APTrackerRegistry on the Java side.
 CATEGORY_KILLS = f"{TRACKER_NAMESPACE}:category/kills"
 CATEGORY_ENTITY_UNLOCKS = f"{TRACKER_NAMESPACE}:category/entity_unlocks"
 CATEGORY_STRUCTURE_UNLOCKS = f"{TRACKER_NAMESPACE}:category/structure_unlocks"
+CATEGORY_KNOWLEDGE = f"{TRACKER_NAMESPACE}:category/knowledge"
+
+# Goal tiles on the main tab — native X/Y progress, rebuilt at runtime (RootAdvancementService).
+GOAL_ADVANCEMENTS = f"{TRACKER_NAMESPACE}:goal/advancements"
+GOAL_BOSSES = f"{TRACKER_NAMESPACE}:goal/bosses"
 
 # Which category an active tracker id belongs to (by id prefix).
 CATEGORY_BY_KIND = {
@@ -44,7 +51,14 @@ CATEGORY_BY_KIND = {
     KIND_BOSS: CATEGORY_KILLS,
     KIND_UNLOCK_MOB: CATEGORY_ENTITY_UNLOCKS,
     KIND_UNLOCK_STRUCTURE: CATEGORY_STRUCTURE_UNLOCKS,
+    KIND_UNLOCK_KNOWLEDGE: CATEGORY_KNOWLEDGE,
 }
+
+# Knowledge / utility items tracked on the Knowledge tab — every "Knowledge: *" plus the progressive
+# utilities (Material Handling, Villager Trust, Coordinates). Derived from the item table so the set
+# stays in sync with items.csv; the generator and the export both consume this list.
+KNOWLEDGE_UTILITY_PREFIXES = ("Knowledge: ", "Progressive ")
+KNOWLEDGE_UTILITY_ITEMS = [name for name in ITEMS if name.startswith(KNOWLEDGE_UTILITY_PREFIXES)]
 
 
 def _slug(game_id: str) -> str:
@@ -59,6 +73,24 @@ def tracker_id(kind: str, game_id: str) -> str:
     the vanilla id without colliding with it.
     """
     return f"{TRACKER_NAMESPACE}:{kind}/{_slug(game_id)}"
+
+
+def knowledge_slug(item_name: str) -> str:
+    """Advancement-path slug for a knowledge/utility item name.
+
+    ``Knowledge: Sword Handling`` -> ``sword_handling``; ``Progressive Coordinates`` -> ``coordinates``.
+    """
+    name = item_name
+    for prefix in KNOWLEDGE_UTILITY_PREFIXES:
+        if name.startswith(prefix):
+            name = name[len(prefix):]
+            break
+    return name.lower().replace(" ", "_")
+
+
+def knowledge_tracker_id(item_name: str) -> str:
+    """Stable advancement id for a knowledge/utility tracker, e.g. ``aem:unlock_knowledge/enchanting``."""
+    return f"{TRACKER_NAMESPACE}:{KIND_UNLOCK_KNOWLEDGE}/{knowledge_slug(item_name)}"
 
 
 def build_trackers_export(world) -> dict:
@@ -101,5 +133,14 @@ def build_trackers_export(world) -> dict:
             "kind": "unlock",
             "item_id": BASE_ID_STRUCT_UNLOCK + struct_data.id,
         }
+
+    # Knowledge / utility items (received AP items) — green once received, like other unlocks.
+    for item_name in KNOWLEDGE_UTILITY_ITEMS:
+        item_id = world.item_name_to_id.get(item_name)
+        if item_id is not None:
+            trackers[knowledge_tracker_id(item_name)] = {
+                "kind": "unlock",
+                "item_id": item_id,
+            }
 
     return trackers

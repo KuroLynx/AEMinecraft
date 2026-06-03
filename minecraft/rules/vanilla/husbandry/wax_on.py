@@ -4,9 +4,10 @@ from ...helpers import RuleHelper
 
 def wax_on(helper: RuleHelper) -> dict:
     return {
+        # Wax On = apply honeycomb to a copper block. Needs honeycomb (beehive shear or Trial
+        # Chambers chest) plus a copper block.
         A_WAX_ON: helper.all_of(
-            helper.knowledge(K_SHEAR),
-            helper.entity(E_BEE),
+            helper.can_get_honeycomb(),
             helper.can_get_copper(),
         )
     }

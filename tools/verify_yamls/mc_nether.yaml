@@ -1,0 +1,26 @@
+name: MCNether
+description: Verify Nether start generates with full accessibility
+game: Minecraft
+requires:
+  version: 0.6.7
+
+Minecraft:
+  progression_balancing: 0
+  accessibility: full
+  boss_list:
+    - All
+  start_dimension:
+    overworld: 0
+    nether: 100
+  advancements_required:
+    125: 100
+  kill_sanity: 'true'
+  villager_trust: 'true'
+  mob_spawn_lock_category:
+    - passive
+    - neutral
+    - hostile
+  structure_unlock: []
+  trap_chance: 0
+  death_link: 'false'
+  challenge_sanity: 'true'

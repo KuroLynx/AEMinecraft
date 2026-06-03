@@ -23,13 +23,18 @@ import java.util.Set;
  * </ul>
  */
 public final class APTrackerRegistry {
-    /** The tab root advancement id; not itself an exported tracker. */
+    /** The main tab root advancement id; not itself an exported tracker. */
     public static final String TAB_ROOT_ID = "aem:archipelago";
 
-    // Category sub-roots (one branch per type); kept in sync with minecraft/trackers.py.
+    // Goal tiles on the main tab — native X/Y progress, rebuilt at runtime (RootAdvancementService).
+    public static final String GOAL_ADVANCEMENTS_ID = "aem:goal/advancements";
+    public static final String GOAL_BOSSES_ID = "aem:goal/bosses";
+
+    // Category roots — each is its own advancement-screen tab; kept in sync with minecraft/trackers.py.
     public static final String CATEGORY_KILLS = "aem:category/kills";
     public static final String CATEGORY_ENTITY_UNLOCKS = "aem:category/entity_unlocks";
     public static final String CATEGORY_STRUCTURE_UNLOCKS = "aem:category/structure_unlocks";
+    public static final String CATEGORY_KNOWLEDGE = "aem:category/knowledge";
 
     public static final String KIND_KILL = "kill";
     public static final String KIND_BOSS = "boss";
@@ -76,6 +81,9 @@ public final class APTrackerRegistry {
         }
         if (trackerId.startsWith("aem:unlock_structure/")) {
             return CATEGORY_STRUCTURE_UNLOCKS;
+        }
+        if (trackerId.startsWith("aem:unlock_knowledge/")) {
+            return CATEGORY_KNOWLEDGE;
         }
         return null;
     }

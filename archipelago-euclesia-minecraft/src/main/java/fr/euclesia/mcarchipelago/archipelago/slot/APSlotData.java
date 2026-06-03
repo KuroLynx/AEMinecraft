@@ -63,7 +63,7 @@ public record APSlotData(
     public static APSlotData fromJson(JsonObject json) {
         return new APSlotData(
                 WinningCondition.fromSlotValue(APJson.getInt(json, "goal", 0)),
-                APJson.stringSet(json, "boss_selection"),
+                APJson.stringSet(json, "boss_list"),
                 APJson.getBoolean(json, "death_link", false),
                 APJson.getBoolean(json, "villager_trust", false),
                 APJson.getBoolean(json, "kill_sanity", false),

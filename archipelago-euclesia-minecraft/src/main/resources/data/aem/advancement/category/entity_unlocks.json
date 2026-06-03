@@ -1,5 +1,4 @@
 {
-  "parent": "aem:archipelago",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"
@@ -16,9 +15,8 @@
     },
     "title": "Entity Unlocks",
     "description": "Mob spawns to unlock",
-    "frame": "task",
+    "background": "minecraft:gui/advancements/backgrounds/adventure",
     "show_toast": false,
-    "announce_to_chat": false,
-    "hidden": false
+    "announce_to_chat": false
   }
 }

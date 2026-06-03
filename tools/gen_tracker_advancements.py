@@ -1,0 +1,301 @@
+"""Generates the Archipelago tracker-tab datapack shipped inside the Fabric mod.
+
+Emits one advancement per *possible* tracker (every mob kill / boss kill / mob-spawn-unlock /
+structure-unlock) plus the ``aem:archipelago`` tab root, into the mod resources at
+``archipelago-euclesia-minecraft/src/main/resources/data/aem/advancement/``. The seed-specific
+subset is shown/hidden at runtime by the mod's visibility gate (slot_data["trackers"]).
+
+Ids come from ``minecraft.trackers.tracker_id`` so they match the slot_data export exactly.
+Icons are validated against the real item set: mob tiles use ``<slug>_spawn_egg`` (verified in
+the MC client jar's en_us.json), structures use a hand-picked representative item.
+
+Run from anywhere (puts the ArchipelagoClone checkout on sys.path, like tools/logic_selfcheck.py):
+    python tools/gen_tracker_advancements.py
+Override the client jar with env MC_CLIENT_JAR if the loom cache path differs.
+"""
+from __future__ import annotations
+
+import json
+import os
+import re
+import sys
+import zipfile
+
+# Mod resources output dir — resolved before any chdir.
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT_DIR = os.path.join(
+    REPO_ROOT, "archipelago-euclesia-minecraft", "src", "main", "resources",
+    "data", "aem", "advancement",
+)
+
+AP_ROOT = r"C:\Users\benja\PycharmProjects\ArchipelagoClone"
+DEFAULT_JAR = os.path.expanduser(
+    r"~/.gradle/caches/fabric-loom/26.1.2/minecraft-client.jar"
+)
+
+sys.path.insert(0, AP_ROOT)
+os.chdir(AP_ROOT)
+
+from worlds.minecraft.data import MCEntityCategory, MOBS_ALL, STRUCTURES  # noqa: E402
+from worlds.minecraft.trackers import (  # noqa: E402
+    CATEGORY_ENTITY_UNLOCKS,
+    CATEGORY_KILLS,
+    CATEGORY_KNOWLEDGE,
+    CATEGORY_STRUCTURE_UNLOCKS,
+    GOAL_ADVANCEMENTS,
+    GOAL_BOSSES,
+    KIND_BOSS,
+    KIND_KILL,
+    KIND_UNLOCK_MOB,
+    KIND_UNLOCK_STRUCTURE,
+    KNOWLEDGE_UTILITY_ITEMS,
+    TRACKER_NAMESPACE,
+    TRACKER_ROOT,
+    knowledge_tracker_id,
+    tracker_id,
+)
+
+TAB_BACKGROUND = "minecraft:gui/advancements/backgrounds/adventure"
+ROOT_ICON = "minecraft:nether_star"  # tab icon is overridden by the logo mixin; this is a fallback
+
+# Tiles in a category are laid out as a grid of this many per row. Advancement screen layout is
+# purely tree-topology based, so each row is a horizontal parent->child chain (depth = column) and
+# successive rows branch off the category root (so they stack vertically). Inactive trackers this
+# seed are simply hidden, leaving a blank cell — no dangling connector lines (lines are parent->child
+# and a hidden parent draws none).
+ROW_WIDTH = 8
+
+# Mobs whose game_id has no matching <slug>_spawn_egg (variants, not their own entity type).
+MOB_ICON_OVERRIDES = {
+    "baby_zombie": "minecraft:zombie_spawn_egg",
+}
+
+# Representative valid item per structure (structures have no spawn egg / live render).
+STRUCTURE_ICONS = {
+    "ancient_city": "minecraft:sculk_catalyst",
+    "bastion_remnant": "minecraft:polished_blackstone_bricks",
+    "buried_treasure": "minecraft:heart_of_the_sea",
+    "desert_pyramid": "minecraft:sandstone",
+    "end_city": "minecraft:purpur_block",
+    "fortress": "minecraft:nether_bricks",
+    "igloo": "minecraft:snow_block",
+    "jungle_pyramid": "minecraft:mossy_cobblestone",
+    "mansion": "minecraft:dark_oak_planks",
+    "mineshaft": "minecraft:rail",
+    "mineshaft_mesa": "minecraft:powered_rail",
+    "monument": "minecraft:prismarine",
+    "nether_fossil": "minecraft:bone_block",
+    "ocean_ruin_cold": "minecraft:prismarine_bricks",
+    "ocean_ruin_warm": "minecraft:cut_sandstone",
+    "pillager_outpost": "minecraft:crossbow",
+    "ruined_portal": "minecraft:obsidian",
+    "ruined_portal_desert": "minecraft:obsidian",
+    "ruined_portal_jungle": "minecraft:obsidian",
+    "ruined_portal_mountain": "minecraft:obsidian",
+    "ruined_portal_nether": "minecraft:obsidian",
+    "ruined_portal_ocean": "minecraft:obsidian",
+    "ruined_portal_swamp": "minecraft:obsidian",
+    "shipwreck": "minecraft:oak_boat",
+    "shipwreck_beached": "minecraft:oak_boat",
+    "stronghold": "minecraft:end_portal_frame",
+    "swamp_hut": "minecraft:cauldron",
+    "trail_ruins": "minecraft:brush",
+    "trial_chambers": "minecraft:trial_key",
+    "village_desert": "minecraft:emerald",
+    "village_plains": "minecraft:emerald",
+    "village_savanna": "minecraft:emerald",
+    "village_snowy": "minecraft:emerald",
+    "village_taiga": "minecraft:emerald",
+    "monster_room": "minecraft:spawner",
+    "desert_well": "minecraft:sandstone_slab",
+}
+STRUCTURE_ICON_FALLBACK = "minecraft:chest"
+
+# Representative item per knowledge/utility item name (the Knowledge tab tiles). Falls back to a book.
+KNOWLEDGE_ICONS = {
+    "Knowledge: Sword Handling": "minecraft:iron_sword",
+    "Knowledge: Spear Handling": "minecraft:trident",
+    "Knowledge: Shovel Handling": "minecraft:iron_shovel",
+    "Knowledge: Axe Handling": "minecraft:iron_axe",
+    "Knowledge: Pickaxe Handling": "minecraft:iron_pickaxe",
+    "Knowledge: Fishing": "minecraft:fishing_rod",
+    "Knowledge: Hoe Handling": "minecraft:iron_hoe",
+    "Knowledge: Shear Handling": "minecraft:shears",
+    "Knowledge: Mace Handling": "minecraft:mace",
+    "Knowledge: Trident Handling": "minecraft:trident",
+    "Knowledge: Brush Handling": "minecraft:brush",
+    "Knowledge: Pyromaniac": "minecraft:flint_and_steel",
+    "Knowledge: Shield Handling": "minecraft:shield",
+    "Knowledge: Armor Handling": "minecraft:iron_chestplate",
+    "Knowledge: Brewing": "minecraft:brewing_stand",
+    "Knowledge: Enchanting": "minecraft:enchanting_table",
+    "Knowledge: Sharpshooter": "minecraft:bow",
+    "Knowledge: Flying": "minecraft:elytra",
+    "Progressive Material Handling": "minecraft:raw_iron",
+    "Progressive Villager Trust": "minecraft:emerald",
+    "Progressive Coordinates": "minecraft:compass",
+}
+KNOWLEDGE_ICON_FALLBACK = "minecraft:book"
+
+
+def knowledge_icon(item_name: str) -> str:
+    if item_name not in KNOWLEDGE_ICONS:
+        print(f"  WARN: no icon mapping for knowledge item '{item_name}', using {KNOWLEDGE_ICON_FALLBACK}")
+    return KNOWLEDGE_ICONS.get(item_name, KNOWLEDGE_ICON_FALLBACK)
+
+
+def load_spawn_egg_slugs(jar_path: str) -> set[str]:
+    """The set of ``<x>`` for which ``minecraft:<x>_spawn_egg`` exists, from the jar lang file."""
+    with zipfile.ZipFile(jar_path) as jar:
+        lang = jar.read("assets/minecraft/lang/en_us.json").decode("utf-8")
+    return set(re.findall(r"item\.minecraft\.([a-z0-9_]+)_spawn_egg", lang))
+
+
+def _slug(game_id: str) -> str:
+    return game_id.split(":", 1)[-1]
+
+
+def mob_icon(game_id: str, spawn_eggs: set[str]) -> str:
+    slug = _slug(game_id)
+    if slug in spawn_eggs:
+        return f"minecraft:{slug}_spawn_egg"
+    if slug in MOB_ICON_OVERRIDES:
+        return MOB_ICON_OVERRIDES[slug]
+    print(f"  WARN: no spawn egg for '{slug}', using {MOB_ICON_OVERRIDES.get(slug, 'minecraft:egg')}")
+    return "minecraft:egg"
+
+
+def structure_icon(game_id: str) -> str:
+    slug = _slug(game_id)
+    if slug not in STRUCTURE_ICONS:
+        print(f"  WARN: no icon mapping for structure '{slug}', using {STRUCTURE_ICON_FALLBACK}")
+    return STRUCTURE_ICONS.get(slug, STRUCTURE_ICON_FALLBACK)
+
+
+def tile(parent: str, icon: str, title: str, description: str, frame: str = "task") -> dict:
+    """A trigger-less tracker advancement (never granted by gameplay; coloured by the overlay)."""
+    return {
+        "parent": parent,
+        "criteria": {"never": {"trigger": "minecraft:impossible"}},
+        "requirements": [["never"]],
+        "display": {
+            "icon": {"id": icon},
+            "title": title,
+            "description": description,
+            "frame": frame,
+            "show_toast": False,
+            "announce_to_chat": False,
+            "hidden": False,
+        },
+    }
+
+
+def tab_root(icon: str, title: str, description: str) -> dict:
+    """A parentless tracker advancement with a background — its own advancement-screen tab."""
+    return {
+        "criteria": {"never": {"trigger": "minecraft:impossible"}},
+        "requirements": [["never"]],
+        "display": {
+            "icon": {"id": icon},
+            "title": title,
+            "description": description,
+            "background": TAB_BACKGROUND,
+            "show_toast": False,
+            "announce_to_chat": False,
+        },
+    }
+
+
+def write_grid(category_id: str, entries: list[dict]) -> None:
+    """Write a category's tiles as rows of ROW_WIDTH.
+
+    Each entry is {"id","icon","title","description","frame"}. Within a row, tile i parents tile
+    i-1 (so the row extends right); the first tile of each row parents the category root (so rows
+    stack down) — yielding a grid via tree topology.
+    """
+    for i, entry in enumerate(entries):
+        parent = category_id if (i % ROW_WIDTH == 0) else entries[i - 1]["id"]
+        write(entry["id"], tile(parent, entry["icon"], entry["title"],
+                                entry["description"], entry.get("frame", "task")))
+
+
+def write(advancement_id: str, data: dict) -> None:
+    # aem:kill/zombie -> <OUT_DIR>/kill/zombie.json
+    rel = advancement_id.split(":", 1)[1]
+    path = os.path.join(OUT_DIR, *rel.split("/")) + ".json"
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+        f.write("\n")
+
+
+def main() -> int:
+    jar = os.environ.get("MC_CLIENT_JAR", DEFAULT_JAR)
+    if not os.path.isfile(jar):
+        print(f"ERROR: MC client jar not found: {jar}\nSet MC_CLIENT_JAR to override.")
+        return 1
+    spawn_eggs = load_spawn_egg_slugs(jar)
+    print(f"loaded {len(spawn_eggs)} spawn eggs from {jar}")
+
+    # Fresh output (drop stale tiles) but keep the dir.
+    if os.path.isdir(OUT_DIR):
+        import shutil
+        shutil.rmtree(OUT_DIR)
+    os.makedirs(OUT_DIR, exist_ok=True)
+
+    count = 0
+
+    # Main tab: a hub root (AP logo overrides the icon) with two goal tiles showing native X/Y
+    # progress (rebuilt at runtime by RootAdvancementService).
+    write(TRACKER_ROOT, tab_root(ROOT_ICON, "Archipelago", "Archipelago goal progress"))
+    write(GOAL_ADVANCEMENTS, tile(TRACKER_ROOT, "minecraft:experience_bottle",
+                                  "Advancements", "Goal advancements completed", frame="task"))
+    write(GOAL_BOSSES, tile(TRACKER_ROOT, "minecraft:dragon_head",
+                            "Bosses", "Goal bosses defeated", frame="goal"))
+    count += 3
+
+    # Each remaining category is its own tab (a parentless root with a background).
+    write(CATEGORY_KILLS, tab_root("minecraft:iron_sword", "Kills", "Mobs & bosses to kill"))
+    write(CATEGORY_ENTITY_UNLOCKS, tab_root("minecraft:egg", "Entity Unlocks", "Mob spawns to unlock"))
+    write(CATEGORY_STRUCTURE_UNLOCKS, tab_root("minecraft:filled_map", "Structure Unlocks", "Structures to unlock"))
+    write(CATEGORY_KNOWLEDGE, tab_root("minecraft:book", "Knowledge & Utilities", "Knowledge & utility items to unlock"))
+    count += 4
+
+    # Collect each category's tiles, then lay them out as grids (rows of ROW_WIDTH).
+    kills: list[dict] = []
+    entity_unlocks: list[dict] = []
+    for name, mob in MOBS_ALL.items():
+        icon = mob_icon(mob.game_id, spawn_eggs)
+        if mob.category == MCEntityCategory.BOSS:
+            kills.append({"id": tracker_id(KIND_BOSS, mob.game_id), "icon": icon,
+                          "title": name, "description": f"Defeat the {name}", "frame": "goal"})
+        else:
+            kills.append({"id": tracker_id(KIND_KILL, mob.game_id), "icon": icon,
+                          "title": name, "description": f"Kill a {name}"})
+        entity_unlocks.append({"id": tracker_id(KIND_UNLOCK_MOB, mob.game_id), "icon": icon,
+                               "title": name, "description": f"Unlock {name} spawns"})
+
+    structure_unlocks = [
+        {"id": tracker_id(KIND_UNLOCK_STRUCTURE, struct.game_id),
+         "icon": structure_icon(struct.game_id), "title": name, "description": f"Unlock {name}"}
+        for name, struct in STRUCTURES.items()
+    ]
+
+    knowledge = [
+        {"id": knowledge_tracker_id(item_name), "icon": knowledge_icon(item_name),
+         "title": item_name, "description": f"Unlock {item_name}"}
+        for item_name in KNOWLEDGE_UTILITY_ITEMS
+    ]
+
+    write_grid(CATEGORY_KILLS, kills)
+    write_grid(CATEGORY_ENTITY_UNLOCKS, entity_unlocks)
+    write_grid(CATEGORY_STRUCTURE_UNLOCKS, structure_unlocks)
+    write_grid(CATEGORY_KNOWLEDGE, knowledge)
+    count += len(kills) + len(entity_unlocks) + len(structure_unlocks) + len(knowledge)
+
+    print(f"wrote {count} advancements to {OUT_DIR}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

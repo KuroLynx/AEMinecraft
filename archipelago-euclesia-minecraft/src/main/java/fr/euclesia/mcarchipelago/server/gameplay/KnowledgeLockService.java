@@ -3,6 +3,7 @@ package fr.euclesia.mcarchipelago.server.gameplay;
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.registry.AEMRegistries;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
+import net.minecraft.network.chat.Component;
 
 /**
  * Gates the *use* of a placed crafting station (enchanting table, brewing stand) behind a Knowledge
@@ -16,14 +17,22 @@ public final class KnowledgeLockService {
 
     /** True if the placed station {@code blockId} can't be used yet (its Knowledge isn't received). */
     public static boolean isStationUseBlocked(String blockId) {
+        return stationBlockReason(blockId) != null;
+    }
+
+    /**
+     * The reason the station {@code blockId} can't be used yet (a red chat line for
+     * {@link LockFeedback}), or {@code null} if it's usable.
+     */
+    public static Component stationBlockReason(String blockId) {
         if (!AEMServerRuntime.isArchipelagoReady()) {
-            return false;
+            return null;
         }
         AEMRegistries registries = AEM.ARCHIPELAGO.client().registries();
         String knowledge = registries.apMaterials().stationKnowledge(blockId);
-        if (knowledge == null) {
-            return false;
+        if (knowledge == null || registries.apItems().receivedCount(knowledge) > 0) {
+            return null;
         }
-        return registries.apItems().receivedCount(knowledge) <= 0;
+        return Component.literal("§cRequires " + knowledge);
     }
 }

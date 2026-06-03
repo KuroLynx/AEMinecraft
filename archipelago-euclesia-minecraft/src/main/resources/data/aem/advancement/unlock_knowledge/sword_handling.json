@@ -1,4 +1,5 @@
 {
+  "parent": "aem:unlock_knowledge/material_handling",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"
@@ -13,10 +14,11 @@
     "icon": {
       "id": "minecraft:iron_sword"
     },
-    "title": "Kills",
-    "description": "Mobs & bosses to kill",
-    "background": "minecraft:gui/advancements/backgrounds/adventure",
+    "title": "Knowledge: Sword Handling",
+    "description": "Unlock Knowledge: Sword Handling",
+    "frame": "task",
     "show_toast": false,
-    "announce_to_chat": false
+    "announce_to_chat": false,
+    "hidden": false
   }
 }

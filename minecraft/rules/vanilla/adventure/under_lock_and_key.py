@@ -4,13 +4,8 @@ from ...helpers import RuleHelper
 
 def under_lock_and_key(helper: RuleHelper) -> dict:
     return {
-        A_UNDER_LOCK_AND_KEY: helper.all_of(
-            helper.reached(f"{ADVANCEMENT_PREFIX}{A_TRIAL_EDITION}"),
-            helper.has_any_entities(
-                E_BREEZE,  # always present
-                E_ZOMBIE, E_HUSK, E_SLIME, E_SILVERFISH,  # melee pool
-                E_SKELETON, E_STRAY, E_BOGGED,  # ranged pool
-                E_SPIDER, E_CAVE_SPIDER,  # small melee pool
-            ),
-        )
+        # Unlock a Vault with a Trial Key. The Trial Key is found in the chamber's *entrance* chest
+        # (loot table chests/trial_chambers/entrance) — no combat required — so simply reaching the
+        # Trial Chambers (and thus its entrance chest and a Vault) is sufficient.
+        A_UNDER_LOCK_AND_KEY: helper.reached(f"{ADVANCEMENT_PREFIX}{A_TRIAL_EDITION}")
     }
