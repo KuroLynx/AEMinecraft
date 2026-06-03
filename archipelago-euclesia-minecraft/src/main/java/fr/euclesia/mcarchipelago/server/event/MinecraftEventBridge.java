@@ -6,6 +6,7 @@ import fr.euclesia.mcarchipelago.server.connect.APWorldConnection;
 import fr.euclesia.mcarchipelago.server.connect.APWorldConnector;
 import fr.euclesia.mcarchipelago.server.gameplay.AdvancementBridge;
 import fr.euclesia.mcarchipelago.server.gameplay.MobKillBridge;
+import fr.euclesia.mcarchipelago.server.gameplay.RootAdvancementService;
 import fr.euclesia.mcarchipelago.server.gameplay.StartDimensionService;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
 import fr.euclesia.mcarchipelago.server.service.DeathLinkService;
@@ -57,6 +58,9 @@ public final class MinecraftEventBridge {
             // Covers the connect-before-join path (e.g. main-menu connect): if the slot data is
             // already known, place the player in their start dimension before anything else.
             StartDimensionService.applyIfNeeded(player);
+            // Rebuild + resync the tab root for this player before scanning, so the connect-before-join
+            // path still gets the goal-count root (the connect-time reload ran with no players online).
+            RootAdvancementService.applyOnJoin(player);
             AdvancementBridge.scanPlayer(player);
         });
 

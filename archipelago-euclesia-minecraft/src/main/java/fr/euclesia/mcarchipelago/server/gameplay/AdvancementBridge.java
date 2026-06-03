@@ -1,6 +1,7 @@
 package fr.euclesia.mcarchipelago.server.gameplay;
 
 import fr.euclesia.mcarchipelago.AEM;
+import fr.euclesia.mcarchipelago.registry.APTrackerRegistry;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.server.MinecraftServer;
@@ -18,6 +19,13 @@ public final class AdvancementBridge {
         // The check result is reported back through Archipelago's PrintJSON (rendered to chat by
         // ArchipelagoChatListener), so no local confirmation message is needed here.
         AEM.ARCHIPELAGO.gateway().checkLocation(advancementId);
+
+        // Count this toward the tab-root goal progress (one criterion per completed advancement),
+        // but only for real advancement checks this seed — not the root tile itself.
+        if (!APTrackerRegistry.TAB_ROOT_ID.equals(advancementId)
+                && AEM.ARCHIPELAGO.client().registries().apLocations().isActiveLocation(advancementId)) {
+            RootAdvancementService.syncProgress(player);
+        }
     }
 
     /**

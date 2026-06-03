@@ -10,8 +10,11 @@ import fr.euclesia.mcarchipelago.protocol.APJson;
 import fr.euclesia.mcarchipelago.protocol.APReceivedPacket;
 import fr.euclesia.mcarchipelago.protocol.packet.outbound.ConnectUpdatePacket;
 import fr.euclesia.mcarchipelago.server.gameplay.AdvancementBridge;
+import fr.euclesia.mcarchipelago.server.gameplay.RootAdvancementService;
 import fr.euclesia.mcarchipelago.server.gameplay.StartDimensionService;
+import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
 import fr.euclesia.mcarchipelago.server.service.DeathLinkService;
+import net.minecraft.server.MinecraftServer;
 
 import java.util.List;
 
@@ -27,10 +30,22 @@ public final class ArchipelagoGameplayListener implements APEventListener {
         // known, relocate any online player who still needs their start dimension applied.
         StartDimensionService.applyToOnlinePlayers();
 
-        AdvancementBridge.scanOnlinePlayers();
+        // Rebuild the Archipelago tab root with the goal's advancement count so it shows native X/Y
+        // progress. Done before the reload below so clients receive the rebuilt definition, and
+        // before the scan so already-completed advancements award their criteria.
+        MinecraftServer server = AEMServerRuntime.server();
+        if (server != null) {
+            int required = slotData.advancementsRequired();
+            server.execute(() -> RootAdvancementService.rebuild(server, required));
+        }
+
         // Re-evaluate advancement visibility now that the active-location set is known, so
-        // non-check advancements disappear from the screen (they were revealed pre-connect).
+        // non-check advancements disappear from the screen (they were revealed pre-connect), and
+        // resync the rebuilt root definition to clients.
         AdvancementBridge.reloadOnlinePlayers();
+        // Re-fire completion for already-done advancements: re-sends their checks and awards their
+        // tab-root criteria.
+        AdvancementBridge.scanOnlinePlayers();
     }
 
     @Override
