@@ -7,5 +7,6 @@ def a_seedy_place(helper: RuleHelper) -> dict:
         A_A_SEEDY_PLACE: helper.any_of(
             helper.knowledge(K_HOE),
             helper.any_village(),
+            helper.structure(S_MANSION),
         )
     }
