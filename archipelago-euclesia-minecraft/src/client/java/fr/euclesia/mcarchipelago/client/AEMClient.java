@@ -2,7 +2,7 @@ package fr.euclesia.mcarchipelago.client;
 
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.client.connect.APConnectController;
-import fr.euclesia.mcarchipelago.client.finder.StructureFinderWaypoints;
+import fr.euclesia.mcarchipelago.client.finder.StructureFinderBarHud;
 import fr.euclesia.mcarchipelago.client.gui.AEMScreenButtons;
 import fr.euclesia.mcarchipelago.client.logic.DataLogicProvider;
 import fr.euclesia.mcarchipelago.client.logic.LogicProviders;
@@ -30,7 +30,9 @@ public class AEMClient implements ClientModInitializer {
 				Identifier.fromNamespaceAndPath(AEM.MOD_ID, "connection_status"),
 				new ConnectionStatusHud());
 
-		// Structure Finder tier 1: drive the locator bar from the server-published targets.
-		StructureFinderWaypoints.register();
+		// Structure Finder tier 1: a custom locator bar showing each target's representative item icon.
+		HudElementRegistry.addLast(
+				Identifier.fromNamespaceAndPath(AEM.MOD_ID, "structure_finder_bar"),
+				new StructureFinderBarHud());
 	}
 }
