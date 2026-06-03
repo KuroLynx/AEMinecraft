@@ -10,10 +10,12 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Representative item icon per structure type, drawn on the Structure-Finder locator bar. Kept in
+ * Icons for the Structure-Finder bar. The main icon is the structure's representative item, kept in
  * sync with {@code tools/gen_tracker_advancements.py} {@code STRUCTURE_ICONS} so the bar and the
- * tracker-tab tiles use the same item for a given structure. Keyed by the structure path (the part
- * after {@code namespace:}). Resolved {@link ItemStack}s are cached and reused for rendering.
+ * tracker tiles agree. Because biome variants share a main icon (every village is an emerald, every
+ * ruined portal is obsidian, …), a small <em>badge</em> item is overlaid to show the variant's biome
+ * (desert → sand, snowy → snow, savanna → acacia sapling, …). Keyed by structure path (after
+ * {@code namespace:}); resolved stacks are cached and reused for rendering.
  */
 public final class StructureIcons {
     private static final String FALLBACK = "minecraft:chest";
@@ -57,19 +59,39 @@ public final class StructureIcons {
             Map.entry("desert_well", "minecraft:sandstone_slab")
     );
 
-    private static final Map<String, ItemStack> CACHE = new ConcurrentHashMap<>();
+    /** Small biome badge per variant, overlaid on the main icon to disambiguate shared icons. */
+    private static final Map<String, String> BADGE_BY_SLUG = Map.ofEntries(
+            Map.entry("village_plains", "minecraft:grass_block"),
+            Map.entry("village_desert", "minecraft:sand"),
+            Map.entry("village_savanna", "minecraft:acacia_sapling"),
+            Map.entry("village_snowy", "minecraft:snow_block"),
+            Map.entry("village_taiga", "minecraft:spruce_sapling"),
+            Map.entry("ruined_portal_desert", "minecraft:sand"),
+            Map.entry("ruined_portal_jungle", "minecraft:jungle_sapling"),
+            Map.entry("ruined_portal_mountain", "minecraft:stone"),
+            Map.entry("ruined_portal_nether", "minecraft:netherrack"),
+            Map.entry("ruined_portal_ocean", "minecraft:prismarine"),
+            Map.entry("ruined_portal_swamp", "minecraft:lily_pad"),
+            Map.entry("shipwreck_beached", "minecraft:sand")
+    );
+
+    private static final Map<String, ItemStack> ICON_CACHE = new ConcurrentHashMap<>();
+    private static final Map<String, ItemStack> BADGE_CACHE = new ConcurrentHashMap<>();
 
     private StructureIcons() {}
 
     /** A (cached, render-only) icon stack for the structure game id, e.g. {@code minecraft:stronghold}. */
     public static ItemStack iconFor(String structureGameId) {
-        return CACHE.computeIfAbsent(structureGameId, StructureIcons::resolve);
+        return ICON_CACHE.computeIfAbsent(structureGameId,
+                id -> stack(ITEM_BY_SLUG.getOrDefault(slug(id), FALLBACK)));
     }
 
-    private static ItemStack resolve(String structureGameId) {
-        String slug = slug(structureGameId);
-        String itemId = ITEM_BY_SLUG.getOrDefault(slug, FALLBACK);
-        return stack(itemId);
+    /** The biome-badge stack for a structure, or {@link ItemStack#EMPTY} when the variant needs none. */
+    public static ItemStack badgeFor(String structureGameId) {
+        return BADGE_CACHE.computeIfAbsent(structureGameId, id -> {
+            String itemId = BADGE_BY_SLUG.get(slug(id));
+            return itemId == null ? ItemStack.EMPTY : stack(itemId);
+        });
     }
 
     private static ItemStack stack(String itemId) {

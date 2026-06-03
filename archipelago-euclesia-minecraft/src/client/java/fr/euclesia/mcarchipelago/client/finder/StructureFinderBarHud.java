@@ -17,11 +17,12 @@ import java.util.List;
 
 /**
  * The Structure Finder bar: a custom locator bar showing each revealed structure as its
- * representative item icon (see {@link StructureIcons}). Mirrors the vanilla locator bar's geometry
- * — a 182×5 strip centred above the hotbar — placing each structure by its bearing relative to where
- * the player faces, pinned to the bar edge once it passes {@value #VISIBLE_DEGREE_RANGE}° to either
- * side. How many structures appear is decided server-side by the finder tier; each icon is scaled by
- * its distance, so nearby structures look big and far ones small.
+ * representative item icon (see {@link StructureIcons}), with a small biome badge for variants that
+ * share an icon. Mirrors the vanilla locator bar's geometry — a 182×5 strip centred above the hotbar
+ * — placing each structure by its bearing relative to where the player faces, pinned to the bar edge
+ * once it passes {@value #VISIBLE_DEGREE_RANGE}° to either side. How many structures appear is
+ * decided server-side by the finder tier; each icon is scaled by its distance, so nearby structures
+ * look big and far ones small.
  */
 public final class StructureFinderBarHud implements HudElement {
     private static final Identifier BACKGROUND = Identifier.withDefaultNamespace("hud/locator_bar_background");
@@ -33,10 +34,12 @@ public final class StructureFinderBarHud implements HudElement {
 
     private static final float ICON_PX = 16.0F;
     // Icon scale by distance: NEAR (and closer) renders at MAX_SCALE, FAR (and beyond) at MIN_SCALE.
-    private static final float MAX_SCALE = 0.875F;   // 16 → 14 px
-    private static final float MIN_SCALE = 0.375F;   // 16 →  6 px
-    private static final double NEAR_DISTANCE = 48.0;
-    private static final double FAR_DISTANCE = 3000.0;
+    private static final float MAX_SCALE = 1.0F;     // 16 px at the player's feet
+    private static final float MIN_SCALE = 0.3F;     // ~5 px once far away
+    private static final double NEAR_DISTANCE = 32.0;
+    private static final double FAR_DISTANCE = 1024.0;
+    // Biome badge drawn at this fraction of the main icon, in the bottom-right corner.
+    private static final float BADGE_SCALE = 0.55F;
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
@@ -72,7 +75,7 @@ public final class StructureFinderBarHud implements HudElement {
             int x = centerX + (int) Math.round(clamped / VISIBLE_DEGREE_RANGE * halfSpan);
 
             float scale = scaleForDistance(Math.sqrt(dx * dx + dz * dz));
-            drawIcon(graphics, StructureIcons.iconFor(target.structureId()), x, iconCenterY, scale);
+            drawIcon(graphics, target.structureId(), x, iconCenterY, scale);
         }
     }
 
@@ -81,12 +84,26 @@ public final class StructureFinderBarHud implements HudElement {
         return (float) Mth.lerp(t, MAX_SCALE, MIN_SCALE);
     }
 
-    private static void drawIcon(GuiGraphicsExtractor graphics, ItemStack stack, int centerX, int centerY,
+    private static void drawIcon(GuiGraphicsExtractor graphics, String structureId, int centerX, int centerY,
                                  float scale) {
         float size = ICON_PX * scale;
+        float left = centerX - size / 2.0F;
+        float top = centerY - size / 2.0F;
+        drawItem(graphics, StructureIcons.iconFor(structureId), left, top, scale);
+
+        ItemStack badge = StructureIcons.badgeFor(structureId);
+        if (!badge.isEmpty()) {
+            float badgeScale = scale * BADGE_SCALE;
+            float badgeSize = ICON_PX * badgeScale;
+            drawItem(graphics, badge, left + size - badgeSize, top + size - badgeSize, badgeScale);
+        }
+    }
+
+    private static void drawItem(GuiGraphicsExtractor graphics, ItemStack stack, float left, float top,
+                                 float scale) {
         Matrix3x2fStack pose = graphics.pose();
         pose.pushMatrix();
-        pose.translate(centerX - size / 2.0F, centerY - size / 2.0F);
+        pose.translate(left, top);
         pose.scale(scale, scale);
         graphics.item(stack, 0, 0);
         pose.popMatrix();
