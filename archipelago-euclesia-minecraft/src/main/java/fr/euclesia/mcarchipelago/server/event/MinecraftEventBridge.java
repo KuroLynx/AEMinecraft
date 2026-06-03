@@ -8,6 +8,7 @@ import fr.euclesia.mcarchipelago.server.gameplay.AdvancementBridge;
 import fr.euclesia.mcarchipelago.server.gameplay.MobKillBridge;
 import fr.euclesia.mcarchipelago.server.gameplay.RootAdvancementService;
 import fr.euclesia.mcarchipelago.server.gameplay.StartDimensionService;
+import fr.euclesia.mcarchipelago.server.gameplay.StructureFinderDriver;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
 import fr.euclesia.mcarchipelago.server.service.DeathLinkService;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
@@ -23,6 +24,10 @@ public final class MinecraftEventBridge {
     private MinecraftEventBridge() {}
 
     public static void register() {
+        // Recompute the Structure Finder's targets on the server tick (throttled) and publish them
+        // to StructureFinderState for the client to render.
+        StructureFinderDriver.register();
+
         // Connect-on-join gate. A world created via the Archipelago tab stages its connection here;
         // persist it into the new world's folder, then require a live Archipelago session before the
         // world finishes loading. If the connection fails, abort the load — you cannot enter a world

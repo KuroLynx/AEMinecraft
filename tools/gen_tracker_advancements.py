@@ -85,8 +85,8 @@ STRUCTURE_ICONS = {
     "mineshaft_mesa": "minecraft:powered_rail",
     "monument": "minecraft:prismarine",
     "nether_fossil": "minecraft:bone_block",
-    "ocean_ruin_cold": "minecraft:prismarine_bricks",
-    "ocean_ruin_warm": "minecraft:cut_sandstone",
+    "ocean_ruin_cold": "minecraft:trident",
+    "ocean_ruin_warm": "minecraft:trident",
     "pillager_outpost": "minecraft:crossbow",
     "ruined_portal": "minecraft:obsidian",
     "ruined_portal_desert": "minecraft:obsidian",
@@ -134,6 +134,7 @@ KNOWLEDGE_ICONS = {
     "Progressive Material Handling": "minecraft:raw_iron",
     "Progressive Villager Trust": "minecraft:emerald",
     "Progressive Coordinates": "minecraft:compass",
+    "Progressive Structure Finder": "minecraft:recovery_compass",
 }
 KNOWLEDGE_ICON_FALLBACK = "minecraft:book"
 
