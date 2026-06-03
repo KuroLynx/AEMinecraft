@@ -34,8 +34,8 @@ public final class StructureIcons {
             Map.entry("mineshaft_mesa", "minecraft:powered_rail"),
             Map.entry("monument", "minecraft:prismarine"),
             Map.entry("nether_fossil", "minecraft:bone_block"),
-            Map.entry("ocean_ruin_cold", "minecraft:prismarine_bricks"),
-            Map.entry("ocean_ruin_warm", "minecraft:cut_sandstone"),
+            Map.entry("ocean_ruin_cold", "minecraft:trident"),
+            Map.entry("ocean_ruin_warm", "minecraft:trident"),
             Map.entry("pillager_outpost", "minecraft:crossbow"),
             Map.entry("ruined_portal", "minecraft:obsidian"),
             Map.entry("ruined_portal_desert", "minecraft:obsidian"),
@@ -72,7 +72,9 @@ public final class StructureIcons {
             Map.entry("ruined_portal_nether", "minecraft:netherrack"),
             Map.entry("ruined_portal_ocean", "minecraft:prismarine"),
             Map.entry("ruined_portal_swamp", "minecraft:lily_pad"),
-            Map.entry("shipwreck_beached", "minecraft:sand")
+            Map.entry("shipwreck_beached", "minecraft:sand"),
+            Map.entry("ocean_ruin_cold", "minecraft:packed_ice"),
+            Map.entry("ocean_ruin_warm", "minecraft:sand")
     );
 
     private static final Map<String, ItemStack> ICON_CACHE = new ConcurrentHashMap<>();
