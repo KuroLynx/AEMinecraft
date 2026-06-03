@@ -26,6 +26,8 @@ public final class MobKillBridge {
 
         GoalTracker.recordMobKill(mobGameId);
         GoalTracker.evaluate();
+        // Tick the main-tab "Bosses" goal tile (no-op unless this mob is a goal boss).
+        RootAdvancementService.recordBossKill(mobGameId);
     }
 
     /**

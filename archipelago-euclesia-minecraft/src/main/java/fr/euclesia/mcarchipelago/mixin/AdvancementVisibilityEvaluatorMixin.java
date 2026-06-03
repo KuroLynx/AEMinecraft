@@ -48,12 +48,15 @@ public class AdvancementVisibilityEvaluatorMixin {
         if (client.registries().apLocations().isActiveLocation(id)) {
             return true;
         }
-        // Tracker tab: each active tracker tile, the non-empty category sub-roots, and the tab
-        // root when the tab has any content.
+        // Tracker tabs: each active tracker tile and the non-empty category tab-roots.
         APTrackerRegistry trackers = client.registries().apTrackers();
         if (trackers.isTracker(id) || trackers.isActiveCategory(id)) {
             return true;
         }
-        return id.equals(APTrackerRegistry.TAB_ROOT_ID) && trackers.hasAny();
+        // The main tab is always present once connected: its root plus the two goal tiles, which
+        // carry the native X/Y goal progress regardless of which other trackers are active.
+        return id.equals(APTrackerRegistry.TAB_ROOT_ID)
+                || id.equals(APTrackerRegistry.GOAL_ADVANCEMENTS_ID)
+                || id.equals(APTrackerRegistry.GOAL_BOSSES_ID);
     }
 }

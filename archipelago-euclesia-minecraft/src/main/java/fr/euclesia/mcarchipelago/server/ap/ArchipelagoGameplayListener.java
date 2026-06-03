@@ -30,13 +30,12 @@ public final class ArchipelagoGameplayListener implements APEventListener {
         // known, relocate any online player who still needs their start dimension applied.
         StartDimensionService.applyToOnlinePlayers();
 
-        // Rebuild the Archipelago tab root with the goal's advancement count so it shows native X/Y
-        // progress. Done before the reload below so clients receive the rebuilt definition, and
+        // Rebuild the Archipelago goal tiles (advancements X/Y + bosses M/N) so they show native
+        // progress. Done before the reload below so clients receive the rebuilt definitions, and
         // before the scan so already-completed advancements award their criteria.
         MinecraftServer server = AEMServerRuntime.server();
         if (server != null) {
-            int required = slotData.advancementsRequired();
-            server.execute(() -> RootAdvancementService.rebuild(server, required));
+            server.execute(() -> RootAdvancementService.rebuild(server, slotData));
         }
 
         // Re-evaluate advancement visibility now that the active-location set is known, so

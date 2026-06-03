@@ -11,10 +11,10 @@
   ],
   "display": {
     "icon": {
-      "id": "minecraft:nether_star"
+      "id": "minecraft:book"
     },
-    "title": "Archipelago",
-    "description": "Archipelago goal progress",
+    "title": "Knowledge & Utilities",
+    "description": "Knowledge & utility items to unlock",
     "background": "minecraft:gui/advancements/backgrounds/adventure",
     "show_toast": false,
     "announce_to_chat": false
