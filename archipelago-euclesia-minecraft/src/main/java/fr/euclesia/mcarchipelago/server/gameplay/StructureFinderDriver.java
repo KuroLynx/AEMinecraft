@@ -10,10 +10,10 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -21,8 +21,11 @@ import java.util.UUID;
  * {@link StructureFinderState} for the client to render. The search is heavy (one
  * {@code findNearestMapStructure} per eligible structure), so it recomputes only when the result
  * could actually change: new items received (the finder tier rose, or a structure unlocked), a
- * dimension change, a tier-3 selection change, or the player travelled far enough that "nearest"
- * might differ — and movement-driven recomputes are rate-limited.
+ * dimension change, or the player travelled far enough that "nearest" might differ — and
+ * movement-driven recomputes are rate-limited.
+ *
+ * <p>The number of structures published grows with the finder tier (see
+ * {@link StructureFinderService#cap}): more copies reveal more of the surrounding structures.
  */
 public final class StructureFinderDriver {
     /** Horizontal distance (blocks) a player must travel before a movement-driven recompute. */
@@ -64,8 +67,6 @@ public final class StructureFinderDriver {
 
         int version = AEM.ARCHIPELAGO.client().registries().apItems().receivedVersion();
         ResourceKey<Level> dimension = player.level().dimension();
-        // The tier-3 selection only applies once the player actually has tier 3.
-        String selection = tier >= StructureFinderService.MAX_TIER ? state.selection(uuid) : null;
         BlockPos origin = player.blockPosition();
 
         Context ctx = CONTEXTS.get(uuid);
@@ -74,21 +75,18 @@ public final class StructureFinderDriver {
                 || ctx.tier() != tier
                 || ctx.version() != version
                 || !dimension.equals(ctx.dimension())
-                || !Objects.equals(selection, ctx.selection())
                 || (movedFar(ctx.origin(), origin) && tickCount - ctx.computeTick() >= MOVE_RECOMPUTE_GAP);
         if (!recompute) {
             return;
         }
 
-        List<FinderTarget> targets;
-        if (selection != null) {
-            FinderTarget single = StructureFinderService.nearestOfType(player, selection);
-            targets = single == null ? List.of() : List.of(single);
-        } else {
-            targets = StructureFinderService.nearestPerType(player);
-        }
-        state.putSnapshot(uuid, new Snapshot(tier, selection, targets));
-        CONTEXTS.put(uuid, new Context(tier, version, dimension, selection, origin, tickCount));
+        // One nearest instance per unlocked type, nearest first; the tier decides how many to keep.
+        List<FinderTarget> all = StructureFinderService.findAll(player);
+        int keep = StructureFinderService.cap(tier, all.size());
+        List<FinderTarget> targets = keep >= all.size() ? all : new ArrayList<>(all.subList(0, keep));
+
+        state.putSnapshot(uuid, new Snapshot(tier, targets));
+        CONTEXTS.put(uuid, new Context(tier, version, dimension, origin, tickCount));
     }
 
     private static boolean movedFar(BlockPos from, BlockPos to) {
@@ -97,6 +95,6 @@ public final class StructureFinderDriver {
         return dx * dx + dz * dz >= RECOMPUTE_DISTANCE * RECOMPUTE_DISTANCE;
     }
 
-    private record Context(int tier, int version, ResourceKey<Level> dimension, String selection,
+    private record Context(int tier, int version, ResourceKey<Level> dimension,
                            BlockPos origin, int computeTick) {}
 }
