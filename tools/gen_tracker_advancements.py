@@ -134,6 +134,7 @@ KNOWLEDGE_ICONS = {
     "Progressive Material Handling": "minecraft:raw_iron",
     "Progressive Villager Trust": "minecraft:emerald",
     "Progressive Coordinates": "minecraft:compass",
+    "Progressive Structure Finder": "minecraft:recovery_compass",
 }
 KNOWLEDGE_ICON_FALLBACK = "minecraft:book"
 
