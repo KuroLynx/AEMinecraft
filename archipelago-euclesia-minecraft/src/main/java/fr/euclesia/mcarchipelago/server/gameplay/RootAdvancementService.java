@@ -50,6 +50,9 @@ public final class RootAdvancementService {
     private static volatile AdvancementHolder advancementsHolder;
     private static volatile AdvancementHolder bossesHolder;
 
+    /** Advancements the goal requires this seed, capped at how many actually exist (0 = none). */
+    private static volatile int requiredAdvancements;
+
     private RootAdvancementService() {}
 
     /**
@@ -62,9 +65,12 @@ public final class RootAdvancementService {
         ServerAdvancementManagerAccessor accessor = (ServerAdvancementManagerAccessor) manager;
         Map<Identifier, AdvancementHolder> changed = new HashMap<>();
 
-        // Advancements tile: Y anonymous criteria (c0..c{Y-1}).
+        // Advancements tile: Y anonymous criteria (c0..c{Y-1}). Cap Y at the number of advancements
+        // that actually exist this seed — mirrors the apworld completion condition (which caps the
+        // same way), so the goal can't demand more advancements than are obtainable.
+        requiredAdvancements = Math.min(slotData.advancementsRequired(), countActiveAdvancements(server));
         List<String> advCriteria = new ArrayList<>();
-        for (int i = 0; i < slotData.advancementsRequired(); i++) {
+        for (int i = 0; i < requiredAdvancements; i++) {
             advCriteria.add("c" + i);
         }
         advancementsHolder = rebuildTile(manager, ADVANCEMENTS_ID, advCriteria, changed);
@@ -203,6 +209,17 @@ public final class RootAdvancementService {
         }
     }
 
+    /** Advancements the goal requires this seed (capped at how many exist); 0 if none. */
+    public static int requiredAdvancements() {
+        return requiredAdvancements;
+    }
+
+    /** The player's completed advancements that are active Archipelago checks this seed (for the goal). */
+    public static int completedGoalAdvancements(ServerPlayer player) {
+        MinecraftServer server = AEMServerRuntime.server();
+        return server == null ? 0 : countCompletedAdvancements(server, player);
+    }
+
     /** Counts the player's completed advancements that are active Archipelago checks this seed. */
     private static int countCompletedAdvancements(MinecraftServer server, ServerPlayer player) {
         APLocationRegistry locations = AEM.ARCHIPELAGO.client().registries().apLocations();
@@ -210,6 +227,18 @@ public final class RootAdvancementService {
         for (AdvancementHolder advancement : server.getAdvancements().getAllAdvancements()) {
             if (locations.isActiveLocation(advancement.id().toString())
                     && player.getAdvancements().getOrStartProgress(advancement).isDone()) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    /** Counts the advancements that are active Archipelago checks this seed (the goal's max). */
+    private static int countActiveAdvancements(MinecraftServer server) {
+        APLocationRegistry locations = AEM.ARCHIPELAGO.client().registries().apLocations();
+        int count = 0;
+        for (AdvancementHolder advancement : server.getAdvancements().getAllAdvancements()) {
+            if (locations.isActiveLocation(advancement.id().toString())) {
                 count++;
             }
         }
