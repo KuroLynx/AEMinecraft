@@ -92,7 +92,9 @@ public final class DataLogicProvider implements LogicProvider {
     private LogicState trackerState(ArchipelagoClient client, APTrackerRegistry.Tracker tracker) {
         if (APTrackerRegistry.KIND_UNLOCK.equals(tracker.kind())) {
             Long itemId = tracker.itemId();
-            boolean received = itemId != null && client.registries().apItems().receivedCount(itemId) > 0;
+            // Progressive tiles need `count` copies (level N); normal unlocks need 1.
+            boolean received = itemId != null
+                    && client.registries().apItems().receivedCount(itemId) >= tracker.count();
             // Received = obtained: gray it out like a checked location. Not yet received = red.
             return received ? LogicState.CHECKED : LogicState.OUT_OF_LOGIC;
         }
