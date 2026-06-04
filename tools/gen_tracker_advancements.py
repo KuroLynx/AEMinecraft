@@ -51,6 +51,7 @@ from worlds.minecraft.trackers import (  # noqa: E402
     KNOWLEDGE_UTILITY_ITEMS,
     TRACKER_NAMESPACE,
     TRACKER_ROOT,
+    knowledge_count,
     knowledge_tracker_id,
     tracker_id,
 )
@@ -114,7 +115,7 @@ STRUCTURE_ICON_FALLBACK = "minecraft:chest"
 # Representative item per knowledge/utility item name (the Knowledge tab tiles). Falls back to a book.
 KNOWLEDGE_ICONS = {
     "Knowledge: Sword Handling": "minecraft:iron_sword",
-    "Knowledge: Spear Handling": "minecraft:trident",
+    "Knowledge: Spear Handling": "minecraft:iron_spear",
     "Knowledge: Shovel Handling": "minecraft:iron_shovel",
     "Knowledge: Axe Handling": "minecraft:iron_axe",
     "Knowledge: Pickaxe Handling": "minecraft:iron_pickaxe",
@@ -133,16 +134,48 @@ KNOWLEDGE_ICONS = {
     "Knowledge: Flying": "minecraft:elytra",
     "Progressive Material Handling": "minecraft:raw_iron",
     "Progressive Villager Trust": "minecraft:emerald",
-    "Progressive Coordinates": "minecraft:compass",
     "Progressive Structure Finder": "minecraft:recovery_compass",
+    "Dimension Unlock: Overworld": "minecraft:grass_block",
+    "Dimension Unlock: Nether": "minecraft:netherrack",
+    "Dimension Unlock: The End": "minecraft:end_stone",
 }
 KNOWLEDGE_ICON_FALLBACK = "minecraft:book"
+
+# Progressive Material Handling level -> (icon, material name). Each received copy raises the material
+# tier the player can pick up (see minecraft/data.py MATERIAL_HANDLING_ITEMS), so each level's tile
+# shows that tier's representative item.
+MATERIAL_HANDLING_ITEM = "Progressive Material Handling"
+MATERIAL_HANDLING_TIERS = {
+    1: ("minecraft:stone", "Stone"),
+    2: ("minecraft:copper_ingot", "Copper"),
+    3: ("minecraft:iron_ingot", "Iron"),
+    4: ("minecraft:gold_ingot", "Gold"),
+    5: ("minecraft:diamond", "Diamond"),
+    6: ("minecraft:netherite_ingot", "Netherite"),
+}
 
 
 def knowledge_icon(item_name: str) -> str:
     if item_name not in KNOWLEDGE_ICONS:
         print(f"  WARN: no icon mapping for knowledge item '{item_name}', using {KNOWLEDGE_ICON_FALLBACK}")
     return KNOWLEDGE_ICONS.get(item_name, KNOWLEDGE_ICON_FALLBACK)
+
+
+def knowledge_level_tile(item_name: str, level: int, count: int) -> dict:
+    """Tile (icon/title/description) for one level of a knowledge/utility item.
+
+    Material Handling levels show the tier's ingot and material name; other progressive items repeat
+    their icon with a level suffix; single-level items keep the plain name.
+    """
+    if item_name == MATERIAL_HANDLING_ITEM and level in MATERIAL_HANDLING_TIERS:
+        icon, material = MATERIAL_HANDLING_TIERS[level]
+        return {"icon": icon, "title": f"Material Handling: {material}",
+                "description": f"Pick up {material.lower()}-tier materials"}
+    if count > 1:
+        return {"icon": knowledge_icon(item_name), "title": f"{item_name} {level}",
+                "description": f"Unlock {item_name} (level {level})"}
+    return {"icon": knowledge_icon(item_name), "title": item_name,
+            "description": f"Unlock {item_name}"}
 
 
 def load_spawn_egg_slugs(jar_path: str) -> set[str]:
@@ -282,11 +315,12 @@ def main() -> int:
         for name, struct in STRUCTURES.items()
     ]
 
-    knowledge = [
-        {"id": knowledge_tracker_id(item_name), "icon": knowledge_icon(item_name),
-         "title": item_name, "description": f"Unlock {item_name}"}
-        for item_name in KNOWLEDGE_UTILITY_ITEMS
-    ]
+    knowledge = []
+    for item_name in KNOWLEDGE_UTILITY_ITEMS:
+        count = knowledge_count(item_name)
+        for level in range(1, count + 1):
+            meta = knowledge_level_tile(item_name, level, count)
+            knowledge.append({"id": knowledge_tracker_id(item_name, level), **meta})
 
     write_grid(CATEGORY_KILLS, kills)
     write_grid(CATEGORY_ENTITY_UNLOCKS, entity_unlocks)

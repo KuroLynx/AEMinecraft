@@ -43,12 +43,18 @@ public final class BiomeFinderItem {
         // Touching MARKER above triggers registration on class load; nothing else to do.
     }
 
+    /** The finder's display name. Also forced in {@code CompassItemMixin} (a lodestone-tracked
+     * compass would otherwise render as "Lodestone Compass", ignoring ITEM_NAME). */
+    public static Component displayName() {
+        return Component.literal(AP_ITEM);
+    }
+
     /** A fresh Biome Finder compass: a marked compass with a fixed, non-italic display name. */
     public static ItemStack createStack() {
         ItemStack stack = new ItemStack(Items.COMPASS);
         stack.set(MARKER, Unit.INSTANCE);
         // ITEM_NAME (not CUSTOM_NAME) gives a default, non-italic name with no anvil/rename semantics.
-        stack.set(DataComponents.ITEM_NAME, Component.literal("Biome Finder"));
+        stack.set(DataComponents.ITEM_NAME, displayName());
         return stack;
     }
 

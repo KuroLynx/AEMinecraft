@@ -1,0 +1,24 @@
+{
+  "parent": "aem:unlock_knowledge/sword_handling/1",
+  "criteria": {
+    "never": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "never"
+    ]
+  ],
+  "display": {
+    "icon": {
+      "id": "minecraft:iron_spear"
+    },
+    "title": "Knowledge: Spear Handling",
+    "description": "Unlock Knowledge: Spear Handling",
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": false
+  }
+}

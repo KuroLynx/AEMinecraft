@@ -24,7 +24,9 @@ import net.minecraft.world.level.biome.Biome;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Predicate;
@@ -43,6 +45,9 @@ public final class BiomeFinderService {
     private static final int SEARCH_RADIUS = 6400;
     private static final int HORIZONTAL_STEP = 32;
     private static final int VERTICAL_STEP = 64;
+
+    /** Finder stack (with its lodestone tracking) saved at death, restored on the next respawn. */
+    private static final Map<UUID, ItemStack> savedOnDeath = new HashMap<>();
 
     private BiomeFinderService() {}
 
@@ -68,6 +73,31 @@ public final class BiomeFinderService {
         if (!player.addItem(stack)) {
             player.drop(stack, false);
         }
+    }
+
+    /**
+     * Death handler: remember the player's finder (with its tracked biome) so respawn can restore the
+     * same stack, then strip it from the inventory so it isn't dropped with the rest of the loot.
+     */
+    public static void onDeath(ServerPlayer player) {
+        ItemStack finder = BiomeFinderItem.findFirst(player);
+        if (!finder.isEmpty()) {
+            savedOnDeath.put(player.getUUID(), finder.copy());
+        }
+        BiomeFinderItem.removeAll(player);
+    }
+
+    /**
+     * Respawn handler: give back the exact finder saved at death (keeping the tracked biome). Falls
+     * back to a fresh grant if nothing was saved (e.g. first spawn, or the finder arrived post-death).
+     */
+    public static void restoreOnRespawn(ServerPlayer player) {
+        ItemStack saved = savedOnDeath.remove(player.getUUID());
+        if (saved != null && !saved.isEmpty()) {
+            player.addItem(saved);
+            return;
+        }
+        ensureGranted(player);
     }
 
     /** Ensures every online player who owns the finder is carrying one (called after items arrive). */

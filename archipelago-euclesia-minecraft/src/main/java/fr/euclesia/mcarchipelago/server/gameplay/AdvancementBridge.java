@@ -25,6 +25,9 @@ public final class AdvancementBridge {
         if (!APTrackerRegistry.TAB_ROOT_ID.equals(advancementId)
                 && AEM.ARCHIPELAGO.client().registries().apLocations().isActiveLocation(advancementId)) {
             RootAdvancementService.syncProgress(player);
+            // The advancement count is part of the win condition, so re-check the goal here too — not
+            // just on boss kills — or completing the last required advancement wouldn't trigger the win.
+            GoalTracker.evaluate();
         }
     }
 

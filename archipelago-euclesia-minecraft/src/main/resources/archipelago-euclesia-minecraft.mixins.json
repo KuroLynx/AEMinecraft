@@ -4,7 +4,9 @@
   "compatibilityLevel": "JAVA_25",
   "mixins": [
     "AdvancementVisibilityEvaluatorMixin",
+    "BeehiveBlockEntityMixin",
     "BrewingStandBlockMixin",
+    "CompassItemMixin",
     "EnchantingTableBlockMixin",
     "EnderDragonFightMixin",
     "EntityMixin",
@@ -13,6 +15,7 @@
     "PlayerAdvancementsMixin",
     "ServerAdvancementManagerAccessor",
     "ServerLevelMixin",
+    "ServerPlayerMixin",
     "SlotMixin",
     "StructureStartMixin",
     "WorldGenRegionMixin"

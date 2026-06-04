@@ -54,10 +54,11 @@ CATEGORY_BY_KIND = {
     KIND_UNLOCK_KNOWLEDGE: CATEGORY_KNOWLEDGE,
 }
 
-# Knowledge / utility items tracked on the Knowledge tab — every "Knowledge: *" plus the progressive
-# utilities (Material Handling, Villager Trust, Coordinates). Derived from the item table so the set
-# stays in sync with items.csv; the generator and the export both consume this list.
-KNOWLEDGE_UTILITY_PREFIXES = ("Knowledge: ", "Progressive ")
+# Knowledge / utility items tracked on the Knowledge tab — every "Knowledge: *", the progressive
+# utilities (Material Handling, Villager Trust, Structure Finder) and the "Dimension Unlock: *"
+# items. Derived from the item table so the set stays in sync with items.csv; the generator
+# and the export both consume this list. Progressive items (count > 1) become one tile per level.
+KNOWLEDGE_UTILITY_PREFIXES = ("Knowledge: ", "Progressive ", "Dimension Unlock: ")
 KNOWLEDGE_UTILITY_ITEMS = [name for name in ITEMS if name.startswith(KNOWLEDGE_UTILITY_PREFIXES)]
 
 
@@ -78,7 +79,7 @@ def tracker_id(kind: str, game_id: str) -> str:
 def knowledge_slug(item_name: str) -> str:
     """Advancement-path slug for a knowledge/utility item name.
 
-    ``Knowledge: Sword Handling`` -> ``sword_handling``; ``Progressive Coordinates`` -> ``coordinates``.
+    ``Knowledge: Sword Handling`` -> ``sword_handling``; ``Progressive Villager Trust`` -> ``villager_trust``.
     """
     name = item_name
     for prefix in KNOWLEDGE_UTILITY_PREFIXES:
@@ -88,9 +89,15 @@ def knowledge_slug(item_name: str) -> str:
     return name.lower().replace(" ", "_")
 
 
-def knowledge_tracker_id(item_name: str) -> str:
-    """Stable advancement id for a knowledge/utility tracker, e.g. ``aem:unlock_knowledge/enchanting``."""
-    return f"{TRACKER_NAMESPACE}:{KIND_UNLOCK_KNOWLEDGE}/{knowledge_slug(item_name)}"
+def knowledge_count(item_name: str) -> int:
+    """How many progressive levels a knowledge/utility item has (1 for non-progressive items)."""
+    return ITEMS[item_name].count
+
+
+def knowledge_tracker_id(item_name: str, level: int) -> str:
+    """Stable advancement id for one level of a knowledge/utility tracker, e.g.
+    ``aem:unlock_knowledge/material_handling/3``. Non-progressive items have a single level ``1``."""
+    return f"{TRACKER_NAMESPACE}:{KIND_UNLOCK_KNOWLEDGE}/{knowledge_slug(item_name)}/{level}"
 
 
 def build_trackers_export(world) -> dict:
@@ -134,13 +141,21 @@ def build_trackers_export(world) -> dict:
             "item_id": BASE_ID_STRUCT_UNLOCK + struct_data.id,
         }
 
-    # Knowledge / utility items (received AP items) — green once received, like other unlocks.
+    # Knowledge / utility items (received AP items) — green once received. Progressive items get one
+    # tile per level: level N's tile turns green once N copies of the item are received. The start
+    # dimension's unlock isn't in the pool (you spawn there), so skip it — its tile could never green.
+    start_dimension_item = world._start_dimension_item()
     for item_name in KNOWLEDGE_UTILITY_ITEMS:
+        if item_name == start_dimension_item:
+            continue
         item_id = world.item_name_to_id.get(item_name)
-        if item_id is not None:
-            trackers[knowledge_tracker_id(item_name)] = {
+        if item_id is None:
+            continue
+        for level in range(1, knowledge_count(item_name) + 1):
+            trackers[knowledge_tracker_id(item_name, level)] = {
                 "kind": "unlock",
                 "item_id": item_id,
+                "count": level,
             }
 
     return trackers
