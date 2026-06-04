@@ -4,7 +4,9 @@ import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.protocol.packet.outbound.SayPacket;
 import fr.euclesia.mcarchipelago.server.connect.APWorldConnection;
 import fr.euclesia.mcarchipelago.server.connect.APWorldConnector;
+import fr.euclesia.mcarchipelago.content.BiomeFinderItem;
 import fr.euclesia.mcarchipelago.server.gameplay.AdvancementBridge;
+import fr.euclesia.mcarchipelago.server.gameplay.BiomeFinderService;
 import fr.euclesia.mcarchipelago.server.gameplay.MobKillBridge;
 import fr.euclesia.mcarchipelago.server.gameplay.RootAdvancementService;
 import fr.euclesia.mcarchipelago.server.gameplay.StartDimensionService;
@@ -67,6 +69,22 @@ public final class MinecraftEventBridge {
             // path still gets the goal-count root (the connect-time reload ran with no players online).
             RootAdvancementService.applyOnJoin(player);
             AdvancementBridge.scanPlayer(player);
+            // Give back the soulbound Biome Finder if this slot owns it (covers first join and relog).
+            BiomeFinderService.ensureGranted(player);
+        });
+
+        // The Biome Finder is soulbound: re-grant it after respawn (it was stripped from the drops on
+        // death, see ALLOW_DEATH below) so it never drops or duplicates.
+        ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) ->
+                BiomeFinderService.ensureGranted(newPlayer));
+
+        // Strip the finder from the inventory before death drops are computed, so it neither drops on
+        // the ground nor stays after respawn; AFTER_RESPAWN regrants it. Always allow the death itself.
+        ServerLivingEntityEvents.ALLOW_DEATH.register((entity, damageSource, damageAmount) -> {
+            if (entity instanceof ServerPlayer player) {
+                BiomeFinderItem.removeAll(player);
+            }
+            return true;
         });
 
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, damageSource) -> {

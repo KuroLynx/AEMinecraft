@@ -1,5 +1,6 @@
 package fr.euclesia.mcarchipelago;
 
+import fr.euclesia.mcarchipelago.content.BiomeFinderItem;
 import fr.euclesia.mcarchipelago.engine.ap.ArchipelagoService;
 import fr.euclesia.mcarchipelago.server.AEMServerBridge;
 import net.fabricmc.api.ModInitializer;
@@ -18,6 +19,8 @@ public class AEM implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
+		// Register custom data components (e.g. the Biome Finder marker) before registries freeze.
+		BiomeFinderItem.register();
 		AEMServerBridge.register();
 		LOGGER.info("Archipelago Euclesia Minecraft initialized");
 	}
