@@ -2,7 +2,7 @@ from BaseClasses import Item, Location, Region, Tutorial
 from worlds.AutoWorld import WebWorld, World
 
 from .data import *
-from .options import MCOptions, StartDimension
+from .options import MCOptions, StartDimension, StructureFinder
 from .regions import MCRegion
 from .rules.root import set_rules
 from .rules.ast import Const
@@ -243,6 +243,12 @@ class MCWorld(World):
         # The start dimension is reached for free (Menu → start), so its unlock item is never added.
         start_dimension_item = self._start_dimension_item()
 
+        # Items handled out-of-band below by their own option (disabled / start / in pool).
+        finder_modes = {
+            ITEM_STRUCTURE_FINDER: self.options.structure_finder,
+            ITEM_BIOME_FINDER: self.options.biome_finder,
+        }
+
         # Progression + useful only — fillers and traps are derived later
         for name, item_data in ITEMS.items():
             if item_data.classification in (ItemClassification.filler, ItemClassification.trap):
@@ -251,8 +257,21 @@ class MCWorld(World):
                 continue
             if name == start_dimension_item:
                 continue
+            if name in finder_modes:
+                continue
             for _ in range(item_data.count):
                 pool.append(self.create_item(name))
+
+        # Finders: in_pool shuffles the copies into the pool, start grants them up front, disabled
+        # drops them entirely. (Counts come from items.csv — 5 for the Structure Finder, 1 Biome Finder.)
+        for finder_name, mode in finder_modes.items():
+            count = ITEMS[finder_name].count
+            if mode == StructureFinder.option_in_pool:
+                for _ in range(count):
+                    pool.append(self.create_item(finder_name))
+            elif mode == StructureFinder.option_start:
+                for _ in range(count):
+                    self.multiworld.push_precollected(self.create_item(finder_name))
 
         if self.options.mob_spawn_lock_category:
             for mob_name, mob_data in MOBS_ALL.items():

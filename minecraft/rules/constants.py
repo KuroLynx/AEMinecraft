@@ -207,6 +207,8 @@ ITEM_DIMENSION_NETHER = "Dimension Unlock: Nether"
 ITEM_DIMENSION_END = "Dimension Unlock: The End"
 ITEM_VILLAGER_TRUST = "Progressive Villager Trust"
 ITEM_MATERIAL_HANDLING = "Progressive Material Handling"
+ITEM_STRUCTURE_FINDER = "Progressive Structure Finder"
+ITEM_BIOME_FINDER = "Biome Finder"
 
 # -----------------------------------------------------------------------
 # Prefix
