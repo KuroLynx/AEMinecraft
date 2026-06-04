@@ -55,8 +55,8 @@ CATEGORY_BY_KIND = {
 }
 
 # Knowledge / utility items tracked on the Knowledge tab — every "Knowledge: *", the progressive
-# utilities (Material Handling, Villager Trust, Coordinates, Structure Finder) and the "Dimension
-# Unlock: *" items. Derived from the item table so the set stays in sync with items.csv; the generator
+# utilities (Material Handling, Villager Trust, Structure Finder) and the "Dimension Unlock: *"
+# items. Derived from the item table so the set stays in sync with items.csv; the generator
 # and the export both consume this list. Progressive items (count > 1) become one tile per level.
 KNOWLEDGE_UTILITY_PREFIXES = ("Knowledge: ", "Progressive ", "Dimension Unlock: ")
 KNOWLEDGE_UTILITY_ITEMS = [name for name in ITEMS if name.startswith(KNOWLEDGE_UTILITY_PREFIXES)]
@@ -79,7 +79,7 @@ def tracker_id(kind: str, game_id: str) -> str:
 def knowledge_slug(item_name: str) -> str:
     """Advancement-path slug for a knowledge/utility item name.
 
-    ``Knowledge: Sword Handling`` -> ``sword_handling``; ``Progressive Coordinates`` -> ``coordinates``.
+    ``Knowledge: Sword Handling`` -> ``sword_handling``; ``Progressive Villager Trust`` -> ``villager_trust``.
     """
     name = item_name
     for prefix in KNOWLEDGE_UTILITY_PREFIXES:

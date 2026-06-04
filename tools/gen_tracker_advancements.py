@@ -134,7 +134,6 @@ KNOWLEDGE_ICONS = {
     "Knowledge: Flying": "minecraft:elytra",
     "Progressive Material Handling": "minecraft:raw_iron",
     "Progressive Villager Trust": "minecraft:emerald",
-    "Progressive Coordinates": "minecraft:compass",
     "Progressive Structure Finder": "minecraft:recovery_compass",
     "Dimension Unlock: Overworld": "minecraft:grass_block",
     "Dimension Unlock: Nether": "minecraft:netherrack",
