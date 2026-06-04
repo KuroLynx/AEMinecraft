@@ -182,6 +182,40 @@ class StartDimension(Choice):
     default = 0
 
 
+class StructureFinder(Choice):
+    """How the Progressive Structure Finder is handled.
+
+    The Structure Finder is a locator bar that points to nearby structures; each copy received reveals
+    more of them (5 copies total).
+
+    - in_pool (default): the 5 copies are shuffled into the multiworld item pool to be found.
+    - start: you begin with all 5 copies (full reveal from the start); none are in the pool.
+    - disabled: the Structure Finder is removed entirely — no copies in the pool or on start.
+    """
+    display_name = "Structure Finder"
+    option_disabled = 0
+    option_start = 1
+    option_in_pool = 2
+    default = 2
+
+
+class BiomeFinder(Choice):
+    """How the Biome Finder is handled.
+
+    The Biome Finder is a soulbound compass: right-click it to search for any biome in your current
+    dimension, and its needle points to the nearest one.
+
+    - in_pool (default): the compass is shuffled into the multiworld item pool to be found.
+    - start: you begin with the compass; it is not in the pool.
+    - disabled: the Biome Finder is removed entirely — not in the pool or on start.
+    """
+    display_name = "Biome Finder"
+    option_disabled = 0
+    option_start = 1
+    option_in_pool = 2
+    default = 2
+
+
 @dataclass
 class MCOptions(PerGameCommonOptions):
     boss_list: BossList
@@ -194,3 +228,5 @@ class MCOptions(PerGameCommonOptions):
     structure_unlock: StructureUnlock
     trap_chance: TrapChance
     challenge_sanity: ChallengeSanity
+    structure_finder: StructureFinder
+    biome_finder: BiomeFinder
