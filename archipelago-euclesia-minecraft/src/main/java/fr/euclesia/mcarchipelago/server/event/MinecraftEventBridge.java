@@ -6,6 +6,7 @@ import fr.euclesia.mcarchipelago.server.connect.APWorldConnection;
 import fr.euclesia.mcarchipelago.server.connect.APWorldConnector;
 import fr.euclesia.mcarchipelago.server.gameplay.AdvancementBridge;
 import fr.euclesia.mcarchipelago.server.gameplay.BiomeFinderService;
+import fr.euclesia.mcarchipelago.server.gameplay.FillerTrapService;
 import fr.euclesia.mcarchipelago.server.gameplay.MobKillBridge;
 import fr.euclesia.mcarchipelago.server.gameplay.RootAdvancementService;
 import fr.euclesia.mcarchipelago.server.gameplay.StartDimensionService;
@@ -70,6 +71,8 @@ public final class MinecraftEventBridge {
             AdvancementBridge.scanPlayer(player);
             // Give back the soulbound Biome Finder if this slot owns it (covers first join and relog).
             BiomeFinderService.ensureGranted(player);
+            // Apply any filler/trap effects received while offline (and before this join).
+            FillerTrapService.applyPending(player);
         });
 
         // The Biome Finder is soulbound: restore the exact stack saved at death (keeping its tracked

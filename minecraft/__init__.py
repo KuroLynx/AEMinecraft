@@ -9,6 +9,7 @@ from .rules.ast import Const
 from .rules.constants import *
 from .logic_export import build_logic_export
 from .trackers import build_trackers_export
+from .filler import build_filler_export, build_trap_export
 
 
 # ---------------------------------------------------------------------------
@@ -451,6 +452,10 @@ class MCWorld(World):
                 }.items()
                 if item != self._start_dimension_item()
             },
+
+            # --- Filler & trap effects (item id -> what the mod grants / triggers on receipt) ---
+            "filler_items"         : build_filler_export(self.item_name_to_id),
+            "trap_items"           : build_trap_export(self.item_name_to_id),
 
             # --- Logic graph (region graph + per-location reachability rules) ---
             # The mod evaluates this against received items to colour advancements in/out of logic.

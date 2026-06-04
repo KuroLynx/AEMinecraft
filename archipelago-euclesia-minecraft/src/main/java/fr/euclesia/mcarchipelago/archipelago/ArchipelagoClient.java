@@ -21,6 +21,7 @@ import fr.euclesia.mcarchipelago.protocol.transport.APTransport;
 import fr.euclesia.mcarchipelago.protocol.transport.APTransportListener;
 import fr.euclesia.mcarchipelago.registry.AEMRegistries;
 import fr.euclesia.mcarchipelago.server.gameplay.BiomeFinderService;
+import fr.euclesia.mcarchipelago.server.gameplay.FillerTrapService;
 import fr.euclesia.mcarchipelago.server.gameplay.StructureCaptureService;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
 import net.minecraft.server.MinecraftServer;
@@ -187,7 +188,11 @@ public final class ArchipelagoClient {
         // we run it on every batch rather than diffing for the specific item.
         MinecraftServer biomeServer = AEMServerRuntime.server();
         if (biomeServer != null) {
-            biomeServer.execute(() -> BiomeFinderService.ensureGrantedToAll(biomeServer));
+            biomeServer.execute(() -> {
+                BiomeFinderService.ensureGrantedToAll(biomeServer);
+                // Grant filler contents / fire trap effects for any newly received items.
+                FillerTrapService.applyPendingToAny(biomeServer);
+            });
         }
 
         listeners.forEach(listener -> {
