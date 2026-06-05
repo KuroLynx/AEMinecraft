@@ -46,7 +46,7 @@ public final class BiomeFinderItem {
     /** The finder's display name. Also forced in {@code CompassItemMixin} (a lodestone-tracked
      * compass would otherwise render as "Lodestone Compass", ignoring ITEM_NAME). */
     public static Component displayName() {
-        return Component.literal(AP_ITEM);
+        return Component.translatable("item.aem.biome_finder");
     }
 
     /** A fresh Biome Finder compass: a marked compass with a fixed, non-italic display name. */

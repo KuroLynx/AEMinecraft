@@ -15,7 +15,7 @@ import net.minecraft.network.chat.Component;
  * connects to that slot. Fields are pre-filled from the last-used global config for convenience.
  */
 public final class ArchipelagoCreateTab extends GridLayoutTab {
-    private static final Component TITLE = Component.literal("Archipelago");
+    private static final Component TITLE = Component.translatable("gui.aem.create.title");
     private static final int FIELD_WIDTH = 200;
     private static final int FIELD_HEIGHT = 20;
 
@@ -29,19 +29,19 @@ public final class ArchipelagoCreateTab extends GridLayoutTab {
         APConnectConfig config = APConnectConfig.get();
 
         GridLayout.RowHelper rows = this.layout.rowSpacing(8).createRowHelper(2);
-        rows.addChild(new StringWidget(Component.literal("Connect this world to Archipelago"), font), 2);
+        rows.addChild(new StringWidget(Component.translatable("gui.aem.create.subtitle"), font), 2);
 
-        this.address = addRow(rows, font, "Address", "archipelago.gg", config.address);
-        this.port = addRow(rows, font, "Port", "38281", config.port);
-        this.slot = addRow(rows, font, "Slot name", "Slot name", config.slot);
-        this.password = addRow(rows, font, "Password", "(optional)", config.password);
+        this.address = addRow(rows, font, Component.translatable("gui.aem.field.address"), "archipelago.gg", config.address);
+        this.port = addRow(rows, font, Component.translatable("gui.aem.field.port"), "38281", config.port);
+        this.slot = addRow(rows, font, Component.translatable("gui.aem.field.slot"), "Slot name", config.slot);
+        this.password = addRow(rows, font, Component.translatable("gui.aem.field.password"), "(optional)", config.password);
     }
 
-    private static EditBox addRow(GridLayout.RowHelper rows, Font font, String label, String hint, String value) {
+    private static EditBox addRow(GridLayout.RowHelper rows, Font font, Component label, String hint, String value) {
         LayoutSettings labelSettings = rows.newCellSettings().alignVerticallyMiddle();
-        rows.addChild(new StringWidget(Component.literal(label), font), labelSettings);
+        rows.addChild(new StringWidget(label, font), labelSettings);
 
-        EditBox field = new EditBox(font, FIELD_WIDTH, FIELD_HEIGHT, Component.literal(label));
+        EditBox field = new EditBox(font, FIELD_WIDTH, FIELD_HEIGHT, label);
         field.setMaxLength(256);
         field.setHint(Component.literal(hint));
         field.setValue(value == null ? "" : value);

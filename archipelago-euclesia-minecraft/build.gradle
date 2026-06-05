@@ -18,7 +18,7 @@ loom {
 	splitEnvironmentSourceSets()
 
 	mods {
-		"archipelago-euclesia-minecraft" {
+		"aem" {
 			sourceSet sourceSets.main
 			sourceSet sourceSets.client
 		}

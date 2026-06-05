@@ -1,0 +1,24 @@
+{
+  "item.aem.biome_finder": "Biome Finder",
+
+  "effect.aem.butterfingers": "Slippery Fingers",
+  "effect.aem.skittish_loot": "Item Fear",
+
+  "gui.aem.connect.open": "Connect to Archipelago",
+  "gui.aem.connect.title": "Connect to Archipelago",
+  "gui.aem.connect.connect": "Connect",
+  "gui.aem.connect.back": "Back",
+
+  "gui.aem.create.title": "Archipelago",
+  "gui.aem.create.subtitle": "Connect this world to Archipelago",
+
+  "gui.aem.field.address": "Address",
+  "gui.aem.field.port": "Port",
+  "gui.aem.field.slot": "Slot name",
+  "gui.aem.field.password": "Password",
+
+  "gui.aem.biome_finder.search": "Search",
+  "gui.aem.biome_finder.search_hint": "Search biomes…",
+
+  "gui.aem.common.close": "Close"
+}

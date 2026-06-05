@@ -38,7 +38,7 @@ public final class BiomeFinderScreen extends Screen {
     private int scroll;
 
     public BiomeFinderScreen() {
-        super(Minecraft.getInstance(), Minecraft.getInstance().font, Component.literal("Biome Finder"));
+        super(Minecraft.getInstance(), Minecraft.getInstance().font, Component.translatable("item.aem.biome_finder"));
     }
 
     @Override
@@ -55,13 +55,13 @@ public final class BiomeFinderScreen extends Screen {
         int left = this.width / 2 - LIST_WIDTH / 2;
         int top = this.height / 6;
 
-        searchField = new EditBox(this.font, left, top, LIST_WIDTH, ROW_HEIGHT, Component.literal("Search"));
-        searchField.setHint(Component.literal("Search biomes…"));
+        searchField = new EditBox(this.font, left, top, LIST_WIDTH, ROW_HEIGHT, Component.translatable("gui.aem.biome_finder.search"));
+        searchField.setHint(Component.translatable("gui.aem.biome_finder.search_hint"));
         searchField.setMaxLength(128);
         addRenderableWidget(searchField);
         setInitialFocus(searchField);
 
-        addRenderableWidget(Button.builder(Component.literal("Close"), button -> onClose())
+        addRenderableWidget(Button.builder(Component.translatable("gui.aem.common.close"), button -> onClose())
                 .bounds(left, listTop() + VISIBLE_ROWS * ROW_SPACING + 4, LIST_WIDTH, ROW_HEIGHT)
                 .build());
 
