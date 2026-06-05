@@ -21,9 +21,10 @@ FILLER_GRANTS: dict[str, tuple[str, int]] = {
     "A Map": ("minecraft:map", 1),
 }
 
-# Filler that grants several random vanilla item stacks (the mod rolls them). Value = how many stacks.
+# Filler that rolls the mod's "random_bullshit" loot table (a curated pool of non-useful items, so it
+# can't grant anything that completes an out-of-logic advancement). Value = how many times to roll it.
 RANDOM_FILLER: dict[str, int] = {
-    "Random Bullshit": 4,
+    "Random Bullshit": 5,
 }
 
 # Trap item name -> effect key handled by the mod's TrapEffects dispatcher.
@@ -34,7 +35,7 @@ TRAP_EFFECTS: dict[str, str] = {
     "Trap: Slippery Fingers": "slippery_fingers",
     'Trap: "Dé à Coudre"': "thimble",
     'Trap: "POV: Paris Games Week"': "paris_games_week",
-    "Trap: Cursed Loot": "cursed_loot",
+    "Trap: Item Fear": "item_fear",
 }
 
 

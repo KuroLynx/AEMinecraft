@@ -17,6 +17,10 @@ public final class MobSpawnLockService {
     private MobSpawnLockService() {}
 
     public static boolean shouldBlockSpawn(Entity entity) {
+        // Trap-conjured mobs are exempt: a trap can summon an otherwise-locked mob on purpose.
+        if (TrapMobService.isTrapMob(entity)) {
+            return false;
+        }
         return isMobLocked(AEMServerRuntime.entityGameId(entity));
     }
 

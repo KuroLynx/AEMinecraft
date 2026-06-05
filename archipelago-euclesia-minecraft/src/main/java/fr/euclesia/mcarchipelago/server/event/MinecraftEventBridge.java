@@ -11,6 +11,8 @@ import fr.euclesia.mcarchipelago.server.gameplay.MobKillBridge;
 import fr.euclesia.mcarchipelago.server.gameplay.RootAdvancementService;
 import fr.euclesia.mcarchipelago.server.gameplay.StartDimensionService;
 import fr.euclesia.mcarchipelago.server.gameplay.StructureFinderDriver;
+import fr.euclesia.mcarchipelago.server.gameplay.TrapMobService;
+import fr.euclesia.mcarchipelago.server.gameplay.TrapPlatformService;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
 import fr.euclesia.mcarchipelago.server.service.DeathLinkService;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
@@ -92,6 +94,9 @@ public final class MinecraftEventBridge {
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, damageSource) -> {
             if (entity instanceof ServerPlayer player) {
                 DeathLinkService.onLocalPlayerDeath(player);
+                // A death clears any trap mobs/MLG platform aimed at the player.
+                TrapMobService.discardAll();
+                TrapPlatformService.onPlayerDeath(player);
             } else {
                 // Fires for every mob death; the bridge filters to player-credited kills.
                 MobKillBridge.onMobKilled(entity, damageSource);

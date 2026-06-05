@@ -11,6 +11,8 @@
     "EnderDragonFightMixin",
     "EntityMixin",
     "ItemEntityMixin",
+    "KilledTriggerMixin",
+    "LivingEntityMixin",
     "PlacedFeatureMixin",
     "PlayerAdvancementsMixin",
     "ServerAdvancementManagerAccessor",
