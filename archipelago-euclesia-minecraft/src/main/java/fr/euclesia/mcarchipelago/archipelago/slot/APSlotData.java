@@ -30,10 +30,22 @@ public record APSlotData(
         Map<String, Long> materialHandlingLocks,
         Map<String, ToolLock> toolLocks,
         Map<String, String> stationKnowledgeLocks,
-        Map<String, String> dimensionLocks
+        Map<String, String> dimensionLocks,
+        Map<Long, FillerGrant> fillerItems,
+        Map<Long, String> trapItems
 ) {
     /** A tool/armor pickup gate: the player needs {@code knowledge} AND {@code material} tiers. */
     public record ToolLock(String knowledge, int material) {}
+
+    /**
+     * What a filler item grants on receipt: either a fixed {@code count} of the Minecraft {@code item},
+     * or — when {@code randomStacks > 0} — that many random vanilla item stacks ({@code item} unused).
+     */
+    public record FillerGrant(String item, int count, int randomStacks) {
+        public boolean isRandom() {
+            return randomStacks > 0;
+        }
+    }
 
     public static APSlotData empty() {
         return new APSlotData(
@@ -51,6 +63,8 @@ public record APSlotData(
                 Map.of(),
                 Map.of(),
                 List.of(),
+                Map.of(),
+                Map.of(),
                 Map.of(),
                 Map.of(),
                 Map.of(),
@@ -81,8 +95,63 @@ public record APSlotData(
                 APJson.stringLongMap(json, "material_handling_locks"),
                 parseToolLocks(json),
                 APJson.stringStringMap(json, "station_knowledge_locks"),
-                APJson.stringStringMap(json, "dimension_locks")
+                APJson.stringStringMap(json, "dimension_locks"),
+                parseFillerItems(json),
+                parseTrapItems(json)
         );
+    }
+
+    /** Parses {@code filler_items}: item id -> {"item": mc_id, "count": n} or {"random": n}. */
+    private static Map<Long, FillerGrant> parseFillerItems(JsonObject json) {
+        JsonElement element = json.get("filler_items");
+        if (element == null || !element.isJsonObject()) {
+            return Map.of();
+        }
+        Map<Long, FillerGrant> filler = new LinkedHashMap<>();
+        for (Map.Entry<String, JsonElement> entry : element.getAsJsonObject().entrySet()) {
+            if (!entry.getValue().isJsonObject()) {
+                continue;
+            }
+            Long id = parseLongKey(entry.getKey());
+            if (id == null) {
+                continue;
+            }
+            JsonObject grant = entry.getValue().getAsJsonObject();
+            int random = APJson.getInt(grant, "random", 0);
+            if (random > 0) {
+                filler.put(id, new FillerGrant(null, 0, random));
+            } else {
+                String item = APJson.getString(grant, "item", "");
+                if (!item.isEmpty()) {
+                    filler.put(id, new FillerGrant(item, Math.max(1, APJson.getInt(grant, "count", 1)), 0));
+                }
+            }
+        }
+        return Map.copyOf(filler);
+    }
+
+    /** Parses {@code trap_items}: item id -> effect key. */
+    private static Map<Long, String> parseTrapItems(JsonObject json) {
+        JsonElement element = json.get("trap_items");
+        if (element == null || !element.isJsonObject()) {
+            return Map.of();
+        }
+        Map<Long, String> traps = new LinkedHashMap<>();
+        for (Map.Entry<String, JsonElement> entry : element.getAsJsonObject().entrySet()) {
+            Long id = parseLongKey(entry.getKey());
+            if (id != null && entry.getValue().isJsonPrimitive()) {
+                traps.put(id, entry.getValue().getAsString());
+            }
+        }
+        return Map.copyOf(traps);
+    }
+
+    private static Long parseLongKey(String key) {
+        try {
+            return Long.parseLong(key);
+        } catch (NumberFormatException exception) {
+            return null;
+        }
     }
 
     /** Parses {@code tool_locks}: item id -> {"knowledge": "Knowledge: X", "material": tier}. */

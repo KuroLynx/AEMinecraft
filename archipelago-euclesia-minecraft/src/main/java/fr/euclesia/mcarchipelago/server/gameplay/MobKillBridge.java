@@ -19,6 +19,11 @@ public final class MobKillBridge {
             return;
         }
 
+        // Trap-conjured mobs are inert: their deaths never count toward Archipelago checks or goals.
+        if (TrapMobService.isTrapMob(killed)) {
+            return;
+        }
+
         String mobGameId = AEMServerRuntime.entityGameId(killed);
         if (AEM.ARCHIPELAGO.gateway().checkTrackedMob(mobGameId)) {
             AEM.LOGGER.info("Archipelago mob check: {}", mobGameId);

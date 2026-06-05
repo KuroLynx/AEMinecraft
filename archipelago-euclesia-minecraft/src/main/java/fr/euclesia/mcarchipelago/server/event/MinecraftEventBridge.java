@@ -6,10 +6,13 @@ import fr.euclesia.mcarchipelago.server.connect.APWorldConnection;
 import fr.euclesia.mcarchipelago.server.connect.APWorldConnector;
 import fr.euclesia.mcarchipelago.server.gameplay.AdvancementBridge;
 import fr.euclesia.mcarchipelago.server.gameplay.BiomeFinderService;
+import fr.euclesia.mcarchipelago.server.gameplay.FillerTrapService;
 import fr.euclesia.mcarchipelago.server.gameplay.MobKillBridge;
 import fr.euclesia.mcarchipelago.server.gameplay.RootAdvancementService;
 import fr.euclesia.mcarchipelago.server.gameplay.StartDimensionService;
 import fr.euclesia.mcarchipelago.server.gameplay.StructureFinderDriver;
+import fr.euclesia.mcarchipelago.server.gameplay.TrapMobService;
+import fr.euclesia.mcarchipelago.server.gameplay.TrapPlatformService;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
 import fr.euclesia.mcarchipelago.server.service.DeathLinkService;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
@@ -70,6 +73,8 @@ public final class MinecraftEventBridge {
             AdvancementBridge.scanPlayer(player);
             // Give back the soulbound Biome Finder if this slot owns it (covers first join and relog).
             BiomeFinderService.ensureGranted(player);
+            // Apply any filler/trap effects received while offline (and before this join).
+            FillerTrapService.applyPending(player);
         });
 
         // The Biome Finder is soulbound: restore the exact stack saved at death (keeping its tracked
@@ -89,6 +94,9 @@ public final class MinecraftEventBridge {
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, damageSource) -> {
             if (entity instanceof ServerPlayer player) {
                 DeathLinkService.onLocalPlayerDeath(player);
+                // A death clears any trap mobs/MLG platform aimed at the player.
+                TrapMobService.discardAll();
+                TrapPlatformService.onPlayerDeath(player);
             } else {
                 // Fires for every mob death; the bridge filters to player-credited kills.
                 MobKillBridge.onMobKilled(entity, damageSource);

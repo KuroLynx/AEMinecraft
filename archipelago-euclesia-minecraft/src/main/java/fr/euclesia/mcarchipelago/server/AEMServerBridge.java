@@ -8,6 +8,8 @@ import fr.euclesia.mcarchipelago.server.command.AEMCommandRegistry;
 import fr.euclesia.mcarchipelago.server.command.ArchipelagoCommandModule;
 import fr.euclesia.mcarchipelago.server.event.MinecraftEventBridge;
 import fr.euclesia.mcarchipelago.server.gameplay.StartDimensionService;
+import fr.euclesia.mcarchipelago.server.gameplay.TrapMobService;
+import fr.euclesia.mcarchipelago.server.gameplay.TrapPlatformService;
 
 public final class AEMServerBridge {
     private static boolean registered;
@@ -27,6 +29,10 @@ public final class AEMServerBridge {
         AEMCommandRegistry.create()
                 .module(new ArchipelagoCommandModule())
                 .register();
+
+        // Despawn trap-conjured mobs and tear down MLG-trap platforms after their lifetime.
+        TrapMobService.register();
+        TrapPlatformService.register();
 
         MinecraftEventBridge.register();
         AEM.ARCHIPELAGO.client().addListener(new ArchipelagoGameplayListener());

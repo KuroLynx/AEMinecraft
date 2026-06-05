@@ -3,8 +3,11 @@ package fr.euclesia.mcarchipelago.registry;
 import fr.euclesia.mcarchipelago.archipelago.slot.APSlotData;
 import fr.euclesia.mcarchipelago.protocol.packet.inbound.APNetworkItem;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -16,6 +19,9 @@ public final class APItemRegistry {
     // Received counts per item id. Progressive items (e.g. Material Handling tiers) are sent
     // once per tier, so logic rules need the count, not just a received/not-received flag.
     private final Map<Long, Integer> receivedCountById = new HashMap<>();
+    // Every received item id in arrival order (rebuilt on the index-0 resync). Indexed by the
+    // FillerTrapService's persisted high-water mark to apply one-shot effects exactly once.
+    private final List<Long> receivedOrder = Collections.synchronizedList(new ArrayList<>());
     // Bumped whenever received items change. Lets the client logic evaluator (read on the
     // render thread) cheaply detect when its memoized reachability pass is stale.
     private volatile int receivedVersion;
@@ -41,6 +47,7 @@ public final class APItemRegistry {
     public void markReceived(APNetworkItem item) {
         receivedItemIds.add(item.itemId());
         receivedCountById.merge(item.itemId(), 1, Integer::sum);
+        receivedOrder.add(item.itemId());
         receivedVersion++;
     }
 
@@ -52,7 +59,15 @@ public final class APItemRegistry {
     public void resetReceived() {
         receivedItemIds.clear();
         receivedCountById.clear();
+        receivedOrder.clear();
         receivedVersion++;
+    }
+
+    /** Snapshot of every received item id in arrival order (full history after the index-0 resync). */
+    public List<Long> receivedOrder() {
+        synchronized (receivedOrder) {
+            return List.copyOf(receivedOrder);
+        }
     }
 
     public Optional<String> name(long itemId) {

@@ -1,5 +1,6 @@
 package fr.euclesia.mcarchipelago.mixin;
 
+import fr.euclesia.mcarchipelago.content.AEMEffects;
 import fr.euclesia.mcarchipelago.server.gameplay.LockFeedback;
 import fr.euclesia.mcarchipelago.server.gameplay.MaterialLockService;
 import net.minecraft.network.chat.Component;
@@ -28,6 +29,12 @@ public abstract class ItemEntityMixin {
     private void archipelago_euclesia$blockLockedPickup(Player player, CallbackInfo ci) {
         // playerTouch only does anything server-side; the lock check needs the connected session.
         if (player.level().isClientSide()) {
+            return;
+        }
+        // While the "skittish loot" trap effect is active, the victim can't pick anything up — the
+        // scattered items flee them until it wears off (see SkittishLootMobEffect / TrapEffects).
+        if (player.hasEffect(AEMEffects.SKITTISH_LOOT)) {
+            ci.cancel();
             return;
         }
         Component reason = MaterialLockService.blockReason(getItem());
