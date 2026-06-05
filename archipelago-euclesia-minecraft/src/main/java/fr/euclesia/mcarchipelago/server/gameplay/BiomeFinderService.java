@@ -164,7 +164,7 @@ public final class BiomeFinderService {
                 matches, player.blockPosition(), SEARCH_RADIUS, HORIZONTAL_STEP, VERTICAL_STEP);
 
         if (nearest == null) {
-            player.sendSystemMessage(Component.literal("No ").append(biomeName).append(" nearby.")
+            player.sendSystemMessage(Component.translatable("message.aem.biome_finder.none", biomeName)
                     .withStyle(ChatFormatting.RED));
             return;
         }
@@ -176,8 +176,8 @@ public final class BiomeFinderService {
         BlockPos pos = nearest.getFirst();
         finder.set(DataComponents.LODESTONE_TRACKER,
                 new LodestoneTracker(Optional.of(GlobalPos.of(level.dimension(), pos)), false));
-        player.sendSystemMessage(Component.literal("Biome Finder now points to ").append(biomeName)
-                .append(Component.literal(" (" + pos.getX() + ", " + pos.getZ() + ")."))
+        player.sendSystemMessage(Component.translatable(
+                        "message.aem.biome_finder.tracking", biomeName, pos.getX(), pos.getZ())
                 .withStyle(ChatFormatting.GREEN));
     }
 }

@@ -34,8 +34,10 @@ public final class MinecraftEventBridge {
 
         // Connect-on-join gate. A world created via the Archipelago tab stages its connection here;
         // persist it into the new world's folder, then require a live Archipelago session before the
-        // world finishes loading. If the connection fails, abort the load — you cannot enter a world
-        // without being connected.
+        // world finishes loading. In normal singleplayer the client pre-flight (WorldOpenFlowsMixin)
+        // has already connected before this runs, so the isConnected() check below returns early; this
+        // remains the safety net for any path that reaches server start without a live session (e.g.
+        // a dedicated server), where there is no client UI to fall back to.
         ServerLifecycleEvents.SERVER_STARTING.register(server -> {
             java.nio.file.Path worldDir = server.getWorldPath(LevelResource.ROOT);
 

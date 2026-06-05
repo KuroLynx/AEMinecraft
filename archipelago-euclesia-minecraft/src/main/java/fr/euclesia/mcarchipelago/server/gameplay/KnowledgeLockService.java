@@ -3,6 +3,7 @@ package fr.euclesia.mcarchipelago.server.gameplay;
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.registry.AEMRegistries;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 
 /**
@@ -33,6 +34,6 @@ public final class KnowledgeLockService {
         if (knowledge == null || registries.apItems().receivedCount(knowledge) > 0) {
             return null;
         }
-        return Component.literal("§cRequires " + knowledge);
+        return Component.translatable("message.aem.lock.requires", knowledge).withStyle(ChatFormatting.RED);
     }
 }

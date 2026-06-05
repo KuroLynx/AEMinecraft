@@ -39,6 +39,15 @@ public final class APWorldConnection {
         return taken;
     }
 
+    /**
+     * Returns the staged connection without consuming it. The client pre-flight (WorldOpenFlowsMixin)
+     * needs it for a brand-new world, whose connection file isn't written to disk until the server
+     * starts; {@code takePending} still runs at server start to persist it.
+     */
+    public static APWorldConnection peekPending() {
+        return pending;
+    }
+
     /** Reads the connection saved in a world folder, or {@code null} if none/unreadable. */
     public static APWorldConnection read(Path worldDir) {
         Path file = worldDir.resolve(FILE_NAME);

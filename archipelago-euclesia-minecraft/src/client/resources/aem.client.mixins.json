@@ -6,7 +6,8 @@
 		"AdvancementTabMixin",
 		"AdvancementTabTypeMixin",
 		"AdvancementWidgetMixin",
-		"CreateWorldScreenMixin"
+		"CreateWorldScreenMixin",
+		"MinecraftWorldLoadMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

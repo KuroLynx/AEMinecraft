@@ -5,6 +5,7 @@ import fr.euclesia.mcarchipelago.archipelago.slot.APSlotData.ToolLock;
 import fr.euclesia.mcarchipelago.registry.APItemRegistry;
 import fr.euclesia.mcarchipelago.registry.APMaterialRegistry;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
@@ -52,7 +53,8 @@ public final class MaterialLockService {
             boolean hasKnowledge = items.receivedCount(tool.knowledge()) > 0;
             boolean hasMaterial = materialTier >= tool.material();
             if (!hasKnowledge) {
-                return Component.literal("§cRequires " + tool.knowledge());
+                return Component.translatable("message.aem.lock.requires", tool.knowledge())
+                        .withStyle(ChatFormatting.RED);
             }
             if (!hasMaterial) {
                 return materialMessage(tool.material());
@@ -62,7 +64,7 @@ public final class MaterialLockService {
     }
 
     private static Component materialMessage(int requiredTier) {
-        return Component.literal("§cRequires " + APMaterialRegistry.MATERIAL_HANDLING_ITEM
-                + " (" + requiredTier + ")");
+        return Component.translatable("message.aem.lock.requires_tier",
+                APMaterialRegistry.MATERIAL_HANDLING_ITEM, requiredTier).withStyle(ChatFormatting.RED);
     }
 }
