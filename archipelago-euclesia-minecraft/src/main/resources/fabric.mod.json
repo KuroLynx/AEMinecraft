@@ -1,8 +1,8 @@
 {
 	"schemaVersion": 1,
-	"id": "archipelago-euclesia-minecraft",
+	"id": "aem",
 	"version": "${version}",
-	"name": "ARCHIPELAGO-EUCLESIA-MINECRAFT",
+	"name": "Archipelago Euclesia Minecraft",
 	"description": "This is an example description! Tell everyone what your mod is about!",
 	"authors": [
 		"EDGN, Kurolynx!"
@@ -12,7 +12,7 @@
 		"sources": "https://github.com/FabricMC/fabric-example-mod"
 	},
 	"license": "CC0-1.0",
-	"icon": "assets/archipelago-euclesia-minecraft/icon.png",
+	"icon": "assets/aem/icon.png",
 	"environment": "*",
 	"entrypoints": {
 		"main": [
@@ -23,9 +23,9 @@
 		]
 	},
 	"mixins": [
-		"archipelago-euclesia-minecraft.mixins.json",
+		"aem.mixins.json",
 		{
-			"config": "archipelago-euclesia-minecraft.client.mixins.json",
+			"config": "aem.client.mixins.json",
 			"environment": "client"
 		}
 	],

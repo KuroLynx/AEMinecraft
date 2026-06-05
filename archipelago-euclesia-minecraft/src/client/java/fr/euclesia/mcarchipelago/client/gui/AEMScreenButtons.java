@@ -23,7 +23,7 @@ public final class AEMScreenButtons {
 
     /** GUI sprite at {@code assets/aem/textures/gui/sprites/archipelago/logo.png}. */
     private static final Identifier ICON = Identifier.fromNamespaceAndPath("aem", "archipelago/logo");
-    private static final Component LABEL = Component.literal("Connect to Archipelago");
+    private static final Component LABEL = Component.translatable("gui.aem.connect.open");
     private static final int SIZE = 20;
     private static final int MARGIN = 6;
 

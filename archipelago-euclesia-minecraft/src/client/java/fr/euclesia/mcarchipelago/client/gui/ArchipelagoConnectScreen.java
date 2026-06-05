@@ -31,7 +31,7 @@ public final class ArchipelagoConnectScreen extends Screen {
     private boolean connectRequested;
 
     public ArchipelagoConnectScreen(Screen parent) {
-        super(Minecraft.getInstance(), Minecraft.getInstance().font, Component.literal("Connect to Archipelago"));
+        super(Minecraft.getInstance(), Minecraft.getInstance().font, Component.translatable("gui.aem.connect.title"));
         this.parent = parent;
     }
 
@@ -50,10 +50,10 @@ public final class ArchipelagoConnectScreen extends Screen {
 
         int buttonsY = top + ROW_SPACING * 4 + 8;
         int buttonWidth = (FIELD_WIDTH - 8) / 2;
-        addRenderableWidget(Button.builder(Component.literal("Connect"), button -> onConnect())
+        addRenderableWidget(Button.builder(Component.translatable("gui.aem.connect.connect"), button -> onConnect())
                 .bounds(left, buttonsY, buttonWidth, FIELD_HEIGHT)
                 .build());
-        addRenderableWidget(Button.builder(Component.literal("Back"), button -> onClose())
+        addRenderableWidget(Button.builder(Component.translatable("gui.aem.connect.back"), button -> onClose())
                 .bounds(left + FIELD_WIDTH - buttonWidth, buttonsY, buttonWidth, FIELD_HEIGHT)
                 .build());
 
@@ -97,10 +97,10 @@ public final class ArchipelagoConnectScreen extends Screen {
         int top = this.height / 4;
 
         graphics.centeredText(this.font, this.title.getString(), this.width / 2, top - 30, 0xFFFFFFFF);
-        graphics.text(this.font, "Address", left, top, 0xFFA0A0A0);
-        graphics.text(this.font, "Port", left, top + ROW_SPACING, 0xFFA0A0A0);
-        graphics.text(this.font, "Slot name", left, top + ROW_SPACING * 2, 0xFFA0A0A0);
-        graphics.text(this.font, "Password", left, top + ROW_SPACING * 3, 0xFFA0A0A0);
+        graphics.text(this.font, Component.translatable("gui.aem.field.address").getString(), left, top, 0xFFA0A0A0);
+        graphics.text(this.font, Component.translatable("gui.aem.field.port").getString(), left, top + ROW_SPACING, 0xFFA0A0A0);
+        graphics.text(this.font, Component.translatable("gui.aem.field.slot").getString(), left, top + ROW_SPACING * 2, 0xFFA0A0A0);
+        graphics.text(this.font, Component.translatable("gui.aem.field.password").getString(), left, top + ROW_SPACING * 3, 0xFFA0A0A0);
 
         String message = APConnectController.INSTANCE.message();
         if (!message.isEmpty()) {
