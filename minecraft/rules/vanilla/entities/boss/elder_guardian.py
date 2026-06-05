@@ -7,5 +7,6 @@ def elder_guardian(helper: RuleHelper) -> dict:
         E_ELDER_GUARDIAN: helper.all_of(
             helper.entity(E_ELDER_GUARDIAN),
             helper.can_kill(),
+            helper.can_breath_underwater(),  # survive the fight underwater
         )
     }

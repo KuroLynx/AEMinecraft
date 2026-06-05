@@ -53,10 +53,8 @@ def set_rules(world ) -> None:
         if mob_data.category == MCEntityCategory.BOSS:
             prefix = f"{BOSS_KILL_PREFIX}"
 
-        # Hostile mobs need a real weapon to fight, except low-level ones that can be punched.
-        if mob_data.category == MCEntityCategory.HOSTILE and mob_name not in FIST_KILLABLE_MOBS:
-            condition = helper.all_of(condition, helper.can_kill())
-
+        # Killability is stated per entity-rule file now (only bosses gate on can_kill / extra gear;
+        # every other mob can be beaten bare-handed via the boat trap, so its rule is just entity()).
         location_name = f"{prefix}{mob_name}"
         if location_name in existing_locations:
             set_rule(world.multiworld.get_location(location_name, world.player), condition)

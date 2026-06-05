@@ -1,29 +1,44 @@
 package fr.euclesia.mcarchipelago.server.gameplay;
 
-import com.mojang.serialization.Codec;
+import com.google.gson.Gson;
+import com.mojang.datafixers.util.Pair;
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
-import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry;
-import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.Identifier;
+import net.minecraft.core.Holder;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.LevelData;
+import net.minecraft.world.level.storage.LevelResource;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Predicate;
 
 /**
  * Places a freshly joined player in the dimension chosen by the Archipelago {@code start_dimension}
  * slot option. Only {@code nether} requires action — {@code overworld} keeps the vanilla spawn.
  *
+ * <p>A Nether start drops the player on natural Nether terrain near a crimson/warped forest (the only
+ * Nether wood source) — the same survivable footing a Nether portal would give you, not a floating
+ * obsidian platform. The placement teleport does NOT grant the story "We Need to Go Deeper" advancement:
+ * it is suppressed for the duration of the teleport (see {@code PlayerAdvancementsMixin}), so the player
+ * earns it the normal way, by later travelling through an actual portal. The Nether tab root
+ * ({@code nether/root}, which shares the title) is left alone and still fires on the start.
+ *
  * <p>The decision is recorded once per player in a persistent attachment so it never re-fires: a
  * Nether-start player who has already been relocated keeps their own respawn point across deaths and
- * server restarts instead of being yanked back to the spawn platform.
+ * server restarts instead of being yanked back.
  *
  * <p>Slot data is only known once the Archipelago session is connected, so {@link #applyIfNeeded}
  * is a no-op until then. It is invoked both on player join (covers connect-before-join, e.g. the
@@ -32,21 +47,36 @@ import java.util.Set;
  */
 public final class StartDimensionService {
 
-    /** Persistent per-player flag: has the start dimension already been resolved for this player? */
-    public static final AttachmentType<Boolean> START_APPLIED =
-            AttachmentRegistry.createPersistent(
-                    Identifier.fromNamespaceAndPath(AEM.MOD_ID, "start_dimension_applied"),
-                    Codec.BOOL);
+    /**
+     * Per-world record of players already placed for a Nether start, stored in the world folder so it
+     * survives relog and restart (a Fabric persistent attachment did not reliably survive on players).
+     */
+    private static final String STARTED_FILE = "archipelago_nether_started.json";
+    private static final Gson GSON = new Gson();
 
     private static final String NETHER = "nether";
-    /** Above the lava ocean (~y31) and below the bedrock roof (y128). */
-    private static final int PLATFORM_Y = 64;
+
+    /** Search reach for the nearest crimson/warped forest; matches the Biome Finder / {@code /locate}. */
+    private static final int BIOME_SEARCH_RADIUS = 6400;
+    private static final int BIOME_HORIZONTAL_STEP = 32;
+    private static final int BIOME_VERTICAL_STEP = 64;
+
+    /** Navigable Nether band: above the lava ocean (~y31), below the bedrock roof (~y123). */
+    private static final int SCAN_TOP_Y = 122;
+    private static final int SCAN_BOTTOM_Y = 33;
+    /** How far out from the forest column to look for a safe footing before giving up. */
+    private static final int COLUMN_SEARCH_RADIUS = 12;
+    /** Y for the last-resort carved footing if no natural safe spot is found anywhere nearby. */
+    private static final int FALLBACK_Y = 70;
+
+    /** Set only across the start-placement teleport so it doesn't grant "We Need to Go Deeper". */
+    private static volatile boolean suppressNetherEntryAdvancement;
 
     private StartDimensionService() {}
 
-    /** Forces attachment registration during mod init; safe to call repeatedly. */
-    public static void bootstrap() {
-        // Referencing START_APPLIED triggers class init, which registers the attachment.
+    /** Whether the "We Need to Go Deeper" advancement should be skipped right now (start placement). */
+    public static boolean isSuppressingNetherEntryAdvancement() {
+        return suppressNetherEntryAdvancement;
     }
 
     /** Applies the start dimension to every online player (used on connect). */
@@ -66,18 +96,49 @@ public final class StartDimensionService {
         if (!AEMServerRuntime.isArchipelagoReady()) {
             return; // Slot data not known yet; retried on connect.
         }
-        if (Boolean.TRUE.equals(player.getAttached(START_APPLIED))) {
+        // Only a Nether start relocates the player; an Overworld start keeps the vanilla spawn and
+        // needs no per-player bookkeeping (re-running it is a no-op).
+        if (!NETHER.equalsIgnoreCase(AEM.ARCHIPELAGO.client().state().parsedSlotData().startDimension())) {
             return;
         }
 
-        String start = AEM.ARCHIPELAGO.client().state().parsedSlotData().startDimension();
-        // Mark resolved up front so the start dimension is only ever evaluated once per player.
-        player.setAttached(START_APPLIED, Boolean.TRUE);
-
-        if (!NETHER.equalsIgnoreCase(start)) {
-            return; // Overworld start: vanilla spawn, nothing to do.
+        MinecraftServer server = AEMServerRuntime.server();
+        if (server == null) {
+            return;
         }
+
+        String uuid = player.getUUID().toString();
+        Set<String> started = readStarted(server);
+        if (started.contains(uuid)) {
+            return; // Already placed in a previous session — never yank the player back.
+        }
+        // Mark up front (before the teleport) so a second call this session — e.g. JOIN then the
+        // connect handler — sees it and can't double-place.
+        started.add(uuid);
+        writeStarted(server, started);
         placeInNether(player);
+    }
+
+    private static Set<String> readStarted(MinecraftServer server) {
+        Path file = server.getWorldPath(LevelResource.ROOT).resolve(STARTED_FILE);
+        if (!Files.exists(file)) {
+            return new HashSet<>();
+        }
+        try {
+            String[] ids = GSON.fromJson(Files.readString(file), String[].class);
+            return ids == null ? new HashSet<>() : new HashSet<>(Arrays.asList(ids));
+        } catch (Exception exception) {
+            AEM.LOGGER.warn("Failed to read {}", STARTED_FILE, exception);
+            return new HashSet<>();
+        }
+    }
+
+    private static void writeStarted(MinecraftServer server, Set<String> started) {
+        try {
+            Files.writeString(server.getWorldPath(LevelResource.ROOT).resolve(STARTED_FILE), GSON.toJson(started));
+        } catch (IOException exception) {
+            AEM.LOGGER.warn("Failed to write {}", STARTED_FILE, exception);
+        }
     }
 
     private static void placeInNether(ServerPlayer player) {
@@ -92,40 +153,106 @@ public final class StartDimensionService {
             return;
         }
 
-        // Derive a Nether spawn from the overworld spawn using the vanilla 8:1 scale.
-        BlockPos overworldSpawn = server.overworld().getRespawnData().pos();
-        BlockPos platform = new BlockPos(overworldSpawn.getX() / 8, PLATFORM_Y, overworldSpawn.getZ() / 8);
-        buildSafePlatform(nether, platform);
+        // Aim for a crimson/warped forest near the scaled overworld spawn so wood (stems) is reachable;
+        // fall back to the scaled spawn column if none is found within range.
+        BlockPos scaledSpawn = new BlockPos(
+                server.overworld().getRespawnData().pos().getX() / 8, FALLBACK_Y,
+                server.overworld().getRespawnData().pos().getZ() / 8);
+        BlockPos forest = nearestNetherWoodColumn(nether, scaledSpawn);
 
-        double x = platform.getX() + 0.5;
-        double y = platform.getY() + 1;
-        double z = platform.getZ() + 0.5;
+        BlockPos spot = findSafeStandingSpot(nether, forest);
+        if (spot == null) {
+            AEM.LOGGER.warn("No natural Nether footing found near {}; carving a minimal one", forest);
+            spot = carveEmergencyFooting(nether, forest);
+        }
+
+        double x = spot.getX() + 0.5;
+        double y = spot.getY();
+        double z = spot.getZ() + 0.5;
         float yaw = player.getYRot();
         float pitch = player.getXRot();
 
-        player.teleportTo(nether, x, y, z, Set.of(), yaw, pitch, true);
+        // Don't let this one teleport award "We Need to Go Deeper" (and send its check). The award
+        // happens synchronously inside teleportTo, so the flag only needs to span this call; the Nether
+        // tab root (nether/root) is unaffected and still fires.
+        suppressNetherEntryAdvancement = true;
+        try {
+            player.teleportTo(nether, x, y, z, Set.of(), yaw, pitch, true);
+        } finally {
+            suppressNetherEntryAdvancement = false;
+        }
 
-        // Make the platform the player's spawn so deaths return to the Nether, not the overworld.
+        // Make this the player's spawn so deaths return to the Nether, not the overworld.
         player.setRespawnPosition(
                 new ServerPlayer.RespawnConfig(
-                        LevelData.RespawnData.of(Level.NETHER, BlockPos.containing(x, y, z), yaw, pitch),
-                        true),
+                        LevelData.RespawnData.of(Level.NETHER, spot, yaw, pitch), true),
                 false);
 
-        AEM.LOGGER.info("Placed {} on the Nether start platform at {}", player.getGameProfile().name(), platform);
+        AEM.LOGGER.info("Placed {} for a Nether start at {}", player.getGameProfile().name(), spot);
     }
 
-    /** Carves a 5x5 obsidian pad with a 3-tall air pocket above so the player lands safely. */
-    private static void buildSafePlatform(ServerLevel level, BlockPos center) {
-        BlockState obsidian = Blocks.OBSIDIAN.defaultBlockState();
-        BlockState air = Blocks.AIR.defaultBlockState();
-        for (int dx = -2; dx <= 2; dx++) {
-            for (int dz = -2; dz <= 2; dz++) {
-                level.setBlockAndUpdate(center.offset(dx, 0, dz), obsidian);
-                for (int dy = 1; dy <= 3; dy++) {
-                    level.setBlockAndUpdate(center.offset(dx, dy, dz), air);
+    /** The column (x,z) of the nearest crimson/warped forest, or {@code center} if none is in range. */
+    private static BlockPos nearestNetherWoodColumn(ServerLevel nether, BlockPos center) {
+        Predicate<Holder<Biome>> isNetherWood =
+                holder -> holder.is(Biomes.CRIMSON_FOREST) || holder.is(Biomes.WARPED_FOREST);
+        Pair<BlockPos, Holder<Biome>> nearest = nether.findClosestBiome3d(
+                isNetherWood, center, BIOME_SEARCH_RADIUS, BIOME_HORIZONTAL_STEP, BIOME_VERTICAL_STEP);
+        return nearest != null ? nearest.getFirst() : center;
+    }
+
+    /**
+     * Searches outward from {@code center} for a column with a solid floor and two clear blocks above,
+     * so the player lands standing on natural terrain. Returns the feet position, or {@code null}.
+     */
+    private static BlockPos findSafeStandingSpot(ServerLevel level, BlockPos center) {
+        for (int radius = 0; radius <= COLUMN_SEARCH_RADIUS; radius++) {
+            for (int dx = -radius; dx <= radius; dx++) {
+                for (int dz = -radius; dz <= radius; dz++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) {
+                        continue; // only the new ring at this radius
+                    }
+                    BlockPos spot = safeFooting(level, center.getX() + dx, center.getZ() + dz);
+                    if (spot != null) {
+                        return spot;
+                    }
                 }
             }
         }
+        return null;
+    }
+
+    /** Top-down scan of one column for a solid floor with two clear blocks above; feet pos or null. */
+    private static BlockPos safeFooting(ServerLevel level, int x, int z) {
+        for (int y = SCAN_TOP_Y; y >= SCAN_BOTTOM_Y; y--) {
+            BlockPos feet = new BlockPos(x, y, z);
+            if (isStandableFloor(level, feet.below()) && isClear(level, feet) && isClear(level, feet.above())) {
+                return feet;
+            }
+        }
+        return null;
+    }
+
+    private static boolean isStandableFloor(ServerLevel level, BlockPos pos) {
+        BlockState state = level.getBlockState(pos);
+        return state.blocksMotion()
+                && state.getFluidState().isEmpty()
+                && !state.is(Blocks.MAGMA_BLOCK);
+    }
+
+    private static boolean isClear(ServerLevel level, BlockPos pos) {
+        BlockState state = level.getBlockState(pos);
+        return !state.blocksMotion()
+                && state.getFluidState().isEmpty()
+                && !state.is(Blocks.FIRE)
+                && !state.is(Blocks.SOUL_FIRE);
+    }
+
+    /** Last resort when no natural footing exists: a single netherrack block with air above it. */
+    private static BlockPos carveEmergencyFooting(ServerLevel level, BlockPos center) {
+        BlockPos feet = new BlockPos(center.getX(), FALLBACK_Y, center.getZ());
+        level.setBlockAndUpdate(feet.below(), Blocks.NETHERRACK.defaultBlockState());
+        level.setBlockAndUpdate(feet, Blocks.AIR.defaultBlockState());
+        level.setBlockAndUpdate(feet.above(), Blocks.AIR.defaultBlockState());
+        return feet;
     }
 }
