@@ -6,6 +6,7 @@ def light_as_a_rabbit(helper: RuleHelper) -> dict:
     return {
         A_LIGHT_AS_A_RABBIT: helper.all_of(
             helper.knowledge(K_ARMOR),
+            helper.needs_biome_finder(),  # powder snow only in cold mountain biomes
             helper.any_of(
                 # Leather sources → craft boots
                 helper.has_any_entities(E_COW, E_DONKEY, E_HORSE, E_LLAMA, E_MOOSHROOM, E_MULE, E_TRADER_LLAMA, E_HOGLIN),

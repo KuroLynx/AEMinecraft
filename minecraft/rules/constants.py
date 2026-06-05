@@ -318,15 +318,6 @@ E_ZOGLIN = "Zoglin"
 E_ZOMBIE = "Zombie"
 E_ZOMBIE_VILLAGER = "Zombie Villager"
 
-# Low-level hostile mobs that can safely be punched to death (melee-only, low HP), so killing them
-# needs no weapon Knowledge — see RuleHelper.can_kill_with_fist / root.set_rules. Excludes ranged
-# (Skeleton/Stray/Bogged/Parched, Ghast, Blaze, Breeze), explosive (Creeper) and tanky/dangerous
-# hostiles (Witch, Vex, Ravager, Hoglin, Zoglin, …). Neutral mobs (Spider, Cave Spider, Drowned)
-# are already weapon-free at kill time since the weapon gate only applies to the HOSTILE category.
-FIST_KILLABLE_MOBS = {
-    E_ENDERMITE, E_SILVERFISH, E_SLIME, E_MAGMA_CUBE, E_HUSK, E_ZOMBIE, E_ZOMBIE_VILLAGER,
-}
-
 # -----------------------------------------------------------------------
 # Mobs — Bosses
 # -----------------------------------------------------------------------

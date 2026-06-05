@@ -22,6 +22,9 @@ class RuleHelper:
         # Options resolved once, up front, so rule nodes never carry option logic.
         self.villager_trust = bool(world.options.villager_trust.value)
         self.locked_categories = set(world.options.mob_spawn_lock_category.value)
+        # Biome Finder enabled (start or in_pool); disabled == 0. Biome-specific advancements require
+        # it when on, since that's how you locate the biome.
+        self.biome_finder_enabled = bool(world.options.biome_finder.value)
         # Thunks (deferred so cross-referencing mobs don't recurse at construction).
         self.structure_bound_mobs = {
             # Overworld — structure-locked
@@ -125,6 +128,18 @@ class RuleHelper:
                     self.can_get_iron(include_iron_golem=False),
                     self.can_get_carved_pumpkin(),
                 ),
+            ),
+        }
+        # Mobs whose only natural spawn is a specific, searchable biome — gated on the Biome Finder
+        # (when enabled), since that's how you locate the biome. The Dried Ghast (→ Happy Ghast) can
+        # also come from Piglin bartering, so there the finder is only needed without that path.
+        self.biome_bound_mobs = {
+            E_AXOLOTL    : lambda: self.needs_biome_finder(),   # Lush Caves
+            E_GOAT       : lambda: self.needs_biome_finder(),   # mountain biomes
+            E_FROG       : lambda: self.needs_biome_finder(),   # temperate / warm / cold variants
+            E_HAPPY_GHAST: lambda: self.any_of(                 # Dried Ghast: Soul Sand Valley or bartering
+                self.can_barter(),
+                self.needs_biome_finder(),
             ),
         }
 
@@ -406,7 +421,7 @@ class RuleHelper:
         # entity(Iron Golem) → this helper → entity(Iron Golem) recurses at rule-build time.
         sources = [
             self.all_of(self.knowledge(K_PICKAXE), self.access_region(REGION_OVERWORLD)),  # mine Iron Ore (Overworld only)
-            self.all_of(self.can_kill_with_fist(), self.has_any_entities(E_HUSK, E_ZOMBIE, E_ZOMBIE_VILLAGER)),  # mob drops (zombies punchable)
+            self.has_any_entities(E_HUSK, E_ZOMBIE, E_ZOMBIE_VILLAGER),  # mob drops
             self.any_mineshaft(),  # chest
             self.structure(S_DESERT_PYRAMID),  # chest
             self.structure(S_JUNGLE_PYRAMID),  # chest
@@ -501,11 +516,26 @@ class RuleHelper:
             self.knowledge(K_SPEAR),
         )
 
-    def can_kill_with_fist(self):
-        """Low-level mobs (passive animals, weak mobs) can be punched to death — no weapon Knowledge
-        required. Bare hands are always available, so this is unconditionally true; it exists to mark
-        at the call site that the kill needs no weapon (vs can_kill())."""
-        return Const(True)
+    def can_breath_underwater(self):
+        # Every way to breathe underwater long enough to fight down there (e.g. the Elder Guardian).
+        return self.any_of(
+            self.all_of(self.knowledge(K_BREWING), self.entity(E_PUFFERFISH)),         # Water Breathing potion
+            self.all_of(self.entity(E_NAUTILUS), self.structure(S_BURIED_TREASURE)),   # Conduit: nautilus shells + heart of the sea
+            self.entity(E_TURTLE),                                                     # Turtle Shell helmet (scute)
+        )
+
+    def can_kill_any_mob(self):
+        # At least one non-boss mob is reachable (every non-boss mob is beatable bare-handed). Used
+        # where the action is just "kill something", e.g. spreading sculk.
+        return self.any_of(*[
+            self.entity(name) for name, data in MOBS_ALL.items()
+            if data.category != MCEntityCategory.BOSS
+        ])
+
+    def needs_biome_finder(self):
+        # Advancements that require finding a specific biome depend on the Biome Finder when it is
+        # enabled; with it disabled no such item exists, so the requirement vanishes.
+        return self.has(ITEM_BIOME_FINDER) if self.biome_finder_enabled else Const(True)
 
     # -----------------------------------------------------------------------
     # Breeding / taming foods
@@ -559,7 +589,7 @@ class RuleHelper:
             self.any_village(),                 # village farms / chests
             self.structure(S_PILLAGER_OUTPOST),  # chest
             self.any_shipwreck(),               # chest
-            self.all_of(self.can_kill_with_fist(), self.has_any_entities(E_ZOMBIE, E_HUSK, E_ZOMBIE_VILLAGER)),  # rare drop (zombies punchable)
+            self.has_any_entities(E_ZOMBIE, E_HUSK, E_ZOMBIE_VILLAGER),  # rare drop
         )
 
     def can_get_golden_apple(self):
@@ -601,28 +631,39 @@ class RuleHelper:
 
     def can_get_spider_eye(self):
         return self.any_of(
-            self.all_of(self.can_kill_with_fist(), self.has_any_entities(E_SPIDER, E_CAVE_SPIDER, E_WITCH)),  # drops (spiders are punchable)
+            self.has_any_entities(E_SPIDER, E_CAVE_SPIDER, E_WITCH),  # drops
             self.structure(S_DESERT_PYRAMID),  # chest
         )
 
     def can_get_slimeball(self):
         return self.any_of(
-            self.all_of(self.can_kill_with_fist(), self.entity(E_SLIME)),  # Slime drop (punchable)
+            self.entity(E_SLIME),  # Slime drop
             self.can_trade_wandering_trader(),  # Wandering Trader sells slime balls
         )
 
     def can_get_seagrass(self):
         return self.any_of(
             self.can_get_shear(),                               # shear seagrass
-            self.all_of(self.can_kill_with_fist(), self.entity(E_TURTLE)),  # Turtle drop (passive)
+            self.entity(E_TURTLE),  # Turtle drop
         )
 
     def can_get_meat(self):
-        # Wolves accept any meat, including rotten flesh. Passive animals in the pool are punchable,
-        # so no weapon is required to obtain meat.
-        return self.all_of(
-            self.can_kill_with_fist(),
-            self.has_any_entities(E_COW, E_PIG, E_SHEEP, E_CHICKEN, E_RABBIT, E_ZOMBIE),
+        # Wolves accept any meat, including rotten flesh. Any non-boss mob is killable without a
+        # weapon, so this reduces to reaching one of these meat/flesh sources.
+        return self.has_any_entities(E_COW, E_PIG, E_SHEEP, E_CHICKEN, E_RABBIT, E_ZOMBIE)
+
+    def can_get_food(self):
+        # "Obtain any edible item" (e.g. the Husbandry root, which validates on eating anything).
+        # The Overworld has trivial food everywhere; the Nether grows none, so a Nether-start player
+        # needs a hunted or looted source. Every path below is a real, in-jar food source — adding
+        # them only widens reachability, never a fake path that could soft-lock generation.
+        return self.any_of(
+            self.access_region(REGION_OVERWORLD),                          # apples, crops, animals
+            self.can_get_meat(),                                           # cow/pig/sheep/chicken/rabbit/zombie
+            self.entity(E_HOGLIN),                                         # raw porkchop (crimson forest / bastion stable)
+            self.entity(E_ZOMBIFIED_PIGLIN),                              # rotten flesh (edible)
+            self.reached(f"{ADVANCEMENT_PREFIX}{A_THOSE_WERE_THE_DAYS}"),  # Bastion chests: cooked porkchop + golden apple/carrot
+            self.can_get_golden_food(),                                   # golden apple/carrot (ruined portal, structure loot, …)
         )
 
     def can_duplicate_allay(self):
@@ -663,6 +704,8 @@ class RuleHelper:
         build_node = build_thunk() if build_thunk is not None else Const(True)
         parent_thunk = self.parent_bound_mobs.get(entity_name)
         parent_node = parent_thunk() if parent_thunk is not None else Const(True)
+        biome_thunk = self.biome_bound_mobs.get(entity_name)
+        biome_node = biome_thunk() if biome_thunk is not None else Const(True)
         category_locked = (entity_data.category in self.locked_categories)
         unlock_node = self.has(f"{ENTITY_UNLOCK_PREFIX}{entity_name}") if category_locked else Const(True)
 
@@ -671,6 +714,7 @@ class RuleHelper:
             structure_node,
             build_node,
             parent_node,
+            biome_node,
             unlock_node,
         )
 

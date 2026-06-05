@@ -7,7 +7,6 @@ import fr.euclesia.mcarchipelago.server.ap.ArchipelagoGameplayListener;
 import fr.euclesia.mcarchipelago.server.command.AEMCommandRegistry;
 import fr.euclesia.mcarchipelago.server.command.ArchipelagoCommandModule;
 import fr.euclesia.mcarchipelago.server.event.MinecraftEventBridge;
-import fr.euclesia.mcarchipelago.server.gameplay.StartDimensionService;
 import fr.euclesia.mcarchipelago.server.gameplay.TrapMobService;
 import fr.euclesia.mcarchipelago.server.gameplay.TrapPlatformService;
 
@@ -22,9 +21,6 @@ public final class AEMServerBridge {
         }
 
         registered = true;
-
-        // Register the persistent start-dimension attachment before any world loads.
-        StartDimensionService.bootstrap();
 
         AEMCommandRegistry.create()
                 .module(new ArchipelagoCommandModule())
