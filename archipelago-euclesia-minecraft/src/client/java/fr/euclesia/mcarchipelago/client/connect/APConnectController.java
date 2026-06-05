@@ -7,6 +7,7 @@ import fr.euclesia.mcarchipelago.archipelago.APConnectionOptions;
 import fr.euclesia.mcarchipelago.archipelago.APEventListener;
 import fr.euclesia.mcarchipelago.archipelago.ArchipelagoClient;
 import fr.euclesia.mcarchipelago.protocol.APReceivedPacket;
+import net.minecraft.network.chat.Component;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -67,13 +68,13 @@ public final class APConnectController implements APEventListener {
     public void syncFromSession() {
         if (status != Status.CONNECTING && AEM.ARCHIPELAGO.client().state().isConnected()) {
             status = Status.CONNECTED;
-            message = "Connected";
+            message = translate("gui.aem.connect.status.connected");
         }
     }
 
     public synchronized void connect(String address, String port, String slot, String password) {
         if (slot.isBlank()) {
-            fail("Slot name is required");
+            fail(translate("gui.aem.connect.status.slot_required"));
             return;
         }
 
@@ -81,18 +82,18 @@ public final class APConnectController implements APEventListener {
         try {
             portNumber = Integer.parseInt(port.trim());
         } catch (NumberFormatException exception) {
-            fail("Port must be a number");
+            fail(translate("gui.aem.connect.status.port_invalid"));
             return;
         }
 
         Deque<URI> candidates = buildCandidates(address.trim(), portNumber);
         if (candidates.isEmpty()) {
-            fail("Invalid address");
+            fail(translate("gui.aem.connect.status.address_invalid"));
             return;
         }
 
         status = Status.CONNECTING;
-        message = "Connecting…";
+        message = translate("gui.aem.connect.status.connecting");
         APConnectionOptions options = APConnectionOptions.minecraft(slot.trim(), password);
         attempt(candidates, options);
     }
@@ -104,7 +105,7 @@ public final class APConnectController implements APEventListener {
             if (!candidates.isEmpty()) {
                 attempt(candidates, options);
             } else if (status == Status.CONNECTING) {
-                fail("Could not reach server: " + rootMessage(throwable));
+                fail(translate("gui.aem.connect.status.unreachable", rootMessage(throwable)));
             }
             return null;
         });
@@ -136,6 +137,10 @@ public final class APConnectController implements APEventListener {
         message = reason;
     }
 
+    private static String translate(String key, Object... args) {
+        return Component.translatable(key, args).getString();
+    }
+
     private static String rootMessage(Throwable throwable) {
         Throwable cause = throwable instanceof CompletionException && throwable.getCause() != null
                 ? throwable.getCause()
@@ -147,7 +152,7 @@ public final class APConnectController implements APEventListener {
     public void onConnected(ArchipelagoClient client, APReceivedPacket packet) {
         status = Status.CONNECTED;
         everConnected = true;
-        message = "Connected as slot " + client.state().slot();
+        message = translate("gui.aem.connect.status.connected_slot", client.state().slot());
     }
 
     @Override
@@ -155,7 +160,7 @@ public final class APConnectController implements APEventListener {
         JsonElement errors = packet.payload().get("errors");
         String detail = errors != null && errors.isJsonArray() ? joinErrors(errors.getAsJsonArray()) : "refused";
         status = Status.FAILED;
-        message = "Refused: " + detail;
+        message = translate("gui.aem.connect.status.refused", detail);
     }
 
     private static String joinErrors(JsonArray errors) {

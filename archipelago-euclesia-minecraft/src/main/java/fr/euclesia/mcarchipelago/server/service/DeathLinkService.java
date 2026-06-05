@@ -25,16 +25,17 @@ public final class DeathLinkService {
         }
     }
 
-    public static void applyRemote(String cause) {
+    public static void applyRemote(String source, String cause) {
         MinecraftServer server = AEMServerRuntime.server();
         if (server == null) {
             return;
         }
 
+        Component message = Component.translatable("message.aem.deathlink", describe(source, cause));
         server.execute(() -> {
             suppressSend = true;
             try {
-                server.getPlayerList().broadcastSystemMessage(Component.literal("DeathLink: " + cause), false);
+                server.getPlayerList().broadcastSystemMessage(message, false);
                 for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                     if (player.isAlive()) {
                         player.kill(player.level());
@@ -44,6 +45,21 @@ public final class DeathLinkService {
                 suppressSend = false;
             }
         });
+    }
+
+    /**
+     * Builds the detail half of the DeathLink message. Archipelago's {@code cause} field is already a
+     * full sentence (e.g. "Steve was slain by a Zombie") when present, so it is shown verbatim;
+     * otherwise we fall back to naming the source slot, and only then to a generic phrase.
+     */
+    private static Component describe(String source, String cause) {
+        if (cause != null && !cause.isBlank()) {
+            return Component.literal(cause);
+        }
+        String name = source != null && !source.isBlank() ? source : null;
+        return name != null
+                ? Component.translatable("message.aem.deathlink.unknown", name)
+                : Component.translatable("message.aem.deathlink.anonymous");
     }
 
     private static JsonObject createPayload(ServerPlayer player) {

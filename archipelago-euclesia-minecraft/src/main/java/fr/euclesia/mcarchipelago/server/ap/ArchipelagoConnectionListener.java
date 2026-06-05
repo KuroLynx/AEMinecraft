@@ -17,7 +17,7 @@ import java.util.List;
  */
 public final class ArchipelagoConnectionListener implements APEventListener {
     private static final Component REASON =
-            Component.literal("Disconnected from Archipelago — you must stay connected to play.");
+            Component.translatable("message.aem.disconnect.required");
 
     @Override
     public void onDisconnected(ArchipelagoClient client) {

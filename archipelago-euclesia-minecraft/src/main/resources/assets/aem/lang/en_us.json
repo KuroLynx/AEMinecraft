@@ -20,5 +20,31 @@
   "gui.aem.biome_finder.search": "Search",
   "gui.aem.biome_finder.search_hint": "Search biomes…",
 
-  "gui.aem.common.close": "Close"
+  "gui.aem.common.close": "Close",
+
+  "gui.aem.connect.status.slot_required": "Slot name is required",
+  "gui.aem.connect.status.port_invalid": "Port must be a number",
+  "gui.aem.connect.status.address_invalid": "Invalid address",
+  "gui.aem.connect.status.connecting": "Connecting…",
+  "gui.aem.connect.status.unreachable": "Could not reach server: %s",
+  "gui.aem.connect.status.connected": "Connected",
+  "gui.aem.connect.status.connected_slot": "Connected as slot %s",
+  "gui.aem.connect.status.refused": "Refused: %s",
+
+  "gui.aem.connect.cancel": "Cancel",
+  "gui.aem.connect.connecting": "Connecting to Archipelago…",
+  "gui.aem.connect.connecting.target": "%s (slot %s)",
+  "gui.aem.connect.failed_header": "Could not connect to Archipelago",
+
+  "message.aem.deathlink": "DeathLink: %s",
+  "message.aem.deathlink.unknown": "%s died",
+  "message.aem.deathlink.anonymous": "A linked player died",
+
+  "message.aem.disconnect.required": "Disconnected from Archipelago — you must stay connected to play.",
+
+  "message.aem.lock.requires": "Requires %s",
+  "message.aem.lock.requires_tier": "Requires %s (%s)",
+
+  "message.aem.biome_finder.none": "No %s nearby.",
+  "message.aem.biome_finder.tracking": "Biome Finder now points to %s (%s, %s)."
 }
