@@ -901,24 +901,30 @@ class RuleHelper:
         return self._coarsen(result)
 
     def _coarsen(self, node):
-        """Bound the serialized tree: an item whose acquisition logic grows past ``_SIZE_CAP`` (the
-        recipe-combinatorial decoratives/foods — dyes, beds, stews) collapses to the OR of the
-        regions it can be obtained in. Sound for that class — every such path is region-gated and
-        otherwise free — and keeps the export from blowing up at datapack scale."""
+        """Bound the serialized tree: a recipe-combinatorial item (dyes, beds, stews) past
+        ``_SIZE_CAP`` whose only leaves are region reachability collapses to the OR of its regions.
+        A tree that carries a real gate — a ``Has`` (structure/entity unlock, knowledge, material)
+        or a reached-location — is left intact even when large, so a structure/mob lock or
+        progression gate is never silently dropped (else a locked source would look reachable)."""
         if node is None or len(json.dumps(node.to_dict())) <= self._SIZE_CAP:
             return node
         regions = set()
+        gated = False
 
         def collect(node_dict):
-            if node_dict.get("k") == "region":
+            nonlocal gated
+            kind = node_dict.get("k")
+            if kind == "region":
                 regions.add(node_dict["r"])
+            elif kind in ("has", "loc"):
+                gated = True
             for child in node_dict.get("c", ()):
                 collect(child)
 
         collect(node.to_dict())
-        if regions:
-            return or_(*[self.access_region(region) for region in sorted(regions)])
-        return node
+        if gated or not regions:
+            return node
+        return or_(*[self.access_region(region) for region in sorted(regions)])
 
     @staticmethod
     def _unique_or(nodes):
