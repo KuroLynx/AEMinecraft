@@ -3,13 +3,8 @@ from worlds.generic.Rules import set_rule
 from ..data import MCEntityCategory, MOBS_ALL
 from .ast import Const
 from .constants import *
+from .engine import collect_advancement_rules, collect_entity_rules
 from .helpers import RuleHelper
-from .vanilla.adventure.root import get_adventure_rules
-from .vanilla.end.root import get_end_rules
-from .vanilla.entities.root import get_entities_rules
-from .vanilla.husbandry.root import get_husbandry_rules
-from .vanilla.nether.root import get_nether_rules
-from .vanilla.story.root import get_story_rules
 
 
 def set_rules(world ) -> None:
@@ -25,13 +20,9 @@ def set_rules(world ) -> None:
     # (build_logic_export). These are the exact same nodes handed to set_rule.
     exported_rules = {}
 
-    all_advancement_rules = {
-        **get_story_rules(helper),
-        **get_nether_rules(helper),
-        **get_end_rules(helper),
-        **get_adventure_rules(helper),
-        **get_husbandry_rules(helper),
-    }
+    # Rules are auto-discovered from the rule packages (see rules/engine.py) rather than wired by
+    # hand: every leaf rule file is collected by walking its package.
+    all_advancement_rules = collect_advancement_rules(helper)
 
     for advancement_name, condition in all_advancement_rules.items():
         location_name = f"{ADVANCEMENT_PREFIX}{advancement_name}"
@@ -40,7 +31,7 @@ def set_rules(world ) -> None:
             exported_rules[location_name] = condition
 
 
-    all_mob_unlock_rules = get_entities_rules(helper)
+    all_mob_unlock_rules = collect_entity_rules(helper)
 
     for mob_name, condition in all_mob_unlock_rules.items():
 
