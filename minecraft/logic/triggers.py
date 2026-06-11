@@ -106,8 +106,8 @@ class TriggerCompiler:
         if trigger == "minecraft:inventory_changed":
             return self._inventory_node(cond)
         if trigger == "minecraft:consume_item":
-            # "Eat any item" (empty conditions) → any food source; item-specific consume falls back.
-            return self.h.can_get_food() if not cond else None
+            # "Eat any item" (empty conditions) → any food source; else resolve the specific item.
+            return self.h.can_get_food() if not cond else self._item_predicate(cond.get("item"))
         return None
 
     # -- condition extractors ----------------------------------------------
@@ -121,19 +121,50 @@ class TriggerCompiler:
         return self._entity_by_gid.get(gid) if gid else None
 
     def _location_node(self, cond: dict) -> Rule | None:
-        loc_pred = self._predicate_value(cond.get("player"), "location") or {}
-        struct = loc_pred.get("structures") if isinstance(loc_pred, dict) else None
+        loc = self._predicate_value(cond.get("player"), "location")
+        if not isinstance(loc, dict):
+            return None
+        struct = loc.get("structures")
         if isinstance(struct, str):
             name = self._struct_by_gid.get(struct)
             return self.h.structure(name) if name else None
-        # Biome / dimension location predicates are not modelled here (biome reachability is its own
-        # concern); leave them to a curated override / parent fallback.
-        return None
+        if "biomes" in loc:
+            # Locating a specific biome needs the Biome Finder (when enabled); the advancement's own
+            # region placement already gates which dimension it's in.
+            return self.h.needs_biome_finder()
+        dim = loc.get("dimension")
+        region = _DIMENSION_REGION.get(dim) if isinstance(dim, str) else None
+        return self.h.access_region(region) if region else None
 
     def _inventory_node(self, cond: dict) -> Rule | None:
-        # Acquisition of arbitrary items is not generally modelled yet; only a kill/structure/dim
-        # criterion compiles cleanly. Item gating falls back to the parent chain for now.
-        return None
+        # cond["items"] is a list of item predicates that must ALL be satisfied (AND); each predicate
+        # names one item, a list of items (OR), or a tag.
+        predicates = cond.get("items")
+        if not isinstance(predicates, list) or not predicates:
+            return None
+        parts: list[Rule] = []
+        for pred in predicates:
+            node = self._item_predicate(pred)
+            if node is None:
+                return None  # a required item we can't resolve → fall back entirely
+            parts.append(node)
+        return and_(*parts)
+
+    def _item_predicate(self, pred) -> Rule | None:
+        """Resolve one item predicate (``{"items": <id|[ids]|#tag>}``) to acquisition logic."""
+        if not isinstance(pred, dict):
+            return None
+        ids = pred.get("items")
+        if isinstance(ids, str):
+            ids = [ids]
+        if not isinstance(ids, list) or not ids:
+            return None
+        options: list[Rule] = []
+        for item_id in ids:
+            node = self.h.acquire(item_id)
+            if node is not None:
+                options.append(node)
+        return or_(*options) if options else None
 
     @staticmethod
     def _predicate_value(entity_conditions, key: str):

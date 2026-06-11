@@ -3,6 +3,50 @@
 from .ast import Const, Has, ReachRegion, ReachLocation, and_, or_, at_least
 from .. import *
 
+# MC item id (sans namespace) -> the RuleHelper method that already encodes how to obtain it. Lets
+# the trigger compiler resolve `inventory_changed` / `consume_item` criteria through the curated
+# acquisition knowledge instead of falling back. Every metal variant routes to its tier helper.
+_ITEM_ACQUISITION_METHODS: dict[str, str] = {
+    "bucket": "can_craft_bucket",
+    "redstone": "can_get_redstone",
+    "arrow": "can_get_arrow",
+    "string": "can_get_string",
+    "feather": "can_get_feather",
+    "egg": "can_get_egg",
+    "snowball": "can_get_snowball",
+    "wheat": "can_get_wheat",
+    "carrot": "can_get_carrot",
+    "bone": "can_get_bone",
+    "obsidian": "can_get_obsidian",
+    "honeycomb": "can_get_honeycomb",
+    "spyglass": "can_get_spyglass",
+    "trident": "can_get_trident",
+    "shears": "can_get_shear",
+    "cake": "can_get_cake",
+    "spider_eye": "can_get_spider_eye",
+    "slime_ball": "can_get_slimeball",
+    "seagrass": "can_get_seagrass",
+    "golden_apple": "can_get_golden_apple",
+    "golden_carrot": "can_get_golden_carrot",
+    "enchanted_golden_apple": "can_get_notch_apple",
+    "carved_pumpkin": "can_get_carved_pumpkin",
+    # Metals — every ore / raw / ingot / block / nugget routes to its tier helper (region + sources).
+    "iron_ingot": "can_get_iron", "iron_block": "can_get_iron", "iron_nugget": "can_get_iron",
+    "raw_iron": "can_get_iron", "raw_iron_block": "can_get_iron", "iron_ore": "can_get_iron",
+    "deepslate_iron_ore": "can_get_iron",
+    "copper_ingot": "can_get_copper", "copper_block": "can_get_copper", "raw_copper": "can_get_copper",
+    "raw_copper_block": "can_get_copper", "copper_ore": "can_get_copper", "deepslate_copper_ore": "can_get_copper",
+    "gold_ingot": "can_get_gold", "gold_block": "can_get_gold", "gold_nugget": "can_get_gold",
+    "raw_gold": "can_get_gold", "raw_gold_block": "can_get_gold", "gold_ore": "can_get_gold",
+    "deepslate_gold_ore": "can_get_gold", "nether_gold_ore": "can_get_gold",
+}
+
+# Item -> required Progressive Material Handling tier (inverted from data.MATERIAL_HANDLING_ITEMS),
+# the last-resort gate for any material item without a richer helper above.
+_MATERIAL_TIER_BY_ITEM: dict[str, int] = {
+    item: tier for tier, items in MATERIAL_HANDLING_ITEMS.items() for item in items
+}
+
 
 class RuleHelper:
     """Builds logic rules as serializable AST nodes (see ``ast.py``).
@@ -770,3 +814,35 @@ class RuleHelper:
 
     def knowledge(self, item: str):
         return Has(self.player, f"Knowledge: {item}")
+
+    # -----------------------------------------------------------------------
+    # Item acquisition (used by the trigger compiler to resolve item criteria)
+    # -----------------------------------------------------------------------
+    def acquire(self, item_id: str):
+        """Logic to obtain a Minecraft item by id (``minecraft:diamond``), or ``None`` when it can't
+        be resolved (item tags, or items with no known source) so the caller falls back. Dispatches,
+        in order, to a curated ``can_get_*`` helper, the tool/armor knowledge+material gate
+        (``TOOL_LOCKS``), the diamond/netherite mining gates, and finally the bare material tier."""
+        base = item_id.split(":", 1)[-1] if ":" in item_id else item_id
+        if item_id.startswith("#") or base.startswith("#"):
+            return None  # item tag — not resolved to concrete items here
+
+        method = _ITEM_ACQUISITION_METHODS.get(base)
+        if method is not None:
+            return getattr(self, method)()
+
+        if base in ("diamond", "diamond_block"):
+            return self.all_of(self.knowledge(K_PICKAXE), self.material(MAT_DIAMOND),
+                               self.access_region(REGION_OVERWORLD))
+        if base in ("netherite_ingot", "netherite_block", "netherite_scrap", "ancient_debris"):
+            return self.all_of(self.knowledge(K_PICKAXE), self.material(MAT_NETHERITE),
+                               self.access_region(REGION_NETHER))
+
+        if base in TOOL_LOCKS:
+            knowledge_name, tier = TOOL_LOCKS[base]
+            return self.all_of(self.knowledge(knowledge_name), self.material(tier))
+
+        tier = _MATERIAL_TIER_BY_ITEM.get(base)
+        if tier is not None:
+            return self.material(tier)
+        return None
