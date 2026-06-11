@@ -1,10 +1,21 @@
+import json
+from importlib.resources import files
+
 from worlds.generic.Rules import set_rule
 
-from ..data import MCEntityCategory, MOBS_ALL
+from ..data import ALL_LOCATIONS, MOBS_ALL, MCEntityCategory, MCLocationCategory
+from .acquisition import RuleHelper
 from .ast import Const
 from .constants import *
 from .engine import collect_advancement_rules, collect_entity_rules
-from .acquisition import RuleHelper
+from .triggers import TriggerCompiler
+
+
+def _manifest() -> dict:
+    """The pack's advancement manifest (tools/extract_manifest.py), keyed by advancement game_id."""
+    root = __package__.rsplit(".", 1)[0]  # e.g. "worlds.minecraft"
+    with files(root).joinpath("packs", "vanilla_26_1", "manifest.json").open(encoding="utf-8") as f:
+        return json.load(f)
 
 
 def set_rules(world ) -> None:
@@ -14,21 +25,37 @@ def set_rules(world ) -> None:
     # Locations actually created this seed depend on options (challenge_sanity, kill_sanity).
     # Rules are defined for every advancement/mob, so skip those whose location was not created
     # — otherwise get_location raises KeyError.
-    existing_locations = {location.name for location in world.multiworld.get_locations(world.player)}
+    existing_locations = {loc.name for loc in world.multiworld.get_locations(world.player)}
 
     # Capture the final rule node per location so it can be serialized for the mod
     # (build_logic_export). These are the exact same nodes handed to set_rule.
     exported_rules = {}
 
-    # Rules are auto-discovered from the rule packages (see rules/engine.py) rather than wired by
-    # hand: every leaf rule file is collected by walking its package.
-    all_advancement_rules = collect_advancement_rules(helper)
+    # Advancement logic is DERIVED from each advancement's Minecraft criteria (the trigger compiler,
+    # logic/triggers.py + the acquisition table), so vanilla, mods and datapacks are handled the
+    # same way. A curated rule (logic/.../*.py) is only the fallback for advancements whose criteria
+    # can't be compiled (skill / situational ones — target_hit, effects_changed, …); a parent-chain
+    # reach, then Const(True), are the last resorts.
+    curated = collect_advancement_rules(helper)              # by display name
+    compiler = TriggerCompiler(helper)
+    manifest = _manifest()
 
-    for advancement_name, condition in all_advancement_rules.items():
-        location_name = f"{ADVANCEMENT_PREFIX}{advancement_name}"
-        if location_name in existing_locations:
-            set_rule(world.multiworld.get_location(location_name, world.player), condition)
-            exported_rules[location_name] = condition
+    for location_name, loc_data in ALL_LOCATIONS.items():
+        if loc_data.category != MCLocationCategory.ADVANCEMENT:
+            continue
+        if location_name not in existing_locations:
+            continue
+        record = manifest.get(loc_data.game_id)
+        name = location_name.removeprefix(ADVANCEMENT_PREFIX)
+        condition = compiler.compile(record) if record is not None else None
+        if condition is None:
+            condition = curated.get(name)
+        if condition is None and record is not None:
+            condition = compiler.parent_rule(record)
+        if condition is None:
+            condition = Const(True)
+        set_rule(world.multiworld.get_location(location_name, world.player), condition)
+        exported_rules[location_name] = condition
 
 
     all_mob_unlock_rules = collect_entity_rules(helper)
@@ -45,7 +72,7 @@ def set_rules(world ) -> None:
             prefix = f"{BOSS_KILL_PREFIX}"
 
         # Killability is stated per entity-rule file now (only bosses gate on can_kill / extra gear;
-        # every other mob can be beaten bare-handed via the boat trap, so its rule is just entity()).
+        # every other mob can be beaten bare-handed via the boat trap, so its rule is just entity).
         location_name = f"{prefix}{mob_name}"
         if location_name in existing_locations:
             set_rule(world.multiworld.get_location(location_name, world.player), condition)
