@@ -17,6 +17,8 @@ straight onto ``and_`` / ``or_``.
 """
 from __future__ import annotations
 
+import re
+
 from ..data import LOCATIONS_ADVANCEMENT, MOBS_ALL, STRUCTURES
 from .acquisition import RuleHelper
 from .ast import Rule, and_, or_
@@ -90,7 +92,7 @@ class TriggerCompiler:
         if trigger in _ENTITY_REACH_TRIGGERS:
             return self._entity_node(cond)
         if trigger == "minecraft:tame_animal":
-            name = self._entity_name(cond)
+            name = self._entity_name(cond) or self._species_from_components(cond)
             return self.h.can_tame(name) if name else None
         if trigger == "minecraft:bred_animals":
             # The bred species is pinned on the `child` predicate (e.g. bred_all_animals); empty
@@ -116,6 +118,10 @@ class TriggerCompiler:
             return self._used_on_block_node(cond)
         if trigger == "minecraft:filled_bucket":
             return self._filled_bucket_node(cond)
+        if trigger == "minecraft:recipe_crafted":
+            return self._all_items(cond.get("ingredients"))
+        if trigger == "minecraft:construct_beacon":
+            return self.h.acquire("minecraft:beacon")
         if trigger == "minecraft:villager_trade":
             return self.h.can_trade_villager()
         if trigger == "minecraft:slept_in_bed":
@@ -153,9 +159,11 @@ class TriggerCompiler:
         return self.h.access_region(region) if region else None
 
     def _inventory_node(self, cond: dict) -> Rule | None:
-        # cond["items"] is a list of item predicates that must ALL be satisfied (AND); each
-        # predicate names one item, a list of items (OR), or a tag.
-        predicates = cond.get("items")
+        return self._all_items(cond.get("items"))
+
+    def _all_items(self, predicates) -> Rule | None:
+        """AND over a list of item predicates (an ``inventory_changed`` items list or a
+        ``recipe_crafted`` ingredients list): every one must be obtainable, else fall back."""
         if not isinstance(predicates, list) or not predicates:
             return None
         parts: list[Rule] = []
@@ -165,6 +173,18 @@ class TriggerCompiler:
                 return None  # a required item we can't resolve → fall back entirely
             parts.append(node)
         return and_(*parts)
+
+    def _species_from_components(self, cond: dict) -> str | None:
+        """Infer the species of a variant-only entity predicate (e.g. a cat colour, which pins no
+        ``type``) from its component key ``minecraft:<species>/variant``."""
+        components = self._predicate_value(cond.get("entity"), "components")
+        if not isinstance(components, dict):
+            return None
+        for key in components:
+            match = re.match(r"minecraft:([a-z_]+)/variant", key)
+            if match:
+                return self._entity_by_gid.get(f"minecraft:{match.group(1)}")
+        return None
 
     def _item_predicate(self, pred) -> Rule | None:
         """Resolve one item predicate (``{"items": <id|[ids]|#tag>}``) to acquisition logic."""
