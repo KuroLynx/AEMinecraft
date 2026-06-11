@@ -959,4 +959,6 @@ class RuleHelper:
         tier = _MATERIAL_TIER_BY_ITEM.get(base)
         if tier is not None:
             return self.material(tier)
+        if base.endswith("_bucket"):
+            return self.acquire("minecraft:bucket")  # a filled bucket needs a bucket
         return None

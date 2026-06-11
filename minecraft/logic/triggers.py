@@ -21,10 +21,26 @@ import json
 import re
 from importlib.resources import files
 
-from ..data import LOCATIONS_ADVANCEMENT, MOBS_ALL, STRUCTURES
+from ..data import (
+    LOCATIONS_ADVANCEMENT,
+    MOBS_ALL,
+    MOBS_BREEDABLE,
+    MOBS_TAMEABLE,
+    STRUCTURES,
+)
 from .acquisition import RuleHelper
 from .ast import Rule, and_, or_
 from .constants import REGION_END, REGION_NETHER, REGION_OVERWORLD
+
+# Triggers that imply a specific tool/block the criterion never names: hitting a target block is
+# gated by crafting one (redstone + hay), brewing by a brewing stand, etc. Reaching the implied item
+# is the meaningful gate, so the advancement inherits its acquisition logic.
+_IMPLIED_ITEM = {
+    "minecraft:target_hit": "minecraft:target",
+    "minecraft:brewed_potion": "minecraft:brewing_stand",
+    "minecraft:enchanted_item": "minecraft:enchanting_table",
+    "minecraft:fishing_rod_hooked": "minecraft:fishing_rod",
+}
 
 _TAGS: dict | None = None
 
@@ -109,13 +125,17 @@ class TriggerCompiler:
             return self._entity_node(cond)
         if trigger == "minecraft:tame_animal":
             name = self._entity_name(cond) or self._species_from_components(cond)
-            return self.h.can_tame(name) if name else None
+            if name:
+                return self.h.can_tame(name)
+            return self._any_mob(MOBS_TAMEABLE, self.h.can_tame) if not cond else None
         if trigger == "minecraft:bred_animals":
             # The bred species is pinned on the `child` predicate (e.g. bred_all_animals); empty
-            # conditions ("breed any animal") aren't tied to a species, so they fall back.
+            # conditions mean "breed any animal".
             gid = self._predicate_value(cond.get("child"), "type")
             name = self._entity_by_gid.get(gid) if gid else None
-            return self.h.can_breed(name) if name else None
+            if name:
+                return self.h.can_breed(name)
+            return self._any_mob(MOBS_BREEDABLE, self.h.can_breed) if not cond else None
         if trigger == "minecraft:changed_dimension":
             region = _DIMENSION_REGION.get(cond.get("to"))
             return self.h.access_region(region) if region else None
@@ -146,6 +166,8 @@ class TriggerCompiler:
             return self.h.acquire("minecraft:totem_of_undying")
         if trigger == "minecraft:player_generates_container_loot":
             return self._container_loot_node(cond)
+        if trigger in _IMPLIED_ITEM:
+            return self.h.acquire(_IMPLIED_ITEM[trigger])
         return None
 
     # -- condition extractors ----------------------------------------------
@@ -256,11 +278,24 @@ class TriggerCompiler:
         return self._any_acquire(blocks)
 
     def _used_on_block_node(self, cond: dict) -> Rule | None:
-        """``item_used_on_block``: the item used, else the target block(s)."""
+        """``item_used_on_block``: the item used (top-level ``item`` or a ``match_tool`` predicate),
+        else the target block(s)."""
         if "item" in cond:
             return self._item_predicate(cond.get("item"))
-        block = self._predicate_value(cond.get("location"), "block")
+        location = cond.get("location")
+        if isinstance(location, list):
+            for sub in location:
+                if isinstance(sub, dict) and sub.get("condition") == "minecraft:match_tool":
+                    tool = self._any_acquire(sub.get("predicate", {}).get("items"))
+                    if tool is not None:
+                        return tool
+        block = self._predicate_value(location, "block")
         return self._any_acquire(block.get("blocks")) if isinstance(block, dict) else None
+
+    def _any_mob(self, mobs, build) -> Rule | None:
+        """OR over a per-mob rule builder (``can_breed`` / ``can_tame``) for a whole mob set."""
+        options = [build(name) for name in mobs]
+        return or_(*options) if options else None
 
     def _filled_bucket_node(self, cond: dict) -> Rule | None:
         """``filled_bucket``: hold a bucket and, for a captured mob, reach it."""
@@ -276,11 +311,18 @@ class TriggerCompiler:
         return and_(bucket, self.h.entity(mob)) if mob in MOBS_ALL else bucket
 
     def _container_loot_node(self, cond: dict) -> Rule | None:
-        """``player_generates_container_loot``: reach the structure whose loot table this is."""
+        """``player_generates_container_loot``: reach the structure whose loot table this is. The
+        table name may be a variant (``bastion_bridge``), so fall back to matching a structure that
+        shares its leading segment (``bastion`` → Bastion Remnant)."""
         table = cond.get("loot_table")
         if not isinstance(table, str):
             return None
-        name = self._struct_by_gid.get(f"minecraft:{table.split('/')[-1]}")
+        tail = table.split("/")[-1]
+        name = self._struct_by_gid.get(f"minecraft:{tail}")
+        if name is None:
+            head = tail.split("_")[0]
+            name = next((n for gid, n in self._struct_by_gid.items()
+                         if gid.split(":")[-1].split("_")[0] == head), None)
         return self.h.structure(name) if name else None
 
     @staticmethod
