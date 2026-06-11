@@ -1,36 +1,36 @@
-"""Extract a content pack's advancement manifest from a Minecraft jar.
+"""Extract a content pack's advancement manifest from a Minecraft jar, mod jar, or datapack.
 
-Reads ``data/minecraft/advancement/**.json`` out of the MC client jar (loom cache) and writes a
-normalised, lossless manifest the trigger compiler consumes. This is the offline counterpart of the
-in-game Fabric ``/aem dump-advancements`` command (Milestone 3): both target the SAME schema, so the
-apworld treats vanilla, mods and datapacks uniformly.
+Reads ``data/<namespace>/advancement[s]/**.json`` out of any source — the MC client jar (vanilla),
+a mod jar (Twilight Forest), or a datapack (bacap), supplied as a ``.jar``/``.zip`` file or an
+unpacked directory — and writes the normalised, lossless manifest the trigger compiler consumes.
+This is the offline counterpart of the in-game Fabric ``/aem dump-advancements`` command; both target
+the SAME schema, so the apworld treats vanilla, mods and datapacks uniformly.
 
-Recipe "advancements" (``minecraft:recipes/...``) are skipped — they are not randomised checks.
+Recipe "advancements" (``.../advancement[s]/recipes/...``) are skipped — they are not checks. Both
+the modern ``advancement`` and the legacy ``advancements`` folder names are accepted, so older MC
+versions / datapacks work too.
 
 Manifest shape (sorted by id for stable diffs)::
 
-    {
-      "<id>": {
-        "parent": "<id>" | null,
-        "tab": "<first path segment>",
+    { "<namespace>:<path>": {
+        "parent": "<id>" | null, "tab": "<first path segment>",
         "frame": "task" | "goal" | "challenge",
-        "requirements": [[ "<criterion>", ... ], ...],   # MC CNF: outer AND of inner OR
-        "criteria": { "<name>": {"trigger": "<id>", "conditions": { ... }} }
-      }, ...
-    }
+        "requirements": [[ "<criterion>", ... ], ...],          # MC CNF: AND of OR
+        "criteria": { "<name>": {"trigger": "<id>", "conditions": { ... }} } }, ... }
 
 Usage:
-    python tools/extract_manifest.py                # auto-locate jar, write packs/vanilla_26_1/manifest.json
-    python tools/extract_manifest.py <jar> <out>    # explicit
+    python tools/extract_manifest.py                       # vanilla: auto-locate MC jar -> packs/vanilla_26_1/manifest.json
+    python tools/extract_manifest.py <source> <out.json>    # any mod jar / datapack zip / folder
 """
 import json
 import os
+import re
 import sys
 import zipfile
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-ADV_PREFIX = "data/minecraft/advancement/"
-RECIPE_PREFIX = "data/minecraft/advancement/recipes/"
+# data/<namespace>/advancement or advancements/<rel>.json
+_ADV_RE = re.compile(r"^data/([^/]+)/advancements?/(.+)\.json$")
 
 
 def _default_jar() -> str:
@@ -46,47 +46,69 @@ def _default_jar() -> str:
                         version, "minecraft-client.jar")
 
 
-def extract(jar_path: str) -> dict:
+def _record(data: dict, rel: str) -> dict:
+    criteria = {
+        name: {"trigger": body.get("trigger"), "conditions": body.get("conditions", {})}
+        for name, body in data.get("criteria", {}).items()
+    }
+    return {
+        "parent": data.get("parent"),
+        "tab": rel.split("/", 1)[0],
+        "frame": data.get("display", {}).get("frame", "task"),
+        "requirements": data.get("requirements", []),
+        "criteria": criteria,
+    }
+
+
+def _entries(source: str):
+    """Yield (archive_path, raw_bytes) for every file in ``source`` (zip/jar file or directory)."""
+    if os.path.isdir(source):
+        for root, _dirs, files in os.walk(source):
+            for fn in files:
+                full = os.path.join(root, fn)
+                arc = os.path.relpath(full, source).replace(os.sep, "/")
+                with open(full, "rb") as f:
+                    yield arc, f.read()
+    else:
+        with zipfile.ZipFile(source) as zf:
+            for name in zf.namelist():
+                if not name.endswith("/"):
+                    yield name, zf.read(name)
+
+
+def extract(source: str) -> dict:
     manifest: dict = {}
-    with zipfile.ZipFile(jar_path) as zf:
-        for name in zf.namelist():
-            if not name.startswith(ADV_PREFIX) or not name.endswith(".json"):
-                continue
-            if name.startswith(RECIPE_PREFIX):
-                continue
-            rel = name[len(ADV_PREFIX):-len(".json")]      # e.g. "adventure/bullseye"
-            adv_id = f"minecraft:{rel}"
-            data = json.loads(zf.read(name))
-            criteria = {
-                crit_name: {"trigger": body.get("trigger"), "conditions": body.get("conditions", {})}
-                for crit_name, body in data.get("criteria", {}).items()
-            }
-            manifest[adv_id] = {
-                "parent": data.get("parent"),
-                "tab": rel.split("/", 1)[0],
-                "frame": data.get("display", {}).get("frame", "task"),
-                "requirements": data.get("requirements", []),
-                "criteria": criteria,
-            }
+    for arc, raw in _entries(source):
+        match = _ADV_RE.match(arc)
+        if not match:
+            continue
+        namespace, rel = match.group(1), match.group(2)
+        if rel.startswith("recipes/"):
+            continue
+        manifest[f"{namespace}:{rel}"] = _record(json.loads(raw), rel)
     return dict(sorted(manifest.items()))
 
 
 def main() -> int:
-    jar = sys.argv[1] if len(sys.argv) > 1 else _default_jar()
+    source = sys.argv[1] if len(sys.argv) > 1 else _default_jar()
     out = sys.argv[2] if len(sys.argv) > 2 else os.path.join(
         REPO, "minecraft", "packs", "vanilla_26_1", "manifest.json")
-    if not os.path.exists(jar):
-        print(f"jar not found: {jar}\npass an explicit path: python tools/extract_manifest.py <jar> <out>")
+    if not os.path.exists(source):
+        print(f"source not found: {source}\nusage: python tools/extract_manifest.py <jar|zip|dir> <out.json>")
         return 2
-    manifest = extract(jar)
+    manifest = extract(source)
+    if not manifest:
+        print(f"no advancements found under data/<ns>/advancement[s]/ in {source}")
+        return 1
     with open(out, "w", encoding="utf-8") as f:
         json.dump(manifest, f, indent=2, ensure_ascii=False)
         f.write("\n")
-    tabs: dict[str, int] = {}
-    for rec in manifest.values():
-        tabs[rec["tab"]] = tabs.get(rec["tab"], 0) + 1
+    namespaces: dict[str, int] = {}
+    for adv_id in manifest:
+        ns = adv_id.split(":", 1)[0]
+        namespaces[ns] = namespaces.get(ns, 0) + 1
     print(f"wrote {len(manifest)} advancements to {out}")
-    print("by tab:", json.dumps(tabs, sort_keys=True))
+    print("by namespace:", json.dumps(namespaces, sort_keys=True))
     return 0
 
 
