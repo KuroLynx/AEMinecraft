@@ -98,6 +98,7 @@ class AcquisitionBuilder:
         self.trades: dict[str, set] = {}
         self.breeding: dict[str, set] = {}
         self.gameplay: dict[str, set] = {}
+        self.item_tags: dict[str, list] = {}  # tag name -> raw values (items and #nested-tags)
         self.structure_names: dict[str, str] = {
             "nether_bridge": "Nether Fortress",
             "simple_dungeon": "Monster Room (Dungeon)",
@@ -153,9 +154,13 @@ class AcquisitionBuilder:
             self._trade(m.group(1), m.group(2), json.loads(raw))
             return
         m = re.search(r"/tags/items?/(.+)\.json$", name)
-        if m and (name.endswith("_food.json") or name.endswith("_tempt_items.json")):
-            mob = os.path.basename(name).replace("_food.json", "").replace("_tempt_items.json", "")
-            self._food(mob, json.loads(raw))
+        if m:
+            tag = json.loads(raw)
+            self.item_tags[m.group(1)] = tag.get("values", [])
+            if name.endswith("_food.json") or name.endswith("_tempt_items.json"):
+                stem = os.path.basename(name)
+                mob = stem.replace("_food.json", "").replace("_tempt_items.json", "")
+                self._food(mob, tag)
 
     def _recipe(self, recipe: dict):
         result = recipe.get("result") or {}
@@ -197,6 +202,41 @@ class AcquisitionBuilder:
             if item:
                 self.breeding.setdefault(_strip_ns(item).replace("#", ""), set()).add(mob)
 
+    # -- tags ---------------------------------------------------------------
+    def _resolve_tag(self, tag_name: str, seen: set | None = None) -> list:
+        """All concrete item ids in an item tag, following nested ``#tag`` references."""
+        seen = seen if seen is not None else set()
+        if tag_name in seen:
+            return []
+        seen.add(tag_name)
+        items = []
+        for value in self.item_tags.get(tag_name, []):
+            entry = value if isinstance(value, str) else value.get("id", "")
+            if not entry:
+                continue
+            if entry.startswith("#"):
+                items.extend(self._resolve_tag(_strip_ns(entry[1:]), seen))
+            else:
+                items.append(_strip_ns(entry))
+        return items
+
+    def _expand_ingredient(self, ingredient: dict) -> dict:
+        """Replace a ``{"tag": t}`` ingredient with ``{"any_of": [{"item": i}, ...]}`` members."""
+        if "any_of" in ingredient:
+            return {"any_of": [self._expand_ingredient(sub) for sub in ingredient["any_of"]]}
+        if "tag" in ingredient:
+            members = self._resolve_tag(ingredient["tag"])
+            if members:
+                return {"any_of": [{"item": item} for item in members]}
+        return ingredient
+
+    def _expanded_recipes(self, item: str) -> list:
+        return [
+            {"station": recipe["station"],
+             "ingredients": [self._expand_ingredient(ing) for ing in recipe["ingredients"]]}
+            for recipe in self.recipes[item]
+        ]
+
     # -- emit ---------------------------------------------------------------
     def table(self) -> dict:
         items = set(self.recipes) | set(self.drops) | set(self.mining) | set(self.structures) \
@@ -205,7 +245,7 @@ class AcquisitionBuilder:
         for item in sorted(items):
             rec: dict = {}
             if item in self.recipes:
-                rec["recipes"] = self.recipes[item]
+                rec["recipes"] = self._expanded_recipes(item)
             if item in self.drops:
                 rec["drops"] = sorted(self.drops[item])
             if item in self.mining:

@@ -137,7 +137,20 @@
       {
         "ingredients": [
           {
-            "tag": "acacia_logs"
+            "any_of": [
+              {
+                "item": "acacia_log"
+              },
+              {
+                "item": "acacia_wood"
+              },
+              {
+                "item": "stripped_acacia_log"
+              },
+              {
+                "item": "stripped_acacia_wood"
+              }
+            ]
           }
         ],
         "station": "crafting_shapeless"
@@ -812,7 +825,14 @@
       {
         "ingredients": [
           {
-            "tag": "bamboo_blocks"
+            "any_of": [
+              {
+                "item": "bamboo_block"
+              },
+              {
+                "item": "stripped_bamboo_block"
+              }
+            ]
           }
         ],
         "station": "crafting_shapeless"
@@ -936,10 +956,84 @@
       {
         "ingredients": [
           {
-            "tag": "planks"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           },
           {
-            "tag": "wooden_slabs"
+            "any_of": [
+              {
+                "item": "oak_slab"
+              },
+              {
+                "item": "spruce_slab"
+              },
+              {
+                "item": "birch_slab"
+              },
+              {
+                "item": "jungle_slab"
+              },
+              {
+                "item": "acacia_slab"
+              },
+              {
+                "item": "dark_oak_slab"
+              },
+              {
+                "item": "pale_oak_slab"
+              },
+              {
+                "item": "crimson_slab"
+              },
+              {
+                "item": "warped_slab"
+              },
+              {
+                "item": "mangrove_slab"
+              },
+              {
+                "item": "bamboo_slab"
+              },
+              {
+                "item": "cherry_slab"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -1000,7 +1094,44 @@
             "item": "honeycomb"
           },
           {
-            "tag": "planks"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -1218,7 +1349,20 @@
       {
         "ingredients": [
           {
-            "tag": "birch_logs"
+            "any_of": [
+              {
+                "item": "birch_log"
+              },
+              {
+                "item": "birch_wood"
+              },
+              {
+                "item": "stripped_birch_log"
+              },
+              {
+                "item": "stripped_birch_wood"
+              }
+            ]
           }
         ],
         "station": "crafting_shapeless"
@@ -1385,7 +1529,44 @@
             "item": "black_wool"
           },
           {
-            "tag": "planks"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -1460,7 +1641,59 @@
       {
         "ingredients": [
           {
-            "tag": "bundles"
+            "any_of": [
+              {
+                "item": "bundle"
+              },
+              {
+                "item": "black_bundle"
+              },
+              {
+                "item": "blue_bundle"
+              },
+              {
+                "item": "brown_bundle"
+              },
+              {
+                "item": "cyan_bundle"
+              },
+              {
+                "item": "gray_bundle"
+              },
+              {
+                "item": "green_bundle"
+              },
+              {
+                "item": "light_blue_bundle"
+              },
+              {
+                "item": "light_gray_bundle"
+              },
+              {
+                "item": "lime_bundle"
+              },
+              {
+                "item": "magenta_bundle"
+              },
+              {
+                "item": "orange_bundle"
+              },
+              {
+                "item": "pink_bundle"
+              },
+              {
+                "item": "purple_bundle"
+              },
+              {
+                "item": "red_bundle"
+              },
+              {
+                "item": "yellow_bundle"
+              },
+              {
+                "item": "white_bundle"
+              }
+            ]
           },
           {
             "item": "black_dye"
@@ -1723,7 +1956,59 @@
       {
         "ingredients": [
           {
-            "tag": "shulker_boxes"
+            "any_of": [
+              {
+                "item": "shulker_box"
+              },
+              {
+                "item": "black_shulker_box"
+              },
+              {
+                "item": "blue_shulker_box"
+              },
+              {
+                "item": "brown_shulker_box"
+              },
+              {
+                "item": "cyan_shulker_box"
+              },
+              {
+                "item": "gray_shulker_box"
+              },
+              {
+                "item": "green_shulker_box"
+              },
+              {
+                "item": "light_blue_shulker_box"
+              },
+              {
+                "item": "light_gray_shulker_box"
+              },
+              {
+                "item": "lime_shulker_box"
+              },
+              {
+                "item": "magenta_shulker_box"
+              },
+              {
+                "item": "orange_shulker_box"
+              },
+              {
+                "item": "pink_shulker_box"
+              },
+              {
+                "item": "purple_shulker_box"
+              },
+              {
+                "item": "red_shulker_box"
+              },
+              {
+                "item": "white_shulker_box"
+              },
+              {
+                "item": "yellow_shulker_box"
+              }
+            ]
           },
           {
             "item": "black_dye"
@@ -2040,7 +2325,44 @@
             "item": "blue_wool"
           },
           {
-            "tag": "planks"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -2115,7 +2437,59 @@
       {
         "ingredients": [
           {
-            "tag": "bundles"
+            "any_of": [
+              {
+                "item": "bundle"
+              },
+              {
+                "item": "black_bundle"
+              },
+              {
+                "item": "blue_bundle"
+              },
+              {
+                "item": "brown_bundle"
+              },
+              {
+                "item": "cyan_bundle"
+              },
+              {
+                "item": "gray_bundle"
+              },
+              {
+                "item": "green_bundle"
+              },
+              {
+                "item": "light_blue_bundle"
+              },
+              {
+                "item": "light_gray_bundle"
+              },
+              {
+                "item": "lime_bundle"
+              },
+              {
+                "item": "magenta_bundle"
+              },
+              {
+                "item": "orange_bundle"
+              },
+              {
+                "item": "pink_bundle"
+              },
+              {
+                "item": "purple_bundle"
+              },
+              {
+                "item": "red_bundle"
+              },
+              {
+                "item": "yellow_bundle"
+              },
+              {
+                "item": "white_bundle"
+              }
+            ]
           },
           {
             "item": "blue_dye"
@@ -2425,7 +2799,59 @@
       {
         "ingredients": [
           {
-            "tag": "shulker_boxes"
+            "any_of": [
+              {
+                "item": "shulker_box"
+              },
+              {
+                "item": "black_shulker_box"
+              },
+              {
+                "item": "blue_shulker_box"
+              },
+              {
+                "item": "brown_shulker_box"
+              },
+              {
+                "item": "cyan_shulker_box"
+              },
+              {
+                "item": "gray_shulker_box"
+              },
+              {
+                "item": "green_shulker_box"
+              },
+              {
+                "item": "light_blue_shulker_box"
+              },
+              {
+                "item": "light_gray_shulker_box"
+              },
+              {
+                "item": "lime_shulker_box"
+              },
+              {
+                "item": "magenta_shulker_box"
+              },
+              {
+                "item": "orange_shulker_box"
+              },
+              {
+                "item": "pink_shulker_box"
+              },
+              {
+                "item": "purple_shulker_box"
+              },
+              {
+                "item": "red_shulker_box"
+              },
+              {
+                "item": "white_shulker_box"
+              },
+              {
+                "item": "yellow_shulker_box"
+              }
+            ]
           },
           {
             "item": "blue_dye"
@@ -2733,7 +3159,44 @@
       {
         "ingredients": [
           {
-            "tag": "planks"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           },
           {
             "item": "book"
@@ -2807,7 +3270,44 @@
       {
         "ingredients": [
           {
-            "tag": "planks"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -2895,7 +3395,17 @@
       {
         "ingredients": [
           {
-            "tag": "stone_crafting_materials"
+            "any_of": [
+              {
+                "item": "cobblestone"
+              },
+              {
+                "item": "blackstone"
+              },
+              {
+                "item": "cobbled_deepslate"
+              }
+            ]
           },
           {
             "item": "blaze_rod"
@@ -3050,7 +3560,44 @@
             "item": "brown_wool"
           },
           {
-            "tag": "planks"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -3125,7 +3672,59 @@
       {
         "ingredients": [
           {
-            "tag": "bundles"
+            "any_of": [
+              {
+                "item": "bundle"
+              },
+              {
+                "item": "black_bundle"
+              },
+              {
+                "item": "blue_bundle"
+              },
+              {
+                "item": "brown_bundle"
+              },
+              {
+                "item": "cyan_bundle"
+              },
+              {
+                "item": "gray_bundle"
+              },
+              {
+                "item": "green_bundle"
+              },
+              {
+                "item": "light_blue_bundle"
+              },
+              {
+                "item": "light_gray_bundle"
+              },
+              {
+                "item": "lime_bundle"
+              },
+              {
+                "item": "magenta_bundle"
+              },
+              {
+                "item": "orange_bundle"
+              },
+              {
+                "item": "pink_bundle"
+              },
+              {
+                "item": "purple_bundle"
+              },
+              {
+                "item": "red_bundle"
+              },
+              {
+                "item": "yellow_bundle"
+              },
+              {
+                "item": "white_bundle"
+              }
+            ]
           },
           {
             "item": "brown_dye"
@@ -3410,7 +4009,59 @@
       {
         "ingredients": [
           {
-            "tag": "shulker_boxes"
+            "any_of": [
+              {
+                "item": "shulker_box"
+              },
+              {
+                "item": "black_shulker_box"
+              },
+              {
+                "item": "blue_shulker_box"
+              },
+              {
+                "item": "brown_shulker_box"
+              },
+              {
+                "item": "cyan_shulker_box"
+              },
+              {
+                "item": "gray_shulker_box"
+              },
+              {
+                "item": "green_shulker_box"
+              },
+              {
+                "item": "light_blue_shulker_box"
+              },
+              {
+                "item": "light_gray_shulker_box"
+              },
+              {
+                "item": "lime_shulker_box"
+              },
+              {
+                "item": "magenta_shulker_box"
+              },
+              {
+                "item": "orange_shulker_box"
+              },
+              {
+                "item": "pink_shulker_box"
+              },
+              {
+                "item": "purple_shulker_box"
+              },
+              {
+                "item": "red_shulker_box"
+              },
+              {
+                "item": "white_shulker_box"
+              },
+              {
+                "item": "yellow_shulker_box"
+              }
+            ]
           },
           {
             "item": "brown_dye"
@@ -3700,7 +4351,17 @@
             "item": "wheat"
           },
           {
-            "tag": "eggs"
+            "any_of": [
+              {
+                "item": "egg"
+              },
+              {
+                "item": "blue_egg"
+              },
+              {
+                "item": "brown_egg"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -3747,10 +4408,150 @@
       {
         "ingredients": [
           {
-            "tag": "coals"
+            "any_of": [
+              {
+                "item": "coal"
+              },
+              {
+                "item": "charcoal"
+              }
+            ]
           },
           {
-            "tag": "logs"
+            "any_of": [
+              {
+                "item": "dark_oak_log"
+              },
+              {
+                "item": "dark_oak_wood"
+              },
+              {
+                "item": "stripped_dark_oak_log"
+              },
+              {
+                "item": "stripped_dark_oak_wood"
+              },
+              {
+                "item": "pale_oak_log"
+              },
+              {
+                "item": "pale_oak_wood"
+              },
+              {
+                "item": "stripped_pale_oak_log"
+              },
+              {
+                "item": "stripped_pale_oak_wood"
+              },
+              {
+                "item": "oak_log"
+              },
+              {
+                "item": "oak_wood"
+              },
+              {
+                "item": "stripped_oak_log"
+              },
+              {
+                "item": "stripped_oak_wood"
+              },
+              {
+                "item": "acacia_log"
+              },
+              {
+                "item": "acacia_wood"
+              },
+              {
+                "item": "stripped_acacia_log"
+              },
+              {
+                "item": "stripped_acacia_wood"
+              },
+              {
+                "item": "birch_log"
+              },
+              {
+                "item": "birch_wood"
+              },
+              {
+                "item": "stripped_birch_log"
+              },
+              {
+                "item": "stripped_birch_wood"
+              },
+              {
+                "item": "jungle_log"
+              },
+              {
+                "item": "jungle_wood"
+              },
+              {
+                "item": "stripped_jungle_log"
+              },
+              {
+                "item": "stripped_jungle_wood"
+              },
+              {
+                "item": "spruce_log"
+              },
+              {
+                "item": "spruce_wood"
+              },
+              {
+                "item": "stripped_spruce_log"
+              },
+              {
+                "item": "stripped_spruce_wood"
+              },
+              {
+                "item": "mangrove_log"
+              },
+              {
+                "item": "mangrove_wood"
+              },
+              {
+                "item": "stripped_mangrove_log"
+              },
+              {
+                "item": "stripped_mangrove_wood"
+              },
+              {
+                "item": "cherry_log"
+              },
+              {
+                "item": "cherry_wood"
+              },
+              {
+                "item": "stripped_cherry_log"
+              },
+              {
+                "item": "stripped_cherry_wood"
+              },
+              {
+                "item": "crimson_stem"
+              },
+              {
+                "item": "stripped_crimson_stem"
+              },
+              {
+                "item": "crimson_hyphae"
+              },
+              {
+                "item": "stripped_crimson_hyphae"
+              },
+              {
+                "item": "warped_stem"
+              },
+              {
+                "item": "stripped_warped_stem"
+              },
+              {
+                "item": "warped_hyphae"
+              },
+              {
+                "item": "stripped_warped_hyphae"
+              }
+            ]
           },
           {
             "item": "stick"
@@ -3830,7 +4631,44 @@
       {
         "ingredients": [
           {
-            "tag": "planks"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           },
           {
             "item": "paper"
@@ -3985,7 +4823,116 @@
       {
         "ingredients": [
           {
-            "tag": "logs_that_burn"
+            "any_of": [
+              {
+                "item": "dark_oak_log"
+              },
+              {
+                "item": "dark_oak_wood"
+              },
+              {
+                "item": "stripped_dark_oak_log"
+              },
+              {
+                "item": "stripped_dark_oak_wood"
+              },
+              {
+                "item": "pale_oak_log"
+              },
+              {
+                "item": "pale_oak_wood"
+              },
+              {
+                "item": "stripped_pale_oak_log"
+              },
+              {
+                "item": "stripped_pale_oak_wood"
+              },
+              {
+                "item": "oak_log"
+              },
+              {
+                "item": "oak_wood"
+              },
+              {
+                "item": "stripped_oak_log"
+              },
+              {
+                "item": "stripped_oak_wood"
+              },
+              {
+                "item": "acacia_log"
+              },
+              {
+                "item": "acacia_wood"
+              },
+              {
+                "item": "stripped_acacia_log"
+              },
+              {
+                "item": "stripped_acacia_wood"
+              },
+              {
+                "item": "birch_log"
+              },
+              {
+                "item": "birch_wood"
+              },
+              {
+                "item": "stripped_birch_log"
+              },
+              {
+                "item": "stripped_birch_wood"
+              },
+              {
+                "item": "jungle_log"
+              },
+              {
+                "item": "jungle_wood"
+              },
+              {
+                "item": "stripped_jungle_log"
+              },
+              {
+                "item": "stripped_jungle_wood"
+              },
+              {
+                "item": "spruce_log"
+              },
+              {
+                "item": "spruce_wood"
+              },
+              {
+                "item": "stripped_spruce_log"
+              },
+              {
+                "item": "stripped_spruce_wood"
+              },
+              {
+                "item": "mangrove_log"
+              },
+              {
+                "item": "mangrove_wood"
+              },
+              {
+                "item": "stripped_mangrove_log"
+              },
+              {
+                "item": "stripped_mangrove_wood"
+              },
+              {
+                "item": "cherry_log"
+              },
+              {
+                "item": "cherry_wood"
+              },
+              {
+                "item": "stripped_cherry_log"
+              },
+              {
+                "item": "stripped_cherry_wood"
+              }
+            ]
           }
         ],
         "station": "smelting"
@@ -4155,7 +5102,20 @@
       {
         "ingredients": [
           {
-            "tag": "cherry_logs"
+            "any_of": [
+              {
+                "item": "cherry_log"
+              },
+              {
+                "item": "cherry_wood"
+              },
+              {
+                "item": "stripped_cherry_log"
+              },
+              {
+                "item": "stripped_cherry_wood"
+              }
+            ]
           }
         ],
         "station": "crafting_shapeless"
@@ -4291,7 +5251,44 @@
       {
         "ingredients": [
           {
-            "tag": "planks"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -4364,10 +5361,84 @@
       {
         "ingredients": [
           {
-            "tag": "planks"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           },
           {
-            "tag": "wooden_slabs"
+            "any_of": [
+              {
+                "item": "oak_slab"
+              },
+              {
+                "item": "spruce_slab"
+              },
+              {
+                "item": "birch_slab"
+              },
+              {
+                "item": "jungle_slab"
+              },
+              {
+                "item": "acacia_slab"
+              },
+              {
+                "item": "dark_oak_slab"
+              },
+              {
+                "item": "pale_oak_slab"
+              },
+              {
+                "item": "crimson_slab"
+              },
+              {
+                "item": "warped_slab"
+              },
+              {
+                "item": "mangrove_slab"
+              },
+              {
+                "item": "bamboo_slab"
+              },
+              {
+                "item": "cherry_slab"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -5204,7 +6275,44 @@
       {
         "ingredients": [
           {
-            "tag": "wooden_slabs"
+            "any_of": [
+              {
+                "item": "oak_slab"
+              },
+              {
+                "item": "spruce_slab"
+              },
+              {
+                "item": "birch_slab"
+              },
+              {
+                "item": "jungle_slab"
+              },
+              {
+                "item": "acacia_slab"
+              },
+              {
+                "item": "dark_oak_slab"
+              },
+              {
+                "item": "pale_oak_slab"
+              },
+              {
+                "item": "crimson_slab"
+              },
+              {
+                "item": "warped_slab"
+              },
+              {
+                "item": "mangrove_slab"
+              },
+              {
+                "item": "bamboo_slab"
+              },
+              {
+                "item": "cherry_slab"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -5524,7 +6632,11 @@
             "item": "stick"
           },
           {
-            "tag": "copper_tool_materials"
+            "any_of": [
+              {
+                "item": "copper_ingot"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -5705,7 +6817,11 @@
             "item": "stick"
           },
           {
-            "tag": "copper_tool_materials"
+            "any_of": [
+              {
+                "item": "copper_ingot"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -5958,7 +7074,11 @@
             "item": "stick"
           },
           {
-            "tag": "copper_tool_materials"
+            "any_of": [
+              {
+                "item": "copper_ingot"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -5973,7 +7093,11 @@
             "item": "stick"
           },
           {
-            "tag": "copper_tool_materials"
+            "any_of": [
+              {
+                "item": "copper_ingot"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -5988,7 +7112,11 @@
             "item": "stick"
           },
           {
-            "tag": "copper_tool_materials"
+            "any_of": [
+              {
+                "item": "copper_ingot"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -6006,7 +7134,11 @@
             "item": "stick"
           },
           {
-            "tag": "copper_tool_materials"
+            "any_of": [
+              {
+                "item": "copper_ingot"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -6179,7 +7311,44 @@
       {
         "ingredients": [
           {
-            "tag": "planks"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -6359,7 +7528,20 @@
       {
         "ingredients": [
           {
-            "tag": "crimson_stems"
+            "any_of": [
+              {
+                "item": "crimson_stem"
+              },
+              {
+                "item": "stripped_crimson_stem"
+              },
+              {
+                "item": "crimson_hyphae"
+              },
+              {
+                "item": "stripped_crimson_hyphae"
+              }
+            ]
           }
         ],
         "station": "crafting_shapeless"
@@ -6757,7 +7939,44 @@
             "item": "cyan_wool"
           },
           {
-            "tag": "planks"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -6832,7 +8051,59 @@
       {
         "ingredients": [
           {
-            "tag": "bundles"
+            "any_of": [
+              {
+                "item": "bundle"
+              },
+              {
+                "item": "black_bundle"
+              },
+              {
+                "item": "blue_bundle"
+              },
+              {
+                "item": "brown_bundle"
+              },
+              {
+                "item": "cyan_bundle"
+              },
+              {
+                "item": "gray_bundle"
+              },
+              {
+                "item": "green_bundle"
+              },
+              {
+                "item": "light_blue_bundle"
+              },
+              {
+                "item": "light_gray_bundle"
+              },
+              {
+                "item": "lime_bundle"
+              },
+              {
+                "item": "magenta_bundle"
+              },
+              {
+                "item": "orange_bundle"
+              },
+              {
+                "item": "pink_bundle"
+              },
+              {
+                "item": "purple_bundle"
+              },
+              {
+                "item": "red_bundle"
+              },
+              {
+                "item": "yellow_bundle"
+              },
+              {
+                "item": "white_bundle"
+              }
+            ]
           },
           {
             "item": "cyan_dye"
@@ -7098,7 +8369,59 @@
       {
         "ingredients": [
           {
-            "tag": "shulker_boxes"
+            "any_of": [
+              {
+                "item": "shulker_box"
+              },
+              {
+                "item": "black_shulker_box"
+              },
+              {
+                "item": "blue_shulker_box"
+              },
+              {
+                "item": "brown_shulker_box"
+              },
+              {
+                "item": "cyan_shulker_box"
+              },
+              {
+                "item": "gray_shulker_box"
+              },
+              {
+                "item": "green_shulker_box"
+              },
+              {
+                "item": "light_blue_shulker_box"
+              },
+              {
+                "item": "light_gray_shulker_box"
+              },
+              {
+                "item": "lime_shulker_box"
+              },
+              {
+                "item": "magenta_shulker_box"
+              },
+              {
+                "item": "orange_shulker_box"
+              },
+              {
+                "item": "pink_shulker_box"
+              },
+              {
+                "item": "purple_shulker_box"
+              },
+              {
+                "item": "red_shulker_box"
+              },
+              {
+                "item": "white_shulker_box"
+              },
+              {
+                "item": "yellow_shulker_box"
+              }
+            ]
           },
           {
             "item": "cyan_dye"
@@ -7423,7 +8746,20 @@
       {
         "ingredients": [
           {
-            "tag": "dark_oak_logs"
+            "any_of": [
+              {
+                "item": "dark_oak_log"
+              },
+              {
+                "item": "dark_oak_wood"
+              },
+              {
+                "item": "stripped_dark_oak_log"
+              },
+              {
+                "item": "stripped_dark_oak_wood"
+              }
+            ]
           }
         ],
         "station": "crafting_shapeless"
@@ -7629,7 +8965,44 @@
             "item": "quartz"
           },
           {
-            "tag": "wooden_slabs"
+            "any_of": [
+              {
+                "item": "oak_slab"
+              },
+              {
+                "item": "spruce_slab"
+              },
+              {
+                "item": "birch_slab"
+              },
+              {
+                "item": "jungle_slab"
+              },
+              {
+                "item": "acacia_slab"
+              },
+              {
+                "item": "dark_oak_slab"
+              },
+              {
+                "item": "pale_oak_slab"
+              },
+              {
+                "item": "crimson_slab"
+              },
+              {
+                "item": "warped_slab"
+              },
+              {
+                "item": "mangrove_slab"
+              },
+              {
+                "item": "bamboo_slab"
+              },
+              {
+                "item": "cherry_slab"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -8289,7 +9662,11 @@
             "item": "stick"
           },
           {
-            "tag": "diamond_tool_materials"
+            "any_of": [
+              {
+                "item": "diamond"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -8451,7 +9828,11 @@
             "item": "stick"
           },
           {
-            "tag": "diamond_tool_materials"
+            "any_of": [
+              {
+                "item": "diamond"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -8542,7 +9923,11 @@
             "item": "stick"
           },
           {
-            "tag": "diamond_tool_materials"
+            "any_of": [
+              {
+                "item": "diamond"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -8570,7 +9955,11 @@
             "item": "stick"
           },
           {
-            "tag": "diamond_tool_materials"
+            "any_of": [
+              {
+                "item": "diamond"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -8596,7 +9985,11 @@
             "item": "stick"
           },
           {
-            "tag": "diamond_tool_materials"
+            "any_of": [
+              {
+                "item": "diamond"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -8618,7 +10011,11 @@
             "item": "stick"
           },
           {
-            "tag": "diamond_tool_materials"
+            "any_of": [
+              {
+                "item": "diamond"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -10303,7 +11700,44 @@
       {
         "ingredients": [
           {
-            "tag": "planks"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           },
           {
             "item": "flint"
@@ -10476,7 +11910,17 @@
       {
         "ingredients": [
           {
-            "tag": "stone_crafting_materials"
+            "any_of": [
+              {
+                "item": "cobblestone"
+              },
+              {
+                "item": "blackstone"
+              },
+              {
+                "item": "cobbled_deepslate"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -10544,7 +11988,14 @@
       {
         "ingredients": [
           {
-            "tag": "smelts_to_glass"
+            "any_of": [
+              {
+                "item": "sand"
+              },
+              {
+                "item": "red_sand"
+              }
+            ]
           }
         ],
         "station": "smelting"
@@ -11002,7 +12453,11 @@
             "item": "stick"
           },
           {
-            "tag": "gold_tool_materials"
+            "any_of": [
+              {
+                "item": "gold_ingot"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -11136,7 +12591,11 @@
             "item": "stick"
           },
           {
-            "tag": "gold_tool_materials"
+            "any_of": [
+              {
+                "item": "gold_ingot"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -11193,7 +12652,11 @@
             "item": "stick"
           },
           {
-            "tag": "gold_tool_materials"
+            "any_of": [
+              {
+                "item": "gold_ingot"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -11212,7 +12675,11 @@
             "item": "stick"
           },
           {
-            "tag": "gold_tool_materials"
+            "any_of": [
+              {
+                "item": "gold_ingot"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -11230,7 +12697,11 @@
             "item": "stick"
           },
           {
-            "tag": "gold_tool_materials"
+            "any_of": [
+              {
+                "item": "gold_ingot"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -11245,7 +12716,11 @@
             "item": "stick"
           },
           {
-            "tag": "gold_tool_materials"
+            "any_of": [
+              {
+                "item": "gold_ingot"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -11454,7 +12929,44 @@
             "item": "gray_wool"
           },
           {
-            "tag": "planks"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -11472,7 +12984,59 @@
       {
         "ingredients": [
           {
-            "tag": "bundles"
+            "any_of": [
+              {
+                "item": "bundle"
+              },
+              {
+                "item": "black_bundle"
+              },
+              {
+                "item": "blue_bundle"
+              },
+              {
+                "item": "brown_bundle"
+              },
+              {
+                "item": "cyan_bundle"
+              },
+              {
+                "item": "gray_bundle"
+              },
+              {
+                "item": "green_bundle"
+              },
+              {
+                "item": "light_blue_bundle"
+              },
+              {
+                "item": "light_gray_bundle"
+              },
+              {
+                "item": "lime_bundle"
+              },
+              {
+                "item": "magenta_bundle"
+              },
+              {
+                "item": "orange_bundle"
+              },
+              {
+                "item": "pink_bundle"
+              },
+              {
+                "item": "purple_bundle"
+              },
+              {
+                "item": "red_bundle"
+              },
+              {
+                "item": "yellow_bundle"
+              },
+              {
+                "item": "white_bundle"
+              }
+            ]
           },
           {
             "item": "gray_dye"
@@ -11738,7 +13302,59 @@
       {
         "ingredients": [
           {
-            "tag": "shulker_boxes"
+            "any_of": [
+              {
+                "item": "shulker_box"
+              },
+              {
+                "item": "black_shulker_box"
+              },
+              {
+                "item": "blue_shulker_box"
+              },
+              {
+                "item": "brown_shulker_box"
+              },
+              {
+                "item": "cyan_shulker_box"
+              },
+              {
+                "item": "gray_shulker_box"
+              },
+              {
+                "item": "green_shulker_box"
+              },
+              {
+                "item": "light_blue_shulker_box"
+              },
+              {
+                "item": "light_gray_shulker_box"
+              },
+              {
+                "item": "lime_shulker_box"
+              },
+              {
+                "item": "magenta_shulker_box"
+              },
+              {
+                "item": "orange_shulker_box"
+              },
+              {
+                "item": "pink_shulker_box"
+              },
+              {
+                "item": "purple_shulker_box"
+              },
+              {
+                "item": "red_shulker_box"
+              },
+              {
+                "item": "white_shulker_box"
+              },
+              {
+                "item": "yellow_shulker_box"
+              }
+            ]
           },
           {
             "item": "gray_dye"
@@ -11992,7 +13608,44 @@
             "item": "green_wool"
           },
           {
-            "tag": "planks"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -12010,7 +13663,59 @@
       {
         "ingredients": [
           {
-            "tag": "bundles"
+            "any_of": [
+              {
+                "item": "bundle"
+              },
+              {
+                "item": "black_bundle"
+              },
+              {
+                "item": "blue_bundle"
+              },
+              {
+                "item": "brown_bundle"
+              },
+              {
+                "item": "cyan_bundle"
+              },
+              {
+                "item": "gray_bundle"
+              },
+              {
+                "item": "green_bundle"
+              },
+              {
+                "item": "light_blue_bundle"
+              },
+              {
+                "item": "light_gray_bundle"
+              },
+              {
+                "item": "lime_bundle"
+              },
+              {
+                "item": "magenta_bundle"
+              },
+              {
+                "item": "orange_bundle"
+              },
+              {
+                "item": "pink_bundle"
+              },
+              {
+                "item": "purple_bundle"
+              },
+              {
+                "item": "red_bundle"
+              },
+              {
+                "item": "yellow_bundle"
+              },
+              {
+                "item": "white_bundle"
+              }
+            ]
           },
           {
             "item": "green_dye"
@@ -12271,7 +13976,59 @@
       {
         "ingredients": [
           {
-            "tag": "shulker_boxes"
+            "any_of": [
+              {
+                "item": "shulker_box"
+              },
+              {
+                "item": "black_shulker_box"
+              },
+              {
+                "item": "blue_shulker_box"
+              },
+              {
+                "item": "brown_shulker_box"
+              },
+              {
+                "item": "cyan_shulker_box"
+              },
+              {
+                "item": "gray_shulker_box"
+              },
+              {
+                "item": "green_shulker_box"
+              },
+              {
+                "item": "light_blue_shulker_box"
+              },
+              {
+                "item": "light_gray_shulker_box"
+              },
+              {
+                "item": "lime_shulker_box"
+              },
+              {
+                "item": "magenta_shulker_box"
+              },
+              {
+                "item": "orange_shulker_box"
+              },
+              {
+                "item": "pink_shulker_box"
+              },
+              {
+                "item": "purple_shulker_box"
+              },
+              {
+                "item": "red_shulker_box"
+              },
+              {
+                "item": "white_shulker_box"
+              },
+              {
+                "item": "yellow_shulker_box"
+              }
+            ]
           },
           {
             "item": "green_dye"
@@ -12436,7 +14193,44 @@
       {
         "ingredients": [
           {
-            "tag": "planks"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           },
           {
             "item": "stone_slab"
@@ -12706,7 +14500,11 @@
             "item": "stick"
           },
           {
-            "tag": "iron_tool_materials"
+            "any_of": [
+              {
+                "item": "iron_ingot"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -12939,7 +14737,11 @@
             "item": "stick"
           },
           {
-            "tag": "iron_tool_materials"
+            "any_of": [
+              {
+                "item": "iron_ingot"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -13254,7 +15056,11 @@
             "item": "stick"
           },
           {
-            "tag": "iron_tool_materials"
+            "any_of": [
+              {
+                "item": "iron_ingot"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -13287,7 +15093,11 @@
             "item": "stick"
           },
           {
-            "tag": "iron_tool_materials"
+            "any_of": [
+              {
+                "item": "iron_ingot"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -13312,7 +15122,11 @@
             "item": "stick"
           },
           {
-            "tag": "iron_tool_materials"
+            "any_of": [
+              {
+                "item": "iron_ingot"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -13334,7 +15148,11 @@
             "item": "stick"
           },
           {
-            "tag": "iron_tool_materials"
+            "any_of": [
+              {
+                "item": "iron_ingot"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -13416,7 +15234,44 @@
       {
         "ingredients": [
           {
-            "tag": "planks"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           },
           {
             "item": "diamond"
@@ -13564,7 +15419,20 @@
       {
         "ingredients": [
           {
-            "tag": "jungle_logs"
+            "any_of": [
+              {
+                "item": "jungle_log"
+              },
+              {
+                "item": "jungle_wood"
+              },
+              {
+                "item": "stripped_jungle_log"
+              },
+              {
+                "item": "stripped_jungle_wood"
+              }
+            ]
           }
         ],
         "station": "crafting_shapeless"
@@ -13860,7 +15728,41 @@
       {
         "ingredients": [
           {
-            "tag": "leaves"
+            "any_of": [
+              {
+                "item": "jungle_leaves"
+              },
+              {
+                "item": "oak_leaves"
+              },
+              {
+                "item": "spruce_leaves"
+              },
+              {
+                "item": "pale_oak_leaves"
+              },
+              {
+                "item": "dark_oak_leaves"
+              },
+              {
+                "item": "acacia_leaves"
+              },
+              {
+                "item": "birch_leaves"
+              },
+              {
+                "item": "azalea_leaves"
+              },
+              {
+                "item": "flowering_azalea_leaves"
+              },
+              {
+                "item": "mangrove_leaves"
+              },
+              {
+                "item": "cherry_leaves"
+              }
+            ]
           }
         ],
         "station": "smelting"
@@ -14035,7 +15937,44 @@
             "item": "bookshelf"
           },
           {
-            "tag": "wooden_slabs"
+            "any_of": [
+              {
+                "item": "oak_slab"
+              },
+              {
+                "item": "spruce_slab"
+              },
+              {
+                "item": "birch_slab"
+              },
+              {
+                "item": "jungle_slab"
+              },
+              {
+                "item": "acacia_slab"
+              },
+              {
+                "item": "dark_oak_slab"
+              },
+              {
+                "item": "pale_oak_slab"
+              },
+              {
+                "item": "crimson_slab"
+              },
+              {
+                "item": "warped_slab"
+              },
+              {
+                "item": "mangrove_slab"
+              },
+              {
+                "item": "bamboo_slab"
+              },
+              {
+                "item": "cherry_slab"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -14156,7 +16095,44 @@
             "item": "light_blue_wool"
           },
           {
-            "tag": "planks"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -14174,7 +16150,59 @@
       {
         "ingredients": [
           {
-            "tag": "bundles"
+            "any_of": [
+              {
+                "item": "bundle"
+              },
+              {
+                "item": "black_bundle"
+              },
+              {
+                "item": "blue_bundle"
+              },
+              {
+                "item": "brown_bundle"
+              },
+              {
+                "item": "cyan_bundle"
+              },
+              {
+                "item": "gray_bundle"
+              },
+              {
+                "item": "green_bundle"
+              },
+              {
+                "item": "light_blue_bundle"
+              },
+              {
+                "item": "light_gray_bundle"
+              },
+              {
+                "item": "lime_bundle"
+              },
+              {
+                "item": "magenta_bundle"
+              },
+              {
+                "item": "orange_bundle"
+              },
+              {
+                "item": "pink_bundle"
+              },
+              {
+                "item": "purple_bundle"
+              },
+              {
+                "item": "red_bundle"
+              },
+              {
+                "item": "yellow_bundle"
+              },
+              {
+                "item": "white_bundle"
+              }
+            ]
           },
           {
             "item": "light_blue_dye"
@@ -14443,7 +16471,59 @@
       {
         "ingredients": [
           {
-            "tag": "shulker_boxes"
+            "any_of": [
+              {
+                "item": "shulker_box"
+              },
+              {
+                "item": "black_shulker_box"
+              },
+              {
+                "item": "blue_shulker_box"
+              },
+              {
+                "item": "brown_shulker_box"
+              },
+              {
+                "item": "cyan_shulker_box"
+              },
+              {
+                "item": "gray_shulker_box"
+              },
+              {
+                "item": "green_shulker_box"
+              },
+              {
+                "item": "light_blue_shulker_box"
+              },
+              {
+                "item": "light_gray_shulker_box"
+              },
+              {
+                "item": "lime_shulker_box"
+              },
+              {
+                "item": "magenta_shulker_box"
+              },
+              {
+                "item": "orange_shulker_box"
+              },
+              {
+                "item": "pink_shulker_box"
+              },
+              {
+                "item": "purple_shulker_box"
+              },
+              {
+                "item": "red_shulker_box"
+              },
+              {
+                "item": "white_shulker_box"
+              },
+              {
+                "item": "yellow_shulker_box"
+              }
+            ]
           },
           {
             "item": "light_blue_dye"
@@ -14695,7 +16775,44 @@
             "item": "light_gray_wool"
           },
           {
-            "tag": "planks"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -14713,7 +16830,59 @@
       {
         "ingredients": [
           {
-            "tag": "bundles"
+            "any_of": [
+              {
+                "item": "bundle"
+              },
+              {
+                "item": "black_bundle"
+              },
+              {
+                "item": "blue_bundle"
+              },
+              {
+                "item": "brown_bundle"
+              },
+              {
+                "item": "cyan_bundle"
+              },
+              {
+                "item": "gray_bundle"
+              },
+              {
+                "item": "green_bundle"
+              },
+              {
+                "item": "light_blue_bundle"
+              },
+              {
+                "item": "light_gray_bundle"
+              },
+              {
+                "item": "lime_bundle"
+              },
+              {
+                "item": "magenta_bundle"
+              },
+              {
+                "item": "orange_bundle"
+              },
+              {
+                "item": "pink_bundle"
+              },
+              {
+                "item": "purple_bundle"
+              },
+              {
+                "item": "red_bundle"
+              },
+              {
+                "item": "yellow_bundle"
+              },
+              {
+                "item": "white_bundle"
+              }
+            ]
           },
           {
             "item": "light_gray_dye"
@@ -15006,7 +17175,59 @@
       {
         "ingredients": [
           {
-            "tag": "shulker_boxes"
+            "any_of": [
+              {
+                "item": "shulker_box"
+              },
+              {
+                "item": "black_shulker_box"
+              },
+              {
+                "item": "blue_shulker_box"
+              },
+              {
+                "item": "brown_shulker_box"
+              },
+              {
+                "item": "cyan_shulker_box"
+              },
+              {
+                "item": "gray_shulker_box"
+              },
+              {
+                "item": "green_shulker_box"
+              },
+              {
+                "item": "light_blue_shulker_box"
+              },
+              {
+                "item": "light_gray_shulker_box"
+              },
+              {
+                "item": "lime_shulker_box"
+              },
+              {
+                "item": "magenta_shulker_box"
+              },
+              {
+                "item": "orange_shulker_box"
+              },
+              {
+                "item": "pink_shulker_box"
+              },
+              {
+                "item": "purple_shulker_box"
+              },
+              {
+                "item": "red_shulker_box"
+              },
+              {
+                "item": "white_shulker_box"
+              },
+              {
+                "item": "yellow_shulker_box"
+              }
+            ]
           },
           {
             "item": "light_gray_dye"
@@ -15330,7 +17551,44 @@
             "item": "lime_wool"
           },
           {
-            "tag": "planks"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -15348,7 +17606,59 @@
       {
         "ingredients": [
           {
-            "tag": "bundles"
+            "any_of": [
+              {
+                "item": "bundle"
+              },
+              {
+                "item": "black_bundle"
+              },
+              {
+                "item": "blue_bundle"
+              },
+              {
+                "item": "brown_bundle"
+              },
+              {
+                "item": "cyan_bundle"
+              },
+              {
+                "item": "gray_bundle"
+              },
+              {
+                "item": "green_bundle"
+              },
+              {
+                "item": "light_blue_bundle"
+              },
+              {
+                "item": "light_gray_bundle"
+              },
+              {
+                "item": "lime_bundle"
+              },
+              {
+                "item": "magenta_bundle"
+              },
+              {
+                "item": "orange_bundle"
+              },
+              {
+                "item": "pink_bundle"
+              },
+              {
+                "item": "purple_bundle"
+              },
+              {
+                "item": "red_bundle"
+              },
+              {
+                "item": "yellow_bundle"
+              },
+              {
+                "item": "white_bundle"
+              }
+            ]
           },
           {
             "item": "lime_dye"
@@ -15614,7 +17924,59 @@
       {
         "ingredients": [
           {
-            "tag": "shulker_boxes"
+            "any_of": [
+              {
+                "item": "shulker_box"
+              },
+              {
+                "item": "black_shulker_box"
+              },
+              {
+                "item": "blue_shulker_box"
+              },
+              {
+                "item": "brown_shulker_box"
+              },
+              {
+                "item": "cyan_shulker_box"
+              },
+              {
+                "item": "gray_shulker_box"
+              },
+              {
+                "item": "green_shulker_box"
+              },
+              {
+                "item": "light_blue_shulker_box"
+              },
+              {
+                "item": "light_gray_shulker_box"
+              },
+              {
+                "item": "lime_shulker_box"
+              },
+              {
+                "item": "magenta_shulker_box"
+              },
+              {
+                "item": "orange_shulker_box"
+              },
+              {
+                "item": "pink_shulker_box"
+              },
+              {
+                "item": "purple_shulker_box"
+              },
+              {
+                "item": "red_shulker_box"
+              },
+              {
+                "item": "white_shulker_box"
+              },
+              {
+                "item": "yellow_shulker_box"
+              }
+            ]
           },
           {
             "item": "lime_dye"
@@ -15807,7 +18169,44 @@
       {
         "ingredients": [
           {
-            "tag": "planks"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           },
           {
             "item": "string"
@@ -15928,7 +18327,44 @@
             "item": "magenta_wool"
           },
           {
-            "tag": "planks"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -15946,7 +18382,59 @@
       {
         "ingredients": [
           {
-            "tag": "bundles"
+            "any_of": [
+              {
+                "item": "bundle"
+              },
+              {
+                "item": "black_bundle"
+              },
+              {
+                "item": "blue_bundle"
+              },
+              {
+                "item": "brown_bundle"
+              },
+              {
+                "item": "cyan_bundle"
+              },
+              {
+                "item": "gray_bundle"
+              },
+              {
+                "item": "green_bundle"
+              },
+              {
+                "item": "light_blue_bundle"
+              },
+              {
+                "item": "light_gray_bundle"
+              },
+              {
+                "item": "lime_bundle"
+              },
+              {
+                "item": "magenta_bundle"
+              },
+              {
+                "item": "orange_bundle"
+              },
+              {
+                "item": "pink_bundle"
+              },
+              {
+                "item": "purple_bundle"
+              },
+              {
+                "item": "red_bundle"
+              },
+              {
+                "item": "yellow_bundle"
+              },
+              {
+                "item": "white_bundle"
+              }
+            ]
           },
           {
             "item": "magenta_dye"
@@ -16248,7 +18736,59 @@
       {
         "ingredients": [
           {
-            "tag": "shulker_boxes"
+            "any_of": [
+              {
+                "item": "shulker_box"
+              },
+              {
+                "item": "black_shulker_box"
+              },
+              {
+                "item": "blue_shulker_box"
+              },
+              {
+                "item": "brown_shulker_box"
+              },
+              {
+                "item": "cyan_shulker_box"
+              },
+              {
+                "item": "gray_shulker_box"
+              },
+              {
+                "item": "green_shulker_box"
+              },
+              {
+                "item": "light_blue_shulker_box"
+              },
+              {
+                "item": "light_gray_shulker_box"
+              },
+              {
+                "item": "lime_shulker_box"
+              },
+              {
+                "item": "magenta_shulker_box"
+              },
+              {
+                "item": "orange_shulker_box"
+              },
+              {
+                "item": "pink_shulker_box"
+              },
+              {
+                "item": "purple_shulker_box"
+              },
+              {
+                "item": "red_shulker_box"
+              },
+              {
+                "item": "white_shulker_box"
+              },
+              {
+                "item": "yellow_shulker_box"
+              }
+            ]
           },
           {
             "item": "magenta_dye"
@@ -16583,7 +19123,20 @@
       {
         "ingredients": [
           {
-            "tag": "mangrove_logs"
+            "any_of": [
+              {
+                "item": "mangrove_log"
+              },
+              {
+                "item": "mangrove_wood"
+              },
+              {
+                "item": "stripped_mangrove_log"
+              },
+              {
+                "item": "stripped_mangrove_wood"
+              }
+            ]
           }
         ],
         "station": "crafting_shapeless"
@@ -17341,7 +19894,17 @@
             "item": "paper"
           },
           {
-            "tag": "metal_nuggets"
+            "any_of": [
+              {
+                "item": "copper_nugget"
+              },
+              {
+                "item": "iron_nugget"
+              },
+              {
+                "item": "gold_nugget"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -17540,7 +20103,11 @@
             "item": "diamond_axe"
           },
           {
-            "tag": "netherite_tool_materials"
+            "any_of": [
+              {
+                "item": "netherite_ingot"
+              }
+            ]
           },
           {
             "item": "netherite_upgrade_smithing_template"
@@ -17573,7 +20140,11 @@
             "item": "diamond_boots"
           },
           {
-            "tag": "netherite_tool_materials"
+            "any_of": [
+              {
+                "item": "netherite_ingot"
+              }
+            ]
           },
           {
             "item": "netherite_upgrade_smithing_template"
@@ -17591,7 +20162,11 @@
             "item": "diamond_chestplate"
           },
           {
-            "tag": "netherite_tool_materials"
+            "any_of": [
+              {
+                "item": "netherite_ingot"
+              }
+            ]
           },
           {
             "item": "netherite_upgrade_smithing_template"
@@ -17609,7 +20184,11 @@
             "item": "diamond_helmet"
           },
           {
-            "tag": "netherite_tool_materials"
+            "any_of": [
+              {
+                "item": "netherite_ingot"
+              }
+            ]
           },
           {
             "item": "netherite_upgrade_smithing_template"
@@ -17627,7 +20206,11 @@
             "item": "diamond_hoe"
           },
           {
-            "tag": "netherite_tool_materials"
+            "any_of": [
+              {
+                "item": "netherite_ingot"
+              }
+            ]
           },
           {
             "item": "netherite_upgrade_smithing_template"
@@ -17645,7 +20228,11 @@
             "item": "diamond_horse_armor"
           },
           {
-            "tag": "netherite_tool_materials"
+            "any_of": [
+              {
+                "item": "netherite_ingot"
+              }
+            ]
           },
           {
             "item": "netherite_upgrade_smithing_template"
@@ -17689,7 +20276,11 @@
             "item": "diamond_leggings"
           },
           {
-            "tag": "netherite_tool_materials"
+            "any_of": [
+              {
+                "item": "netherite_ingot"
+              }
+            ]
           },
           {
             "item": "netherite_upgrade_smithing_template"
@@ -17707,7 +20298,11 @@
             "item": "diamond_nautilus_armor"
           },
           {
-            "tag": "netherite_tool_materials"
+            "any_of": [
+              {
+                "item": "netherite_ingot"
+              }
+            ]
           },
           {
             "item": "netherite_upgrade_smithing_template"
@@ -17725,7 +20320,11 @@
             "item": "diamond_pickaxe"
           },
           {
-            "tag": "netherite_tool_materials"
+            "any_of": [
+              {
+                "item": "netherite_ingot"
+              }
+            ]
           },
           {
             "item": "netherite_upgrade_smithing_template"
@@ -17768,7 +20367,11 @@
             "item": "diamond_shovel"
           },
           {
-            "tag": "netherite_tool_materials"
+            "any_of": [
+              {
+                "item": "netherite_ingot"
+              }
+            ]
           },
           {
             "item": "netherite_upgrade_smithing_template"
@@ -17786,7 +20389,11 @@
             "item": "diamond_spear"
           },
           {
-            "tag": "netherite_tool_materials"
+            "any_of": [
+              {
+                "item": "netherite_ingot"
+              }
+            ]
           },
           {
             "item": "netherite_upgrade_smithing_template"
@@ -17804,7 +20411,11 @@
             "item": "diamond_sword"
           },
           {
-            "tag": "netherite_tool_materials"
+            "any_of": [
+              {
+                "item": "netherite_ingot"
+              }
+            ]
           },
           {
             "item": "netherite_upgrade_smithing_template"
@@ -17853,7 +20464,44 @@
       {
         "ingredients": [
           {
-            "tag": "planks"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           },
           {
             "item": "redstone"
@@ -18004,7 +20652,20 @@
       {
         "ingredients": [
           {
-            "tag": "oak_logs"
+            "any_of": [
+              {
+                "item": "oak_log"
+              },
+              {
+                "item": "oak_wood"
+              },
+              {
+                "item": "stripped_oak_log"
+              },
+              {
+                "item": "stripped_oak_wood"
+              }
+            ]
           }
         ],
         "station": "crafting_shapeless"
@@ -18308,7 +20969,44 @@
             "item": "orange_wool"
           },
           {
-            "tag": "planks"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -18326,7 +21024,59 @@
       {
         "ingredients": [
           {
-            "tag": "bundles"
+            "any_of": [
+              {
+                "item": "bundle"
+              },
+              {
+                "item": "black_bundle"
+              },
+              {
+                "item": "blue_bundle"
+              },
+              {
+                "item": "brown_bundle"
+              },
+              {
+                "item": "cyan_bundle"
+              },
+              {
+                "item": "gray_bundle"
+              },
+              {
+                "item": "green_bundle"
+              },
+              {
+                "item": "light_blue_bundle"
+              },
+              {
+                "item": "light_gray_bundle"
+              },
+              {
+                "item": "lime_bundle"
+              },
+              {
+                "item": "magenta_bundle"
+              },
+              {
+                "item": "orange_bundle"
+              },
+              {
+                "item": "pink_bundle"
+              },
+              {
+                "item": "purple_bundle"
+              },
+              {
+                "item": "red_bundle"
+              },
+              {
+                "item": "yellow_bundle"
+              },
+              {
+                "item": "white_bundle"
+              }
+            ]
           },
           {
             "item": "orange_dye"
@@ -18611,7 +21361,59 @@
       {
         "ingredients": [
           {
-            "tag": "shulker_boxes"
+            "any_of": [
+              {
+                "item": "shulker_box"
+              },
+              {
+                "item": "black_shulker_box"
+              },
+              {
+                "item": "blue_shulker_box"
+              },
+              {
+                "item": "brown_shulker_box"
+              },
+              {
+                "item": "cyan_shulker_box"
+              },
+              {
+                "item": "gray_shulker_box"
+              },
+              {
+                "item": "green_shulker_box"
+              },
+              {
+                "item": "light_blue_shulker_box"
+              },
+              {
+                "item": "light_gray_shulker_box"
+              },
+              {
+                "item": "lime_shulker_box"
+              },
+              {
+                "item": "magenta_shulker_box"
+              },
+              {
+                "item": "orange_shulker_box"
+              },
+              {
+                "item": "pink_shulker_box"
+              },
+              {
+                "item": "purple_shulker_box"
+              },
+              {
+                "item": "red_shulker_box"
+              },
+              {
+                "item": "white_shulker_box"
+              },
+              {
+                "item": "yellow_shulker_box"
+              }
+            ]
           },
           {
             "item": "orange_dye"
@@ -19053,7 +21855,56 @@
             "item": "stick"
           },
           {
-            "tag": "wool"
+            "any_of": [
+              {
+                "item": "white_wool"
+              },
+              {
+                "item": "orange_wool"
+              },
+              {
+                "item": "magenta_wool"
+              },
+              {
+                "item": "light_blue_wool"
+              },
+              {
+                "item": "yellow_wool"
+              },
+              {
+                "item": "lime_wool"
+              },
+              {
+                "item": "pink_wool"
+              },
+              {
+                "item": "gray_wool"
+              },
+              {
+                "item": "light_gray_wool"
+              },
+              {
+                "item": "cyan_wool"
+              },
+              {
+                "item": "purple_wool"
+              },
+              {
+                "item": "blue_wool"
+              },
+              {
+                "item": "brown_wool"
+              },
+              {
+                "item": "green_wool"
+              },
+              {
+                "item": "red_wool"
+              },
+              {
+                "item": "black_wool"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -19238,7 +22089,20 @@
       {
         "ingredients": [
           {
-            "tag": "pale_oak_logs"
+            "any_of": [
+              {
+                "item": "pale_oak_log"
+              },
+              {
+                "item": "pale_oak_wood"
+              },
+              {
+                "item": "stripped_pale_oak_log"
+              },
+              {
+                "item": "stripped_pale_oak_wood"
+              }
+            ]
           }
         ],
         "station": "crafting_shapeless"
@@ -19525,7 +22389,44 @@
             "item": "pink_wool"
           },
           {
-            "tag": "planks"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -19543,7 +22444,59 @@
       {
         "ingredients": [
           {
-            "tag": "bundles"
+            "any_of": [
+              {
+                "item": "bundle"
+              },
+              {
+                "item": "black_bundle"
+              },
+              {
+                "item": "blue_bundle"
+              },
+              {
+                "item": "brown_bundle"
+              },
+              {
+                "item": "cyan_bundle"
+              },
+              {
+                "item": "gray_bundle"
+              },
+              {
+                "item": "green_bundle"
+              },
+              {
+                "item": "light_blue_bundle"
+              },
+              {
+                "item": "light_gray_bundle"
+              },
+              {
+                "item": "lime_bundle"
+              },
+              {
+                "item": "magenta_bundle"
+              },
+              {
+                "item": "orange_bundle"
+              },
+              {
+                "item": "pink_bundle"
+              },
+              {
+                "item": "purple_bundle"
+              },
+              {
+                "item": "red_bundle"
+              },
+              {
+                "item": "yellow_bundle"
+              },
+              {
+                "item": "white_bundle"
+              }
+            ]
           },
           {
             "item": "pink_dye"
@@ -19841,7 +22794,59 @@
       {
         "ingredients": [
           {
-            "tag": "shulker_boxes"
+            "any_of": [
+              {
+                "item": "shulker_box"
+              },
+              {
+                "item": "black_shulker_box"
+              },
+              {
+                "item": "blue_shulker_box"
+              },
+              {
+                "item": "brown_shulker_box"
+              },
+              {
+                "item": "cyan_shulker_box"
+              },
+              {
+                "item": "gray_shulker_box"
+              },
+              {
+                "item": "green_shulker_box"
+              },
+              {
+                "item": "light_blue_shulker_box"
+              },
+              {
+                "item": "light_gray_shulker_box"
+              },
+              {
+                "item": "lime_shulker_box"
+              },
+              {
+                "item": "magenta_shulker_box"
+              },
+              {
+                "item": "orange_shulker_box"
+              },
+              {
+                "item": "pink_shulker_box"
+              },
+              {
+                "item": "purple_shulker_box"
+              },
+              {
+                "item": "red_shulker_box"
+              },
+              {
+                "item": "white_shulker_box"
+              },
+              {
+                "item": "yellow_shulker_box"
+              }
+            ]
           },
           {
             "item": "pink_dye"
@@ -20030,7 +23035,44 @@
             "item": "redstone"
           },
           {
-            "tag": "planks"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           },
           {
             "item": "iron_ingot"
@@ -21284,7 +24326,17 @@
             "item": "sugar"
           },
           {
-            "tag": "eggs"
+            "any_of": [
+              {
+                "item": "egg"
+              },
+              {
+                "item": "blue_egg"
+              },
+              {
+                "item": "brown_egg"
+              }
+            ]
           }
         ],
         "station": "crafting_shapeless"
@@ -21431,7 +24483,44 @@
             "item": "purple_wool"
           },
           {
-            "tag": "planks"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -21449,7 +24538,59 @@
       {
         "ingredients": [
           {
-            "tag": "bundles"
+            "any_of": [
+              {
+                "item": "bundle"
+              },
+              {
+                "item": "black_bundle"
+              },
+              {
+                "item": "blue_bundle"
+              },
+              {
+                "item": "brown_bundle"
+              },
+              {
+                "item": "cyan_bundle"
+              },
+              {
+                "item": "gray_bundle"
+              },
+              {
+                "item": "green_bundle"
+              },
+              {
+                "item": "light_blue_bundle"
+              },
+              {
+                "item": "light_gray_bundle"
+              },
+              {
+                "item": "lime_bundle"
+              },
+              {
+                "item": "magenta_bundle"
+              },
+              {
+                "item": "orange_bundle"
+              },
+              {
+                "item": "pink_bundle"
+              },
+              {
+                "item": "purple_bundle"
+              },
+              {
+                "item": "red_bundle"
+              },
+              {
+                "item": "yellow_bundle"
+              },
+              {
+                "item": "white_bundle"
+              }
+            ]
           },
           {
             "item": "purple_dye"
@@ -21710,7 +24851,59 @@
       {
         "ingredients": [
           {
-            "tag": "shulker_boxes"
+            "any_of": [
+              {
+                "item": "shulker_box"
+              },
+              {
+                "item": "black_shulker_box"
+              },
+              {
+                "item": "blue_shulker_box"
+              },
+              {
+                "item": "brown_shulker_box"
+              },
+              {
+                "item": "cyan_shulker_box"
+              },
+              {
+                "item": "gray_shulker_box"
+              },
+              {
+                "item": "green_shulker_box"
+              },
+              {
+                "item": "light_blue_shulker_box"
+              },
+              {
+                "item": "light_gray_shulker_box"
+              },
+              {
+                "item": "lime_shulker_box"
+              },
+              {
+                "item": "magenta_shulker_box"
+              },
+              {
+                "item": "orange_shulker_box"
+              },
+              {
+                "item": "pink_shulker_box"
+              },
+              {
+                "item": "purple_shulker_box"
+              },
+              {
+                "item": "red_shulker_box"
+              },
+              {
+                "item": "white_shulker_box"
+              },
+              {
+                "item": "yellow_shulker_box"
+              }
+            ]
           },
           {
             "item": "purple_dye"
@@ -22460,7 +25653,44 @@
             "item": "red_wool"
           },
           {
-            "tag": "planks"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -22478,7 +25708,59 @@
       {
         "ingredients": [
           {
-            "tag": "bundles"
+            "any_of": [
+              {
+                "item": "bundle"
+              },
+              {
+                "item": "black_bundle"
+              },
+              {
+                "item": "blue_bundle"
+              },
+              {
+                "item": "brown_bundle"
+              },
+              {
+                "item": "cyan_bundle"
+              },
+              {
+                "item": "gray_bundle"
+              },
+              {
+                "item": "green_bundle"
+              },
+              {
+                "item": "light_blue_bundle"
+              },
+              {
+                "item": "light_gray_bundle"
+              },
+              {
+                "item": "lime_bundle"
+              },
+              {
+                "item": "magenta_bundle"
+              },
+              {
+                "item": "orange_bundle"
+              },
+              {
+                "item": "pink_bundle"
+              },
+              {
+                "item": "purple_bundle"
+              },
+              {
+                "item": "red_bundle"
+              },
+              {
+                "item": "yellow_bundle"
+              },
+              {
+                "item": "white_bundle"
+              }
+            ]
           },
           {
             "item": "red_dye"
@@ -22993,7 +26275,59 @@
       {
         "ingredients": [
           {
-            "tag": "shulker_boxes"
+            "any_of": [
+              {
+                "item": "shulker_box"
+              },
+              {
+                "item": "black_shulker_box"
+              },
+              {
+                "item": "blue_shulker_box"
+              },
+              {
+                "item": "brown_shulker_box"
+              },
+              {
+                "item": "cyan_shulker_box"
+              },
+              {
+                "item": "gray_shulker_box"
+              },
+              {
+                "item": "green_shulker_box"
+              },
+              {
+                "item": "light_blue_shulker_box"
+              },
+              {
+                "item": "light_gray_shulker_box"
+              },
+              {
+                "item": "lime_shulker_box"
+              },
+              {
+                "item": "magenta_shulker_box"
+              },
+              {
+                "item": "orange_shulker_box"
+              },
+              {
+                "item": "pink_shulker_box"
+              },
+              {
+                "item": "purple_shulker_box"
+              },
+              {
+                "item": "red_shulker_box"
+              },
+              {
+                "item": "white_shulker_box"
+              },
+              {
+                "item": "yellow_shulker_box"
+              }
+            ]
           },
           {
             "item": "red_dye"
@@ -23978,7 +27312,44 @@
       {
         "ingredients": [
           {
-            "tag": "wooden_tool_materials"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           },
           {
             "item": "iron_ingot"
@@ -24154,7 +27525,44 @@
       {
         "ingredients": [
           {
-            "tag": "planks"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           },
           {
             "item": "iron_ingot"
@@ -24172,7 +27580,140 @@
       {
         "ingredients": [
           {
-            "tag": "logs"
+            "any_of": [
+              {
+                "item": "dark_oak_log"
+              },
+              {
+                "item": "dark_oak_wood"
+              },
+              {
+                "item": "stripped_dark_oak_log"
+              },
+              {
+                "item": "stripped_dark_oak_wood"
+              },
+              {
+                "item": "pale_oak_log"
+              },
+              {
+                "item": "pale_oak_wood"
+              },
+              {
+                "item": "stripped_pale_oak_log"
+              },
+              {
+                "item": "stripped_pale_oak_wood"
+              },
+              {
+                "item": "oak_log"
+              },
+              {
+                "item": "oak_wood"
+              },
+              {
+                "item": "stripped_oak_log"
+              },
+              {
+                "item": "stripped_oak_wood"
+              },
+              {
+                "item": "acacia_log"
+              },
+              {
+                "item": "acacia_wood"
+              },
+              {
+                "item": "stripped_acacia_log"
+              },
+              {
+                "item": "stripped_acacia_wood"
+              },
+              {
+                "item": "birch_log"
+              },
+              {
+                "item": "birch_wood"
+              },
+              {
+                "item": "stripped_birch_log"
+              },
+              {
+                "item": "stripped_birch_wood"
+              },
+              {
+                "item": "jungle_log"
+              },
+              {
+                "item": "jungle_wood"
+              },
+              {
+                "item": "stripped_jungle_log"
+              },
+              {
+                "item": "stripped_jungle_wood"
+              },
+              {
+                "item": "spruce_log"
+              },
+              {
+                "item": "spruce_wood"
+              },
+              {
+                "item": "stripped_spruce_log"
+              },
+              {
+                "item": "stripped_spruce_wood"
+              },
+              {
+                "item": "mangrove_log"
+              },
+              {
+                "item": "mangrove_wood"
+              },
+              {
+                "item": "stripped_mangrove_log"
+              },
+              {
+                "item": "stripped_mangrove_wood"
+              },
+              {
+                "item": "cherry_log"
+              },
+              {
+                "item": "cherry_wood"
+              },
+              {
+                "item": "stripped_cherry_log"
+              },
+              {
+                "item": "stripped_cherry_wood"
+              },
+              {
+                "item": "crimson_stem"
+              },
+              {
+                "item": "stripped_crimson_stem"
+              },
+              {
+                "item": "crimson_hyphae"
+              },
+              {
+                "item": "stripped_crimson_hyphae"
+              },
+              {
+                "item": "warped_stem"
+              },
+              {
+                "item": "stripped_warped_stem"
+              },
+              {
+                "item": "warped_hyphae"
+              },
+              {
+                "item": "stripped_warped_hyphae"
+              }
+            ]
           },
           {
             "item": "furnace"
@@ -24517,10 +28058,150 @@
       {
         "ingredients": [
           {
-            "tag": "soul_fire_base_blocks"
+            "any_of": [
+              {
+                "item": "soul_sand"
+              },
+              {
+                "item": "soul_soil"
+              }
+            ]
           },
           {
-            "tag": "logs"
+            "any_of": [
+              {
+                "item": "dark_oak_log"
+              },
+              {
+                "item": "dark_oak_wood"
+              },
+              {
+                "item": "stripped_dark_oak_log"
+              },
+              {
+                "item": "stripped_dark_oak_wood"
+              },
+              {
+                "item": "pale_oak_log"
+              },
+              {
+                "item": "pale_oak_wood"
+              },
+              {
+                "item": "stripped_pale_oak_log"
+              },
+              {
+                "item": "stripped_pale_oak_wood"
+              },
+              {
+                "item": "oak_log"
+              },
+              {
+                "item": "oak_wood"
+              },
+              {
+                "item": "stripped_oak_log"
+              },
+              {
+                "item": "stripped_oak_wood"
+              },
+              {
+                "item": "acacia_log"
+              },
+              {
+                "item": "acacia_wood"
+              },
+              {
+                "item": "stripped_acacia_log"
+              },
+              {
+                "item": "stripped_acacia_wood"
+              },
+              {
+                "item": "birch_log"
+              },
+              {
+                "item": "birch_wood"
+              },
+              {
+                "item": "stripped_birch_log"
+              },
+              {
+                "item": "stripped_birch_wood"
+              },
+              {
+                "item": "jungle_log"
+              },
+              {
+                "item": "jungle_wood"
+              },
+              {
+                "item": "stripped_jungle_log"
+              },
+              {
+                "item": "stripped_jungle_wood"
+              },
+              {
+                "item": "spruce_log"
+              },
+              {
+                "item": "spruce_wood"
+              },
+              {
+                "item": "stripped_spruce_log"
+              },
+              {
+                "item": "stripped_spruce_wood"
+              },
+              {
+                "item": "mangrove_log"
+              },
+              {
+                "item": "mangrove_wood"
+              },
+              {
+                "item": "stripped_mangrove_log"
+              },
+              {
+                "item": "stripped_mangrove_wood"
+              },
+              {
+                "item": "cherry_log"
+              },
+              {
+                "item": "cherry_wood"
+              },
+              {
+                "item": "stripped_cherry_log"
+              },
+              {
+                "item": "stripped_cherry_wood"
+              },
+              {
+                "item": "crimson_stem"
+              },
+              {
+                "item": "stripped_crimson_stem"
+              },
+              {
+                "item": "crimson_hyphae"
+              },
+              {
+                "item": "stripped_crimson_hyphae"
+              },
+              {
+                "item": "warped_stem"
+              },
+              {
+                "item": "stripped_warped_stem"
+              },
+              {
+                "item": "warped_hyphae"
+              },
+              {
+                "item": "stripped_warped_hyphae"
+              }
+            ]
           },
           {
             "item": "stick"
@@ -24576,7 +28257,14 @@
             "item": "stick"
           },
           {
-            "tag": "soul_fire_base_blocks"
+            "any_of": [
+              {
+                "item": "soul_sand"
+              },
+              {
+                "item": "soul_soil"
+              }
+            ]
           },
           {
             "any_of": [
@@ -24826,7 +28514,20 @@
       {
         "ingredients": [
           {
-            "tag": "spruce_logs"
+            "any_of": [
+              {
+                "item": "spruce_log"
+              },
+              {
+                "item": "spruce_wood"
+              },
+              {
+                "item": "stripped_spruce_log"
+              },
+              {
+                "item": "stripped_spruce_wood"
+              }
+            ]
           }
         ],
         "station": "crafting_shapeless"
@@ -25000,7 +28701,44 @@
       {
         "ingredients": [
           {
-            "tag": "planks"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -25072,7 +28810,17 @@
             "item": "stick"
           },
           {
-            "tag": "stone_tool_materials"
+            "any_of": [
+              {
+                "item": "cobblestone"
+              },
+              {
+                "item": "blackstone"
+              },
+              {
+                "item": "cobbled_deepslate"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -25237,7 +28985,17 @@
             "item": "stick"
           },
           {
-            "tag": "stone_tool_materials"
+            "any_of": [
+              {
+                "item": "cobblestone"
+              },
+              {
+                "item": "blackstone"
+              },
+              {
+                "item": "cobbled_deepslate"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -25261,7 +29019,17 @@
             "item": "stick"
           },
           {
-            "tag": "stone_tool_materials"
+            "any_of": [
+              {
+                "item": "cobblestone"
+              },
+              {
+                "item": "blackstone"
+              },
+              {
+                "item": "cobbled_deepslate"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -25305,7 +29073,17 @@
             "item": "stick"
           },
           {
-            "tag": "stone_tool_materials"
+            "any_of": [
+              {
+                "item": "cobblestone"
+              },
+              {
+                "item": "blackstone"
+              },
+              {
+                "item": "cobbled_deepslate"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -25349,7 +29127,17 @@
             "item": "stick"
           },
           {
-            "tag": "stone_tool_materials"
+            "any_of": [
+              {
+                "item": "cobblestone"
+              },
+              {
+                "item": "blackstone"
+              },
+              {
+                "item": "cobbled_deepslate"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -25391,7 +29179,17 @@
             "item": "stick"
           },
           {
-            "tag": "stone_tool_materials"
+            "any_of": [
+              {
+                "item": "cobblestone"
+              },
+              {
+                "item": "blackstone"
+              },
+              {
+                "item": "cobbled_deepslate"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -26301,7 +30099,44 @@
       {
         "ingredients": [
           {
-            "tag": "planks"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           },
           {
             "item": "iron_ingot"
@@ -26815,7 +30650,20 @@
       {
         "ingredients": [
           {
-            "tag": "warped_stems"
+            "any_of": [
+              {
+                "item": "warped_stem"
+              },
+              {
+                "item": "stripped_warped_stem"
+              },
+              {
+                "item": "warped_hyphae"
+              },
+              {
+                "item": "stripped_warped_hyphae"
+              }
+            ]
           }
         ],
         "station": "crafting_shapeless"
@@ -28890,7 +32738,44 @@
             "item": "white_wool"
           },
           {
-            "tag": "planks"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -28908,7 +32793,59 @@
       {
         "ingredients": [
           {
-            "tag": "bundles"
+            "any_of": [
+              {
+                "item": "bundle"
+              },
+              {
+                "item": "black_bundle"
+              },
+              {
+                "item": "blue_bundle"
+              },
+              {
+                "item": "brown_bundle"
+              },
+              {
+                "item": "cyan_bundle"
+              },
+              {
+                "item": "gray_bundle"
+              },
+              {
+                "item": "green_bundle"
+              },
+              {
+                "item": "light_blue_bundle"
+              },
+              {
+                "item": "light_gray_bundle"
+              },
+              {
+                "item": "lime_bundle"
+              },
+              {
+                "item": "magenta_bundle"
+              },
+              {
+                "item": "orange_bundle"
+              },
+              {
+                "item": "pink_bundle"
+              },
+              {
+                "item": "purple_bundle"
+              },
+              {
+                "item": "red_bundle"
+              },
+              {
+                "item": "yellow_bundle"
+              },
+              {
+                "item": "white_bundle"
+              }
+            ]
           },
           {
             "item": "white_dye"
@@ -29174,7 +33111,59 @@
       {
         "ingredients": [
           {
-            "tag": "shulker_boxes"
+            "any_of": [
+              {
+                "item": "shulker_box"
+              },
+              {
+                "item": "black_shulker_box"
+              },
+              {
+                "item": "blue_shulker_box"
+              },
+              {
+                "item": "brown_shulker_box"
+              },
+              {
+                "item": "cyan_shulker_box"
+              },
+              {
+                "item": "gray_shulker_box"
+              },
+              {
+                "item": "green_shulker_box"
+              },
+              {
+                "item": "light_blue_shulker_box"
+              },
+              {
+                "item": "light_gray_shulker_box"
+              },
+              {
+                "item": "lime_shulker_box"
+              },
+              {
+                "item": "magenta_shulker_box"
+              },
+              {
+                "item": "orange_shulker_box"
+              },
+              {
+                "item": "pink_shulker_box"
+              },
+              {
+                "item": "purple_shulker_box"
+              },
+              {
+                "item": "red_shulker_box"
+              },
+              {
+                "item": "white_shulker_box"
+              },
+              {
+                "item": "yellow_shulker_box"
+              }
+            ]
           },
           {
             "item": "white_dye"
@@ -29447,7 +33436,44 @@
             "item": "stick"
           },
           {
-            "tag": "wooden_tool_materials"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -29466,7 +33492,44 @@
             "item": "stick"
           },
           {
-            "tag": "wooden_tool_materials"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -29486,7 +33549,44 @@
             "item": "stick"
           },
           {
-            "tag": "wooden_tool_materials"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -29504,7 +33604,44 @@
             "item": "stick"
           },
           {
-            "tag": "wooden_tool_materials"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -29519,7 +33656,44 @@
             "item": "stick"
           },
           {
-            "tag": "wooden_tool_materials"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -29534,7 +33708,44 @@
             "item": "stick"
           },
           {
-            "tag": "wooden_tool_materials"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -29564,7 +33775,11 @@
       {
         "ingredients": [
           {
-            "tag": "book_cloning_target"
+            "any_of": [
+              {
+                "item": "writable_book"
+              }
+            ]
           }
         ],
         "station": "crafting_special_bookcloning"
@@ -29667,7 +33882,44 @@
             "item": "yellow_wool"
           },
           {
-            "tag": "planks"
+            "any_of": [
+              {
+                "item": "oak_planks"
+              },
+              {
+                "item": "spruce_planks"
+              },
+              {
+                "item": "birch_planks"
+              },
+              {
+                "item": "jungle_planks"
+              },
+              {
+                "item": "acacia_planks"
+              },
+              {
+                "item": "dark_oak_planks"
+              },
+              {
+                "item": "pale_oak_planks"
+              },
+              {
+                "item": "crimson_planks"
+              },
+              {
+                "item": "warped_planks"
+              },
+              {
+                "item": "mangrove_planks"
+              },
+              {
+                "item": "bamboo_planks"
+              },
+              {
+                "item": "cherry_planks"
+              }
+            ]
           }
         ],
         "station": "crafting_shaped"
@@ -29685,7 +33937,59 @@
       {
         "ingredients": [
           {
-            "tag": "bundles"
+            "any_of": [
+              {
+                "item": "bundle"
+              },
+              {
+                "item": "black_bundle"
+              },
+              {
+                "item": "blue_bundle"
+              },
+              {
+                "item": "brown_bundle"
+              },
+              {
+                "item": "cyan_bundle"
+              },
+              {
+                "item": "gray_bundle"
+              },
+              {
+                "item": "green_bundle"
+              },
+              {
+                "item": "light_blue_bundle"
+              },
+              {
+                "item": "light_gray_bundle"
+              },
+              {
+                "item": "lime_bundle"
+              },
+              {
+                "item": "magenta_bundle"
+              },
+              {
+                "item": "orange_bundle"
+              },
+              {
+                "item": "pink_bundle"
+              },
+              {
+                "item": "purple_bundle"
+              },
+              {
+                "item": "red_bundle"
+              },
+              {
+                "item": "yellow_bundle"
+              },
+              {
+                "item": "white_bundle"
+              }
+            ]
           },
           {
             "item": "yellow_dye"
@@ -29974,7 +34278,59 @@
       {
         "ingredients": [
           {
-            "tag": "shulker_boxes"
+            "any_of": [
+              {
+                "item": "shulker_box"
+              },
+              {
+                "item": "black_shulker_box"
+              },
+              {
+                "item": "blue_shulker_box"
+              },
+              {
+                "item": "brown_shulker_box"
+              },
+              {
+                "item": "cyan_shulker_box"
+              },
+              {
+                "item": "gray_shulker_box"
+              },
+              {
+                "item": "green_shulker_box"
+              },
+              {
+                "item": "light_blue_shulker_box"
+              },
+              {
+                "item": "light_gray_shulker_box"
+              },
+              {
+                "item": "lime_shulker_box"
+              },
+              {
+                "item": "magenta_shulker_box"
+              },
+              {
+                "item": "orange_shulker_box"
+              },
+              {
+                "item": "pink_shulker_box"
+              },
+              {
+                "item": "purple_shulker_box"
+              },
+              {
+                "item": "red_shulker_box"
+              },
+              {
+                "item": "white_shulker_box"
+              },
+              {
+                "item": "yellow_shulker_box"
+              }
+            ]
           },
           {
             "item": "yellow_dye"

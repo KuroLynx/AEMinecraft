@@ -1,51 +1,38 @@
+import json
+from importlib.resources import files
+
 # AST primitives must be imported directly: `from .. import *` cannot supply them because the
 # package __init__ imports this module (via set_rules) before it defines Const/Has/and_/… .
 from .ast import Const, Has, ReachRegion, ReachLocation, and_, or_, at_least
 from .. import *
 
-# MC item id (sans namespace) -> the RuleHelper method that already encodes how to obtain it. Lets
-# the trigger compiler resolve `inventory_changed` / `consume_item` criteria through the curated
-# acquisition knowledge instead of falling back. Every metal variant routes to its tier helper.
-_ITEM_ACQUISITION_METHODS: dict[str, str] = {
-    "bucket": "can_craft_bucket",
-    "redstone": "can_get_redstone",
-    "arrow": "can_get_arrow",
-    "string": "can_get_string",
-    "feather": "can_get_feather",
-    "egg": "can_get_egg",
-    "snowball": "can_get_snowball",
-    "wheat": "can_get_wheat",
-    "carrot": "can_get_carrot",
-    "bone": "can_get_bone",
-    "obsidian": "can_get_obsidian",
-    "honeycomb": "can_get_honeycomb",
-    "spyglass": "can_get_spyglass",
-    "trident": "can_get_trident",
-    "shears": "can_get_shear",
-    "cake": "can_get_cake",
-    "spider_eye": "can_get_spider_eye",
-    "slime_ball": "can_get_slimeball",
-    "seagrass": "can_get_seagrass",
-    "golden_apple": "can_get_golden_apple",
-    "golden_carrot": "can_get_golden_carrot",
-    "enchanted_golden_apple": "can_get_notch_apple",
-    "carved_pumpkin": "can_get_carved_pumpkin",
-    # Metals — every ore / raw / ingot / block / nugget routes to its tier helper (region + sources).
-    "iron_ingot": "can_get_iron", "iron_block": "can_get_iron", "iron_nugget": "can_get_iron",
-    "raw_iron": "can_get_iron", "raw_iron_block": "can_get_iron", "iron_ore": "can_get_iron",
-    "deepslate_iron_ore": "can_get_iron",
-    "copper_ingot": "can_get_copper", "copper_block": "can_get_copper", "raw_copper": "can_get_copper",
-    "raw_copper_block": "can_get_copper", "copper_ore": "can_get_copper", "deepslate_copper_ore": "can_get_copper",
-    "gold_ingot": "can_get_gold", "gold_block": "can_get_gold", "gold_nugget": "can_get_gold",
-    "raw_gold": "can_get_gold", "raw_gold_block": "can_get_gold", "gold_ore": "can_get_gold",
-    "deepslate_gold_ore": "can_get_gold", "nether_gold_ore": "can_get_gold",
-}
-
-# Item -> required Progressive Material Handling tier (inverted from data.MATERIAL_HANDLING_ITEMS),
-# the last-resort gate for any material item without a richer helper above.
+# Item -> required Progressive Material Handling tier (inverted from data.MATERIAL_HANDLING_ITEMS):
+# the gate for mining a material, and the last-resort fallback for a material item with no recipe.
 _MATERIAL_TIER_BY_ITEM: dict[str, int] = {
     item: tier for tier, items in MATERIAL_HANDLING_ITEMS.items() for item in items
 }
+
+# Lazily-loaded acquisition table (tools/build_acquisition.py) + reverse id lookups. Cached because
+# they are read once per generation but queried thousands of times by the trigger compiler.
+_MC_ROOT = __package__.rsplit(".", 1)[0]  # e.g. "worlds.minecraft"
+_ACQUISITION: dict | None = None
+_ENTITY_BY_GID: dict | None = None
+
+
+def _acquisition_table() -> dict:
+    global _ACQUISITION
+    if _ACQUISITION is None:
+        path = files(_MC_ROOT).joinpath("packs", "vanilla_26_1", "acquisition.json")
+        with path.open(encoding="utf-8") as handle:
+            _ACQUISITION = json.load(handle)
+    return _ACQUISITION
+
+
+def _entity_by_gid() -> dict:
+    global _ENTITY_BY_GID
+    if _ENTITY_BY_GID is None:
+        _ENTITY_BY_GID = {data.game_id: name for name, data in MOBS_ALL.items()}
+    return _ENTITY_BY_GID
 
 
 class RuleHelper:
@@ -817,31 +804,90 @@ class RuleHelper:
 
     # -----------------------------------------------------------------------
     # Item acquisition (used by the trigger compiler to resolve item criteria)
+    #
+    # ``acquire`` reads the acquisition table (tools/build_acquisition.py) and turns an item's data
+    # sources into AST: recipes recurse into their ingredients, mob drops into ``entity``, mining
+    # into a pickaxe + material tier, trades into ``can_trade_villager``, chest loot into
+    # ``structure``. A recursion stack breaks the ingot⟷block recipe cycles; items with no usable
+    # source fall back to the tool/material gates (``_acquire_fallback``), else ``None``.
     # -----------------------------------------------------------------------
-    def acquire(self, item_id: str):
-        """Logic to obtain a Minecraft item by id (``minecraft:diamond``), or ``None`` when it can't
-        be resolved (item tags, or items with no known source) so the caller falls back. Dispatches,
-        in order, to a curated ``can_get_*`` helper, the tool/armor knowledge+material gate
-        (``TOOL_LOCKS``), the diamond/netherite mining gates, and finally the bare material tier."""
+    _MAX_DEPTH = 12
+
+    def acquire(self, item_id: str, _stack: frozenset = frozenset()):
         base = item_id.split(":", 1)[-1] if ":" in item_id else item_id
-        if item_id.startswith("#") or base.startswith("#"):
-            return None  # item tag — not resolved to concrete items here
+        if base.startswith("#"):
+            return None  # a raw tag (recipe tags are pre-expanded; a bare tag can't be resolved)
+        if base in _stack or len(_stack) >= self._MAX_DEPTH:
+            return None  # recipe cycle / too deep — this path can't justify itself
 
-        method = _ITEM_ACQUISITION_METHODS.get(base)
-        if method is not None:
-            return getattr(self, method)()
+        # Materials collapse to their compact tier gate rather than expanding every recipe/chest
+        # path — keeps the serialized tree small (iron/diamond/… otherwise recurse enormously).
+        if base in _MATERIAL_TIER_BY_ITEM or base in (
+                "diamond", "diamond_block", "netherite_ingot", "netherite_block",
+                "netherite_scrap", "ancient_debris"):
+            return self._acquire_fallback(base)
 
+        record = _acquisition_table().get(base)
+        if record is None:
+            return self._acquire_fallback(base)
+
+        inner = _stack | {base}
+        options = []
+        for recipe in record.get("recipes", ()):
+            node = self._recipe_node(recipe, inner)
+            if node is not None:
+                options.append(node)
+        for mob_file in record.get("drops", ()):
+            name = _entity_by_gid().get(f"minecraft:{mob_file}")
+            if name in MOBS_ALL:
+                options.append(self.entity(name))
+        if record.get("mining"):
+            options.append(self._mining_node(base))
+        if record.get("trades"):
+            options.append(self.can_trade_villager())
+        for structure_name in record.get("structures", ()):
+            if structure_name in STRUCTURES:
+                options.append(self.structure(structure_name))
+
+        return or_(*options) if options else self._acquire_fallback(base)
+
+    def _recipe_node(self, recipe: dict, stack: frozenset):
+        """A recipe is satisfied when every distinct ingredient is obtainable (AND)."""
+        parts = []
+        for ingredient in recipe.get("ingredients", ()):
+            node = self._ingredient_node(ingredient, stack)
+            if node is None:
+                return None  # an unobtainable ingredient disqualifies the whole recipe
+            parts.append(node)
+        return and_(*parts) if parts else None
+
+    def _ingredient_node(self, ingredient: dict, stack: frozenset):
+        if "any_of" in ingredient:
+            options = [self._ingredient_node(sub, stack) for sub in ingredient["any_of"]]
+            options = [node for node in options if node is not None]
+            return or_(*options) if options else None
+        if "item" in ingredient:
+            return self.acquire(ingredient["item"], stack)
+        return None
+
+    def _mining_node(self, base: str):
+        tier = _MATERIAL_TIER_BY_ITEM.get(base)
+        if tier is not None:
+            return self.all_of(self.knowledge(K_PICKAXE), self.material(tier))
+        return self.knowledge(K_PICKAXE)
+
+    def _acquire_fallback(self, base: str):
+        """Items absent from the acquisition table (or with no usable source): the tool/armor
+        knowledge+material gate, the diamond/netherite mining gates, then the bare material tier."""
         if base in ("diamond", "diamond_block"):
             return self.all_of(self.knowledge(K_PICKAXE), self.material(MAT_DIAMOND),
                                self.access_region(REGION_OVERWORLD))
         if base in ("netherite_ingot", "netherite_block", "netherite_scrap", "ancient_debris"):
             return self.all_of(self.knowledge(K_PICKAXE), self.material(MAT_NETHERITE),
                                self.access_region(REGION_NETHER))
-
         if base in TOOL_LOCKS:
             knowledge_name, tier = TOOL_LOCKS[base]
             return self.all_of(self.knowledge(knowledge_name), self.material(tier))
-
         tier = _MATERIAL_TIER_BY_ITEM.get(base)
         if tier is not None:
             return self.material(tier)
