@@ -5,7 +5,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
-/minecraft/rules/.claude/
+/minecraft/logic/.claude/
 
 # Refactor equivalence-gate fixtures (large, regenerable via `python tools/snapshot_slotdata.py write`)
 /tools/_slotdata_baseline/

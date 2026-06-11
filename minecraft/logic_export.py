@@ -23,7 +23,7 @@ from __future__ import annotations
 
 from .data import ALL_LOCATIONS, MCLocationCategory
 from .regions import MCRegion
-from .rules.ast import ReachLocation, at_least
+from .logic.ast import ReachLocation, at_least
 
 # game_id of the Archipelago advancement-tab root tile (mirrors APTrackerRegistry.TAB_ROOT_ID).
 AP_TAB_ROOT_GAME_ID = "aem:archipelago"

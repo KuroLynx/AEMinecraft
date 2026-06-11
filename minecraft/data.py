@@ -4,7 +4,7 @@ Parsing of the content packs now lives in :mod:`content.registry`; this module l
 pack and re-exports its records (plus the gameplay lock maps and mob subsets) under the same
 module-level names the rest of the apworld already imports. ``from .data import *`` therefore still
 yields ITEMS / MOBS_ALL / STRUCTURES / ALL_LOCATIONS / the BASE_ID_* / dataclasses / etc., and —
-via ``from .rules.constants import *`` below — the rule constants (prefixes, ITEM_*, MAT_*, K_*).
+via ``from .logic.constants import *`` below — the rule constants (prefixes, ITEM_*, MAT_*, K_*).
 """
 # Re-exported via `from .data import *` (worlds/minecraft/__init__.py relies on data for it).
 from BaseClasses import ItemClassification
@@ -25,7 +25,7 @@ from .content.registry import (
     MCStructureData,
     load_pack,
 )
-from .rules.constants import *
+from .logic.constants import *
 
 # Vanilla is the only content pack today; the advancement-manifest work adds mod / datapack / other
 # MC-version packs and merges them here.

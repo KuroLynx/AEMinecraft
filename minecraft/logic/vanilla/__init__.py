@@ -5,13 +5,13 @@ few mob sets from ``data``. Importing them once here lets each rule file say a s
 ``from .. import *`` instead of repeating deep ``from ...constants`` / ``from ....data``
 chains.
 
-This lives in ``rules/vanilla`` rather than ``rules/__init__`` on purpose: ``data.py``
-imports ``rules.constants`` during package initialisation, so ``rules/__init__`` must stay
-side-effect-free to avoid an import cycle. ``rules.vanilla`` is only imported later, via
-``rules.root``, by which point ``data`` is fully loaded.
+This lives in ``logic/vanilla`` rather than ``logic/__init__`` on purpose: ``data.py``
+imports ``logic.constants`` during package initialisation, so ``logic/__init__`` must stay
+side-effect-free to avoid an import cycle. ``logic.vanilla`` is only imported later, via
+``logic.root``, by which point ``data`` is fully loaded.
 """
 from ..constants import *
-from ..helpers import RuleHelper
+from ..acquisition import RuleHelper
 from ...data import (
     MCEntityCategory,
     MOBS_ALL,

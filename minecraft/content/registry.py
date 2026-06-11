@@ -14,8 +14,8 @@ from importlib.resources import files
 from BaseClasses import ItemClassification
 
 # Location-name prefixes live with the other rule constants; the loaders build AP location names
-# from them. rules.constants is import-cycle-safe (it imports nothing from this package).
-from ..rules.constants import ADVANCEMENT_PREFIX, BOSS_KILL_PREFIX, ENTITY_KILL_PREFIX
+# from them. logic.constants is import-cycle-safe (it imports nothing from this package).
+from ..logic.constants import ADVANCEMENT_PREFIX, BOSS_KILL_PREFIX, ENTITY_KILL_PREFIX
 
 # Base IDs (unchanged from data.py — moving them here keeps every AP id identical).
 BASE_ID_ITEMS           = 0xEC0000

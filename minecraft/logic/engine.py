@@ -21,7 +21,7 @@ from types import ModuleType
 
 from ..data import MOBS_ALL
 from .constants import A_ADVENTURE, A_HUSBANDRY
-from .helpers import RuleHelper
+from .acquisition import RuleHelper
 from .vanilla import adventure, end, entities, husbandry, nether, story
 
 # Leaf modules named like these are aggregators / package markers, not rule builders.

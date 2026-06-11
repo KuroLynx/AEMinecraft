@@ -4,9 +4,9 @@ from worlds.AutoWorld import WebWorld, World
 from .data import *
 from .options import MCOptions, StartDimension, StructureFinder
 from .regions import MCRegion
-from .rules.root import set_rules
-from .rules.ast import Const
-from .rules.constants import *
+from .logic.root import set_rules
+from .logic.ast import Const
+from .logic.constants import *
 from .logic_export import build_logic_export
 from .trackers import build_trackers_export
 from .filler import build_filler_export, build_trap_export
@@ -168,7 +168,7 @@ class MCWorld(World):
         return ITEM_DIMENSION_OVERWORLD
 
     def create_regions(self) -> None:
-        from .rules.helpers import RuleHelper  # local import: avoids a top-level import cycle
+        from .logic.acquisition import RuleHelper  # local import: avoids a top-level import cycle
 
         added_regions: dict[str, Region] = {}
 

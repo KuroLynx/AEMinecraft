@@ -4,7 +4,7 @@ from ..data import MCEntityCategory, MOBS_ALL
 from .ast import Const
 from .constants import *
 from .engine import collect_advancement_rules, collect_entity_rules
-from .helpers import RuleHelper
+from .acquisition import RuleHelper
 
 
 def set_rules(world ) -> None:
