@@ -30,7 +30,7 @@ from ..data import (
 )
 from .acquisition import RuleHelper
 from .ast import Rule, and_, or_
-from .constants import REGION_END, REGION_NETHER, REGION_OVERWORLD
+from .constants import K_BREWING, REGION_END, REGION_NETHER, REGION_OVERWORLD
 
 # Triggers that imply a specific tool/block the criterion never names: hitting a target block is
 # gated by crafting one (redstone + hay), brewing by a brewing stand, etc. Reaching the implied item
@@ -42,17 +42,36 @@ _IMPLIED_ITEM = {
     "minecraft:fishing_rod_hooked": "minecraft:fishing_rod",
 }
 
+# Items that carry a brewed potion (and so gate on the brewing chain, not loot).
+_POTION_ITEMS = {
+    "minecraft:potion", "minecraft:splash_potion",
+    "minecraft:lingering_potion", "minecraft:tipped_arrow",
+}
+
 _TAGS: dict | None = None
+_BREWING: dict | None = None
+
+
+def _pack_json(filename: str) -> dict:
+    root = __package__.rsplit(".", 1)[0]  # e.g. "worlds.minecraft"
+    with files(root).joinpath("packs", "vanilla_26_1", filename).open(encoding="utf-8") as f:
+        return json.load(f)
 
 
 def _tags() -> dict:
     """Lazily-loaded item + entity-type tag table (tools/build_tags.py), keyed by tag id."""
     global _TAGS
     if _TAGS is None:
-        root = __package__.rsplit(".", 1)[0]  # e.g. "worlds.minecraft"
-        with files(root).joinpath("packs", "vanilla_26_1", "tags.json").open(encoding="utf-8") as f:
-            _TAGS = json.load(f)
+        _TAGS = _pack_json("tags.json")
     return _TAGS
+
+
+def _brewing() -> dict:
+    """Lazily-loaded potion-type -> reagent items table (packs/.../brewing.json)."""
+    global _BREWING
+    if _BREWING is None:
+        _BREWING = _pack_json("brewing.json")
+    return _BREWING
 
 # Minecraft dimension id -> our region name.
 _DIMENSION_REGION = {
@@ -232,10 +251,45 @@ class TriggerCompiler:
         return None
 
     def _item_predicate(self, pred) -> Rule | None:
-        """Resolve one item predicate (``{"items": <id|[ids]|#tag>}``) to acquisition logic."""
+        """Resolve one item predicate (``{"items": <id|[ids]|#tag>}``) to acquisition logic — or,
+        for a potion item carrying a ``potion_contents`` component, its brewing chain."""
         if not isinstance(pred, dict):
             return None
+        potion = self._potion_node(pred)
+        if potion is not None:
+            return potion
         return self._any_acquire(pred.get("items"))
+
+    def _potion_node(self, pred: dict) -> Rule | None:
+        """A specific brewed potion: a brewing stand + Knowledge: Brewing + a glass bottle + every
+        reagent of its type (see brewing.json). Returns ``None`` for a non-potion or an untyped
+        potion (which falls through to its loot/trade sources)."""
+        if pred.get("items") not in _POTION_ITEMS:
+            return None
+        contents = self._component(pred, "minecraft:potion_contents")
+        potion_type = contents.get("potion") if isinstance(contents, dict) else None
+        if not isinstance(potion_type, str):
+            return None
+        potion_type = potion_type.split(":")[-1]
+        for prefix in ("long_", "strong_"):
+            potion_type = potion_type.removeprefix(prefix)
+        reagents = _brewing().get(potion_type)
+        if reagents is None:
+            return None
+        parts = [self.h.acquire("minecraft:brewing_stand"), self.h.knowledge(K_BREWING),
+                 self.h.acquire("minecraft:glass_bottle")]
+        parts += [self.h.acquire(f"minecraft:{reagent}") for reagent in reagents]
+        parts = [node for node in parts if node is not None]
+        return and_(*parts) if parts else None
+
+    @staticmethod
+    def _component(pred: dict, key: str):
+        """A component value from an item predicate's ``components`` / ``predicates`` block."""
+        for holder in ("components", "predicates"):
+            block = pred.get(holder)
+            if isinstance(block, dict) and key in block:
+                return block[key]
+        return None
 
     def _any_acquire(self, ids) -> Rule | None:
         """OR over ``acquire`` of one item id, a list of them, or an item ``#tag`` (the items are
