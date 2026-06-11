@@ -1,5 +1,4 @@
-from ...constants import *
-from ...helpers import RuleHelper
+from .. import *  # constants, RuleHelper, mob sets (re-export hub)
 
 
 def it_spreads(helper: RuleHelper) -> dict:

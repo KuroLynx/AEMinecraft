@@ -1,5 +1,4 @@
-from ...constants import *
-from ...helpers import RuleHelper
+from .. import *  # constants, RuleHelper, mob sets (re-export hub)
 
 
 def not_quite_nine_lives(helper: RuleHelper) -> dict:

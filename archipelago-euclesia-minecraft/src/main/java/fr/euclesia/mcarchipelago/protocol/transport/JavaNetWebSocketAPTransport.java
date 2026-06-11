@@ -8,7 +8,15 @@ import java.util.concurrent.CompletionStage;
 
 public final class JavaNetWebSocketAPTransport implements APTransport {
     private final HttpClient httpClient;
-    private WebSocket webSocket;
+    private volatile WebSocket webSocket;
+
+    // java.net.http.WebSocket allows only ONE outstanding sendText: starting another before the
+    // previous future completes throws IllegalStateException. Location checks fire in bursts from
+    // the server thread (e.g. the on-connect advancement scan), so we serialise every send through
+    // this tail — each send is chained onto the completion of the one before it. The tail always
+    // resolves successfully (failures are swallowed here) so one failed send can't wedge the queue.
+    private final Object sendLock = new Object();
+    private CompletableFuture<Void> sendTail = CompletableFuture.completedFuture(null);
 
     public JavaNetWebSocketAPTransport() {
         this(HttpClient.newHttpClient());
@@ -27,10 +35,18 @@ public final class JavaNetWebSocketAPTransport implements APTransport {
 
     @Override
     public CompletableFuture<Void> send(String message) {
-        if (webSocket == null) {
-            return CompletableFuture.failedFuture(new IllegalStateException("AP WebSocket is not connected"));
+        synchronized (sendLock) {
+            CompletableFuture<Void> result = sendTail.thenCompose(ignored -> {
+                WebSocket socket = this.webSocket;
+                if (socket == null) {
+                    return CompletableFuture.failedFuture(new IllegalStateException("AP WebSocket is not connected"));
+                }
+                return socket.sendText(message, true).thenApply(sent -> null);
+            });
+            // Advance the tail with a never-failing view so a single send failure doesn't block the rest.
+            sendTail = result.exceptionally(ignored -> null);
+            return result;
         }
-        return webSocket.sendText(message, true).thenApply(ignored -> null);
     }
 
     @Override

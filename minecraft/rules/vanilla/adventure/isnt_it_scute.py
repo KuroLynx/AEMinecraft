@@ -1,5 +1,4 @@
-from ...constants import *
-from ...helpers import RuleHelper
+from .. import *  # constants, RuleHelper, mob sets (re-export hub)
 
 def isnt_it_scute(helper: RuleHelper) -> dict:
     return {

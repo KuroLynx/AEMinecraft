@@ -2,7 +2,7 @@ package fr.euclesia.mcarchipelago.engine.ap;
 
 import fr.euclesia.mcarchipelago.archipelago.APConnectionOptions;
 import fr.euclesia.mcarchipelago.archipelago.ArchipelagoClient;
-import fr.euclesia.mcarchipelago.protocol.transport.JavaNetWebSocketAPTransport;
+import fr.euclesia.mcarchipelago.protocol.transport.JavaWebSocketAPTransport;
 
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
@@ -17,7 +17,9 @@ public final class ArchipelagoService {
     }
 
     public static ArchipelagoService createDefault() {
-        ArchipelagoClient client = new ArchipelagoClient(new JavaNetWebSocketAPTransport());
+        // Uses the Java-WebSocket transport (permessage-deflate). The JDK-based
+        // JavaNetWebSocketAPTransport remains as an uncompressed fallback if needed.
+        ArchipelagoClient client = new ArchipelagoClient(new JavaWebSocketAPTransport());
         return new ArchipelagoService(client, new APArchipelagoGateway(client));
     }
 

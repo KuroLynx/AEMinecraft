@@ -1,5 +1,4 @@
-from ...constants import *
-from ...helpers import RuleHelper
+from .. import *  # constants, RuleHelper, mob sets (re-export hub)
 
 def into_fire(helper: RuleHelper) -> dict:
     return {

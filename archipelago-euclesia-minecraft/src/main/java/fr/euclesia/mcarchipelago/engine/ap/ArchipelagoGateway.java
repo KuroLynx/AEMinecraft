@@ -14,6 +14,12 @@ public interface ArchipelagoGateway {
 
     boolean checkLocation(String gameId);
 
+    /**
+     * Resolves each game id to its location id and sends the matches as a single {@code LocationChecks}
+     * packet (ids without a mapping are skipped). Returns the number of resolved checks sent.
+     */
+    int checkLocationsByGameId(Collection<String> gameIds);
+
     boolean checkTrackedMob(String mobGameId);
 
     void scoutLocations(Collection<Long> locations, APHintMode hintMode);

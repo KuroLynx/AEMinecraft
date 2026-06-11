@@ -1,6 +1,7 @@
 package fr.euclesia.mcarchipelago.server.gameplay;
 
 import fr.euclesia.mcarchipelago.AEM;
+import fr.euclesia.mcarchipelago.AEMDebug;
 import fr.euclesia.mcarchipelago.archipelago.slot.APSlotData;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
 import net.minecraft.server.MinecraftServer;
@@ -39,7 +40,11 @@ public final class GoalTracker {
         // alone, releasing the slot before the required advancements were completed.
         boolean advancementsComplete = advancementGoalMet();
 
+        AEMDebug.log("goal.evaluate bosses={} ({} of {} killed) deathList={} advancements={}",
+                mainGoalComplete, killedBosses.size(), slotData.bossSelection().size(),
+                deathListComplete, advancementsComplete);
         if (mainGoalComplete && deathListComplete && advancementsComplete) {
+            AEMDebug.log("goal.evaluate ALL conditions met -> reporting goal reached");
             AEM.ARCHIPELAGO.gateway().markGoalReached();
         }
     }

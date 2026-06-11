@@ -1,5 +1,4 @@
-from ...constants import *
-from ...helpers import RuleHelper
+from .. import *  # constants, RuleHelper, mob sets (re-export hub)
 
 def we_need_to_go_deeper(helper: RuleHelper) -> dict:
     # Earned by travelling through a portal *into* the Nether, which requires having reached both

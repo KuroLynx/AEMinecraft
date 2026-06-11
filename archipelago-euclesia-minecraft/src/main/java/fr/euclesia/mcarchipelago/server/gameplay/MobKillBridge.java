@@ -1,6 +1,7 @@
 package fr.euclesia.mcarchipelago.server.gameplay;
 
 import fr.euclesia.mcarchipelago.AEM;
+import fr.euclesia.mcarchipelago.AEMDebug;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
@@ -21,10 +22,12 @@ public final class MobKillBridge {
 
         // Trap-conjured mobs are inert: their deaths never count toward Archipelago checks or goals.
         if (TrapMobService.isTrapMob(killed)) {
+            AEMDebug.log("mobKill ignored (trap mob) {}", AEMServerRuntime.entityGameId(killed));
             return;
         }
 
         String mobGameId = AEMServerRuntime.entityGameId(killed);
+        AEMDebug.log("mobKill by player: {}", mobGameId);
         if (AEM.ARCHIPELAGO.gateway().checkTrackedMob(mobGameId)) {
             AEM.LOGGER.info("Archipelago mob check: {}", mobGameId);
         }

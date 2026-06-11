@@ -1,4 +1,4 @@
-from ...helpers import RuleHelper
+from .. import *  # constants, RuleHelper, mob sets (re-export hub)
 from .a_furious_cocktail import a_furious_cocktail
 from .a_terrible_fortress import a_terrible_fortress
 from .beaconator import beaconator

@@ -1,4 +1,4 @@
-from ....helpers import RuleHelper
+from .. import *  # constants, RuleHelper, mob sets (re-export hub)
 from .bee import bee
 from .cave_spider import cave_spider
 from .dolphin import dolphin

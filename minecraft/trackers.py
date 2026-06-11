@@ -18,6 +18,7 @@ from __future__ import annotations
 from .data import (
     BASE_ID_ENTITY_UNLOCK,
     BASE_ID_STRUCT_UNLOCK,
+    ITEM_BIOME_FINDER,
     ITEMS,
     MCLocationCategory,
     MOBS_ALL,
@@ -59,7 +60,12 @@ CATEGORY_BY_KIND = {
 # items. Derived from the item table so the set stays in sync with items.csv; the generator
 # and the export both consume this list. Progressive items (count > 1) become one tile per level.
 KNOWLEDGE_UTILITY_PREFIXES = ("Knowledge: ", "Progressive ", "Dimension Unlock: ")
-KNOWLEDGE_UTILITY_ITEMS = [name for name in ITEMS if name.startswith(KNOWLEDGE_UTILITY_PREFIXES)]
+# Finders gate like the others but their item names carry no tracked prefix, so list them by name.
+KNOWLEDGE_UTILITY_EXTRAS = (ITEM_BIOME_FINDER,)
+KNOWLEDGE_UTILITY_ITEMS = [
+    name for name in ITEMS
+    if name.startswith(KNOWLEDGE_UTILITY_PREFIXES) or name in KNOWLEDGE_UTILITY_EXTRAS
+]
 
 
 def _slug(game_id: str) -> str:
@@ -144,9 +150,21 @@ def build_trackers_export(world) -> dict:
     # Knowledge / utility items (received AP items) — green once received. Progressive items get one
     # tile per level: level N's tile turns green once N copies of the item are received. The start
     # dimension's unlock isn't in the pool (you spawn there), so skip it — its tile could never green.
+    #
+    # Gate on the items actually created this seed: options like villager_trust / structure_finder /
+    # biome_finder drop their items from the pool entirely, and a tile for a never-granted item must
+    # not appear (it could never turn green). item_name_to_id is the static full catalogue, so it
+    # can't tell disabled options apart — the per-seed itempool (+ precollected for "start" modes) can.
+    active_item_names = {
+        item.name for item in world.multiworld.itempool if item.player == world.player
+    }
+    active_item_names.update(
+        item.name for item in world.multiworld.precollected_items.get(world.player, [])
+    )
+
     start_dimension_item = world._start_dimension_item()
     for item_name in KNOWLEDGE_UTILITY_ITEMS:
-        if item_name == start_dimension_item:
+        if item_name == start_dimension_item or item_name not in active_item_names:
             continue
         item_id = world.item_name_to_id.get(item_name)
         if item_id is None:

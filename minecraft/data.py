@@ -1,8 +1,9 @@
 import csv
 from dataclasses import dataclass
 from importlib.resources import files
-from pathlib import Path
+
 from BaseClasses import ItemClassification
+
 from .rules.constants import *
 
 # Base IDs

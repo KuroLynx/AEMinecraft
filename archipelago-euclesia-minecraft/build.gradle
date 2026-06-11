@@ -34,7 +34,13 @@ dependencies {
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
-	
+
+	// WebSocket client with permessage-deflate support, bundled into the mod jar (jar-in-jar).
+	// slf4j is excluded from the dev classpath because Minecraft already provides it at runtime.
+	implementation("org.java-websocket:Java-WebSocket:${project.java_websocket_version}") {
+		exclude group: "org.slf4j"
+	}
+	include "org.java-websocket:Java-WebSocket:${project.java_websocket_version}"
 }
 
 processResources {

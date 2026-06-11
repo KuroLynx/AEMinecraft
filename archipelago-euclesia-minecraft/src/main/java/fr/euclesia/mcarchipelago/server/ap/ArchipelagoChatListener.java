@@ -61,11 +61,19 @@ public final class ArchipelagoChatListener implements APEventListener {
                 yield Component.literal(name != null ? name : text).withStyle(ChatFormatting.YELLOW);
             }
             case "item_id" -> {
-                String name = registries.apItems().name(parseLong(text)).orElse(text);
+                // "player" is the slot whose game owns this item id; resolve against that game's data
+                // package first (ids collide across games), falling back to Minecraft's own map.
+                long itemId = parseLong(text);
+                int owner = APJson.getInt(part, "player", -1);
+                String name = registries.apGameData().itemName(owner, itemId)
+                        .orElseGet(() -> registries.apItems().name(itemId).orElse(text));
                 yield Component.literal(name).withStyle(itemColor(APJson.getInt(part, "flags", 0)));
             }
             case "location_id" -> {
-                String name = registries.apLocations().nameForId(parseLong(text)).orElse(text);
+                long locationId = parseLong(text);
+                int owner = APJson.getInt(part, "player", -1);
+                String name = registries.apGameData().locationName(owner, locationId)
+                        .orElseGet(() -> registries.apLocations().nameForId(locationId).orElse(text));
                 yield Component.literal(name).withStyle(ChatFormatting.GREEN);
             }
             case "entrance_id" -> Component.literal(text).withStyle(ChatFormatting.BLUE);

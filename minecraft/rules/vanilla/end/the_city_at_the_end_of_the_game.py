@@ -1,5 +1,4 @@
-from ...constants import *
-from ...helpers import RuleHelper
+from .. import *  # constants, RuleHelper, mob sets (re-export hub)
 
 
 def the_city_at_the_end_of_the_game(helper: RuleHelper) -> dict:

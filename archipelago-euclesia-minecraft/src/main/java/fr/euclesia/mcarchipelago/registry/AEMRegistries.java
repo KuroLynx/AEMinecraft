@@ -6,6 +6,7 @@ public final class AEMRegistries {
     private final APHandlerRegistry apHandlers = new APHandlerRegistry();
     private final APItemRegistry apItems = new APItemRegistry();
     private final APLocationRegistry apLocations = new APLocationRegistry();
+    private final APGameDataRegistry apGameData = new APGameDataRegistry();
     private final APMaterialRegistry apMaterials = new APMaterialRegistry();
     private final APMobRegistry apMobs = new APMobRegistry();
     private final APStructureRegistry apStructures = new APStructureRegistry();
@@ -21,6 +22,10 @@ public final class AEMRegistries {
 
     public APLocationRegistry apLocations() {
         return apLocations;
+    }
+
+    public APGameDataRegistry apGameData() {
+        return apGameData;
     }
 
     public APMaterialRegistry apMaterials() {

@@ -1,6 +1,4 @@
-from ....data import MOBS_BREEDABLE
-from ...constants import *
-from ...helpers import RuleHelper
+from .. import *  # constants, RuleHelper, mob sets (re-export hub)
 
 
 def two_by_two(helper: RuleHelper) -> dict:
