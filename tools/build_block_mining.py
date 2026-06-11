@@ -1,14 +1,15 @@
 """Build a content pack's block-mining table from a Minecraft jar / datapack.
 
-How a block is broken decides the gate on items mined from it: which tool (if any — nether wart,
-crops and glowstone break bare-handed) and which tool tier (a diamond pickaxe for obsidian, etc.).
-That lives in the block tags ``mineable/{pickaxe,axe,shovel,hoe}`` and ``needs_{stone,iron,diamond}
-_tool``; this inverts them to a per-block record the acquisition compiler consumes::
+Whether a mined item drops at all depends on the block's ``requiresCorrectToolForDrops`` flag and,
+if set, its tool tier. That flag lives in block *code*, not datapack JSON, so it can't be read
+offline — but in vanilla it is equivalent to "the block is pickaxe-mineable": stone / ores / metal
+require a pickaxe, while shovel-, axe- and hoe-mineable blocks (soul sand, dirt, leaves, crops) and
+untagged blocks (nether wart, glowstone) all drop bare-handed. So this records a pickaxe requirement
+from the ``mineable/pickaxe`` tag and the tier from ``needs_{stone,iron,diamond}_tool``::
 
-    "<block>": {"tool": "pickaxe"|"axe"|"shovel"|"hoe"|null,
-                "needs": "stone"|"iron"|"diamond"|null}
+    "<block>": {"needs": "stone"|"iron"|"diamond"|null}   # present == requires a pickaxe
 
-A block absent from the table (or with ``tool: null``) needs no tool to break.
+A block absent from the table breaks (and drops) with no tool.
 
 Usage:
     python tools/build_block_mining.py             # vanilla -> packs/vanilla_26_1/block_mining.json
@@ -21,7 +22,7 @@ import sys
 import zipfile
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-_MINEABLE_RE = re.compile(r"/tags/block/mineable/(pickaxe|axe|shovel|hoe)\.json$")
+_PICKAXE_RE = re.compile(r"/tags/block/mineable/pickaxe\.json$")
 _NEEDS_RE = re.compile(r"/tags/block/needs_(stone|iron|diamond)_tool\.json$")
 
 
@@ -64,27 +65,23 @@ def _members(data: bytes) -> list[str]:
 
 
 def build(source: str) -> dict:
-    tools: dict[str, str] = {}
+    pickaxe: set[str] = set()
     needs: dict[str, str] = {}
     for name, data in _entries(source):
         if not name.endswith(".json"):
             continue
-        tool_match = _MINEABLE_RE.search(name)
         needs_match = _NEEDS_RE.search(name)
         try:
-            if tool_match:
-                for block in _members(data):
-                    tools[block] = tool_match.group(1)
+            if _PICKAXE_RE.search(name):
+                pickaxe.update(_members(data))
             elif needs_match:
                 for block in _members(data):
                     needs[block] = needs_match.group(1)
         except ValueError:
             continue
 
-    table = {}
-    for block in sorted(set(tools) | set(needs)):
-        table[block] = {"tool": tools.get(block), "needs": needs.get(block)}
-    return table
+    # Only pickaxe-mineable blocks gate the drop on a tool; the tier comes from needs_*_tool.
+    return {block: {"needs": needs.get(block)} for block in sorted(pickaxe)}
 
 
 def main() -> int:

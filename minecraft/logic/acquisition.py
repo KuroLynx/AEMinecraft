@@ -55,8 +55,7 @@ def _wood_region(base: str) -> str | None:
 _NETHER_BLOCK_HINTS = ("nether", "crimson", "warped", "basalt", "blackstone", "soul_",
                        "magma", "glowstone", "ancient_debris", "nylium", "shroomlight", "gilded")
 _END_BLOCK_HINTS = ("end_stone", "chorus", "purpur", "dragon_egg")
-# mineable/<tool> tag -> Knowledge name; needs_<tier>_tool -> material tier.
-_TOOL_KNOWLEDGE = {"pickaxe": K_PICKAXE, "axe": K_AXE, "shovel": K_SHOVEL, "hoe": K_HOE}
+# needs_<tier>_tool tag -> the material tier the mining pickaxe (and the player) must have reached.
 _NEEDS_TIER = {"stone": MAT_STONE, "iron": MAT_IRON, "diamond": MAT_DIAMOND}
 _BLOCK_MINING: dict | None = None
 
@@ -967,16 +966,16 @@ class RuleHelper:
         return None
 
     def _mining_node(self, block: str, item: str):
-        """Break ``block`` (to obtain ``item``): be in the block's dimension, hold the right tool
-        (some blocks — nether wart, glowstone, crops — break bare-handed) and material tier."""
-        info = _block_mining().get(block, {})
+        """Break ``block`` (to obtain ``item``): be in the block's dimension, and — only for
+        pickaxe-mineable blocks (soul sand, glowstone, crops drop bare-handed) — hold a pickaxe of
+        the required material tier."""
         parts = [self.access_region(_block_region(block))]
-        tool = info.get("tool")
-        if tool in _TOOL_KNOWLEDGE:
-            parts.append(self.knowledge(_TOOL_KNOWLEDGE[tool]))
-        tier = _MATERIAL_TIER_BY_ITEM.get(item) or _NEEDS_TIER.get(info.get("needs"))
-        if tier is not None:
-            parts.append(self.material(tier))
+        info = _block_mining().get(block)
+        if info is not None:
+            parts.append(self.knowledge(K_PICKAXE))
+            tier = _MATERIAL_TIER_BY_ITEM.get(item) or _NEEDS_TIER.get(info.get("needs"))
+            if tier is not None:
+                parts.append(self.material(tier))
         return self.all_of(*parts)
 
     def _acquire_fallback(self, base: str):
