@@ -22,7 +22,7 @@ import re
 from importlib.resources import files
 
 from ..data import (
-    LOCATIONS_ADVANCEMENT,
+    ADVANCEMENT_LOCATIONS,
     MOBS_ALL,
     MOBS_BREEDABLE,
     MOBS_TAMEABLE,
@@ -97,14 +97,18 @@ _ENTITY_REACH_TRIGGERS = frozenset({
 class TriggerCompiler:
     """Compiles a manifest record into a :class:`Rule`, or ``None`` if not confidently derivable."""
 
-    def __init__(self, helper: RuleHelper):
+    def __init__(self, helper: RuleHelper, active_locations: frozenset | None = None):
         self.h = helper
         # Reverse lookups from Minecraft id -> our display-name key.
         self._entity_by_gid = {data.game_id: name for name, data in MOBS_ALL.items()}
         self._struct_by_gid = {data.game_id: name for name, data in STRUCTURES.items()}
-        self._adv_loc_by_gid = {data.game_id: name for name, data in LOCATIONS_ADVANCEMENT.items()}
+        self._adv_loc_by_gid = {data.game_id: name for name, data in ADVANCEMENT_LOCATIONS.items()}
         self._item_tags = _tags().get("item", {})
         self._entity_tags = _tags().get("entity_type", {})
+        # Location names created this seed; a parent-chain rule must not reference a parent that was
+        # filtered out (e.g. a challenge advancement when challenge_sanity is off) — that would make
+        # AP's reachability sweep raise on an unknown location. None = don't restrict.
+        self._active = active_locations
 
     # -- public -------------------------------------------------------------
     def compile(self, record: dict) -> Rule | None:
@@ -133,7 +137,9 @@ class TriggerCompiler:
         default to always-reachable (region reachability still gates it elsewhere)."""
         parent_gid = record.get("parent")
         loc = self._adv_loc_by_gid.get(parent_gid) if parent_gid else None
-        return self.h.reached(loc) if loc else None
+        if loc is None or (self._active is not None and loc not in self._active):
+            return None
+        return self.h.reached(loc)
 
     # -- per-criterion dispatch --------------------------------------------
     def _criterion(self, crit: dict) -> Rule | None:
@@ -264,7 +270,9 @@ class TriggerCompiler:
         """A specific brewed potion: a brewing stand + Knowledge: Brewing + a glass bottle + every
         reagent of its type (see brewing.json). Returns ``None`` for a non-potion or an untyped
         potion (which falls through to its loot/trade sources)."""
-        if pred.get("items") not in _POTION_ITEMS:
+        items = pred.get("items")
+        ids = items if isinstance(items, list) else [items]
+        if not any(item in _POTION_ITEMS for item in ids):
             return None
         contents = self._component(pred, "minecraft:potion_contents")
         potion_type = contents.get("potion") if isinstance(contents, dict) else None

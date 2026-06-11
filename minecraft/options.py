@@ -216,6 +216,22 @@ class BiomeFinder(Choice):
     default = 2
 
 
+class BlazeAndCave(Toggle):
+    """Add BlazeandCave's Advancements Pack (BACAP) to the location pool.
+
+    When enabled, the ~1162 advancements from BACAP become checks alongside (or instead of) the
+    vanilla ones. You must have the BlazeandCave's Advancements Pack datapack installed in your
+    world for these checks to fire. Their logic is derived automatically from each advancement's
+    criteria (and its parent advancement), the same way vanilla advancements are.
+
+    Leave disabled if you are not playing with the datapack.
+    """
+    display_name = "BlazeandCave's Advancements Pack"
+    option_true = 1
+    option_false = 0
+    default = 0
+
+
 @dataclass
 class MCOptions(PerGameCommonOptions):
     boss_list: BossList
@@ -230,3 +246,4 @@ class MCOptions(PerGameCommonOptions):
     challenge_sanity: ChallengeSanity
     structure_finder: StructureFinder
     biome_finder: BiomeFinder
+    blazeandcave: BlazeAndCave

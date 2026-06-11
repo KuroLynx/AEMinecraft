@@ -2,15 +2,14 @@ from BaseClasses import Item, Location, Region, Tutorial
 from worlds.AutoWorld import WebWorld, World
 
 from .data import *
-from .options import MCOptions, StartDimension, StructureFinder
-from .regions import MCRegion
-from .logic.root import set_rules
+from .filler import build_filler_export, build_trap_export
 from .logic.ast import Const
 from .logic.constants import *
+from .logic.root import set_rules
 from .logic_export import build_logic_export
+from .options import MCOptions, StartDimension, StructureFinder
+from .regions import MCRegion
 from .trackers import build_trackers_export
-from .filler import build_filler_export, build_trap_export
-
 
 # ---------------------------------------------------------------------------
 # Classes Item et Location
@@ -73,7 +72,12 @@ class MCWorld(World):
            STRUCTURES.items()}
     }
 
-    location_name_to_id = {name: data.id for (name, data) in ALL_LOCATIONS.items()}
+    location_name_to_id = {
+        **{name: data.id for (name, data) in ALL_LOCATIONS.items()},
+        # BACAP's blazeandcave locations are always in the (static) data package; created only when
+        # the blazeandcave option is on. Its minecraft rewrites reuse the vanilla locations above.
+        **{name: data.id for (name, data) in LOCATIONS_BACAP.items()},
+    }
 
     # -----------------------------------------------------------------------
     # Génération
@@ -146,6 +150,11 @@ class MCWorld(World):
 
         if self.options.kill_sanity:
             locations.update(LOCATIONS_MOB_KILL)
+
+        # BACAP adds its new advancements; the vanilla advancement locations stay (BACAP rewrites
+        # them, so set_rules compiles their logic from BACAP's criteria instead — see set_rules).
+        if self.options.blazeandcave:
+            locations.update(LOCATIONS_BACAP)
 
         if not self.options.challenge_sanity:
             locations = {

@@ -8,6 +8,7 @@ bodies were moved here verbatim from the old ``data.py`` so AP item/location IDs
 ``load_pack(name)`` returns a :class:`ContentRegistry` bundling the parsed records; ``data.py``
 re-exports them as the module-level globals the rest of the apworld already imports.
 """
+import json
 from dataclasses import dataclass
 from importlib.resources import files
 
@@ -25,6 +26,7 @@ BASE_ID_LOC_ADVANCEMENT = 0xEC1000
 BASE_ID_LOC_BOSS_KILL   = 0xEC1100
 BASE_ID_LOC_MOB_KILL    = 0xEC1200
 BASE_ID_LOC_STRUCTURE   = 0xEC1300
+BASE_ID_LOC_BACAP       = 0xEC2000  # datapack advancement locations (manifest-only packs)
 
 
 class MCLocationCategory:
@@ -145,6 +147,41 @@ def _load_advancements(pack_dir) -> dict[str, MCLocationData]:
             region=row["region"],
             game_id=full_game_id,
             challenge=row.get("challenge", "false").strip().lower() == "true",
+        )
+    return locations
+
+
+def load_manifest_advancements(pack_name: str, id_base: int, region: str = "Overworld",
+                               reserved: frozenset = frozenset(),
+                               skip_game_ids: frozenset = frozenset()) -> dict[str, MCLocationData]:
+    """Advancement locations for a manifest-only pack (a mod / datapack with no CSVs, e.g. BACAP).
+
+    ``skip_game_ids`` are advancement ids the pack *rewrites* rather than adds (BACAP's
+    ``minecraft:`` overrides reuse the existing vanilla locations), so they get no new location.
+
+    The advancement *id* is the location's game_id (what the mod reports); the location name is the
+    coherent ``Advancement: <title>`` (the datapack's literal display title), falling back to the
+    unique ``Advancement: <namespace>/<path>`` when a title is missing or would collide with a
+    ``reserved`` name (a vanilla location) or an earlier one. All locations share one ``region`` —
+    the compiled criteria / parent-chain rule supplies the dimension gating — and get stable ids
+    from ``id_base`` (the kept ids in sorted order, so the mapping is deterministic across runs)."""
+    with _pack_dir(pack_name).joinpath("manifest.json").open(encoding="utf-8") as handle:
+        manifest = json.load(handle)
+    used = set(reserved)
+    locations: dict[str, MCLocationData] = {}
+    for advancement_id in sorted(manifest):
+        if advancement_id in skip_game_ids:
+            continue
+        title = manifest[advancement_id].get("title")
+        location_name = f"{ADVANCEMENT_PREFIX}{title}" if title else None
+        if location_name is None or location_name in used:
+            location_name = f"{ADVANCEMENT_PREFIX}{advancement_id.replace(':', '/')}"
+        used.add(location_name)
+        locations[location_name] = MCLocationData(
+            id=id_base + len(locations),
+            category=MCLocationCategory.ADVANCEMENT,
+            region=region,
+            game_id=advancement_id,
         )
     return locations
 

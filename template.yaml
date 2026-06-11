@@ -203,6 +203,18 @@ Minecraft:
     disabled: 0
 
   # -------------------------------------------------------------------------
+  # BlazeandCave's Advancements Pack (BACAP)
+  # -------------------------------------------------------------------------
+  blazeandcave:
+    # Add BlazeandCave's Advancements Pack (BACAP) to the location pool. When enabled, BACAP's
+    # ~1162 custom advancements become checks alongside the (BACAP-rewritten) vanilla ones.
+    # You MUST have the BlazeandCave's Advancements Pack datapack installed in your world for
+    # these checks to fire. Their logic is derived automatically from each advancement's criteria
+    # and parent — the same way the vanilla advancements are.
+    'false': 50
+    'true': 0
+
+  # -------------------------------------------------------------------------
   # Standard item/location options
   # -------------------------------------------------------------------------
 

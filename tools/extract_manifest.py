@@ -46,15 +46,28 @@ def _default_jar() -> str:
                         version, "minecraft-client.jar")
 
 
+def _title(display: dict) -> str | None:
+    """The advancement's display title. Datapacks (BACAP) put the literal name in ``translate``;
+    vanilla uses a translation key there (unused — vanilla names come from its CSV)."""
+    title = display.get("title")
+    if isinstance(title, str):
+        return title
+    if isinstance(title, dict):
+        return title.get("translate") or title.get("text")
+    return None
+
+
 def _record(data: dict, rel: str) -> dict:
     criteria = {
         name: {"trigger": body.get("trigger"), "conditions": body.get("conditions", {})}
         for name, body in data.get("criteria", {}).items()
     }
+    display = data.get("display", {})
     return {
         "parent": data.get("parent"),
         "tab": rel.split("/", 1)[0],
-        "frame": data.get("display", {}).get("frame", "task"),
+        "frame": display.get("frame", "task"),
+        "title": _title(display),
         "requirements": data.get("requirements", []),
         "criteria": criteria,
     }

@@ -3,6 +3,7 @@
     "parent": "minecraft:adventure/sleep_in_bed",
     "tab": "adventure",
     "frame": "challenge",
+    "title": "advancements.adventure.adventuring_time.title",
     "requirements": [
       [
         "minecraft:mushroom_fields"
@@ -1038,6 +1039,7 @@
     "parent": "minecraft:adventure/ol_betsy",
     "tab": "adventure",
     "frame": "challenge",
+    "title": "advancements.adventure.arbalistic.title",
     "requirements": [
       [
         "arbalistic"
@@ -1059,6 +1061,7 @@
     "parent": "minecraft:adventure/root",
     "tab": "adventure",
     "frame": "task",
+    "title": "advancements.adventure.avoid_vibration.title",
     "requirements": [
       [
         "avoid_vibration"
@@ -1075,6 +1078,7 @@
     "parent": "minecraft:adventure/minecraft_trials_edition",
     "tab": "adventure",
     "frame": "challenge",
+    "title": "advancements.adventure.blowback.title",
     "requirements": [
       [
         "blowback"
@@ -1112,6 +1116,7 @@
     "parent": "minecraft:adventure/root",
     "tab": "adventure",
     "frame": "task",
+    "title": "advancements.adventure.brush_armadillo.title",
     "requirements": [
       [
         "brush_armadillo"
@@ -1141,6 +1146,7 @@
     "parent": "minecraft:adventure/shoot_arrow",
     "tab": "adventure",
     "frame": "challenge",
+    "title": "advancements.adventure.bullseye.title",
     "requirements": [
       [
         "bullseye"
@@ -1172,6 +1178,7 @@
     "parent": "minecraft:adventure/salvage_sherd",
     "tab": "adventure",
     "frame": "task",
+    "title": "advancements.adventure.craft_decorated_pot_using_only_sherds.title",
     "requirements": [
       [
         "pot_crafted_using_only_sherds"
@@ -1204,6 +1211,7 @@
     "parent": "minecraft:adventure/root",
     "tab": "adventure",
     "frame": "task",
+    "title": "advancements.adventure.crafters_crafting_crafters.title",
     "requirements": [
       [
         "crafter_crafted_crafter"
@@ -1222,6 +1230,7 @@
     "parent": "minecraft:adventure/root",
     "tab": "adventure",
     "frame": "task",
+    "title": "advancements.adventure.fall_from_world_height.title",
     "requirements": [
       [
         "fall_from_world_height"
@@ -1266,6 +1275,7 @@
     "parent": "minecraft:adventure/root",
     "tab": "adventure",
     "frame": "task",
+    "title": "advancements.adventure.heart_transplanter.title",
     "requirements": [
       [
         "place_creaking_heart_dormant",
@@ -1560,6 +1570,7 @@
     "parent": "minecraft:adventure/voluntary_exile",
     "tab": "adventure",
     "frame": "challenge",
+    "title": "advancements.adventure.hero_of_the_village.title",
     "requirements": [
       [
         "hero_of_the_village"
@@ -1576,6 +1587,7 @@
     "parent": "minecraft:adventure/root",
     "tab": "adventure",
     "frame": "task",
+    "title": "advancements.adventure.honey_block_slide.title",
     "requirements": [
       [
         "honey_block_slide"
@@ -1594,6 +1606,7 @@
     "parent": "minecraft:adventure/root",
     "tab": "adventure",
     "frame": "task",
+    "title": "advancements.adventure.kill_a_mob.title",
     "requirements": [
       [
         "minecraft:blaze",
@@ -2220,6 +2233,7 @@
     "parent": "minecraft:adventure/kill_a_mob",
     "tab": "adventure",
     "frame": "challenge",
+    "title": "advancements.adventure.kill_all_mobs.title",
     "requirements": [
       [
         "minecraft:blaze"
@@ -2926,6 +2940,7 @@
     "parent": "minecraft:adventure/kill_a_mob",
     "tab": "adventure",
     "frame": "challenge",
+    "title": "advancements.adventure.kill_mob_near_sculk_catalyst.title",
     "requirements": [
       [
         "kill_mob_near_sculk_catalyst"
@@ -2942,6 +2957,7 @@
     "parent": "minecraft:adventure/minecraft_trials_edition",
     "tab": "adventure",
     "frame": "task",
+    "title": "advancements.adventure.lighten_up.title",
     "requirements": [
       [
         "lighten_up"
@@ -2993,6 +3009,7 @@
     "parent": "minecraft:adventure/root",
     "tab": "adventure",
     "frame": "task",
+    "title": "advancements.adventure.lightning_rod_with_villager_no_fire.title",
     "requirements": [
       [
         "lightning_rod_with_villager_no_fire"
@@ -3036,6 +3053,7 @@
     "parent": "minecraft:adventure/root",
     "tab": "adventure",
     "frame": "task",
+    "title": "advancements.adventure.minecraft_trials_edition.title",
     "requirements": [
       [
         "minecraft_trials_edition"
@@ -3064,6 +3082,7 @@
     "parent": "minecraft:adventure/root",
     "tab": "adventure",
     "frame": "task",
+    "title": "advancements.adventure.ol_betsy.title",
     "requirements": [
       [
         "shot_crossbow"
@@ -3084,6 +3103,7 @@
     "parent": "minecraft:adventure/minecraft_trials_edition",
     "tab": "adventure",
     "frame": "challenge",
+    "title": "advancements.adventure.overoverkill.title",
     "requirements": [
       [
         "overoverkill"
@@ -3122,6 +3142,7 @@
     "parent": "minecraft:adventure/sleep_in_bed",
     "tab": "adventure",
     "frame": "task",
+    "title": "advancements.adventure.play_jukebox_in_meadows.title",
     "requirements": [
       [
         "play_jukebox_in_meadows"
@@ -3158,6 +3179,7 @@
     "parent": "minecraft:adventure/root",
     "tab": "adventure",
     "frame": "task",
+    "title": "advancements.adventure.read_power_from_chiseled_bookshelf.title",
     "requirements": [
       [
         "chiseled_bookshelf",
@@ -3331,6 +3353,7 @@
     "parent": "minecraft:adventure/under_lock_and_key",
     "tab": "adventure",
     "frame": "goal",
+    "title": "advancements.adventure.revaulting.title",
     "requirements": [
       [
         "revaulting"
@@ -3367,6 +3390,7 @@
     "parent": null,
     "tab": "adventure",
     "frame": "task",
+    "title": "advancements.adventure.root.title",
     "requirements": [
       [
         "killed_something",
@@ -3388,6 +3412,7 @@
     "parent": "minecraft:adventure/root",
     "tab": "adventure",
     "frame": "task",
+    "title": "advancements.adventure.salvage_sherd.title",
     "requirements": [
       [
         "desert_pyramid",
@@ -3454,6 +3479,7 @@
     "parent": "minecraft:adventure/kill_a_mob",
     "tab": "adventure",
     "frame": "task",
+    "title": "advancements.adventure.shoot_arrow.title",
     "requirements": [
       [
         "shot_arrow"
@@ -3484,6 +3510,7 @@
     "parent": "minecraft:adventure/root",
     "tab": "adventure",
     "frame": "task",
+    "title": "advancements.adventure.sleep_in_bed.title",
     "requirements": [
       [
         "slept_in_bed"
@@ -3500,6 +3527,7 @@
     "parent": "minecraft:adventure/shoot_arrow",
     "tab": "adventure",
     "frame": "challenge",
+    "title": "advancements.adventure.sniper_duel.title",
     "requirements": [
       [
         "killed_skeleton"
@@ -3539,6 +3567,7 @@
     "parent": "minecraft:adventure/kill_a_mob",
     "tab": "adventure",
     "frame": "goal",
+    "title": "advancements.adventure.spear_many_mobs.title",
     "requirements": [
       [
         "spear_many_mobs"
@@ -3557,6 +3586,7 @@
     "parent": "minecraft:adventure/spyglass_at_ghast",
     "tab": "adventure",
     "frame": "task",
+    "title": "advancements.adventure.spyglass_at_dragon.title",
     "requirements": [
       [
         "spyglass_at_dragon"
@@ -3591,6 +3621,7 @@
     "parent": "minecraft:adventure/spyglass_at_parrot",
     "tab": "adventure",
     "frame": "task",
+    "title": "advancements.adventure.spyglass_at_ghast.title",
     "requirements": [
       [
         "spyglass_at_ghast"
@@ -3625,6 +3656,7 @@
     "parent": "minecraft:adventure/root",
     "tab": "adventure",
     "frame": "task",
+    "title": "advancements.adventure.spyglass_at_parrot.title",
     "requirements": [
       [
         "spyglass_at_parrot"
@@ -3659,6 +3691,7 @@
     "parent": "minecraft:adventure/trade",
     "tab": "adventure",
     "frame": "goal",
+    "title": "advancements.adventure.summon_iron_golem.title",
     "requirements": [
       [
         "summoned_golem"
@@ -3685,6 +3718,7 @@
     "parent": "minecraft:adventure/kill_a_mob",
     "tab": "adventure",
     "frame": "task",
+    "title": "advancements.adventure.throw_trident.title",
     "requirements": [
       [
         "shot_trident"
@@ -3715,6 +3749,7 @@
     "parent": "minecraft:adventure/kill_a_mob",
     "tab": "adventure",
     "frame": "goal",
+    "title": "advancements.adventure.totem_of_undying.title",
     "requirements": [
       [
         "used_totem"
@@ -3735,6 +3770,7 @@
     "parent": "minecraft:adventure/root",
     "tab": "adventure",
     "frame": "task",
+    "title": "advancements.adventure.trade.title",
     "requirements": [
       [
         "traded"
@@ -3751,6 +3787,7 @@
     "parent": "minecraft:adventure/trade",
     "tab": "adventure",
     "frame": "task",
+    "title": "advancements.adventure.trade_at_world_height.title",
     "requirements": [
       [
         "trade_at_world_height"
@@ -3783,6 +3820,7 @@
     "parent": "minecraft:adventure/trim_with_any_armor_pattern",
     "tab": "adventure",
     "frame": "challenge",
+    "title": "advancements.adventure.trim_with_all_exclusive_armor_patterns.title",
     "requirements": [
       [
         "armor_trimmed_minecraft:rib_armor_trim_smithing_template_smithing_trim"
@@ -3864,6 +3902,7 @@
     "parent": "minecraft:adventure/root",
     "tab": "adventure",
     "frame": "task",
+    "title": "advancements.adventure.trim_with_any_armor_pattern.title",
     "requirements": [
       [
         "armor_trimmed_minecraft:bolt_armor_trim_smithing_template_smithing_trim",
@@ -4001,6 +4040,7 @@
     "parent": "minecraft:adventure/ol_betsy",
     "tab": "adventure",
     "frame": "challenge",
+    "title": "advancements.adventure.two_birds_one_arrow.title",
     "requirements": [
       [
         "two_birds"
@@ -4041,6 +4081,7 @@
     "parent": "minecraft:adventure/minecraft_trials_edition",
     "tab": "adventure",
     "frame": "task",
+    "title": "advancements.adventure.under_lock_and_key.title",
     "requirements": [
       [
         "under_lock_and_key"
@@ -4077,6 +4118,7 @@
     "parent": "minecraft:adventure/root",
     "tab": "adventure",
     "frame": "task",
+    "title": "advancements.adventure.use_lodestone.title",
     "requirements": [
       [
         "use_lodestone"
@@ -4110,6 +4152,7 @@
     "parent": "minecraft:adventure/throw_trident",
     "tab": "adventure",
     "frame": "task",
+    "title": "advancements.adventure.very_very_frightening.title",
     "requirements": [
       [
         "struck_villager"
@@ -4138,6 +4181,7 @@
     "parent": "minecraft:adventure/root",
     "tab": "adventure",
     "frame": "task",
+    "title": "advancements.adventure.voluntary_exile.title",
     "requirements": [
       [
         "voluntary_exile"
@@ -4208,6 +4252,7 @@
     "parent": "minecraft:adventure/sleep_in_bed",
     "tab": "adventure",
     "frame": "task",
+    "title": "advancements.adventure.walk_on_powder_snow_with_leather_boots.title",
     "requirements": [
       [
         "walk_on_powder_snow_with_leather_boots"
@@ -4243,6 +4288,7 @@
     "parent": "minecraft:adventure/minecraft_trials_edition",
     "tab": "adventure",
     "frame": "task",
+    "title": "advancements.adventure.who_needs_rockets.title",
     "requirements": [
       [
         "who_needs_rockets"
@@ -4274,6 +4320,7 @@
     "parent": "minecraft:adventure/ol_betsy",
     "tab": "adventure",
     "frame": "task",
+    "title": "advancements.adventure.whos_the_pillager_now.title",
     "requirements": [
       [
         "kill_pillager"
@@ -4305,6 +4352,7 @@
     "parent": "minecraft:end/kill_dragon",
     "tab": "end",
     "frame": "goal",
+    "title": "advancements.end.dragon_breath.title",
     "requirements": [
       [
         "dragon_breath"
@@ -4327,6 +4375,7 @@
     "parent": "minecraft:end/kill_dragon",
     "tab": "end",
     "frame": "goal",
+    "title": "advancements.end.dragon_egg.title",
     "requirements": [
       [
         "dragon_egg"
@@ -4349,6 +4398,7 @@
     "parent": "minecraft:end/find_end_city",
     "tab": "end",
     "frame": "goal",
+    "title": "advancements.end.elytra.title",
     "requirements": [
       [
         "elytra"
@@ -4371,6 +4421,7 @@
     "parent": "minecraft:end/kill_dragon",
     "tab": "end",
     "frame": "task",
+    "title": "advancements.end.enter_end_gateway.title",
     "requirements": [
       [
         "entered_end_gateway"
@@ -4389,6 +4440,7 @@
     "parent": "minecraft:end/enter_end_gateway",
     "tab": "end",
     "frame": "task",
+    "title": "advancements.end.find_end_city.title",
     "requirements": [
       [
         "in_city"
@@ -4417,6 +4469,7 @@
     "parent": "minecraft:end/root",
     "tab": "end",
     "frame": "task",
+    "title": "advancements.end.kill_dragon.title",
     "requirements": [
       [
         "killed_dragon"
@@ -4443,6 +4496,7 @@
     "parent": "minecraft:end/find_end_city",
     "tab": "end",
     "frame": "challenge",
+    "title": "advancements.end.levitate.title",
     "requirements": [
       [
         "levitated"
@@ -4465,6 +4519,7 @@
     "parent": "minecraft:end/kill_dragon",
     "tab": "end",
     "frame": "goal",
+    "title": "advancements.end.respawn_dragon.title",
     "requirements": [
       [
         "summoned_dragon"
@@ -4491,6 +4546,7 @@
     "parent": null,
     "tab": "end",
     "frame": "task",
+    "title": "advancements.end.root.title",
     "requirements": [
       [
         "entered_end"
@@ -4509,6 +4565,7 @@
     "parent": "minecraft:husbandry/allay_deliver_item_to_player",
     "tab": "husbandry",
     "frame": "task",
+    "title": "advancements.husbandry.allay_deliver_cake_to_note_block.title",
     "requirements": [
       [
         "allay_deliver_cake_to_note_block"
@@ -4542,6 +4599,7 @@
     "parent": "minecraft:husbandry/root",
     "tab": "husbandry",
     "frame": "task",
+    "title": "advancements.husbandry.allay_deliver_item_to_player.title",
     "requirements": [
       [
         "allay_deliver_item_to_player"
@@ -4568,6 +4626,7 @@
     "parent": "minecraft:husbandry/tactical_fishing",
     "tab": "husbandry",
     "frame": "task",
+    "title": "advancements.husbandry.axolotl_in_a_bucket.title",
     "requirements": [
       [
         "axolotl_bucket"
@@ -4588,6 +4647,7 @@
     "parent": "minecraft:husbandry/plant_seed",
     "tab": "husbandry",
     "frame": "challenge",
+    "title": "advancements.husbandry.balanced_diet.title",
     "requirements": [
       [
         "apple"
@@ -5037,6 +5097,7 @@
     "parent": "minecraft:husbandry/breed_an_animal",
     "tab": "husbandry",
     "frame": "challenge",
+    "title": "advancements.husbandry.breed_all_animals.title",
     "requirements": [
       [
         "minecraft:horse"
@@ -5515,6 +5576,7 @@
     "parent": "minecraft:husbandry/root",
     "tab": "husbandry",
     "frame": "task",
+    "title": "advancements.husbandry.breed_an_animal.title",
     "requirements": [
       [
         "bred"
@@ -5531,6 +5593,7 @@
     "parent": "minecraft:husbandry/tame_an_animal",
     "tab": "husbandry",
     "frame": "challenge",
+    "title": "advancements.husbandry.complete_catalogue.title",
     "requirements": [
       [
         "minecraft:all_black"
@@ -5749,6 +5812,7 @@
     "parent": "minecraft:husbandry/obtain_sniffer_egg",
     "tab": "husbandry",
     "frame": "task",
+    "title": "advancements.husbandry.feed_snifflet.title",
     "requirements": [
       [
         "feed_snifflet"
@@ -5781,6 +5845,7 @@
     "parent": "minecraft:husbandry/root",
     "tab": "husbandry",
     "frame": "task",
+    "title": "advancements.husbandry.fishy_business.title",
     "requirements": [
       [
         "cod",
@@ -5828,6 +5893,7 @@
     "parent": "minecraft:husbandry/leash_all_frog_variants",
     "tab": "husbandry",
     "frame": "challenge",
+    "title": "advancements.husbandry.froglights.title",
     "requirements": [
       [
         "froglights"
@@ -5856,6 +5922,7 @@
     "parent": "minecraft:husbandry/axolotl_in_a_bucket",
     "tab": "husbandry",
     "frame": "task",
+    "title": "advancements.husbandry.kill_axolotl_target.title",
     "requirements": [
       [
         "kill_axolotl_target"
@@ -5882,6 +5949,7 @@
     "parent": "minecraft:husbandry/tadpole_in_a_bucket",
     "tab": "husbandry",
     "frame": "task",
+    "title": "advancements.husbandry.leash_all_frog_variants.title",
     "requirements": [
       [
         "minecraft:cold"
@@ -5960,6 +6028,7 @@
     "parent": "minecraft:husbandry/root",
     "tab": "husbandry",
     "frame": "task",
+    "title": "advancements.husbandry.make_a_sign_glow.title",
     "requirements": [
       [
         "make_a_sign_glow"
@@ -5993,6 +6062,7 @@
     "parent": "minecraft:husbandry/plant_seed",
     "tab": "husbandry",
     "frame": "challenge",
+    "title": "advancements.husbandry.netherite_hoe.title",
     "requirements": [
       [
         "netherite_hoe"
@@ -6015,6 +6085,7 @@
     "parent": "minecraft:husbandry/root",
     "tab": "husbandry",
     "frame": "task",
+    "title": "advancements.husbandry.obtain_sniffer_egg.title",
     "requirements": [
       [
         "obtain_sniffer_egg"
@@ -6037,6 +6108,7 @@
     "parent": "minecraft:husbandry/root",
     "tab": "husbandry",
     "frame": "task",
+    "title": "advancements.husbandry.place_dried_ghast_in_water.title",
     "requirements": [
       [
         "place_dried_ghast_in_water"
@@ -6063,6 +6135,7 @@
     "parent": "minecraft:husbandry/feed_snifflet",
     "tab": "husbandry",
     "frame": "task",
+    "title": "advancements.husbandry.plant_any_sniffer_seed.title",
     "requirements": [
       [
         "torchflower",
@@ -6098,6 +6171,7 @@
     "parent": "minecraft:husbandry/root",
     "tab": "husbandry",
     "frame": "task",
+    "title": "advancements.husbandry.plant_seed.title",
     "requirements": [
       [
         "wheat",
@@ -6193,6 +6267,7 @@
     "parent": "minecraft:husbandry/tame_an_animal",
     "tab": "husbandry",
     "frame": "task",
+    "title": "advancements.husbandry.remove_wolf_armor.title",
     "requirements": [
       [
         "remove_wolf_armor"
@@ -6222,6 +6297,7 @@
     "parent": "minecraft:husbandry/tame_an_animal",
     "tab": "husbandry",
     "frame": "task",
+    "title": "advancements.husbandry.repair_wolf_armor.title",
     "requirements": [
       [
         "repair_wolf_armor"
@@ -6259,6 +6335,7 @@
     "parent": "minecraft:husbandry/root",
     "tab": "husbandry",
     "frame": "task",
+    "title": "advancements.husbandry.ride_a_boat_with_a_goat.title",
     "requirements": [
       [
         "ride_a_boat_with_a_goat"
@@ -6290,6 +6367,7 @@
     "parent": null,
     "tab": "husbandry",
     "frame": "task",
+    "title": "advancements.husbandry.root.title",
     "requirements": [
       [
         "consumed_item"
@@ -6306,6 +6384,7 @@
     "parent": "minecraft:husbandry/root",
     "tab": "husbandry",
     "frame": "task",
+    "title": "advancements.husbandry.safely_harvest_honey.title",
     "requirements": [
       [
         "safely_harvest_honey"
@@ -6340,6 +6419,7 @@
     "parent": "minecraft:husbandry/root",
     "tab": "husbandry",
     "frame": "task",
+    "title": "advancements.husbandry.silk_touch_nest.title",
     "requirements": [
       [
         "silk_touch_nest"
@@ -6371,6 +6451,7 @@
     "parent": "minecraft:husbandry/fishy_business",
     "tab": "husbandry",
     "frame": "task",
+    "title": "advancements.husbandry.tactical_fishing.title",
     "requirements": [
       [
         "cod_bucket",
@@ -6418,6 +6499,7 @@
     "parent": "minecraft:husbandry/root",
     "tab": "husbandry",
     "frame": "task",
+    "title": "advancements.husbandry.tadpole_in_a_bucket.title",
     "requirements": [
       [
         "tadpole_bucket"
@@ -6438,6 +6520,7 @@
     "parent": "minecraft:husbandry/root",
     "tab": "husbandry",
     "frame": "task",
+    "title": "advancements.husbandry.tame_an_animal.title",
     "requirements": [
       [
         "tamed_animal"
@@ -6454,6 +6537,7 @@
     "parent": "minecraft:husbandry/wax_on",
     "tab": "husbandry",
     "frame": "task",
+    "title": "advancements.husbandry.wax_off.title",
     "requirements": [
       [
         "wax_off"
@@ -6556,6 +6640,7 @@
     "parent": "minecraft:husbandry/safely_harvest_honey",
     "tab": "husbandry",
     "frame": "task",
+    "title": "advancements.husbandry.wax_on.title",
     "requirements": [
       [
         "wax_on"
@@ -6650,6 +6735,7 @@
     "parent": "minecraft:husbandry/tame_an_animal",
     "tab": "husbandry",
     "frame": "challenge",
+    "title": "advancements.husbandry.whole_pack.title",
     "requirements": [
       [
         "minecraft:ashen"
@@ -6830,6 +6916,7 @@
     "parent": "minecraft:nether/all_potions",
     "tab": "nether",
     "frame": "challenge",
+    "title": "advancements.nether.all_effects.title",
     "requirements": [
       [
         "all_effects"
@@ -6883,6 +6970,7 @@
     "parent": "minecraft:nether/brew_potion",
     "tab": "nether",
     "frame": "challenge",
+    "title": "advancements.nether.all_potions.title",
     "requirements": [
       [
         "all_effects"
@@ -6919,6 +7007,7 @@
     "parent": "minecraft:nether/obtain_blaze_rod",
     "tab": "nether",
     "frame": "task",
+    "title": "advancements.nether.brew_potion.title",
     "requirements": [
       [
         "potion"
@@ -6935,6 +7024,7 @@
     "parent": "minecraft:nether/obtain_crying_obsidian",
     "tab": "nether",
     "frame": "task",
+    "title": "advancements.nether.charge_respawn_anchor.title",
     "requirements": [
       [
         "charge_respawn_anchor"
@@ -6971,6 +7061,7 @@
     "parent": "minecraft:nether/summon_wither",
     "tab": "nether",
     "frame": "task",
+    "title": "advancements.nether.create_beacon.title",
     "requirements": [
       [
         "beacon"
@@ -6991,6 +7082,7 @@
     "parent": "minecraft:nether/create_beacon",
     "tab": "nether",
     "frame": "goal",
+    "title": "advancements.nether.create_full_beacon.title",
     "requirements": [
       [
         "beacon"
@@ -7009,6 +7101,7 @@
     "parent": "minecraft:nether/root",
     "tab": "nether",
     "frame": "task",
+    "title": "advancements.nether.distract_piglin.title",
     "requirements": [
       [
         "distract_piglin",
@@ -7178,6 +7271,7 @@
     "parent": "minecraft:nether/ride_strider",
     "tab": "nether",
     "frame": "challenge",
+    "title": "advancements.nether.explore_nether.title",
     "requirements": [
       [
         "minecraft:nether_wastes"
@@ -7282,6 +7376,7 @@
     "parent": "minecraft:nether/root",
     "tab": "nether",
     "frame": "challenge",
+    "title": "advancements.nether.fast_travel.title",
     "requirements": [
       [
         "travelled"
@@ -7304,6 +7399,7 @@
     "parent": "minecraft:nether/root",
     "tab": "nether",
     "frame": "task",
+    "title": "advancements.nether.find_bastion.title",
     "requirements": [
       [
         "bastion"
@@ -7332,6 +7428,7 @@
     "parent": "minecraft:nether/root",
     "tab": "nether",
     "frame": "task",
+    "title": "advancements.nether.find_fortress.title",
     "requirements": [
       [
         "fortress"
@@ -7360,6 +7457,7 @@
     "parent": "minecraft:nether/find_fortress",
     "tab": "nether",
     "frame": "task",
+    "title": "advancements.nether.get_wither_skull.title",
     "requirements": [
       [
         "wither_skull"
@@ -7382,6 +7480,7 @@
     "parent": "minecraft:nether/find_bastion",
     "tab": "nether",
     "frame": "task",
+    "title": "advancements.nether.loot_bastion.title",
     "requirements": [
       [
         "loot_bastion_other",
@@ -7421,6 +7520,7 @@
     "parent": "minecraft:nether/obtain_ancient_debris",
     "tab": "nether",
     "frame": "challenge",
+    "title": "advancements.nether.netherite_armor.title",
     "requirements": [
       [
         "netherite_armor"
@@ -7452,6 +7552,7 @@
     "parent": "minecraft:nether/root",
     "tab": "nether",
     "frame": "task",
+    "title": "advancements.nether.obtain_ancient_debris.title",
     "requirements": [
       [
         "ancient_debris"
@@ -7474,6 +7575,7 @@
     "parent": "minecraft:nether/find_fortress",
     "tab": "nether",
     "frame": "task",
+    "title": "advancements.nether.obtain_blaze_rod.title",
     "requirements": [
       [
         "blaze_rod"
@@ -7496,6 +7598,7 @@
     "parent": "minecraft:nether/root",
     "tab": "nether",
     "frame": "task",
+    "title": "advancements.nether.obtain_crying_obsidian.title",
     "requirements": [
       [
         "crying_obsidian"
@@ -7518,6 +7621,7 @@
     "parent": "minecraft:nether/root",
     "tab": "nether",
     "frame": "challenge",
+    "title": "advancements.nether.return_to_sender.title",
     "requirements": [
       [
         "killed_ghast"
@@ -7555,6 +7659,7 @@
     "parent": "minecraft:nether/root",
     "tab": "nether",
     "frame": "task",
+    "title": "advancements.nether.ride_strider.title",
     "requirements": [
       [
         "used_warped_fungus_on_a_stick"
@@ -7586,6 +7691,7 @@
     "parent": "minecraft:nether/ride_strider",
     "tab": "nether",
     "frame": "task",
+    "title": "advancements.nether.ride_strider_in_overworld_lava.title",
     "requirements": [
       [
         "ride_entity_distance"
@@ -7622,6 +7728,7 @@
     "parent": null,
     "tab": "nether",
     "frame": "task",
+    "title": "advancements.nether.root.title",
     "requirements": [
       [
         "entered_nether"
@@ -7640,6 +7747,7 @@
     "parent": "minecraft:nether/get_wither_skull",
     "tab": "nether",
     "frame": "task",
+    "title": "advancements.nether.summon_wither.title",
     "requirements": [
       [
         "summoned"
@@ -7666,6 +7774,7 @@
     "parent": "minecraft:nether/return_to_sender",
     "tab": "nether",
     "frame": "challenge",
+    "title": "advancements.nether.uneasy_alliance.title",
     "requirements": [
       [
         "killed_ghast"
@@ -7695,6 +7804,7 @@
     "parent": "minecraft:story/enter_the_nether",
     "tab": "story",
     "frame": "goal",
+    "title": "advancements.story.cure_zombie_villager.title",
     "requirements": [
       [
         "cured_zombie"
@@ -7711,6 +7821,7 @@
     "parent": "minecraft:story/obtain_armor",
     "tab": "story",
     "frame": "task",
+    "title": "advancements.story.deflect_arrow.title",
     "requirements": [
       [
         "deflected_projectile"
@@ -7739,6 +7850,7 @@
     "parent": "minecraft:story/mine_diamond",
     "tab": "story",
     "frame": "task",
+    "title": "advancements.story.enchant_item.title",
     "requirements": [
       [
         "enchanted_item"
@@ -7755,6 +7867,7 @@
     "parent": "minecraft:story/follow_ender_eye",
     "tab": "story",
     "frame": "task",
+    "title": "advancements.story.enter_the_end.title",
     "requirements": [
       [
         "entered_end"
@@ -7773,6 +7886,7 @@
     "parent": "minecraft:story/form_obsidian",
     "tab": "story",
     "frame": "task",
+    "title": "advancements.story.enter_the_nether.title",
     "requirements": [
       [
         "entered_nether"
@@ -7791,6 +7905,7 @@
     "parent": "minecraft:story/enter_the_nether",
     "tab": "story",
     "frame": "task",
+    "title": "advancements.story.follow_ender_eye.title",
     "requirements": [
       [
         "in_stronghold"
@@ -7819,6 +7934,7 @@
     "parent": "minecraft:story/lava_bucket",
     "tab": "story",
     "frame": "task",
+    "title": "advancements.story.form_obsidian.title",
     "requirements": [
       [
         "obsidian"
@@ -7841,6 +7957,7 @@
     "parent": "minecraft:story/smelt_iron",
     "tab": "story",
     "frame": "task",
+    "title": "advancements.story.iron_tools.title",
     "requirements": [
       [
         "iron_pickaxe"
@@ -7863,6 +7980,7 @@
     "parent": "minecraft:story/smelt_iron",
     "tab": "story",
     "frame": "task",
+    "title": "advancements.story.lava_bucket.title",
     "requirements": [
       [
         "lava_bucket"
@@ -7885,6 +8003,7 @@
     "parent": "minecraft:story/iron_tools",
     "tab": "story",
     "frame": "task",
+    "title": "advancements.story.mine_diamond.title",
     "requirements": [
       [
         "diamond"
@@ -7907,6 +8026,7 @@
     "parent": "minecraft:story/root",
     "tab": "story",
     "frame": "task",
+    "title": "advancements.story.mine_stone.title",
     "requirements": [
       [
         "get_stone"
@@ -7929,6 +8049,7 @@
     "parent": "minecraft:story/smelt_iron",
     "tab": "story",
     "frame": "task",
+    "title": "advancements.story.obtain_armor.title",
     "requirements": [
       [
         "iron_helmet",
@@ -7984,6 +8105,7 @@
     "parent": null,
     "tab": "story",
     "frame": "task",
+    "title": "advancements.story.root.title",
     "requirements": [
       [
         "crafting_table"
@@ -8006,6 +8128,7 @@
     "parent": "minecraft:story/mine_diamond",
     "tab": "story",
     "frame": "task",
+    "title": "advancements.story.shiny_gear.title",
     "requirements": [
       [
         "diamond_helmet",
@@ -8061,6 +8184,7 @@
     "parent": "minecraft:story/upgrade_tools",
     "tab": "story",
     "frame": "task",
+    "title": "advancements.story.smelt_iron.title",
     "requirements": [
       [
         "iron"
@@ -8083,6 +8207,7 @@
     "parent": "minecraft:story/mine_stone",
     "tab": "story",
     "frame": "task",
+    "title": "advancements.story.upgrade_tools.title",
     "requirements": [
       [
         "stone_pickaxe"

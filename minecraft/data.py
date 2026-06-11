@@ -6,12 +6,15 @@ module-level names the rest of the apworld already imports. ``from .data import 
 yields ITEMS / MOBS_ALL / STRUCTURES / ALL_LOCATIONS / the BASE_ID_* / dataclasses / etc., and —
 via ``from .logic.constants import *`` below — the rule constants (prefixes, ITEM_*, MAT_*, K_*).
 """
-# Re-exported via `from .data import *` (worlds/minecraft/__init__.py relies on data for it).
-from BaseClasses import ItemClassification
-from .content.registry import (
+# NOTE: most names below are re-exported via `from .data import *` for the rest of the apworld;
+# they look "unused" to linters here, so do not auto-strip them.
+from BaseClasses import ItemClassification  # noqa: F401
+
+from .content.registry import (  # noqa: F401
     BASE_ID_ENTITY_UNLOCK,
     BASE_ID_ITEMS,
     BASE_ID_LOC_ADVANCEMENT,
+    BASE_ID_LOC_BACAP,
     BASE_ID_LOC_BOSS_KILL,
     BASE_ID_LOC_MOB_KILL,
     BASE_ID_LOC_STRUCTURE,
@@ -23,12 +26,14 @@ from .content.registry import (
     MCLocationData,
     MCMobData,
     MCStructureData,
+    load_manifest_advancements,
     load_pack,
 )
 from .logic.constants import *
 
-# Vanilla is the only content pack today; the advancement-manifest work adds mod / datapack / other
-# MC-version packs and merges them here.
+# Vanilla is always loaded; manifest-only datapack/mod packs (BACAP) are loaded too so their
+# location ids and the compiler's parent-chain lookup are always present (the option only gates
+# whether those locations are *created* this seed — see MCWorld._get_active_locations).
 _REGISTRY: ContentRegistry = load_pack("vanilla_26_1")
 
 ITEMS: dict[str, MCItemData] = _REGISTRY.items
@@ -112,3 +117,16 @@ ALL_LOCATIONS: dict[str, MCLocationData] = {
     **LOCATIONS_MOB_KILL,
     **LOCATIONS_BOSS_KILL,
 }
+
+# BACAP (BlazeandCave's Advancements Pack): a manifest-only datapack of custom advancements, loaded
+# unconditionally so its location ids are stable in the data package; the `blazeandcave` option
+# gates whether they are created this seed. Only the new `blazeandcave:` advancements become
+# locations here — BACAP's `minecraft:` files REWRITE the vanilla advancements, so they reuse the
+# vanilla locations (their modified criteria come from the BACAP manifest in set_rules when on).
+# ADVANCEMENT_LOCATIONS is the vanilla+BACAP union the trigger compiler walks (parent-chain lookup).
+_VANILLA_ADVANCEMENT_GAME_IDS = frozenset(loc.game_id for loc in LOCATIONS_ADVANCEMENT.values())
+LOCATIONS_BACAP: dict[str, MCLocationData] = load_manifest_advancements(
+    "bacap", BASE_ID_LOC_BACAP, reserved=frozenset(ALL_LOCATIONS),
+    skip_game_ids=_VANILLA_ADVANCEMENT_GAME_IDS)
+
+ADVANCEMENT_LOCATIONS: dict[str, MCLocationData] = {**LOCATIONS_ADVANCEMENT, **LOCATIONS_BACAP}
