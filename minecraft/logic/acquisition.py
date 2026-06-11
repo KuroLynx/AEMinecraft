@@ -1,10 +1,18 @@
 import json
+import re
 from importlib.resources import files
 
 # AST primitives must be imported directly: `from .. import *` cannot supply them because the
 # package __init__ imports this module (via set_rules) before it defines Const/Has/and_/… .
 from .ast import Const, Has, ReachRegion, ReachLocation, and_, or_, at_least
 from .. import *
+
+# Wood-family items (planks / logs / wood / stems / hyphae, stripped or not) have no knowledge or
+# material gate — they are free once their dimension is reached. Collapsing them to a bare region
+# node instead of recursing through every plank variant keeps acquisition trees small (a recipe that
+# takes "#planks" otherwise fans out into a dozen wood subtrees).
+_WOOD_RE = re.compile(r"^(stripped_)?[a-z]+_(planks|log|wood|stem|hyphae)$")
+_NETHER_WOODS = ("crimson", "warped")
 
 # Item -> required Progressive Material Handling tier (inverted from data.MATERIAL_HANDLING_ITEMS):
 # the gate for mining a material, and the last-resort fallback for a material item with no recipe.
@@ -33,6 +41,13 @@ def _entity_by_gid() -> dict:
     if _ENTITY_BY_GID is None:
         _ENTITY_BY_GID = {data.game_id: name for name, data in MOBS_ALL.items()}
     return _ENTITY_BY_GID
+
+
+def _wood_region(base: str) -> str | None:
+    """Region a wood-family item (or a stick) is free in, or ``None`` if it is not wood."""
+    if base == "stick" or _WOOD_RE.match(base):
+        return REGION_NETHER if any(w in base for w in _NETHER_WOODS) else REGION_OVERWORLD
+    return None
 
 
 class RuleHelper:
@@ -811,7 +826,8 @@ class RuleHelper:
     # ``structure``. A recursion stack breaks the ingot⟷block recipe cycles; items with no usable
     # source fall back to the tool/material gates (``_acquire_fallback``), else ``None``.
     # -----------------------------------------------------------------------
-    _MAX_DEPTH = 12
+    _MAX_DEPTH = 4
+    _SIZE_CAP = 1500  # serialized bytes; larger trees collapse to their region floor (see _coarsen)
 
     def acquire(self, item_id: str, _stack: frozenset = frozenset()):
         base = item_id.split(":", 1)[-1] if ":" in item_id else item_id
@@ -819,6 +835,11 @@ class RuleHelper:
             return None  # a raw tag (recipe tags are pre-expanded; a bare tag can't be resolved)
         if base in _stack or len(_stack) >= self._MAX_DEPTH:
             return None  # recipe cycle / too deep — this path can't justify itself
+
+        # Wood is free once its dimension is reached; collapse it instead of fanning out variants.
+        wood_region = _wood_region(base)
+        if wood_region is not None:
+            return self.access_region(wood_region)
 
         # Materials collapse to their compact tier gate rather than expanding every recipe/chest
         # path — keeps the serialized tree small (iron/diamond/… otherwise recurse enormously).
@@ -849,7 +870,54 @@ class RuleHelper:
             if structure_name in STRUCTURES:
                 options.append(self.structure(structure_name))
 
-        return or_(*options) if options else self._acquire_fallback(base)
+        result = self._unique_or(options) if options else self._acquire_fallback(base)
+        return self._coarsen(result)
+
+    def _coarsen(self, node):
+        """Bound the serialized tree: an item whose acquisition logic grows past ``_SIZE_CAP`` (the
+        recipe-combinatorial decoratives/foods — dyes, beds, stews) collapses to the OR of the
+        regions it can be obtained in. Sound for that class — every such path is region-gated and
+        otherwise free — and keeps the export from blowing up at datapack scale."""
+        if node is None or len(json.dumps(node.to_dict())) <= self._SIZE_CAP:
+            return node
+        regions = set()
+
+        def collect(node_dict):
+            if node_dict.get("k") == "region":
+                regions.add(node_dict["r"])
+            for child in node_dict.get("c", ()):
+                collect(child)
+
+        collect(node.to_dict())
+        if regions:
+            return or_(*[self.access_region(region) for region in sorted(regions)])
+        return node
+
+    @staticmethod
+    def _unique_or(nodes):
+        """OR of ``nodes``, deduplicated and absorption-simplified. Besides dropping identical
+        sources, this applies ``A ∨ (A ∧ B) = A``: a source that is an AND containing another,
+        simpler source as one of its conjuncts is redundant and removed. That collapses the common
+        explosion where an item is obtainable trivially (e.g. ``region(Overworld)`` from a cow) and
+        also via a far heavier path that still needs that same trivial step (a bred-mob drop)."""
+        dicts, keys, unique = [], [], []
+        seen = set()
+        for node in nodes:
+            key = json.dumps(node.to_dict(), sort_keys=True)
+            if key not in seen:
+                seen.add(key)
+                dicts.append(node.to_dict())
+                keys.append(key)
+                unique.append(node)
+
+        keep = []
+        for node, node_dict, key in zip(unique, dicts, keys):
+            if node_dict.get("k") == "and":
+                conjuncts = {json.dumps(child, sort_keys=True) for child in node_dict.get("c", [])}
+                if conjuncts & (seen - {key}):  # a simpler sibling is one of this AND's conjuncts
+                    continue
+            keep.append(node)
+        return or_(*keep)
 
     def _recipe_node(self, recipe: dict, stack: frozenset):
         """A recipe is satisfied when every distinct ingredient is obtainable (AND)."""
