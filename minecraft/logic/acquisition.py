@@ -50,6 +50,34 @@ def _wood_region(base: str) -> str | None:
     return None
 
 
+# Block id substrings that pin a mined block to a dimension (so e.g. nether wart is gated on the
+# Nether, not just "having a pickaxe"). Everything else is treated as Overworld.
+_NETHER_BLOCK_HINTS = ("nether", "crimson", "warped", "basalt", "blackstone", "soul_",
+                       "magma", "glowstone", "ancient_debris", "nylium", "shroomlight", "gilded")
+_END_BLOCK_HINTS = ("end_stone", "chorus", "purpur", "dragon_egg")
+# mineable/<tool> tag -> Knowledge name; needs_<tier>_tool -> material tier.
+_TOOL_KNOWLEDGE = {"pickaxe": K_PICKAXE, "axe": K_AXE, "shovel": K_SHOVEL, "hoe": K_HOE}
+_NEEDS_TIER = {"stone": MAT_STONE, "iron": MAT_IRON, "diamond": MAT_DIAMOND}
+_BLOCK_MINING: dict | None = None
+
+
+def _block_mining() -> dict:
+    global _BLOCK_MINING
+    if _BLOCK_MINING is None:
+        path = files(_MC_ROOT).joinpath("packs", "vanilla_26_1", "block_mining.json")
+        with path.open(encoding="utf-8") as handle:
+            _BLOCK_MINING = json.load(handle)
+    return _BLOCK_MINING
+
+
+def _block_region(block: str) -> str:
+    if any(hint in block for hint in _END_BLOCK_HINTS):
+        return REGION_END
+    if any(hint in block for hint in _NETHER_BLOCK_HINTS):
+        return REGION_NETHER
+    return REGION_OVERWORLD
+
+
 class RuleHelper:
     """Builds logic rules as serializable AST nodes (see ``ast.py``).
 
@@ -862,8 +890,8 @@ class RuleHelper:
             name = _entity_by_gid().get(f"minecraft:{mob_file}")
             if name in MOBS_ALL:
                 options.append(self.entity(name))
-        if record.get("mining"):
-            options.append(self._mining_node(base))
+        for block in record.get("mining", ()):
+            options.append(self._mining_node(block, base))
         if record.get("trades"):
             options.append(self.can_trade_villager())
         for structure_name in record.get("structures", ()):
@@ -938,11 +966,18 @@ class RuleHelper:
             return self.acquire(ingredient["item"], stack)
         return None
 
-    def _mining_node(self, base: str):
-        tier = _MATERIAL_TIER_BY_ITEM.get(base)
+    def _mining_node(self, block: str, item: str):
+        """Break ``block`` (to obtain ``item``): be in the block's dimension, hold the right tool
+        (some blocks — nether wart, glowstone, crops — break bare-handed) and material tier."""
+        info = _block_mining().get(block, {})
+        parts = [self.access_region(_block_region(block))]
+        tool = info.get("tool")
+        if tool in _TOOL_KNOWLEDGE:
+            parts.append(self.knowledge(_TOOL_KNOWLEDGE[tool]))
+        tier = _MATERIAL_TIER_BY_ITEM.get(item) or _NEEDS_TIER.get(info.get("needs"))
         if tier is not None:
-            return self.all_of(self.knowledge(K_PICKAXE), self.material(tier))
-        return self.knowledge(K_PICKAXE)
+            parts.append(self.material(tier))
+        return self.all_of(*parts)
 
     def _acquire_fallback(self, base: str):
         """Items absent from the acquisition table (or with no usable source): the tool/armor
