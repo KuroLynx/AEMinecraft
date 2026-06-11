@@ -44,7 +44,7 @@ _ENTITY_REACH_TRIGGERS = frozenset({
 
 
 class TriggerCompiler:
-    """Compiles one manifest record into a :class:`Rule`, or ``None`` if not confidently derivable."""
+    """Compiles a manifest record into a :class:`Rule`, or ``None`` if not confidently derivable."""
 
     def __init__(self, helper: RuleHelper):
         self.h = helper
@@ -108,6 +108,22 @@ class TriggerCompiler:
         if trigger == "minecraft:consume_item":
             # "Eat any item" (empty conditions) → any food source; else resolve the specific item.
             return self.h.can_get_food() if not cond else self._item_predicate(cond.get("item"))
+        if trigger in ("minecraft:using_item", "minecraft:shot_crossbow"):
+            return self._used_item_node(cond)
+        if trigger == "minecraft:placed_block":
+            return self._placed_block_node(cond)
+        if trigger == "minecraft:item_used_on_block":
+            return self._used_on_block_node(cond)
+        if trigger == "minecraft:filled_bucket":
+            return self._filled_bucket_node(cond)
+        if trigger == "minecraft:villager_trade":
+            return self.h.can_trade_villager()
+        if trigger == "minecraft:slept_in_bed":
+            return self.h.access_region(REGION_OVERWORLD)  # a bed needs wool + planks (overworld)
+        if trigger == "minecraft:used_totem":
+            return self.h.acquire("minecraft:totem_of_undying")
+        if trigger == "minecraft:player_generates_container_loot":
+            return self._container_loot_node(cond)
         return None
 
     # -- condition extractors ----------------------------------------------
@@ -137,8 +153,8 @@ class TriggerCompiler:
         return self.h.access_region(region) if region else None
 
     def _inventory_node(self, cond: dict) -> Rule | None:
-        # cond["items"] is a list of item predicates that must ALL be satisfied (AND); each predicate
-        # names one item, a list of items (OR), or a tag.
+        # cond["items"] is a list of item predicates that must ALL be satisfied (AND); each
+        # predicate names one item, a list of items (OR), or a tag.
         predicates = cond.get("items")
         if not isinstance(predicates, list) or not predicates:
             return None
@@ -154,22 +170,69 @@ class TriggerCompiler:
         """Resolve one item predicate (``{"items": <id|[ids]|#tag>}``) to acquisition logic."""
         if not isinstance(pred, dict):
             return None
-        ids = pred.get("items")
+        return self._any_acquire(pred.get("items"))
+
+    def _any_acquire(self, ids) -> Rule | None:
+        """OR over ``acquire`` of one item id or a list of them (the items are alternatives)."""
         if isinstance(ids, str):
             ids = [ids]
         if not isinstance(ids, list) or not ids:
             return None
-        options: list[Rule] = []
-        for item_id in ids:
-            node = self.h.acquire(item_id)
-            if node is not None:
-                options.append(node)
+        options = [self.h.acquire(item_id) for item_id in ids]
+        options = [node for node in options if node is not None]
         return or_(*options) if options else None
+
+    def _used_item_node(self, cond: dict) -> Rule | None:
+        """``using_item`` / ``shot_crossbow``: obtain the item, and — when the criterion pins what
+        the player is aiming at — also reach that entity."""
+        item = self._item_predicate(cond.get("item"))
+        if item is None:
+            return None
+        specific = self._predicate_value(cond.get("player"), "type_specific")
+        looking = specific.get("looking_at") if isinstance(specific, dict) else None
+        gid = looking.get("type") if isinstance(looking, dict) else None
+        target = self._entity_by_gid.get(gid) if gid else None
+        return and_(item, self.h.entity(target)) if target in MOBS_ALL else item
+
+    def _placed_block_node(self, cond: dict) -> Rule | None:
+        """``placed_block``: obtain the block being placed."""
+        entries = cond.get("location") if isinstance(cond.get("location"), list) else []
+        blocks = [e["block"] for e in entries
+                  if isinstance(e, dict) and isinstance(e.get("block"), str)]
+        return self._any_acquire(blocks)
+
+    def _used_on_block_node(self, cond: dict) -> Rule | None:
+        """``item_used_on_block``: the item used, else the target block(s)."""
+        if "item" in cond:
+            return self._item_predicate(cond.get("item"))
+        block = self._predicate_value(cond.get("location"), "block")
+        return self._any_acquire(block.get("blocks")) if isinstance(block, dict) else None
+
+    def _filled_bucket_node(self, cond: dict) -> Rule | None:
+        """``filled_bucket``: hold a bucket and, for a captured mob, reach it."""
+        ids = (cond.get("item") or {}).get("items")
+        item = ids[0] if isinstance(ids, list) and ids else ids
+        if not isinstance(item, str):
+            return None
+        bucket = self.h.acquire("minecraft:bucket")
+        if bucket is None:
+            return None
+        content = item.split(":")[-1].replace("_bucket", "")
+        mob = self._entity_by_gid.get(f"minecraft:{content}")
+        return and_(bucket, self.h.entity(mob)) if mob in MOBS_ALL else bucket
+
+    def _container_loot_node(self, cond: dict) -> Rule | None:
+        """``player_generates_container_loot``: reach the structure whose loot table this is."""
+        table = cond.get("loot_table")
+        if not isinstance(table, str):
+            return None
+        name = self._struct_by_gid.get(f"minecraft:{table.split('/')[-1]}")
+        return self.h.structure(name) if name else None
 
     @staticmethod
     def _predicate_value(entity_conditions, key: str):
         """Pull ``predicate[key]`` out of a criterion sub-condition, tolerating both the list form
-        ``[{"condition": "entity_properties", "predicate": {...}}]`` and a bare ``{...}`` predicate."""
+        ``[{"condition": "entity_properties", "predicate": {...}}]`` and a bare ``{...}``."""
         if isinstance(entity_conditions, list):
             for sub in entity_conditions:
                 if isinstance(sub, dict):
