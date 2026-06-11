@@ -17,12 +17,26 @@ straight onto ``and_`` / ``or_``.
 """
 from __future__ import annotations
 
+import json
 import re
+from importlib.resources import files
 
 from ..data import LOCATIONS_ADVANCEMENT, MOBS_ALL, STRUCTURES
 from .acquisition import RuleHelper
 from .ast import Rule, and_, or_
 from .constants import REGION_END, REGION_NETHER, REGION_OVERWORLD
+
+_TAGS: dict | None = None
+
+
+def _tags() -> dict:
+    """Lazily-loaded item + entity-type tag table (tools/build_tags.py), keyed by tag id."""
+    global _TAGS
+    if _TAGS is None:
+        root = __package__.rsplit(".", 1)[0]  # e.g. "worlds.minecraft"
+        with files(root).joinpath("packs", "vanilla_26_1", "tags.json").open(encoding="utf-8") as f:
+            _TAGS = json.load(f)
+    return _TAGS
 
 # Minecraft dimension id -> our region name.
 _DIMENSION_REGION = {
@@ -54,6 +68,8 @@ class TriggerCompiler:
         self._entity_by_gid = {data.game_id: name for name, data in MOBS_ALL.items()}
         self._struct_by_gid = {data.game_id: name for name, data in STRUCTURES.items()}
         self._adv_loc_by_gid = {data.game_id: name for name, data in LOCATIONS_ADVANCEMENT.items()}
+        self._item_tags = _tags().get("item", {})
+        self._entity_tags = _tags().get("entity_type", {})
 
     # -- public -------------------------------------------------------------
     def compile(self, record: dict) -> Rule | None:
@@ -134,13 +150,20 @@ class TriggerCompiler:
 
     # -- condition extractors ----------------------------------------------
     def _entity_node(self, cond: dict) -> Rule | None:
-        name = self._entity_name(cond)
-        return self.h.entity(name) if name else None
+        """Reach the entity a criterion's `entity` predicate pins via `type` — a single id, or a
+        ``#tag`` (e.g. ``#raiders``) expanded to an OR over its members."""
+        gid = self._predicate_value(cond.get("entity"), "type")
+        if not isinstance(gid, str):
+            return None
+        members = self._entity_tags.get(gid[1:], []) if gid.startswith("#") else [gid]
+        names = [self._entity_by_gid[m] for m in members if m in self._entity_by_gid]
+        options = [self.h.entity(name) for name in names]
+        return or_(*options) if options else None
 
     def _entity_name(self, cond: dict) -> str | None:
-        """Display-name for the entity a criterion's `entity` predicate pins via `type`."""
+        """Display-name for the entity a criterion's `entity` predicate pins via a concrete type."""
         gid = self._predicate_value(cond.get("entity"), "type")
-        return self._entity_by_gid.get(gid) if gid else None
+        return self._entity_by_gid.get(gid) if isinstance(gid, str) else None
 
     def _location_node(self, cond: dict) -> Rule | None:
         loc = self._predicate_value(cond.get("player"), "location")
@@ -193,14 +216,25 @@ class TriggerCompiler:
         return self._any_acquire(pred.get("items"))
 
     def _any_acquire(self, ids) -> Rule | None:
-        """OR over ``acquire`` of one item id or a list of them (the items are alternatives)."""
+        """OR over ``acquire`` of one item id, a list of them, or an item ``#tag`` (the items are
+        alternatives; a tag expands to its members)."""
         if isinstance(ids, str):
             ids = [ids]
         if not isinstance(ids, list) or not ids:
             return None
-        options = [self.h.acquire(item_id) for item_id in ids]
-        options = [node for node in options if node is not None]
+        options = []
+        for item_id in ids:
+            for resolved in self._expand_item(item_id):
+                node = self.h.acquire(resolved)
+                if node is not None:
+                    options.append(node)
         return or_(*options) if options else None
+
+    def _expand_item(self, item_id: str) -> list:
+        """An item id as-is, or a ``#tag`` expanded to its member item ids."""
+        if isinstance(item_id, str) and item_id.startswith("#"):
+            return self._item_tags.get(item_id[1:], [])
+        return [item_id] if isinstance(item_id, str) else []
 
     def _used_item_node(self, cond: dict) -> Rule | None:
         """``using_item`` / ``shot_crossbow``: obtain the item, and — when the criterion pins what
