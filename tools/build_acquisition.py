@@ -1,0 +1,262 @@
+"""Build a content pack's item-acquisition table from a Minecraft jar / datapack.
+
+A lightweight, self-contained re-implementation of the standalone "MC Item Acquisition Indexer"
+(only the data it needs, no CLI / human output): it reads recipes, loot tables, villager trades and
+breeding/taming food tags out of ``data/<ns>/`` and writes a compiler-friendly
+``packs/<pack>/acquisition.json`` mapping every obtainable item to its sources. The acquisition
+compiler (logic/acquisition.py) turns that into reachability AST, replacing the hand item map.
+
+Per-item record (only non-empty keys present); ``<ing>`` is
+``{"item": x} | {"tag": x} | {"any_of": [<ing>, ...]}``::
+
+    "<item>": {
+      "recipes":    [ {"station": "<id>", "ingredients": [ <ing>, ... ]}, ... ],
+      "drops":      ["<mob>", ...],                    # mob loot table
+      "mining":     ["<block>", ...],                  # block loot table
+      "structures": ["<real structure name>", ...],    # chest / archaeology loot
+      "trades":     [["<profession>", "<file>"], ...],
+      "breeding":   ["<mob>", ...],                    # appears in a mob's food/tempt tag
+      "gameplay":   ["<table>", ...]                   # fishing / sniffing / misc
+    }
+
+Usage:
+    python tools/build_acquisition.py            # vanilla -> packs/vanilla_26_1/acquisition.json
+    python tools/build_acquisition.py <jar|zip> <out>
+"""
+import json
+import os
+import re
+import sys
+import zipfile
+
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def _default_jar() -> str:
+    version = "26.1.2"
+    props = os.path.join(REPO, "archipelago-euclesia-minecraft", "gradle.properties")
+    if os.path.exists(props):
+        with open(props, encoding="utf-8") as f:
+            for line in f:
+                if line.startswith("minecraft_version"):
+                    version = line.split("=", 1)[1].strip()
+                    break
+    return os.path.join(os.path.expanduser("~"), ".gradle", "caches", "fabric-loom",
+                        version, "minecraft-client.jar")
+
+
+def _strip_ns(value: str) -> str:
+    return value.split(":", 1)[-1] if isinstance(value, str) and ":" in value else value
+
+
+def _ingredient(spec):
+    """Normalise a recipe ingredient to {"item":x} | {"tag":x} | {"any_of":[...]}."""
+    if isinstance(spec, list):
+        return {"any_of": [_ingredient(s) for s in spec]}
+    if isinstance(spec, dict):
+        for key in ("item", "id"):
+            if key in spec:
+                return _ingredient(spec[key])
+        if "tag" in spec:
+            return {"tag": _strip_ns(spec["tag"])}
+        return {"item": "?"}
+    text = str(spec)
+    if text.startswith("#"):
+        return {"tag": _strip_ns(text[1:])}
+    return {"item": _strip_ns(text)}
+
+
+def _recipe_ingredients(recipe: dict) -> list:
+    """Distinct input ingredients of a recipe across the formats vanilla uses."""
+    out, seen = [], set()
+
+    def add(spec):
+        ing = _ingredient(spec)
+        key = json.dumps(ing, sort_keys=True)
+        if key not in seen:
+            seen.add(key)
+            out.append(ing)
+
+    if "key" in recipe:                                   # crafting_shaped
+        for spec in recipe["key"].values():
+            add(spec)
+    for spec in recipe.get("ingredients", []):            # crafting_shapeless
+        add(spec)
+    # smelting / smithing / stonecutting / transmute single-input fields
+    for field in ("ingredient", "base", "addition", "template", "input", "material"):
+        if field in recipe:
+            add(recipe[field])
+    return out
+
+
+class AcquisitionBuilder:
+    def __init__(self):
+        self.recipes: dict[str, list] = {}
+        self.drops: dict[str, set] = {}
+        self.mining: dict[str, set] = {}
+        self.structures: dict[str, set] = {}
+        self.trades: dict[str, set] = {}
+        self.breeding: dict[str, set] = {}
+        self.gameplay: dict[str, set] = {}
+        self.structure_names: dict[str, str] = {
+            "nether_bridge": "Nether Fortress",
+            "simple_dungeon": "Monster Room (Dungeon)",
+            "abandoned_mineshaft": "Mineshaft",
+        }
+
+    # -- loot helpers -------------------------------------------------------
+    def _loot_items(self, entry) -> list:
+        items = []
+        if isinstance(entry, dict):
+            for key in ("value", "name", "id"):
+                if key in entry and isinstance(entry[key], str):
+                    items.append(_strip_ns(entry[key]))
+                    break
+            for key in ("children", "entries", "pools"):
+                for sub in entry.get(key, []) if isinstance(entry.get(key), list) else []:
+                    items.extend(self._loot_items(sub))
+        return items
+
+    def _struct_name(self, file_name: str) -> str:
+        if file_name in self.structure_names:
+            return self.structure_names[file_name]
+        prefix = file_name.split("_", 1)[0]
+        if prefix in self.structure_names:
+            return self.structure_names[prefix]
+        return file_name.replace("_", " ").title()
+
+    # -- load ---------------------------------------------------------------
+    def load(self, entries):
+        for name, raw in entries:
+            if not name.endswith(".json"):
+                continue
+            try:
+                self._dispatch(name, raw)
+            except Exception:
+                continue
+
+    def _dispatch(self, name: str, raw: bytes):
+        if re.search(r"/worldgen/structure/", name):
+            fn = os.path.basename(name)[:-5]
+            self.structure_names.setdefault(fn, fn.replace("_", " ").title())
+            self.structure_names.setdefault(fn.split("_", 1)[0], fn.replace("_", " ").title())
+            return
+        if re.search(r"/recipes?/", name):
+            self._recipe(json.loads(raw))
+            return
+        m = re.search(r"/loot_tables?/([^/]+)/(.+)\.json$", name)
+        if m:
+            self._loot(m.group(1), m.group(2), json.loads(raw))
+            return
+        m = re.search(r"/villager_trade/([^/]+)/(.+)\.json$", name)
+        if m:
+            self._trade(m.group(1), m.group(2), json.loads(raw))
+            return
+        m = re.search(r"/tags/items?/(.+)\.json$", name)
+        if m and (name.endswith("_food.json") or name.endswith("_tempt_items.json")):
+            mob = os.path.basename(name).replace("_food.json", "").replace("_tempt_items.json", "")
+            self._food(mob, json.loads(raw))
+
+    def _recipe(self, recipe: dict):
+        result = recipe.get("result") or {}
+        item = result if isinstance(result, str) else result.get("item") or result.get("id")
+        if not item:
+            return
+        ingredients = _recipe_ingredients(recipe)
+        if ingredients:
+            self.recipes.setdefault(_strip_ns(item), []).append({
+                "station": _strip_ns(recipe.get("type", "")),
+                "ingredients": ingredients,
+            })
+
+    def _loot(self, category: str, rel: str, loot: dict):
+        file_name = rel.rsplit("/", 1)[-1]
+        items = set()
+        for pool in loot.get("pools", []):
+            for entry in pool.get("entries", []):
+                items.update(self._loot_items(entry))
+        for item in items:
+            if category == "entities":
+                self.drops.setdefault(item, set()).add(file_name)
+            elif category == "blocks":
+                self.mining.setdefault(item, set()).add(file_name)
+            elif category in ("chests", "archaeology", "dispensers", "shearing", "spawners"):
+                self.structures.setdefault(item, set()).add(self._struct_name(file_name))
+            else:
+                self.gameplay.setdefault(item, set()).add(file_name)
+
+    def _trade(self, profession: str, file_name: str, trade: dict):
+        gives = trade.get("gives", {})
+        item = gives.get("id") or gives.get("item")
+        if item:
+            self.trades.setdefault(_strip_ns(item), set()).add((profession, file_name))
+
+    def _food(self, mob: str, tag: dict):
+        for value in tag.get("values", []):
+            item = value if isinstance(value, str) else value.get("id", "")
+            if item:
+                self.breeding.setdefault(_strip_ns(item).replace("#", ""), set()).add(mob)
+
+    # -- emit ---------------------------------------------------------------
+    def table(self) -> dict:
+        items = set(self.recipes) | set(self.drops) | set(self.mining) | set(self.structures) \
+            | set(self.trades) | set(self.breeding) | set(self.gameplay)
+        out: dict[str, dict] = {}
+        for item in sorted(items):
+            rec: dict = {}
+            if item in self.recipes:
+                rec["recipes"] = self.recipes[item]
+            if item in self.drops:
+                rec["drops"] = sorted(self.drops[item])
+            if item in self.mining:
+                rec["mining"] = sorted(self.mining[item])
+            if item in self.structures:
+                rec["structures"] = sorted(self.structures[item])
+            if item in self.trades:
+                rec["trades"] = sorted([list(t) for t in self.trades[item]])
+            if item in self.breeding:
+                rec["breeding"] = sorted(self.breeding[item])
+            if item in self.gameplay:
+                rec["gameplay"] = sorted(self.gameplay[item])
+            out[item] = rec
+        return out
+
+
+def _entries(source: str):
+    if os.path.isdir(source):
+        for root, _dirs, files in os.walk(source):
+            for fn in files:
+                full = os.path.join(root, fn)
+                arc = os.path.relpath(full, source).replace(os.sep, "/")
+                with open(full, "rb") as f:
+                    yield arc, f.read()
+    else:
+        with zipfile.ZipFile(source) as zf:
+            for name in zf.namelist():
+                if not name.endswith("/"):
+                    yield name, zf.read(name)
+
+
+def main() -> int:
+    source = sys.argv[1] if len(sys.argv) > 1 else _default_jar()
+    out = sys.argv[2] if len(sys.argv) > 2 else os.path.join(
+        REPO, "minecraft", "packs", "vanilla_26_1", "acquisition.json")
+    if not os.path.exists(source):
+        print(f"source not found: {source}")
+        print("usage: python tools/build_acquisition.py <jar|zip|dir> <out.json>")
+        return 2
+    builder = AcquisitionBuilder()
+    builder.load(_entries(source))
+    table = builder.table()
+    with open(out, "w", encoding="utf-8") as f:
+        json.dump(table, f, indent=2, ensure_ascii=False, sort_keys=True)
+        f.write("\n")
+    print(f"wrote acquisition for {len(table)} items to {out}")
+    print("  recipes:", len(builder.recipes), "| drops:", len(builder.drops),
+          "| mining:", len(builder.mining), "| structures:", len(builder.structures),
+          "| trades:", len(builder.trades), "| breeding:", len(builder.breeding))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

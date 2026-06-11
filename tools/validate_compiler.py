@@ -17,9 +17,8 @@ AP_ROOT = r"C:\Users\benja\PycharmProjects\ArchipelagoClone"
 sys.path.insert(0, AP_ROOT)
 os.chdir(AP_ROOT)
 
-from worlds.AutoWorld import AutoWorldRegister  # noqa: E402
 from test.general import setup_multiworld  # noqa: E402
-
+from worlds.AutoWorld import AutoWorldRegister  # noqa: E402
 from worlds.minecraft.data import LOCATIONS_ADVANCEMENT  # noqa: E402
 from worlds.minecraft.logic.acquisition import RuleHelper  # noqa: E402
 from worlds.minecraft.logic.engine import collect_advancement_rules  # noqa: E402

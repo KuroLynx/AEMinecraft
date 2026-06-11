@@ -20,8 +20,8 @@ AP_ROOT = r"C:\Users\benja\PycharmProjects\ArchipelagoClone"
 sys.path.insert(0, AP_ROOT)
 os.chdir(AP_ROOT)
 
-from worlds.AutoWorld import AutoWorldRegister  # noqa: E402
 from test.general import setup_multiworld  # noqa: E402
+from worlds.AutoWorld import AutoWorldRegister  # noqa: E402
 
 WORLD = AutoWorldRegister.world_types["Minecraft"]
 BASELINE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_slotdata_baseline")
@@ -33,7 +33,9 @@ SEED = 1234567
 COMBOS: dict[str, dict] = {
     "default": {},
     "nether_start": {"start_dimension": "nether"},
-    "kill_and_challenge": {"kill_sanity": True, "challenge_sanity": True, "advancements_required": 50},
+    "kill_and_challenge": {
+        "kill_sanity": True, "challenge_sanity": True, "advancements_required": 50,
+    },
     "villager_trust": {"villager_trust": True},
     "mob_and_structure_locks": {
         # Locking every mob category + all structures adds many unlock items, so the location
@@ -124,10 +126,13 @@ def cmd_check() -> int:
         else:
             mismatches += 1
             print(f"  DIFF {name} — writing actual to {name}.actual.json for inspection")
-            with open(os.path.join(BASELINE_DIR, f"{name}.actual.json"), "w", encoding="utf-8") as f:
+            actual_path = os.path.join(BASELINE_DIR, f"{name}.actual.json")
+            with open(actual_path, "w", encoding="utf-8") as f:
                 f.write(actual)
     print()
-    print("RESULT:", "PASS (identical slot_data)" if mismatches == 0 else f"FAIL ({mismatches} combos differ)")
+    verdict = "PASS (identical slot_data)" if mismatches == 0 \
+        else f"FAIL ({mismatches} combos differ)"
+    print("RESULT:", verdict)
     return 0 if mismatches == 0 else 1
 
 

@@ -3,8 +3,8 @@
 Reads ``data/<namespace>/advancement[s]/**.json`` out of any source — the MC client jar (vanilla),
 a mod jar (Twilight Forest), or a datapack (bacap), supplied as a ``.jar``/``.zip`` file or an
 unpacked directory — and writes the normalised, lossless manifest the trigger compiler consumes.
-This is the offline counterpart of the in-game Fabric ``/aem dump-advancements`` command; both target
-the SAME schema, so the apworld treats vanilla, mods and datapacks uniformly.
+This is the offline counterpart of the in-game Fabric ``/aem dump-advancements`` command; both
+target the SAME schema, so the apworld treats vanilla, mods and datapacks uniformly.
 
 Recipe "advancements" (``.../advancement[s]/recipes/...``) are skipped — they are not checks. Both
 the modern ``advancement`` and the legacy ``advancements`` folder names are accepted, so older MC
@@ -19,8 +19,8 @@ Manifest shape (sorted by id for stable diffs)::
         "criteria": { "<name>": {"trigger": "<id>", "conditions": { ... }} } }, ... }
 
 Usage:
-    python tools/extract_manifest.py                       # vanilla: auto-locate MC jar -> packs/vanilla_26_1/manifest.json
-    python tools/extract_manifest.py <source> <out.json>    # any mod jar / datapack zip / folder
+    python tools/extract_manifest.py             # vanilla -> packs/vanilla_26_1/manifest.json
+    python tools/extract_manifest.py <src> <out>  # any mod jar / datapack zip / folder
 """
 import json
 import os
@@ -94,7 +94,8 @@ def main() -> int:
     out = sys.argv[2] if len(sys.argv) > 2 else os.path.join(
         REPO, "minecraft", "packs", "vanilla_26_1", "manifest.json")
     if not os.path.exists(source):
-        print(f"source not found: {source}\nusage: python tools/extract_manifest.py <jar|zip|dir> <out.json>")
+        print(f"source not found: {source}")
+        print("usage: python tools/extract_manifest.py <jar|zip|dir> <out.json>")
         return 2
     manifest = extract(source)
     if not manifest:
