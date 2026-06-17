@@ -55,6 +55,17 @@ def _wood_region(base: str) -> str | None:
 _NETHER_BLOCK_HINTS = ("nether", "crimson", "warped", "basalt", "blackstone", "soul_",
                        "magma", "glowstone", "ancient_debris", "nylium", "shroomlight", "gilded")
 _END_BLOCK_HINTS = ("end_stone", "chorus", "purpur", "dragon_egg")
+# Craftable blocks that ALSO generate naturally, so digging one up (its self-drop) is a genuine
+# free source — unlike a placed-only crafted block (planks/wool/slime_block), whose self-mining is
+# circular. Only blocks that BOTH self-mine and have a recipe need listing (others keep self-mining
+# unconditionally). Missing one merely over-gates it to its recipe; wrongly adding a placed-only
+# block would under-gate it, so keep this conservative.
+_NATURAL_SELF_MINED = frozenset({
+    "stone", "cobblestone", "granite", "diorite", "andesite", "tuff", "calcite", "deepslate",
+    "cobbled_deepslate", "dripstone_block", "amethyst_block", "sandstone", "red_sandstone",
+    "clay", "snow_block", "packed_ice", "blue_ice", "glowstone", "magma_block", "obsidian",
+    "mossy_cobblestone", "mud", "packed_mud", "bone_block",
+})
 # needs_<tier>_tool tag -> the material tier the mining pickaxe (and the player) must have reached.
 _NEEDS_TIER = {"stone": MAT_STONE, "iron": MAT_IRON, "diamond": MAT_DIAMOND}
 _BLOCK_MINING: dict | None = None
@@ -911,6 +922,16 @@ class RuleHelper:
             if name in MOBS_ALL:
                 options.append(self.entity(name))
         for block in record.get("mining", ()):
+            # A block that drops *itself* is only a real "mine it" source when it generates
+            # naturally. A placed-only block — a crafted one (slime_block, wool, planks, …), a mob
+            # trophy (a skull/head) or a frog-made froglight — must be obtained then placed first,
+            # so its self-mining is circular; worse, it yields a bare region path that _unique_or
+            # absorption uses to delete the item's real entity/structure gates (e.g. slime_ball via
+            # slime_block, or wither_skeleton_skull, dropping their mob gate).
+            placed_only = (bool(record.get("recipes"))
+                           or base.endswith(("_head", "_skull", "_froglight")))
+            if block == base and placed_only and base not in _NATURAL_SELF_MINED:
+                continue
             options.append(self._mining_node(block, base))
         if record.get("trades"):
             options.append(self.can_trade_villager())

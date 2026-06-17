@@ -105,6 +105,14 @@ _ENTITY_REACH_TRIGGERS = frozenset({
     "minecraft:summoned_entity",
 })
 
+# A few status effects with a non-brewing environmental source (the rest are gated on brewing in
+# _effects_node). Each maps the effect id to a builder taking the compiler -> a Rule (or None).
+_EFFECT_SOURCE = {
+    "minecraft:levitation": lambda c: c._entity_gid("minecraft:shulker"),
+    "minecraft:dolphins_grace": lambda c: c._entity_gid("minecraft:dolphin"),
+    "minecraft:conduit_power": lambda c: c.h.acquire("minecraft:conduit"),
+}
+
 
 class TriggerCompiler:
     """Compiles a manifest record into a :class:`Rule`, or ``None`` if not confidently derivable."""
@@ -162,6 +170,10 @@ class TriggerCompiler:
     def _criterion(self, crit: dict) -> Rule | None:
         trigger = crit.get("trigger")
         cond = crit.get("conditions") or {}
+        # Minecraft treats an unnamespaced trigger as `minecraft:` (BACAP writes some criteria as
+        # bare `consume_item` / `inventory_changed`), so normalise before dispatch.
+        if isinstance(trigger, str) and ":" not in trigger:
+            trigger = f"minecraft:{trigger}"
 
         if trigger in _ENTITY_REACH_TRIGGERS:
             return self._entity_node(cond)
@@ -192,6 +204,9 @@ class TriggerCompiler:
             return self._used_item_node(cond)
         if trigger == "minecraft:placed_block":
             return self._placed_block_node(cond)
+        if trigger == "minecraft:slide_down_block":
+            # Slide down a block (e.g. honey) → you must be able to obtain that block.
+            return self._any_acquire(cond.get("blocks"))
         if trigger == "minecraft:item_used_on_block":
             return self._used_on_block_node(cond)
         if trigger == "minecraft:filled_bucket":
@@ -208,6 +223,62 @@ class TriggerCompiler:
             return self.h.acquire("minecraft:totem_of_undying")
         if trigger == "minecraft:player_generates_container_loot":
             return self._container_loot_node(cond)
+        if trigger in ("minecraft:default_block_use", "minecraft:any_block_use",
+                       "minecraft:enter_block"):
+            # Use / stand in a block → you must be able to obtain or reach that block.
+            return self._any_acquire(self._blocks_in(cond))
+        if trigger in ("minecraft:item_durability_changed", "minecraft:player_sheared_equipment"):
+            # Wear an item down / shear with one → obtain that item (shears for shearing).
+            item = self._item_predicate(cond.get("item"))
+            return item if item is not None else self.h.acquire("minecraft:shears")
+        if trigger in ("minecraft:thrown_item_picked_up_by_player",
+                       "minecraft:thrown_item_picked_up_by_entity"):
+            # An item was tossed and picked up → obtain that item.
+            return self._item_predicate(cond.get("item"))
+        if trigger == "minecraft:crafter_recipe_crafted":
+            # Auto-craft via a Crafter → build a Crafter (its ingredients gate it further).
+            return self.h.acquire("minecraft:crafter")
+        if trigger == "minecraft:cured_zombie_villager":
+            return self._cure_zombie_node()
+        if trigger == "minecraft:kill_mob_near_sculk_catalyst":
+            return self._sculk_kill_node(cond)
+        if trigger == "minecraft:bee_nest_destroyed":
+            return self._entity_gid("minecraft:bee")
+        if trigger == "minecraft:allay_drop_item_on_block":
+            return self._all_req(self._entity_gid("minecraft:allay"),
+                                 self.h.acquire("minecraft:note_block"))
+        if trigger == "minecraft:ride_entity_in_lava":
+            return self._all_req(self._entity_gid("minecraft:strider"),
+                                 self.h.access_region(REGION_NETHER))
+        if trigger == "minecraft:started_riding":
+            return self._started_riding_node(cond)
+        if trigger in ("minecraft:voluntary_exile", "minecraft:hero_of_the_village"):
+            # A raid: trigger / win it → reach a Pillager and a village.
+            return self._all_req(self._entity_gid("minecraft:pillager"), self.h.any_village())
+        if trigger == "minecraft:avoid_vibration":
+            # Sneak past a sculk sensor → the Deep Dark (Ancient City).
+            return self._struct_gid("minecraft:ancient_city")
+        if trigger in ("minecraft:channeled_lightning", "minecraft:lightning_strike",
+                       "minecraft:spear_mobs"):
+            # Channel lightning with a trident / spear mobs with one → obtain a trident.
+            return self.h.acquire("minecraft:trident")
+        if trigger == "minecraft:nether_travel":
+            return self.h.access_region(REGION_NETHER)
+        if trigger == "minecraft:levitation":
+            # Levitate (Shulker bullets) → reach a Shulker (End City).
+            return self._entity_gid("minecraft:shulker")
+        if trigger == "minecraft:fall_after_explosion":
+            # Be launched by an explosion → a wind charge (Breeze) or TNT.
+            return self._any_opt(self.h.acquire("minecraft:wind_charge"),
+                                 self.h.acquire("minecraft:tnt"))
+        if trigger == "minecraft:fall_from_height":
+            return self.h.access_region(REGION_OVERWORLD)  # mountains / high builds
+        if trigger == "minecraft:effects_changed":
+            return self._effects_node(cond)
+        if trigger == "minecraft:impossible":
+            # Granted by the datapack's own scoreboard logic, never by gameplay — its real
+            # prerequisite isn't in the criterion, so defer to the parent-chain fallback.
+            return None
         if trigger in _IMPLIED_ITEM:
             return self.h.acquire(_IMPLIED_ITEM[trigger])
         return None
@@ -379,10 +450,97 @@ class TriggerCompiler:
 
     def _placed_block_node(self, cond: dict) -> Rule | None:
         """``placed_block``: obtain the block being placed."""
-        entries = cond.get("location") if isinstance(cond.get("location"), list) else []
-        blocks = [e["block"] for e in entries
-                  if isinstance(e, dict) and isinstance(e.get("block"), str)]
-        return self._any_acquire(blocks)
+        return self._any_acquire(self._blocks_in(cond))
+
+    def _blocks_in(self, cond: dict) -> list:
+        """Every block id a block-interaction criterion references. Tolerates the flat
+        ``location:[{block: id}]`` form (vanilla ``block_state_property``) and BACAP's nested
+        ``location_check`` → ``predicate.block.blocks`` form, plus a top-level ``block`` predicate
+        (``enter_block``). ``#tag`` ids are kept — ``_any_acquire`` expands them."""
+        blocks: list = []
+
+        def add(value):
+            if isinstance(value, str):
+                blocks.append(value)
+            elif isinstance(value, dict):
+                blocks.extend(b for b in (value.get("blocks") or []) if isinstance(b, str))
+
+        location = cond.get("location")
+        entries = location if isinstance(location, list) else [location]
+        for entry in entries:
+            if isinstance(entry, dict):
+                add(entry.get("block"))
+                pred = entry.get("predicate")
+                if isinstance(pred, dict):
+                    add(pred.get("block"))
+        add(cond.get("block"))
+        return blocks
+
+    @staticmethod
+    def _all_req(*nodes) -> Rule | None:
+        """AND of nodes that are ALL required — ``None`` (fall back) if any is unresolved, so a
+        half-built gate never silently weakens to its resolvable half."""
+        return None if any(n is None for n in nodes) else and_(*nodes)
+
+    @staticmethod
+    def _any_opt(*nodes) -> Rule | None:
+        """OR over the resolvable nodes (alternative sources); ``None`` if none resolved."""
+        present = [n for n in nodes if n is not None]
+        return or_(*present) if present else None
+
+    def _entity_gid(self, gid: str) -> Rule | None:
+        """Reach the entity with this game id, or ``None`` when the active packs lack it."""
+        name = self._entity_by_gid.get(gid)
+        return self.h.entity(name) if name in MOBS_ALL else None
+
+    def _struct_gid(self, gid: str) -> Rule | None:
+        """Reach the structure with this game id, or ``None`` when the active packs lack it."""
+        name = self._struct_by_gid.get(gid)
+        return self.h.structure(name) if name in STRUCTURES else None
+
+    def _cure_zombie_node(self) -> Rule:
+        """Cure a Zombie Villager: reach one, plus a golden apple and a Potion of Weakness
+        (brewing stand + Knowledge: Brewing + a fermented spider eye)."""
+        parts = [self._entity_gid("minecraft:zombie_villager"),
+                 self.h.acquire("minecraft:golden_apple"),
+                 self.h.acquire("minecraft:brewing_stand"), self.h.knowledge(K_BREWING),
+                 self.h.acquire("minecraft:fermented_spider_eye")]
+        return self.h.all_of(*[p for p in parts if p is not None])
+
+    def _sculk_kill_node(self, cond: dict) -> Rule:
+        """Kill a mob near a sculk catalyst → be in the Deep Dark (Ancient City) and, when the
+        criterion pins a victim, reach it too."""
+        deep_dark = self._struct_gid("minecraft:ancient_city")
+        victim = self._entity_node(cond)
+        parts = [p for p in (deep_dark, victim) if p is not None]
+        return self.h.all_of(*parts) if parts else self.h.access_region(REGION_OVERWORLD)
+
+    def _started_riding_node(self, cond: dict) -> Rule | None:
+        """Ride a vehicle: a placeable item (minecart / boat) is acquired; a mount is reached."""
+        gid = self._predicate_value(cond.get("player"), "vehicle")
+        gid = gid.get("type") if isinstance(gid, dict) else gid
+        if not isinstance(gid, str):
+            return None
+        mount = self._entity_gid(gid)
+        if mount is not None:
+            return mount
+        return self.h.acquire(gid)  # minecart / *_boat / *_raft are items
+
+    def _effects_node(self, cond: dict) -> Rule:
+        """Gain a status effect. Most effects come from a brewed potion, so gate on brewing
+        capability; a few environmental ones map to their source."""
+        effects = cond.get("effects")
+        names = list(effects) if isinstance(effects, dict) else []
+        parts = []
+        for effect in names:
+            source = _EFFECT_SOURCE.get(effect)
+            if source is not None:
+                node = source(self)
+                if node is not None:
+                    parts.append(node)
+        parts.append(self.h.all_of(self.h.acquire("minecraft:brewing_stand"),
+                                   self.h.knowledge(K_BREWING)))
+        return self.h.all_of(*parts)
 
     def _used_on_block_node(self, cond: dict) -> Rule | None:
         """``item_used_on_block``: the item used (top-level ``item`` or a ``match_tool`` predicate),
