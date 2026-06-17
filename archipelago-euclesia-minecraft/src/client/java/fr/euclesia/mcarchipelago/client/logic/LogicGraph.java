@@ -28,19 +28,31 @@ public final class LogicGraph {
     private final Map<String, List<Edge>> regions;
     private final Map<String, LocationEntry> locations;
     private final Map<String, String> locationNameByGameId;
+    private final Map<Integer, RuleNode> definitions;
 
     private LogicGraph(String origin,
                        Map<String, List<Edge>> regions,
                        Map<String, LocationEntry> locations,
-                       Map<String, String> locationNameByGameId) {
+                       Map<String, String> locationNameByGameId,
+                       Map<Integer, RuleNode> definitions) {
         this.origin = origin;
         this.regions = regions;
         this.locations = locations;
         this.locationNameByGameId = locationNameByGameId;
+        this.definitions = definitions;
     }
 
     public static LogicGraph parse(JsonObject root) {
         String origin = root.get("origin").getAsString();
+
+        // Shared subtrees hoisted by the exporter (logic_export._dedup_rules); a {"k":"ref","id":N}
+        // node anywhere in the graph points here. Parsed first so refs resolve at eval time.
+        Map<Integer, RuleNode> definitions = new HashMap<>();
+        if (root.has("definitions") && root.get("definitions").isJsonObject()) {
+            for (Map.Entry<String, JsonElement> entry : root.getAsJsonObject("definitions").entrySet()) {
+                definitions.put(Integer.parseInt(entry.getKey()), RuleNode.parse(entry.getValue()));
+            }
+        }
 
         Map<String, List<Edge>> regions = new HashMap<>();
         JsonObject regionsJson = root.getAsJsonObject("regions");
@@ -64,7 +76,12 @@ public final class LogicGraph {
             locationNameByGameId.put(gameId, entry.getKey());
         }
 
-        return new LogicGraph(origin, regions, locations, locationNameByGameId);
+        return new LogicGraph(origin, regions, locations, locationNameByGameId, definitions);
+    }
+
+    /** @return the shared subtree for a {@code ref} id, or {@code null} if absent. */
+    RuleNode definition(int id) {
+        return definitions.get(id);
     }
 
     /** @return the AP location name for an advancement {@code game_id}, or {@code null} if none. */
