@@ -27,6 +27,7 @@ from .content.registry import (  # noqa: F401
     MCMobData,
     MCStructureData,
     load_manifest_advancements,
+    load_manifest_challenge,
     load_pack,
 )
 from .logic.constants import *
@@ -60,10 +61,10 @@ MATERIAL_HANDLING_ITEMS: dict[int, list[str]] = {
 # until the player has received the Knowledge item AND that many Material Handling copies — e.g. a
 # diamond sword needs "Knowledge: Sword Handling" and 5 Material Handling. Mirrors the apworld logic,
 # where these are gated by helper.knowledge(...) plus the relevant material tier. Tune freely.
-_TOOL_TIERS = {"wooden": MAT_WOOD, "stone": MAT_STONE, "iron": MAT_IRON,
+_TOOL_TIERS = {"wooden": MAT_WOOD, "stone": MAT_STONE, "copper": MAT_COPPER, "iron": MAT_IRON,
                "golden": MAT_GOLD, "diamond": MAT_DIAMOND, "netherite": MAT_NETHERITE}
 _TOOL_KINDS = {"sword": K_SWORD, "pickaxe": K_PICKAXE, "axe": K_AXE, "shovel": K_SHOVEL, "hoe": K_HOE}
-_ARMOR_TIERS = {"leather": MAT_WOOD, "chainmail": MAT_IRON, "iron": MAT_IRON,
+_ARMOR_TIERS = {"leather": MAT_WOOD, "chainmail": MAT_IRON, "copper": MAT_COPPER, "iron": MAT_IRON,
                 "golden": MAT_GOLD, "diamond": MAT_DIAMOND, "netherite": MAT_NETHERITE}
 _ARMOR_PIECES = ["helmet", "chestplate", "leggings", "boots"]
 
@@ -124,9 +125,25 @@ ALL_LOCATIONS: dict[str, MCLocationData] = {
 # locations here — BACAP's `minecraft:` files REWRITE the vanilla advancements, so they reuse the
 # vanilla locations (their modified criteria come from the BACAP manifest in set_rules when on).
 # ADVANCEMENT_LOCATIONS is the vanilla+BACAP union the trigger compiler walks (parent-chain lookup).
+# Two BACAP tabs are dropped: `statistics` auto-grants from scoreboard counters and `technical` is
+# hidden datapack plumbing — neither is a real, player-earnable check. Every `frame=challenge`
+# advancement (BACAP scatters them across most tabs, not just the "Super Challenges" `challenges`
+# tab) is flagged challenge=True so the challenge_sanity option gates them like vanilla's.
 _VANILLA_ADVANCEMENT_GAME_IDS = frozenset(loc.game_id for loc in LOCATIONS_ADVANCEMENT.values())
 LOCATIONS_BACAP: dict[str, MCLocationData] = load_manifest_advancements(
     "bacap", BASE_ID_LOC_BACAP, reserved=frozenset(ALL_LOCATIONS),
-    skip_game_ids=_VANILLA_ADVANCEMENT_GAME_IDS)
+    skip_game_ids=_VANILLA_ADVANCEMENT_GAME_IDS,
+    skip_tabs=frozenset({"statistics", "technical"}),
+    challenge_tabs=frozenset({"challenges"}))
 
 ADVANCEMENT_LOCATIONS: dict[str, MCLocationData] = {**LOCATIONS_ADVANCEMENT, **LOCATIONS_BACAP}
+
+# Vanilla advancement locations BACAP *rewrites* (its `minecraft:` files reuse them). BACAP can
+# give the advancement a different frame than vanilla, promoting a goal/task to a challenge or
+# demoting a challenge, so when blazeandcave is on the challenge_sanity gate must follow BACAP's
+# frame, not the vanilla flag baked into the location. Maps rewritten game_id -> BACAP challenge.
+_BACAP_CHALLENGE: dict[str, bool] = load_manifest_challenge("bacap")
+BACAP_REWRITE_CHALLENGE: dict[str, bool] = {
+    game_id: _BACAP_CHALLENGE[game_id]
+    for game_id in _VANILLA_ADVANCEMENT_GAME_IDS if game_id in _BACAP_CHALLENGE
+}

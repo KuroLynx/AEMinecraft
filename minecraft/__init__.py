@@ -157,8 +157,13 @@ class MCWorld(World):
             locations.update(LOCATIONS_BACAP)
 
         if not self.options.challenge_sanity:
+            # A reused vanilla location's challenge-ness follows the active manifest: BACAP's frame
+            # when blazeandcave is on (it can promote/demote a vanilla advancement), else the
+            # vanilla flag baked into the location.
+            rewrites = BACAP_REWRITE_CHALLENGE if self.options.blazeandcave else {}
             locations = {
-                name: loc_data for name, loc_data in locations.items() if not loc_data.challenge
+                name: loc_data for name, loc_data in locations.items()
+                if not rewrites.get(loc_data.game_id, loc_data.challenge)
             }
 
         return locations

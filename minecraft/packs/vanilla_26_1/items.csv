@@ -42,4 +42,4 @@ Trap: Slippery Fingers,trap,8
 Trap: Item Fear,trap,5
 Dimension Unlock: Overworld,progression,1
 Progressive Structure Finder,progression_skip_balancing,5
-Biome Finder,useful,1
+Biome Finder,progression_skip_balancing,1

@@ -46,18 +46,22 @@ def _default_jar() -> str:
                         version, "minecraft-client.jar")
 
 
-def _title(display: dict) -> str | None:
-    """The advancement's display title. Datapacks (BACAP) put the literal name in ``translate``;
-    vanilla uses a translation key there (unused — vanilla names come from its CSV)."""
+def _title(display: dict, lang: dict) -> str | None:
+    """The advancement's display title. Vanilla uses a translation key (``advancements.*.title``)
+    resolved here against the source's ``en_us.json``; datapacks (BACAP) put the literal name in
+    ``translate`` already, so ``lang.get`` falls back to that key unchanged."""
     title = display.get("title")
     if isinstance(title, str):
         return title
     if isinstance(title, dict):
-        return title.get("translate") or title.get("text")
+        key = title.get("translate")
+        if key is not None:
+            return lang.get(key, key)
+        return title.get("text")
     return None
 
 
-def _record(data: dict, rel: str) -> dict:
+def _record(data: dict, rel: str, lang: dict) -> dict:
     criteria = {
         name: {"trigger": body.get("trigger"), "conditions": body.get("conditions", {})}
         for name, body in data.get("criteria", {}).items()
@@ -67,7 +71,7 @@ def _record(data: dict, rel: str) -> dict:
         "parent": data.get("parent"),
         "tab": rel.split("/", 1)[0],
         "frame": display.get("frame", "task"),
-        "title": _title(display),
+        "title": _title(display, lang),
         "requirements": data.get("requirements", []),
         "criteria": criteria,
     }
@@ -89,16 +93,28 @@ def _entries(source: str):
                     yield name, zf.read(name)
 
 
+_LANG_RE = re.compile(r"^assets/[^/]+/lang/en_us\.json$")
+
+
 def extract(source: str) -> dict:
     manifest: dict = {}
+    lang: dict = {}
+    advancements: list[tuple[str, str, bytes]] = []
+    # Two passes: collect en_us.json first so titles can resolve translation keys (the lang file
+    # may appear after the advancements in the archive order).
     for arc, raw in _entries(source):
+        if _LANG_RE.match(arc):
+            lang.update(json.loads(raw))
+            continue
         match = _ADV_RE.match(arc)
         if not match:
             continue
         namespace, rel = match.group(1), match.group(2)
         if rel.startswith("recipes/"):
             continue
-        manifest[f"{namespace}:{rel}"] = _record(json.loads(raw), rel)
+        advancements.append((namespace, rel, raw))
+    for namespace, rel, raw in advancements:
+        manifest[f"{namespace}:{rel}"] = _record(json.loads(raw), rel, lang)
     return dict(sorted(manifest.items()))
 
 

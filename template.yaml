@@ -178,6 +178,7 @@ Minecraft:
     #   - Arbalistic (kill 5 unique mobs with one arrow)
     #   - A Balanced Diet (eat every food item)
     # These advancements are very difficult to complete and are excluded by default.
+    # With BACAP enabled, this also includes BACAP's entire "Super Challenges" tab (~41 of them).
     'false': 50
     'true': 0
 
@@ -206,8 +207,11 @@ Minecraft:
   # BlazeandCave's Advancements Pack (BACAP)
   # -------------------------------------------------------------------------
   blazeandcave:
-    # Add BlazeandCave's Advancements Pack (BACAP) to the location pool. When enabled, BACAP's
-    # ~1162 custom advancements become checks alongside the (BACAP-rewritten) vanilla ones.
+    # Add BlazeandCave's Advancements Pack (BACAP) to the location pool. When enabled, ~1028 BACAP
+    # custom advancements become checks alongside the (BACAP-rewritten) vanilla ones. The hidden
+    # "statistics" (auto-granted stat counters) and "technical" (datapack plumbing) tabs are not
+    # real checks and are excluded; BACAP's "Super Challenges" tab is only included when
+    # challenge_sanity is on.
     # You MUST have the BlazeandCave's Advancements Pack datapack installed in your world for
     # these checks to fire. Their logic is derived automatically from each advancement's criteria
     # and parent — the same way the vanilla advancements are.

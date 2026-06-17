@@ -1,9 +1,10 @@
 """Content registry: parses a *content pack* into typed records with stable Archipelago IDs.
 
-A pack is a directory under ``minecraft/packs/<name>/`` holding ``items.csv``, ``mobs.csv``,
-``structures.csv`` and ``advancements.csv`` (plus ``meta.json``), describing one content source —
-vanilla today, mods / datapacks / other MC versions later. The dataclasses, ID scheme and loader
-bodies were moved here verbatim from the old ``data.py`` so AP item/location IDs are unchanged.
+A pack is a directory under ``minecraft/packs/<name>/`` holding ``items.csv``, ``mobs.csv`` and
+``structures.csv`` plus a ``manifest.json`` (and ``meta.json``), describing one content source —
+vanilla today, mods / datapacks / other MC versions later. Advancement *locations* come from the
+manifest (the data-driven source the trigger compiler also reads), so vanilla, mods and datapacks
+are handled uniformly; the CSVs only describe items/mobs/structures.
 
 ``load_pack(name)`` returns a :class:`ContentRegistry` bundling the parsed records; ``data.py``
 re-exports them as the module-level globals the rest of the apworld already imports.
@@ -137,27 +138,24 @@ def _load_structures(pack_dir) -> dict[str, MCStructureData]:
     return structs
 
 
-def _load_advancements(pack_dir) -> dict[str, MCLocationData]:
-    locations = {}
-    for index, row in enumerate(_read_csv(pack_dir, "advancements.csv")):
-        full_game_id = f"minecraft:{row['tab']}/{row['game_id']}" if row["game_id"] != "root" else f"minecraft:{row['tab']}/root"
-        locations[f"{ADVANCEMENT_PREFIX}{row['name']}"] = MCLocationData(
-            id=BASE_ID_LOC_ADVANCEMENT + index,
-            category=MCLocationCategory.ADVANCEMENT,
-            region=row["region"],
-            game_id=full_game_id,
-            challenge=row.get("challenge", "false").strip().lower() == "true",
-        )
-    return locations
-
-
 def load_manifest_advancements(pack_name: str, id_base: int, region: str = "Overworld",
                                reserved: frozenset = frozenset(),
-                               skip_game_ids: frozenset = frozenset()) -> dict[str, MCLocationData]:
+                               skip_game_ids: frozenset = frozenset(),
+                               skip_tabs: frozenset = frozenset(),
+                               challenge_tabs: frozenset = frozenset()
+                               ) -> dict[str, MCLocationData]:
     """Advancement locations for a manifest-only pack (a mod / datapack with no CSVs, e.g. BACAP).
 
     ``skip_game_ids`` are advancement ids the pack *rewrites* rather than adds (BACAP's
     ``minecraft:`` overrides reuse the existing vanilla locations), so they get no new location.
+
+    ``skip_tabs`` are whole advancement *tabs* that aren't real, player-earnable checks and so
+    become no location at all (BACAP's ``statistics`` tab auto-grants from scoreboard counters, and
+    its ``technical`` tab is hidden datapack plumbing). Every ``frame=challenge`` advancement is
+    flagged ``challenge=True`` so the ``challenge_sanity`` option can gate it — BACAP scatters
+    challenge tiles across most tabs (mining/monsters/adventure/…), not only its ``challenges`` /
+    "Super Challenges" tab. ``challenge_tabs`` additionally flags whole tabs as challenge (kept for
+    any challenge-tab advancement whose frame isn't literally ``challenge``).
 
     The advancement *id* is the location's game_id (what the mod reports); the location name is the
     coherent ``Advancement: <title>`` (the datapack's literal display title), falling back to the
@@ -172,7 +170,11 @@ def load_manifest_advancements(pack_name: str, id_base: int, region: str = "Over
     for advancement_id in sorted(manifest):
         if advancement_id in skip_game_ids:
             continue
-        title = manifest[advancement_id].get("title")
+        entry = manifest[advancement_id]
+        tab = entry.get("tab")
+        if tab in skip_tabs:
+            continue
+        title = entry.get("title")
         location_name = f"{ADVANCEMENT_PREFIX}{title}" if title else None
         if location_name is None or location_name in used:
             location_name = f"{ADVANCEMENT_PREFIX}{advancement_id.replace(':', '/')}"
@@ -182,8 +184,21 @@ def load_manifest_advancements(pack_name: str, id_base: int, region: str = "Over
             category=MCLocationCategory.ADVANCEMENT,
             region=region,
             game_id=advancement_id,
+            challenge=entry.get("frame") == "challenge" or tab in challenge_tabs,
         )
     return locations
+
+
+def load_manifest_challenge(pack_name: str) -> dict[str, bool]:
+    """``{advancement_id: frame == "challenge"}`` for every advancement in the pack's manifest.
+
+    Used to honour a datapack's *rewritten* frame on a reused vanilla location: when BACAP is on it
+    may promote a vanilla ``goal``/``task`` to a ``challenge`` (or demote one), and the
+    ``challenge_sanity`` gate must follow whichever manifest supplies the logic this seed."""
+    with _pack_dir(pack_name).joinpath("manifest.json").open(encoding="utf-8") as handle:
+        manifest = json.load(handle)
+    return {advancement_id: entry.get("frame") == "challenge"
+            for advancement_id, entry in manifest.items()}
 
 
 def _load_mob_kill_locations(mobs: dict[str, MCMobData]) -> dict[str, MCLocationData]:
@@ -234,7 +249,11 @@ def load_pack(name: str) -> ContentRegistry:
         items=items,
         mobs=mobs,
         structures=structures,
-        advancements=_load_advancements(pack_dir),
+        # Advancements are loaded from the pack's manifest.json (the same data-driven source the
+        # trigger compiler reads), not a CSV — every advancement is placed in the Overworld region
+        # and its compiled rule supplies the real dimension gating via access_region (see
+        # logic.acquisition). frame=challenge advancements are flagged so challenge_sanity gates.
+        advancements=load_manifest_advancements(name, BASE_ID_LOC_ADVANCEMENT, region="Overworld"),
         mob_kill_locations=_load_mob_kill_locations(mobs),
         boss_kill_locations=_load_boss_kill_locations(mobs),
     )

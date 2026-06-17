@@ -99,32 +99,85 @@ class AcquisitionBuilder:
         self.breeding: dict[str, set] = {}
         self.gameplay: dict[str, set] = {}
         self.item_tags: dict[str, list] = {}  # tag name -> raw values (items and #nested-tags)
-        self.structure_names: dict[str, str] = {
-            "nether_bridge": "Nether Fortress",
-            "simple_dungeon": "Monster Room (Dungeon)",
-            "abandoned_mineshaft": "Mineshaft",
-        }
 
     # -- loot helpers -------------------------------------------------------
+    _ENCHANT_FUNCS = ("enchant_randomly", "enchant_with_levels", "set_enchantments")
+
+    @staticmethod
+    def _is_enchanted(entry: dict) -> bool:
+        """True when a loot entry carries an enchant function, so it yields an *enchanted* item."""
+        funcs = entry.get("functions")
+        return isinstance(funcs, list) and any(
+            isinstance(f, dict)
+            and _strip_ns(str(f.get("function", ""))) in AcquisitionBuilder._ENCHANT_FUNCS
+            for f in funcs)
+
     def _loot_items(self, entry) -> list:
         items = []
         if isinstance(entry, dict):
             for key in ("value", "name", "id"):
                 if key in entry and isinstance(entry[key], str):
-                    items.append(_strip_ns(entry[key]))
+                    leaf = _strip_ns(entry[key])
+                    items.append(leaf)
+                    # No vanilla table names `enchanted_book`; it's a `book` carrying an enchant
+                    # loot-function. Record enchanted_book too, so its loot/fishing/barter sources
+                    # are captured (the enchant gate's no-Knowledge route — see logic/triggers.py).
+                    if leaf == "book" and self._is_enchanted(entry):
+                        items.append("enchanted_book")
                     break
             for key in ("children", "entries", "pools"):
                 for sub in entry.get(key, []) if isinstance(entry.get(key), list) else []:
                     items.extend(self._loot_items(sub))
         return items
 
-    def _struct_name(self, file_name: str) -> str:
-        if file_name in self.structure_names:
-            return self.structure_names[file_name]
-        prefix = file_name.split("_", 1)[0]
-        if prefix in self.structure_names:
-            return self.structure_names[prefix]
-        return file_name.replace("_", " ").title()
+    # Chest / archaeology / spawner loot file (basename) -> canonical apworld structure name(s),
+    # so acquire()'s `structure_name in STRUCTURES` check resolves. Names that match a structure
+    # one-to-one go here; whole groups (bastion_*, stronghold_*, trial_chamber*, shipwreck_*,
+    # village/*, underwater_ruin_*) are handled by prefix in _structures_for. spawn_bonus_chest is
+    # the world-spawn bonus chest, not a structure, so it maps to nothing.
+    _CHEST_STRUCTURE = {
+        "abandoned_mineshaft": ["Mineshaft"],
+        "buried_treasure": ["Buried Treasure"],
+        "desert_pyramid": ["Desert Pyramid"],
+        "desert_well": ["Desert Well"],
+        "end_city_treasure": ["End City"],
+        "igloo_chest": ["Igloo"],
+        "jungle_temple": ["Jungle Pyramid"],
+        "jungle_temple_dispenser": ["Jungle Pyramid"],
+        "nether_bridge": ["Nether Fortress"],
+        "pillager_outpost": ["Pillager Outpost"],
+        "ruined_portal": ["Ruined Portal"],
+        "simple_dungeon": ["Dungeon"],
+        "woodland_mansion": ["Mansion"],
+        "ocean_ruin_cold": ["Ocean Ruin (Cold)"],
+        "ocean_ruin_warm": ["Ocean Ruin (Warm)"],
+        "trail_ruins_common": ["Trail Ruins"],
+        "trail_ruins_rare": ["Trail Ruins"],
+    }
+    _VILLAGE_BIOMES = ["Village (Desert)", "Village (Plains)", "Village (Savanna)",
+                       "Village (Snowy)", "Village (Taiga)"]
+
+    def _structures_for(self, rel: str) -> list:
+        """Canonical structure name(s) a chest/archaeology/spawner loot table belongs to."""
+        name = rel.rsplit("/", 1)[-1]
+        if "trial_chamber" in rel:
+            return ["Trial Chambers"]
+        if name.startswith("bastion"):
+            return ["Bastion Remnant"]
+        if name.startswith("stronghold"):
+            return ["Stronghold"]
+        if name.startswith("shipwreck"):
+            return ["Shipwreck"]
+        if name.startswith("ancient_city"):
+            return ["Ancient City"]
+        if name.startswith("underwater_ruin"):
+            return ["Ocean Ruin (Cold)", "Ocean Ruin (Warm)"]  # loot doesn't split by temperature
+        if rel.startswith("village/"):
+            for biome in ("desert", "plains", "savanna", "snowy", "taiga"):
+                if biome in name:
+                    return [f"Village ({biome.title()})"]
+            return list(self._VILLAGE_BIOMES)  # profession building — present in every village
+        return self._CHEST_STRUCTURE.get(name, [])
 
     # -- load ---------------------------------------------------------------
     def load(self, entries):
@@ -137,11 +190,6 @@ class AcquisitionBuilder:
                 continue
 
     def _dispatch(self, name: str, raw: bytes):
-        if re.search(r"/worldgen/structure/", name):
-            fn = os.path.basename(name)[:-5]
-            self.structure_names.setdefault(fn, fn.replace("_", " ").title())
-            self.structure_names.setdefault(fn.split("_", 1)[0], fn.replace("_", " ").title())
-            return
         if re.search(r"/recipes?/", name):
             self._recipe(json.loads(raw))
             return
@@ -185,8 +233,11 @@ class AcquisitionBuilder:
                 self.drops.setdefault(item, set()).add(file_name)
             elif category == "blocks":
                 self.mining.setdefault(item, set()).add(file_name)
-            elif category in ("chests", "archaeology", "dispensers", "shearing", "spawners"):
-                self.structures.setdefault(item, set()).add(self._struct_name(file_name))
+            elif category in ("chests", "archaeology", "dispensers", "spawners"):
+                for struct in self._structures_for(rel):
+                    self.structures.setdefault(item, set()).add(struct)
+            elif category == "shearing":
+                continue  # wool/etc. from shearing a mob — covered by the mob, not a structure
             else:
                 self.gameplay.setdefault(item, set()).add(file_name)
 

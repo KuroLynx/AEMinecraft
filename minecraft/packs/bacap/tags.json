@@ -1,0 +1,442 @@
+{
+  "entity_type": {
+    "blazeandcave:all_boats": [
+      "minecraft:acacia_chest_boat",
+      "minecraft:bamboo_chest_raft",
+      "minecraft:birch_chest_boat",
+      "minecraft:cherry_chest_boat",
+      "minecraft:dark_oak_chest_boat",
+      "minecraft:jungle_chest_boat",
+      "minecraft:mangrove_chest_boat",
+      "minecraft:oak_chest_boat",
+      "minecraft:pale_oak_chest_boat",
+      "minecraft:spruce_chest_boat"
+    ],
+    "blazeandcave:arrows": [
+      "minecraft:arrow",
+      "minecraft:spectral_arrow"
+    ],
+    "blazeandcave:chest_boats": [
+      "minecraft:acacia_chest_boat",
+      "minecraft:bamboo_chest_raft",
+      "minecraft:birch_chest_boat",
+      "minecraft:cherry_chest_boat",
+      "minecraft:dark_oak_chest_boat",
+      "minecraft:jungle_chest_boat",
+      "minecraft:mangrove_chest_boat",
+      "minecraft:oak_chest_boat",
+      "minecraft:pale_oak_chest_boat",
+      "minecraft:spruce_chest_boat"
+    ],
+    "blazeandcave:cj_rideables": [
+      "minecraft:drowned",
+      "minecraft:husk",
+      "minecraft:zombie",
+      "minecraft:zombie_villager",
+      "minecraft:zombified_piglin"
+    ],
+    "blazeandcave:dont_trigger_piwe": [
+      "minecraft:acacia_chest_boat",
+      "minecraft:bamboo_chest_raft",
+      "minecraft:birch_chest_boat",
+      "minecraft:cherry_chest_boat",
+      "minecraft:chest_minecart",
+      "minecraft:command_block_minecart",
+      "minecraft:dark_oak_chest_boat",
+      "minecraft:furnace_minecart",
+      "minecraft:glow_item_frame",
+      "minecraft:hopper_minecart",
+      "minecraft:interaction",
+      "minecraft:item_frame",
+      "minecraft:jungle_chest_boat",
+      "minecraft:leash_knot",
+      "minecraft:mangrove_chest_boat",
+      "minecraft:minecart",
+      "minecraft:oak_chest_boat",
+      "minecraft:pale_oak_chest_boat",
+      "minecraft:spawner_minecart",
+      "minecraft:spruce_chest_boat"
+    ],
+    "blazeandcave:dont_trigger_piwe_sans_boats": [
+      "minecraft:chest_minecart",
+      "minecraft:command_block_minecart",
+      "minecraft:furnace_minecart",
+      "minecraft:glow_item_frame",
+      "minecraft:hopper_minecart",
+      "minecraft:interaction",
+      "minecraft:item_frame",
+      "minecraft:leash_knot",
+      "minecraft:minecart",
+      "minecraft:spawner_minecart"
+    ],
+    "blazeandcave:horses": [
+      "minecraft:donkey",
+      "minecraft:horse",
+      "minecraft:mule"
+    ],
+    "blazeandcave:hostile_monsters": [
+      "minecraft:blaze",
+      "minecraft:bogged",
+      "minecraft:breeze",
+      "minecraft:camel_husk",
+      "minecraft:cave_spider",
+      "minecraft:creaking",
+      "minecraft:creeper",
+      "minecraft:drowned",
+      "minecraft:elder_guardian",
+      "minecraft:ender_dragon",
+      "minecraft:enderman",
+      "minecraft:endermite",
+      "minecraft:evoker",
+      "minecraft:ghast",
+      "minecraft:guardian",
+      "minecraft:hoglin",
+      "minecraft:husk",
+      "minecraft:magma_cube",
+      "minecraft:parched",
+      "minecraft:phantom",
+      "minecraft:piglin",
+      "minecraft:piglin_brute",
+      "minecraft:pillager",
+      "minecraft:ravager",
+      "minecraft:shulker",
+      "minecraft:silverfish",
+      "minecraft:skeleton",
+      "minecraft:skeleton_horse",
+      "minecraft:slime",
+      "minecraft:spider",
+      "minecraft:stray",
+      "minecraft:vex",
+      "minecraft:vindicator",
+      "minecraft:warden",
+      "minecraft:witch",
+      "minecraft:wither",
+      "minecraft:wither_skeleton",
+      "minecraft:zoglin",
+      "minecraft:zombie",
+      "minecraft:zombie_horse",
+      "minecraft:zombie_nautilus",
+      "minecraft:zombie_villager",
+      "minecraft:zombified_piglin"
+    ],
+    "blazeandcave:llamas": [
+      "minecraft:llama",
+      "minecraft:trader_llama"
+    ],
+    "blazeandcave:non_mob_entities": [
+      "minecraft:acacia_chest_boat",
+      "minecraft:armor_stand",
+      "minecraft:arrow",
+      "minecraft:bamboo_chest_raft",
+      "minecraft:birch_chest_boat",
+      "minecraft:block_display",
+      "minecraft:breeze_wind_charge",
+      "minecraft:cherry_chest_boat",
+      "minecraft:chest_minecart",
+      "minecraft:command_block_minecart",
+      "minecraft:dark_oak_chest_boat",
+      "minecraft:dragon_fireball",
+      "minecraft:egg",
+      "minecraft:end_crystal",
+      "minecraft:ender_pearl",
+      "minecraft:evoker_fangs",
+      "minecraft:experience_orb",
+      "minecraft:eye_of_ender",
+      "minecraft:falling_block",
+      "minecraft:fireball",
+      "minecraft:firework_rocket",
+      "minecraft:fishing_bobber",
+      "minecraft:furnace_minecart",
+      "minecraft:glow_item_frame",
+      "minecraft:hopper_minecart",
+      "minecraft:interaction",
+      "minecraft:item",
+      "minecraft:item_display",
+      "minecraft:item_frame",
+      "minecraft:jungle_chest_boat",
+      "minecraft:leash_knot",
+      "minecraft:lightning_bolt",
+      "minecraft:llama_spit",
+      "minecraft:mangrove_chest_boat",
+      "minecraft:marker",
+      "minecraft:minecart",
+      "minecraft:oak_chest_boat",
+      "minecraft:painting",
+      "minecraft:pale_oak_chest_boat",
+      "minecraft:shulker_bullet",
+      "minecraft:small_fireball",
+      "minecraft:snowball",
+      "minecraft:spawner_minecart",
+      "minecraft:spruce_chest_boat",
+      "minecraft:text_display",
+      "minecraft:tnt",
+      "minecraft:trident",
+      "minecraft:wind_charge",
+      "minecraft:wither_skull"
+    ],
+    "blazeandcave:non_mob_entities_sans_boats": [
+      "minecraft:armor_stand",
+      "minecraft:arrow",
+      "minecraft:block_display",
+      "minecraft:breeze_wind_charge",
+      "minecraft:chest_minecart",
+      "minecraft:command_block_minecart",
+      "minecraft:dragon_fireball",
+      "minecraft:egg",
+      "minecraft:end_crystal",
+      "minecraft:ender_pearl",
+      "minecraft:evoker_fangs",
+      "minecraft:experience_orb",
+      "minecraft:eye_of_ender",
+      "minecraft:falling_block",
+      "minecraft:fireball",
+      "minecraft:firework_rocket",
+      "minecraft:fishing_bobber",
+      "minecraft:furnace_minecart",
+      "minecraft:glow_item_frame",
+      "minecraft:hopper_minecart",
+      "minecraft:interaction",
+      "minecraft:item",
+      "minecraft:item_display",
+      "minecraft:item_frame",
+      "minecraft:leash_knot",
+      "minecraft:lightning_bolt",
+      "minecraft:llama_spit",
+      "minecraft:marker",
+      "minecraft:minecart",
+      "minecraft:painting",
+      "minecraft:shulker_bullet",
+      "minecraft:small_fireball",
+      "minecraft:snowball",
+      "minecraft:spawner_minecart",
+      "minecraft:text_display",
+      "minecraft:tnt",
+      "minecraft:trident",
+      "minecraft:wind_charge",
+      "minecraft:wither_skull"
+    ],
+    "blazeandcave:overworld_zombies": [
+      "minecraft:drowned",
+      "minecraft:husk",
+      "minecraft:zombie",
+      "minecraft:zombie_villager"
+    ],
+    "blazeandcave:piglins": [
+      "minecraft:piglin",
+      "minecraft:piglin_brute"
+    ],
+    "blazeandcave:player_rideable_mobs": [
+      "camel",
+      "camel_husk",
+      "donkey",
+      "happy_ghast",
+      "horse",
+      "llama",
+      "mule",
+      "nautilus",
+      "pig",
+      "skeleton_horse",
+      "strider",
+      "trader_llama",
+      "zombie_horse",
+      "zombie_nautilus"
+    ],
+    "blazeandcave:player_rideables": [
+      "camel",
+      "camel_husk",
+      "donkey",
+      "happy_ghast",
+      "horse",
+      "llama",
+      "minecraft:acacia_chest_boat",
+      "minecraft:bamboo_chest_raft",
+      "minecraft:birch_chest_boat",
+      "minecraft:cherry_chest_boat",
+      "minecraft:dark_oak_chest_boat",
+      "minecraft:jungle_chest_boat",
+      "minecraft:mangrove_chest_boat",
+      "minecraft:minecart",
+      "minecraft:oak_chest_boat",
+      "minecraft:pale_oak_chest_boat",
+      "minecraft:spruce_chest_boat",
+      "mule",
+      "nautilus",
+      "pig",
+      "skeleton_horse",
+      "strider",
+      "trader_llama",
+      "zombie_horse",
+      "zombie_nautilus"
+    ],
+    "blazeandcave:skeletons": [
+      "minecraft:bogged",
+      "minecraft:parched",
+      "minecraft:skeleton",
+      "minecraft:stray",
+      "minecraft:wither_skeleton"
+    ],
+    "blazeandcave:skeletons_with_bows": [
+      "minecraft:bogged",
+      "minecraft:parched",
+      "minecraft:skeleton",
+      "minecraft:stray"
+    ],
+    "blazeandcave:spiders": [
+      "minecraft:cave_spider",
+      "minecraft:spider"
+    ],
+    "blazeandcave:zombies": [
+      "minecraft:drowned",
+      "minecraft:husk",
+      "minecraft:zombie",
+      "minecraft:zombie_villager",
+      "minecraft:zombified_piglin"
+    ]
+  },
+  "item": {
+    "blazeandcave:axes": [
+      "minecraft:copper_axe",
+      "minecraft:diamond_axe",
+      "minecraft:golden_axe",
+      "minecraft:iron_axe",
+      "minecraft:netherite_axe",
+      "minecraft:stone_axe",
+      "minecraft:wooden_axe"
+    ],
+    "blazeandcave:axolotl_feedable": [
+      "minecraft:tropical_fish",
+      "minecraft:tropical_fish_bucket"
+    ],
+    "blazeandcave:candle_lightables": [
+      "minecraft:fire_charge",
+      "minecraft:flint_and_steel"
+    ],
+    "blazeandcave:dolphin_feedable": [
+      "minecraft:cod",
+      "minecraft:pufferfish",
+      "minecraft:salmon",
+      "minecraft:tropical_fish"
+    ],
+    "blazeandcave:hoes": [
+      "minecraft:copper_hoe",
+      "minecraft:diamond_hoe",
+      "minecraft:golden_hoe",
+      "minecraft:iron_hoe",
+      "minecraft:netherite_hoe",
+      "minecraft:stone_hoe",
+      "minecraft:wooden_hoe"
+    ],
+    "blazeandcave:leather_armor": [
+      "minecraft:leather_boots",
+      "minecraft:leather_chestplate",
+      "minecraft:leather_helmet",
+      "minecraft:leather_leggings"
+    ],
+    "blazeandcave:master_axes": [
+      "minecraft:diamond_axe",
+      "minecraft:netherite_axe"
+    ],
+    "blazeandcave:master_boots": [
+      "minecraft:diamond_boots",
+      "minecraft:netherite_boots"
+    ],
+    "blazeandcave:master_chestplates": [
+      "minecraft:diamond_chestplate",
+      "minecraft:netherite_chestplate"
+    ],
+    "blazeandcave:master_helmets": [
+      "minecraft:diamond_helmet",
+      "minecraft:netherite_helmet"
+    ],
+    "blazeandcave:master_hoes": [
+      "minecraft:diamond_hoe",
+      "minecraft:netherite_hoe"
+    ],
+    "blazeandcave:master_leggings": [
+      "minecraft:diamond_leggings",
+      "minecraft:netherite_leggings"
+    ],
+    "blazeandcave:master_pickaxes": [
+      "minecraft:diamond_pickaxe",
+      "minecraft:netherite_pickaxe"
+    ],
+    "blazeandcave:master_shovels": [
+      "minecraft:diamond_shovel",
+      "minecraft:netherite_shovel"
+    ],
+    "blazeandcave:master_swords": [
+      "minecraft:diamond_sword",
+      "minecraft:netherite_sword"
+    ],
+    "blazeandcave:ocelot_feedable": [
+      "minecraft:cod",
+      "minecraft:salmon"
+    ],
+    "blazeandcave:pickaxes": [
+      "minecraft:copper_pickaxe",
+      "minecraft:diamond_pickaxe",
+      "minecraft:golden_pickaxe",
+      "minecraft:iron_pickaxe",
+      "minecraft:netherite_pickaxe",
+      "minecraft:stone_pickaxe",
+      "minecraft:wooden_pickaxe"
+    ],
+    "blazeandcave:poison_cures": [
+      "minecraft:honey_bottle",
+      "minecraft:milk_bucket"
+    ],
+    "blazeandcave:shovels": [
+      "minecraft:copper_shovel",
+      "minecraft:diamond_shovel",
+      "minecraft:golden_shovel",
+      "minecraft:iron_shovel",
+      "minecraft:netherite_shovel",
+      "minecraft:stone_shovel",
+      "minecraft:wooden_shovel"
+    ],
+    "blazeandcave:smithing_templates": [
+      "minecraft:bolt_armor_trim_smithing_template",
+      "minecraft:coast_armor_trim_smithing_template",
+      "minecraft:dune_armor_trim_smithing_template",
+      "minecraft:eye_armor_trim_smithing_template",
+      "minecraft:flow_armor_trim_smithing_template",
+      "minecraft:host_armor_trim_smithing_template",
+      "minecraft:netherite_upgrade_smithing_template",
+      "minecraft:raiser_armor_trim_smithing_template",
+      "minecraft:rib_armor_trim_smithing_template",
+      "minecraft:sentry_armor_trim_smithing_template",
+      "minecraft:shaper_armor_trim_smithing_template",
+      "minecraft:silence_armor_trim_smithing_template",
+      "minecraft:snout_armor_trim_smithing_template",
+      "minecraft:spire_armor_trim_smithing_template",
+      "minecraft:tide_armor_trim_smithing_template",
+      "minecraft:vex_armor_trim_smithing_template",
+      "minecraft:ward_armor_trim_smithing_template",
+      "minecraft:wayfinder_armor_trim_smithing_template",
+      "minecraft:wild_armor_trim_smithing_template"
+    ],
+    "blazeandcave:swords": [
+      "minecraft:copper_sword",
+      "minecraft:diamond_sword",
+      "minecraft:golden_sword",
+      "minecraft:iron_sword",
+      "minecraft:netherite_sword",
+      "minecraft:stone_sword",
+      "minecraft:wooden_sword"
+    ],
+    "blazeandcave:waxed_copper_blocks": [
+      "waxed_copper_block",
+      "waxed_cut_copper",
+      "waxed_cut_copper_slab",
+      "waxed_cut_copper_stairs",
+      "waxed_exposed_copper",
+      "waxed_exposed_cut_copper",
+      "waxed_exposed_cut_copper_slab",
+      "waxed_exposed_cut_copper_stairs",
+      "waxed_weathered_copper",
+      "waxed_weathered_cut_copper",
+      "waxed_weathered_cut_copper_slab",
+      "waxed_weathered_cut_copper_stairs"
+    ]
+  }
+}

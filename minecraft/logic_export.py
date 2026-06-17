@@ -21,7 +21,7 @@ All keys/strings are plain (region names are normalised away from enum members i
 """
 from __future__ import annotations
 
-from .data import ALL_LOCATIONS, MCLocationCategory
+from .data import MCLocationCategory
 from .regions import MCRegion
 from .logic.ast import ReachLocation, at_least
 
@@ -30,10 +30,15 @@ AP_TAB_ROOT_GAME_ID = "aem:archipelago"
 
 
 def build_logic_export(world) -> dict:
+    # Locations created this seed, keyed name -> MCLocationData. Uses the world's own active set
+    # (not the vanilla-only ALL_LOCATIONS) so optional packs like BACAP — whose advancements also
+    # appear in logic_rules — resolve here instead of raising KeyError.
+    loc_lookup = world._get_active_locations()
+
     # Per-location rules captured during set_rules (only locations created this seed).
     locations: dict[str, dict] = {}
     for name, rule in getattr(world, "logic_rules", {}).items():
-        loc_data = ALL_LOCATIONS[name]
+        loc_data = loc_lookup[name]
         locations[name] = {
             "game_id": loc_data.game_id,
             "region": loc_data.region,
@@ -57,7 +62,7 @@ def build_logic_export(world) -> dict:
     # origin, leaving the count rule as the only gate. (Bosses are tracked by their own kill tiles.)
     advancement_names = [
         name for name in locations
-        if ALL_LOCATIONS[name].category == MCLocationCategory.ADVANCEMENT
+        if loc_lookup[name].category == MCLocationCategory.ADVANCEMENT
     ]
     required = min(world.options.advancements_required.value, len(advancement_names))
     root_rule = at_least(required, [ReachLocation(world.player, name) for name in advancement_names])

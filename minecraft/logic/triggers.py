@@ -52,17 +52,29 @@ _TAGS: dict | None = None
 _BREWING: dict | None = None
 
 
-def _pack_json(filename: str) -> dict:
+def _pack_json(filename: str, pack: str = "vanilla_26_1") -> dict:
     root = __package__.rsplit(".", 1)[0]  # e.g. "worlds.minecraft"
-    with files(root).joinpath("packs", "vanilla_26_1", filename).open(encoding="utf-8") as f:
+    with files(root).joinpath("packs", pack, filename).open(encoding="utf-8") as f:
         return json.load(f)
 
 
 def _tags() -> dict:
-    """Lazily-loaded item + entity-type tag table (tools/build_tags.py), keyed by tag id."""
+    """Lazily-loaded item + entity-type tag table (tools/build_tags.py), keyed by tag id.
+
+    Vanilla plus any optional pack (BACAP) merged in, so BACAP criteria that reference
+    ``#blazeandcave:*`` tags (e.g. ``time_to_mine`` → ``#blazeandcave:pickaxes``) resolve instead of
+    falling back to the parent chain. Tag namespaces don't collide (``minecraft:`` vs
+    ``blazeandcave:``), so a per-registry dict merge is safe; absent pack tags are ignored."""
     global _TAGS
     if _TAGS is None:
-        _TAGS = _pack_json("tags.json")
+        merged = _pack_json("tags.json")
+        try:
+            extra = _pack_json("tags.json", pack="bacap")
+        except (FileNotFoundError, OSError):
+            extra = {}
+        for registry, tags in extra.items():
+            merged.setdefault(registry, {}).update(tags)
+        _TAGS = merged
     return _TAGS
 
 
@@ -114,7 +126,12 @@ class TriggerCompiler:
     def compile(self, record: dict) -> Rule | None:
         """AST for ``record``'s requirements, or ``None`` if any AND-group is uninterpretable."""
         criteria = record.get("criteria", {})
-        requirements = record.get("requirements") or []
+        # Minecraft's default when `requirements` is absent/empty is "all criteria required" — each
+        # criterion as its own AND-group (AdvancementRequirements.allOf). Datapacks (BACAP) usually
+        # omit requirements and rely on this; the re-encoded vanilla jar always writes them out. Treat
+        # empty-but-has-criteria as that default instead of "uninterpretable" (which dropped ~1159
+        # BACAP advancements to the parent chain, ungating their real criteria).
+        requirements = record.get("requirements") or [[name] for name in criteria]
         groups: list[Rule] = []
         for group in requirements:  # outer AND
             options: list[Rule] = []
@@ -258,13 +275,41 @@ class TriggerCompiler:
 
     def _item_predicate(self, pred) -> Rule | None:
         """Resolve one item predicate (``{"items": <id|[ids]|#tag>}``) to acquisition logic — or,
-        for a potion item carrying a ``potion_contents`` component, its brewing chain."""
+        for a potion item carrying a ``potion_contents`` component, its brewing chain. When the
+        predicate also demands the item be ENCHANTED, the enchanting-capability gate is AND-ed in
+        (else "an enchanted sword" would compile as merely "a sword")."""
         if not isinstance(pred, dict):
             return None
         potion = self._potion_node(pred)
         if potion is not None:
             return potion
-        return self._any_acquire(pred.get("items"))
+        enchant = self._enchant_gate(pred)
+        base = self._any_acquire(pred.get("items"))
+        if enchant is not None:
+            # The item must be enchanted: need the base item (when named) AND a way to enchant it.
+            return and_(base, enchant) if base is not None else enchant
+        return base
+
+    def _enchant_gate(self, pred: dict) -> Rule | None:
+        """The capability to get an ENCHANTED item, or ``None`` when the predicate names no
+        enchantment. Two routes: the enchanting table (``acquire`` gates it behind Knowledge:
+        Enchanting + its tier), OR an enchanted book — a librarian's trade gives one with no
+        Knowledge needed, applied to the item with an anvil (when the item itself, not the book,
+        must carry the enchantment, i.e. ``enchantments`` predicate vs ``stored_enchantments``)."""
+        predicates = pred.get("predicates")
+        if not isinstance(predicates, dict):
+            return None
+        on_item = "enchantments" in predicates
+        on_book = "stored_enchantments" in predicates
+        if not on_item and not on_book:
+            return None
+        routes = [self.h.acquire("minecraft:enchanting_table")]
+        book = self.h.acquire("minecraft:enchanted_book")  # librarian trades; no Knowledge needed
+        if book is not None:
+            # A stored_enchantments target *is* the book; an enchantments target needs it applied
+            # with an anvil. (A librarian's book has a random enchant — a trade path, as elsewhere.)
+            routes.append(and_(book, self.h.acquire("minecraft:anvil")) if on_item else book)
+        return or_(*routes)
 
     def _potion_node(self, pred: dict) -> Rule | None:
         """A specific brewed potion: a brewing stand + Knowledge: Brewing + a glass bottle + every

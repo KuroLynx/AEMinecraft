@@ -98,6 +98,11 @@ class RuleHelper:
         # Biome Finder enabled (start or in_pool); disabled == 0. Biome-specific advancements require
         # it when on, since that's how you locate the biome.
         self.biome_finder_enabled = bool(world.options.biome_finder.value)
+        # Memo for acquire(): the acquisition table + options are fixed for this helper, so
+        # acquire(base, stack) is pure. Datapack-scale compilation calls it millions of times for the
+        # same (base, stack) pairs (planks/sticks/ingots recur in every recipe); caching collapses
+        # that. Returned nodes are shared read-only across rules, which is safe (eval + to_dict only).
+        self._acquire_cache: dict[tuple[str, frozenset], object] = {}
         # Thunks (deferred so cross-referencing mobs don't recurse at construction).
         self.structure_bound_mobs = {
             # Overworld — structure-locked
@@ -862,7 +867,16 @@ class RuleHelper:
             return None  # a raw tag (recipe tags are pre-expanded; a bare tag can't be resolved)
         if base in _stack or len(_stack) >= self._MAX_DEPTH:
             return None  # recipe cycle / too deep — this path can't justify itself
+        # Memoize on (base, stack): the result is pure for this helper, so the same item is computed
+        # once and shared. Datapack compilation calls acquire ~9M times for far fewer distinct keys.
+        key = (base, _stack)
+        cache = self._acquire_cache
+        if key in cache:
+            return cache[key]
+        cache[key] = result = self._acquire_compute(base, _stack)
+        return result
 
+    def _acquire_compute(self, base: str, _stack: frozenset):
         # Wood is free once its dimension is reached; collapse it instead of fanning out variants.
         wood_region = _wood_region(base)
         if wood_region is not None:
@@ -873,6 +887,13 @@ class RuleHelper:
         if base in _MATERIAL_TIER_BY_ITEM or base in (
                 "diamond", "diamond_block", "netherite_ingot", "netherite_block",
                 "netherite_scrap", "ancient_debris"):
+            return self._acquire_fallback(base)
+
+        # Tools / armor / gated craftables (bow, shears, stations, …) resolve to their
+        # Knowledge + material-tier gate, NOT their recipe: the mod needs the Knowledge to use one
+        # however it was obtained (craft, chest, trade, drop), so the recipe path — which would drop
+        # the Knowledge — must not win here. Mirrors the material short-circuit above.
+        if base in TOOL_LOCKS:
             return self._acquire_fallback(base)
 
         record = _acquisition_table().get(base)
@@ -896,6 +917,10 @@ class RuleHelper:
         for structure_name in record.get("structures", ()):
             if structure_name in STRUCTURES:
                 options.append(self.structure(structure_name))
+        for table in record.get("gameplay", ()):
+            node = self._gameplay_node(table)
+            if node is not None:
+                options.append(node)
 
         result = self._unique_or(options) if options else self._acquire_fallback(base)
         return self._coarsen(result)
@@ -983,6 +1008,18 @@ class RuleHelper:
             if tier is not None:
                 parts.append(self.material(tier))
         return self.all_of(*parts)
+
+    def _gameplay_node(self, table: str):
+        """A 'gameplay' loot source that is a real, repeatable acquisition path: any fishing table
+        needs a fishing rod; piglin bartering needs the Nether, a piglin and gold. Villager/animal
+        gift tables (``*_gift``, ``cat_morning_gift``, sniffer digging, …) are not reliable paths, so
+        they contribute nothing (``None``) rather than making everything obtainable 'from a gift'."""
+        if table in ("fishing", "fish", "junk", "treasure"):
+            return self.acquire("minecraft:fishing_rod")
+        if table == "piglin_bartering":
+            return self.all_of(self.access_region(REGION_NETHER), self.entity(E_PIGLIN),
+                               self.acquire("minecraft:gold_ingot"))
+        return None
 
     def _acquire_fallback(self, base: str):
         """Items absent from the acquisition table (or with no usable source): the tool/armor
