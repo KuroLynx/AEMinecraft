@@ -1,3 +1,5 @@
+import logging
+
 from BaseClasses import Item, Location, Region, Tutorial
 from worlds.AutoWorld import WebWorld, World
 
@@ -121,6 +123,13 @@ class MCWorld(World):
             if loc_data.category == MCLocationCategory.ADVANCEMENT
         )
         if self.options.advancements_required.value > active_advancement_count:
+            logging.warning(
+                "Euclesia (%s): advancements_required (%d) exceeds the %d advancement checks this "
+                "seed has; clamping to %d. Enable challenge_sanity / blazeandcave for more.",
+                self.multiworld.get_player_name(self.player),
+                self.options.advancements_required.value,
+                active_advancement_count, active_advancement_count,
+            )
             self.options.advancements_required.value = active_advancement_count
 
     def _get_locked_structures(self) -> set[str]:
