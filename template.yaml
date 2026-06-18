@@ -1,5 +1,5 @@
 name: Player{number}
-description: Euclesia — Minecraft Randomizer by KuroLynx (mod by EDGN)
+description: Minecraft [AEM] — Minecraft Randomizer by KuroLynx (mod by EDGN)
 game: Minecraft
 requires:
   version: 0.6.7

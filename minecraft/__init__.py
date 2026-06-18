@@ -46,7 +46,7 @@ class MCWebWorld(WebWorld):
     tutorials = [
         Tutorial(
             tutorial_name = "Setup Guide",
-            description = "Guide to set up the Euclesia Minecraft randomizer.",
+            description = "Guide to set up the Minecraft [AEM] randomizer.",
             language = "English",
             file_name = "setup_en.md",
             link = "setup/en",
@@ -124,7 +124,7 @@ class MCWorld(World):
         )
         if self.options.advancements_required.value > active_advancement_count:
             logging.warning(
-                "Euclesia (%s): advancements_required (%d) exceeds the %d advancement checks this "
+                "Minecraft [AEM] (%s): advancements_required (%d) exceeds the %d advancement checks this "
                 "seed has; clamping to %d. Enable challenge_sanity / blazeandcave for more.",
                 self.multiworld.get_player_name(self.player),
                 self.options.advancements_required.value,
@@ -311,7 +311,7 @@ class MCWorld(World):
 
         if len(pool) > active_location_count:
             raise Exception(
-                f"Euclesia: required item pool ({len(pool)}) exceeds active locations "
+                f"Minecraft [AEM]: required item pool ({len(pool)}) exceeds active locations "
                 f"({active_location_count}). Enable kill_sanity / challenge_sanity, or reduce "
                 f"mob_spawn_lock_category."
             )
