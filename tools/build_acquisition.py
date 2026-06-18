@@ -94,6 +94,7 @@ class AcquisitionBuilder:
         self.recipes: dict[str, list] = {}
         self.drops: dict[str, set] = {}
         self.mining: dict[str, set] = {}
+        self.silk_mining: dict[str, set] = {}  # block self-drops only a Silk-Touch tool yields
         self.structures: dict[str, set] = {}
         self.trades: dict[str, set] = {}
         self.breeding: dict[str, set] = {}
@@ -222,8 +223,36 @@ class AcquisitionBuilder:
                 "ingredients": ingredients,
             })
 
+    @staticmethod
+    def _pool_needs_silk(pool: dict) -> bool:
+        """True when a loot pool only rolls under a ``match_tool`` Silk-Touch condition — i.e. the
+        block drops itself only when broken with a Silk-Touch tool (bee_nest, ice, glass, coral …).
+        Read straight from the loot data so the gate stays data-driven, not a hand-kept block list."""
+        for cond in pool.get("conditions", []):
+            if _strip_ns(str(cond.get("condition", ""))) != "match_tool":
+                continue
+            preds = (cond.get("predicate", {}) or {}).get("predicates", {}) or {}
+            enchants = preds.get("minecraft:enchantments") or preds.get("enchantments") or []
+            for ench in enchants:
+                if "silk_touch" in str(ench.get("enchantments", "")):
+                    return True
+        return False
+
     def _loot(self, category: str, rel: str, loot: dict):
         file_name = rel.rsplit("/", 1)[-1]
+        # A block table's pools can be split by tool condition: an item the block yields ONLY from a
+        # Silk-Touch pool is a Silk-Touch drop (gated behind enchanting), not a free mine.
+        if category == "blocks":
+            free, silk = set(), set()
+            for pool in loot.get("pools", []):
+                target = silk if self._pool_needs_silk(pool) else free
+                for entry in pool.get("entries", []):
+                    target.update(self._loot_items(entry))
+            for item in free:
+                self.mining.setdefault(item, set()).add(file_name)
+            for item in silk - free:
+                self.silk_mining.setdefault(item, set()).add(file_name)
+            return
         items = set()
         for pool in loot.get("pools", []):
             for entry in pool.get("entries", []):
@@ -231,8 +260,6 @@ class AcquisitionBuilder:
         for item in items:
             if category == "entities":
                 self.drops.setdefault(item, set()).add(file_name)
-            elif category == "blocks":
-                self.mining.setdefault(item, set()).add(file_name)
             elif category in ("chests", "archaeology", "dispensers", "spawners"):
                 for struct in self._structures_for(rel):
                     self.structures.setdefault(item, set()).add(struct)
@@ -290,8 +317,8 @@ class AcquisitionBuilder:
 
     # -- emit ---------------------------------------------------------------
     def table(self) -> dict:
-        items = set(self.recipes) | set(self.drops) | set(self.mining) | set(self.structures) \
-            | set(self.trades) | set(self.breeding) | set(self.gameplay)
+        items = set(self.recipes) | set(self.drops) | set(self.mining) | set(self.silk_mining) \
+            | set(self.structures) | set(self.trades) | set(self.breeding) | set(self.gameplay)
         out: dict[str, dict] = {}
         for item in sorted(items):
             rec: dict = {}
@@ -301,6 +328,8 @@ class AcquisitionBuilder:
                 rec["drops"] = sorted(self.drops[item])
             if item in self.mining:
                 rec["mining"] = sorted(self.mining[item])
+            if item in self.silk_mining:
+                rec["silk_mining"] = sorted(self.silk_mining[item])
             if item in self.structures:
                 rec["structures"] = sorted(self.structures[item])
             if item in self.trades:

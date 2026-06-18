@@ -1064,7 +1064,7 @@
     ]
   },
   "bee_nest": {
-    "mining": [
+    "silk_mining": [
       "bee_nest"
     ]
   },
@@ -2014,9 +2014,6 @@
     ]
   },
   "black_stained_glass": {
-    "mining": [
-      "black_stained_glass"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -2029,12 +2026,12 @@
         ],
         "station": "crafting_shaped"
       }
+    ],
+    "silk_mining": [
+      "black_stained_glass"
     ]
   },
   "black_stained_glass_pane": {
-    "mining": [
-      "black_stained_glass_pane"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -2055,6 +2052,9 @@
         ],
         "station": "crafting_shaped"
       }
+    ],
+    "silk_mining": [
+      "black_stained_glass_pane"
     ]
   },
   "black_terracotta": {
@@ -2751,9 +2751,6 @@
     ]
   },
   "blue_ice": {
-    "mining": [
-      "blue_ice"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -2763,6 +2760,9 @@
         ],
         "station": "crafting_shapeless"
       }
+    ],
+    "silk_mining": [
+      "blue_ice"
     ],
     "structures": [
       "Village (Snowy)"
@@ -2860,9 +2860,6 @@
     ]
   },
   "blue_stained_glass": {
-    "mining": [
-      "blue_stained_glass"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -2875,12 +2872,12 @@
         ],
         "station": "crafting_shaped"
       }
+    ],
+    "silk_mining": [
+      "blue_stained_glass"
     ]
   },
   "blue_stained_glass_pane": {
-    "mining": [
-      "blue_stained_glass_pane"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -2901,6 +2898,9 @@
         ],
         "station": "crafting_shaped"
       }
+    ],
+    "silk_mining": [
+      "blue_stained_glass_pane"
     ],
     "structures": [
       "Trail Ruins"
@@ -3308,7 +3308,7 @@
     ]
   },
   "brain_coral": {
-    "mining": [
+    "silk_mining": [
       "brain_coral"
     ]
   },
@@ -3324,7 +3324,7 @@
     ]
   },
   "brain_coral_fan": {
-    "mining": [
+    "silk_mining": [
       "brain_coral_fan"
     ]
   },
@@ -4052,9 +4052,6 @@
     ]
   },
   "brown_stained_glass": {
-    "mining": [
-      "brown_stained_glass"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -4067,12 +4064,12 @@
         ],
         "station": "crafting_shaped"
       }
+    ],
+    "silk_mining": [
+      "brown_stained_glass"
     ]
   },
   "brown_stained_glass_pane": {
-    "mining": [
-      "brown_stained_glass_pane"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -4093,6 +4090,9 @@
         ],
         "station": "crafting_shaped"
       }
+    ],
+    "silk_mining": [
+      "brown_stained_glass_pane"
     ]
   },
   "brown_terracotta": {
@@ -4221,7 +4221,7 @@
     ]
   },
   "bubble_coral": {
-    "mining": [
+    "silk_mining": [
       "bubble_coral"
     ]
   },
@@ -4237,7 +4237,7 @@
     ]
   },
   "bubble_coral_fan": {
-    "mining": [
+    "silk_mining": [
       "bubble_coral_fan"
     ]
   },
@@ -4363,9 +4363,6 @@
     ]
   },
   "calibrated_sculk_sensor": {
-    "mining": [
-      "calibrated_sculk_sensor"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -4378,6 +4375,9 @@
         ],
         "station": "crafting_shaped"
       }
+    ],
+    "silk_mining": [
+      "calibrated_sculk_sensor"
     ]
   },
   "campfire": {
@@ -5331,9 +5331,6 @@
     ]
   },
   "chiseled_bookshelf": {
-    "mining": [
-      "chiseled_bookshelf"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -5420,6 +5417,9 @@
         ],
         "station": "crafting_shaped"
       }
+    ],
+    "silk_mining": [
+      "chiseled_bookshelf"
     ]
   },
   "chiseled_copper": {
@@ -5632,8 +5632,7 @@
   },
   "chiseled_stone_bricks": {
     "mining": [
-      "chiseled_stone_bricks",
-      "infested_chiseled_stone_bricks"
+      "chiseled_stone_bricks"
     ],
     "recipes": [
       {
@@ -5660,6 +5659,9 @@
         ],
         "station": "stonecutting"
       }
+    ],
+    "silk_mining": [
+      "infested_chiseled_stone_bricks"
     ],
     "trades": [
       [
@@ -6046,7 +6048,6 @@
   "cobblestone": {
     "mining": [
       "cobblestone",
-      "infested_cobblestone",
       "stone"
     ],
     "recipes": [
@@ -6058,6 +6059,9 @@
         ],
         "station": "stonecutting"
       }
+    ],
+    "silk_mining": [
+      "infested_cobblestone"
     ]
   },
   "cobblestone_slab": {
@@ -7255,8 +7259,7 @@
   },
   "cracked_stone_bricks": {
     "mining": [
-      "cracked_stone_bricks",
-      "infested_cracked_stone_bricks"
+      "cracked_stone_bricks"
     ],
     "recipes": [
       {
@@ -7267,6 +7270,9 @@
         ],
         "station": "smelting"
       }
+    ],
+    "silk_mining": [
+      "infested_cracked_stone_bricks"
     ]
   },
   "crafter": {
@@ -8417,9 +8423,6 @@
     ]
   },
   "cyan_stained_glass": {
-    "mining": [
-      "cyan_stained_glass"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -8432,12 +8435,12 @@
         ],
         "station": "crafting_shaped"
       }
+    ],
+    "silk_mining": [
+      "cyan_stained_glass"
     ]
   },
   "cyan_stained_glass_pane": {
-    "mining": [
-      "cyan_stained_glass_pane"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -8458,6 +8461,9 @@
         ],
         "station": "crafting_shaped"
       }
+    ],
+    "silk_mining": [
+      "cyan_stained_glass_pane"
     ]
   },
   "cyan_terracotta": {
@@ -8991,7 +8997,7 @@
     ]
   },
   "dead_brain_coral": {
-    "mining": [
+    "silk_mining": [
       "dead_brain_coral"
     ]
   },
@@ -9002,12 +9008,12 @@
     ]
   },
   "dead_brain_coral_fan": {
-    "mining": [
+    "silk_mining": [
       "dead_brain_coral_fan"
     ]
   },
   "dead_bubble_coral": {
-    "mining": [
+    "silk_mining": [
       "dead_bubble_coral"
     ]
   },
@@ -9018,7 +9024,7 @@
     ]
   },
   "dead_bubble_coral_fan": {
-    "mining": [
+    "silk_mining": [
       "dead_bubble_coral_fan"
     ]
   },
@@ -9033,7 +9039,7 @@
     ]
   },
   "dead_fire_coral": {
-    "mining": [
+    "silk_mining": [
       "dead_fire_coral"
     ]
   },
@@ -9044,12 +9050,12 @@
     ]
   },
   "dead_fire_coral_fan": {
-    "mining": [
+    "silk_mining": [
       "dead_fire_coral_fan"
     ]
   },
   "dead_horn_coral": {
-    "mining": [
+    "silk_mining": [
       "dead_horn_coral"
     ]
   },
@@ -9060,12 +9066,12 @@
     ]
   },
   "dead_horn_coral_fan": {
-    "mining": [
+    "silk_mining": [
       "dead_horn_coral_fan"
     ]
   },
   "dead_tube_coral": {
-    "mining": [
+    "silk_mining": [
       "dead_tube_coral"
     ]
   },
@@ -9076,7 +9082,7 @@
     ]
   },
   "dead_tube_coral_fan": {
-    "mining": [
+    "silk_mining": [
       "dead_tube_coral_fan"
     ]
   },
@@ -9097,8 +9103,7 @@
   },
   "deepslate": {
     "mining": [
-      "deepslate",
-      "infested_deepslate"
+      "deepslate"
     ],
     "recipes": [
       {
@@ -9109,6 +9114,9 @@
         ],
         "station": "smelting"
       }
+    ],
+    "silk_mining": [
+      "infested_deepslate"
     ]
   },
   "deepslate_brick_slab": {
@@ -11597,7 +11605,7 @@
     ]
   },
   "fire_coral": {
-    "mining": [
+    "silk_mining": [
       "fire_coral"
     ]
   },
@@ -11613,7 +11621,7 @@
     ]
   },
   "fire_coral_fan": {
-    "mining": [
+    "silk_mining": [
       "fire_coral_fan"
     ]
   },
@@ -11971,9 +11979,6 @@
     ]
   },
   "glass": {
-    "mining": [
-      "glass"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -11990,6 +11995,9 @@
         ],
         "station": "smelting"
       }
+    ],
+    "silk_mining": [
+      "glass"
     ],
     "trades": [
       [
@@ -12014,9 +12022,6 @@
     ]
   },
   "glass_pane": {
-    "mining": [
-      "glass_pane"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -12026,6 +12031,9 @@
         ],
         "station": "crafting_shaped"
       }
+    ],
+    "silk_mining": [
+      "glass_pane"
     ]
   },
   "glistering_melon_slice": {
@@ -13340,9 +13348,6 @@
     ]
   },
   "gray_stained_glass": {
-    "mining": [
-      "gray_stained_glass"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -13355,12 +13360,12 @@
         ],
         "station": "crafting_shaped"
       }
+    ],
+    "silk_mining": [
+      "gray_stained_glass"
     ]
   },
   "gray_stained_glass_pane": {
-    "mining": [
-      "gray_stained_glass_pane"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -13381,6 +13386,9 @@
         ],
         "station": "crafting_shaped"
       }
+    ],
+    "silk_mining": [
+      "gray_stained_glass_pane"
     ]
   },
   "gray_terracotta": {
@@ -14017,9 +14025,6 @@
     ]
   },
   "green_stained_glass": {
-    "mining": [
-      "green_stained_glass"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -14032,12 +14037,12 @@
         ],
         "station": "crafting_shaped"
       }
+    ],
+    "silk_mining": [
+      "green_stained_glass"
     ]
   },
   "green_stained_glass_pane": {
-    "mining": [
-      "green_stained_glass_pane"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -14058,6 +14063,9 @@
         ],
         "station": "crafting_shaped"
       }
+    ],
+    "silk_mining": [
+      "green_stained_glass_pane"
     ]
   },
   "green_terracotta": {
@@ -14404,7 +14412,7 @@
     ]
   },
   "horn_coral": {
-    "mining": [
+    "silk_mining": [
       "horn_coral"
     ]
   },
@@ -14420,7 +14428,7 @@
     ]
   },
   "horn_coral_fan": {
-    "mining": [
+    "silk_mining": [
       "horn_coral_fan"
     ]
   },
@@ -14451,7 +14459,7 @@
     ]
   },
   "ice": {
-    "mining": [
+    "silk_mining": [
       "ice"
     ]
   },
@@ -15695,7 +15703,7 @@
     ]
   },
   "large_amethyst_bud": {
-    "mining": [
+    "silk_mining": [
       "large_amethyst_bud"
     ]
   },
@@ -16554,9 +16562,6 @@
     ]
   },
   "light_blue_stained_glass": {
-    "mining": [
-      "light_blue_stained_glass"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -16569,12 +16574,12 @@
         ],
         "station": "crafting_shaped"
       }
+    ],
+    "silk_mining": [
+      "light_blue_stained_glass"
     ]
   },
   "light_blue_stained_glass_pane": {
-    "mining": [
-      "light_blue_stained_glass_pane"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -16595,6 +16600,9 @@
         ],
         "station": "crafting_shaped"
       }
+    ],
+    "silk_mining": [
+      "light_blue_stained_glass_pane"
     ],
     "structures": [
       "Trail Ruins"
@@ -17255,9 +17263,6 @@
     ]
   },
   "light_gray_stained_glass": {
-    "mining": [
-      "light_gray_stained_glass"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -17270,12 +17275,12 @@
         ],
         "station": "crafting_shaped"
       }
+    ],
+    "silk_mining": [
+      "light_gray_stained_glass"
     ]
   },
   "light_gray_stained_glass_pane": {
-    "mining": [
-      "light_gray_stained_glass_pane"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -17296,6 +17301,9 @@
         ],
         "station": "crafting_shaped"
       }
+    ],
+    "silk_mining": [
+      "light_gray_stained_glass_pane"
     ]
   },
   "light_gray_terracotta": {
@@ -18007,9 +18015,6 @@
     ]
   },
   "lime_stained_glass": {
-    "mining": [
-      "lime_stained_glass"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -18022,12 +18027,12 @@
         ],
         "station": "crafting_shaped"
       }
+    ],
+    "silk_mining": [
+      "lime_stained_glass"
     ]
   },
   "lime_stained_glass_pane": {
-    "mining": [
-      "lime_stained_glass_pane"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -18048,6 +18053,9 @@
         ],
         "station": "crafting_shaped"
       }
+    ],
+    "silk_mining": [
+      "lime_stained_glass_pane"
     ]
   },
   "lime_terracotta": {
@@ -18815,9 +18823,6 @@
     ]
   },
   "magenta_stained_glass": {
-    "mining": [
-      "magenta_stained_glass"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -18830,12 +18835,12 @@
         ],
         "station": "crafting_shaped"
       }
+    ],
+    "silk_mining": [
+      "magenta_stained_glass"
     ]
   },
   "magenta_stained_glass_pane": {
-    "mining": [
-      "magenta_stained_glass_pane"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -18856,6 +18861,9 @@
         ],
         "station": "crafting_shaped"
       }
+    ],
+    "silk_mining": [
+      "magenta_stained_glass_pane"
     ],
     "structures": [
       "Trail Ruins"
@@ -19361,7 +19369,7 @@
     ]
   },
   "medium_amethyst_bud": {
-    "mining": [
+    "silk_mining": [
       "medium_amethyst_bud"
     ]
   },
@@ -19652,7 +19660,6 @@
   },
   "mossy_stone_bricks": {
     "mining": [
-      "infested_mossy_stone_bricks",
       "mossy_stone_bricks"
     ],
     "recipes": [
@@ -19678,6 +19685,9 @@
         ],
         "station": "crafting_shapeless"
       }
+    ],
+    "silk_mining": [
+      "infested_mossy_stone_bricks"
     ]
   },
   "mourner_pottery_sherd": {
@@ -19793,7 +19803,7 @@
     ]
   },
   "mushroom_stem": {
-    "mining": [
+    "silk_mining": [
       "mushroom_stem"
     ]
   },
@@ -21436,9 +21446,6 @@
     ]
   },
   "orange_stained_glass": {
-    "mining": [
-      "orange_stained_glass"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -21451,12 +21458,12 @@
         ],
         "station": "crafting_shaped"
       }
+    ],
+    "silk_mining": [
+      "orange_stained_glass"
     ]
   },
   "orange_stained_glass_pane": {
-    "mining": [
-      "orange_stained_glass_pane"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -21477,6 +21484,9 @@
         ],
         "station": "crafting_shaped"
       }
+    ],
+    "silk_mining": [
+      "orange_stained_glass_pane"
     ]
   },
   "orange_terracotta": {
@@ -21815,9 +21825,6 @@
     ]
   },
   "packed_ice": {
-    "mining": [
-      "packed_ice"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -21827,6 +21834,9 @@
         ],
         "station": "crafting_shapeless"
       }
+    ],
+    "silk_mining": [
+      "packed_ice"
     ],
     "structures": [
       "Ancient City"
@@ -22869,9 +22879,6 @@
     ]
   },
   "pink_stained_glass": {
-    "mining": [
-      "pink_stained_glass"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -22884,12 +22891,12 @@
         ],
         "station": "crafting_shaped"
       }
+    ],
+    "silk_mining": [
+      "pink_stained_glass"
     ]
   },
   "pink_stained_glass_pane": {
-    "mining": [
-      "pink_stained_glass_pane"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -22910,6 +22917,9 @@
         ],
         "station": "crafting_shaped"
       }
+    ],
+    "silk_mining": [
+      "pink_stained_glass_pane"
     ],
     "structures": [
       "Trail Ruins"
@@ -24926,9 +24936,6 @@
     ]
   },
   "purple_stained_glass": {
-    "mining": [
-      "purple_stained_glass"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -24941,12 +24948,12 @@
         ],
         "station": "crafting_shaped"
       }
+    ],
+    "silk_mining": [
+      "purple_stained_glass"
     ]
   },
   "purple_stained_glass_pane": {
-    "mining": [
-      "purple_stained_glass_pane"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -24967,6 +24974,9 @@
         ],
         "station": "crafting_shaped"
       }
+    ],
+    "silk_mining": [
+      "purple_stained_glass_pane"
     ],
     "structures": [
       "Trail Ruins"
@@ -26343,9 +26353,6 @@
     ]
   },
   "red_stained_glass": {
-    "mining": [
-      "red_stained_glass"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -26358,12 +26365,12 @@
         ],
         "station": "crafting_shaped"
       }
+    ],
+    "silk_mining": [
+      "red_stained_glass"
     ]
   },
   "red_stained_glass_pane": {
-    "mining": [
-      "red_stained_glass_pane"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -26384,6 +26391,9 @@
         ],
         "station": "crafting_shaped"
       }
+    ],
+    "silk_mining": [
+      "red_stained_glass_pane"
     ],
     "structures": [
       "Trail Ruins"
@@ -27077,7 +27087,7 @@
     ]
   },
   "sculk": {
-    "mining": [
+    "silk_mining": [
       "sculk"
     ],
     "structures": [
@@ -27088,7 +27098,7 @@
     "drops": [
       "warden"
     ],
-    "mining": [
+    "silk_mining": [
       "sculk_catalyst"
     ],
     "structures": [
@@ -27096,7 +27106,7 @@
     ]
   },
   "sculk_sensor": {
-    "mining": [
+    "silk_mining": [
       "sculk_sensor"
     ],
     "structures": [
@@ -27104,7 +27114,7 @@
     ]
   },
   "sculk_shrieker": {
-    "mining": [
+    "silk_mining": [
       "sculk_shrieker"
     ]
   },
@@ -27431,7 +27441,7 @@
     ]
   },
   "small_amethyst_bud": {
-    "mining": [
+    "silk_mining": [
       "small_amethyst_bud"
     ]
   },
@@ -28709,7 +28719,6 @@
   },
   "stone": {
     "mining": [
-      "infested_stone",
       "stone"
     ],
     "recipes": [
@@ -28721,6 +28730,9 @@
         ],
         "station": "smelting"
       }
+    ],
+    "silk_mining": [
+      "infested_stone"
     ],
     "structures": [
       "Village (Desert)",
@@ -28866,7 +28878,6 @@
   },
   "stone_bricks": {
     "mining": [
-      "infested_stone_bricks",
       "stone_bricks"
     ],
     "recipes": [
@@ -28886,6 +28897,9 @@
         ],
         "station": "stonecutting"
       }
+    ],
+    "silk_mining": [
+      "infested_stone_bricks"
     ],
     "structures": [
       "Village (Desert)",
@@ -30104,7 +30118,7 @@
     ]
   },
   "tube_coral": {
-    "mining": [
+    "silk_mining": [
       "tube_coral"
     ]
   },
@@ -30120,7 +30134,7 @@
     ]
   },
   "tube_coral_fan": {
-    "mining": [
+    "silk_mining": [
       "tube_coral_fan"
     ]
   },
@@ -30350,7 +30364,7 @@
     ]
   },
   "turtle_egg": {
-    "mining": [
+    "silk_mining": [
       "turtle_egg"
     ]
   },
@@ -33107,9 +33121,6 @@
     ]
   },
   "white_stained_glass": {
-    "mining": [
-      "white_stained_glass"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -33122,12 +33133,12 @@
         ],
         "station": "crafting_shaped"
       }
+    ],
+    "silk_mining": [
+      "white_stained_glass"
     ]
   },
   "white_stained_glass_pane": {
-    "mining": [
-      "white_stained_glass_pane"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -33148,6 +33159,9 @@
         ],
         "station": "crafting_shaped"
       }
+    ],
+    "silk_mining": [
+      "white_stained_glass_pane"
     ]
   },
   "white_terracotta": {
@@ -34275,9 +34289,6 @@
     ]
   },
   "yellow_stained_glass": {
-    "mining": [
-      "yellow_stained_glass"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -34290,12 +34301,12 @@
         ],
         "station": "crafting_shaped"
       }
+    ],
+    "silk_mining": [
+      "yellow_stained_glass"
     ]
   },
   "yellow_stained_glass_pane": {
-    "mining": [
-      "yellow_stained_glass_pane"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -34316,6 +34327,9 @@
         ],
         "station": "crafting_shaped"
       }
+    ],
+    "silk_mining": [
+      "yellow_stained_glass_pane"
     ],
     "structures": [
       "Trail Ruins"

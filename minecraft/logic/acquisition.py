@@ -921,7 +921,14 @@ class RuleHelper:
             name = _entity_by_gid().get(f"minecraft:{mob_file}")
             if name in MOBS_ALL:
                 options.append(self.entity(name))
-        for block in record.get("mining", ()):
+        mining_blocks = record.get("mining", ())
+        # Data-driven: when the item has a tier-gated ORE source, a same-item block carrying no tier
+        # info is a circular placed form (e.g. ``redstone_wire`` beside ``redstone_ore`` [iron]) whose
+        # bare region path would undercut the ore's tier gate — the tiered ore is the real source.
+        has_tiered_ore = any(_block_mining().get(b, {}).get("needs") for b in mining_blocks)
+        for block in mining_blocks:
+            if has_tiered_ore and _block_mining().get(block) is None:
+                continue
             # A block that drops *itself* is only a real "mine it" source when it generates
             # naturally. A placed-only block — a crafted one (slime_block, wool, planks, …), a mob
             # trophy (a skull/head) or a frog-made froglight — must be obtained then placed first,
@@ -933,6 +940,11 @@ class RuleHelper:
             if block == base and placed_only and base not in _NATURAL_SELF_MINED:
                 continue
             options.append(self._mining_node(block, base))
+        for block in record.get("silk_mining", ()):
+            # The block yields itself only to a Silk-Touch tool (bee_nest, ice, coral, …): same
+            # region/tier as a normal mine PLUS the capability to silk-touch (enchant). Always behind
+            # the silk gate, so it is never a free path even when the block is placed-only.
+            options.append(self._mining_node(block, base, silk=True))
         if record.get("trades"):
             options.append(self.can_trade_villager())
         for structure_name in record.get("structures", ()):
@@ -1017,10 +1029,11 @@ class RuleHelper:
             return self.acquire(ingredient["item"], stack)
         return None
 
-    def _mining_node(self, block: str, item: str):
+    def _mining_node(self, block: str, item: str, silk: bool = False):
         """Break ``block`` (to obtain ``item``): be in the block's dimension, and — only for
         pickaxe-mineable blocks (soul sand, glowstone, crops drop bare-handed) — hold a pickaxe of
-        the required material tier."""
+        the required material tier. ``silk`` adds the Silk-Touch capability when the block yields
+        itself only to a Silk-Touch tool."""
         parts = [self.access_region(_block_region(block))]
         info = _block_mining().get(block)
         if info is not None:
@@ -1028,7 +1041,20 @@ class RuleHelper:
             tier = _MATERIAL_TIER_BY_ITEM.get(item) or _NEEDS_TIER.get(info.get("needs"))
             if tier is not None:
                 parts.append(self.material(tier))
+        if silk:
+            parts.append(self.can_silk_touch())
         return self.all_of(*parts)
+
+    def can_silk_touch(self):
+        """The capability to wield a Silk-Touch tool. Two routes, mirroring the enchant gate in
+        ``triggers.py``: enchant one yourself (``acquire(enchanting_table)`` gates Knowledge:
+        Enchanting + its tier), OR apply a Silk-Touch enchanted book with an anvil (a librarian's
+        book is a no-Knowledge trade path)."""
+        routes = [self.acquire("minecraft:enchanting_table")]
+        book = self.acquire("minecraft:enchanted_book")
+        if book is not None:
+            routes.append(self.all_of(book, self.acquire("minecraft:anvil")))
+        return self.any_of(*routes)
 
     def _gameplay_node(self, table: str):
         """A 'gameplay' loot source that is a real, repeatable acquisition path: any fishing table

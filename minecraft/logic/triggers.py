@@ -101,7 +101,6 @@ _ENTITY_REACH_TRIGGERS = frozenset({
     "minecraft:player_hurt_entity",
     "minecraft:entity_hurt_player",
     "minecraft:killed_by_arrow",
-    "minecraft:player_interacted_with_entity",
     "minecraft:summoned_entity",
 })
 
@@ -177,16 +176,34 @@ class TriggerCompiler:
 
         if trigger in _ENTITY_REACH_TRIGGERS:
             return self._entity_node(cond)
+        if trigger == "minecraft:player_interacted_with_entity":
+            # Right-click an entity with an item (lead a mob, feed it, …): need the item AND a valid
+            # target entity. A concrete type pins it; an inverted predicate ("any entity except the
+            # listed vehicles/non-mobs", e.g. Lead the Way!) means "any mob", so require at least one
+            # mob from the registry minus whatever the criterion excludes — both fully data-driven.
+            item = self._item_predicate(cond.get("item"))
+            entity = self._entity_node(cond)
+            if entity is None and cond.get("entity"):
+                excluded = set(self._excluded_entity_names(cond))
+                entity = self._any_mob([n for n in MOBS_ALL if n not in excluded], self.h.entity)
+            parts = [n for n in (item, entity) if n is not None]
+            return and_(*parts) if parts else None
         if trigger == "minecraft:tame_animal":
-            name = self._entity_name(cond) or self._species_from_components(cond)
-            if name:
-                return self.h.can_tame(name)
+            # The tamed species is pinned on the `entity` predicate as a concrete type or a #tag
+            # (#blazeandcave:llamas); empty conditions mean "tame any tameable animal".
+            names = self._entity_names(cond)
+            if not names:
+                species = self._species_from_components(cond)
+                names = [species] if species else []
+            options = [self.h.can_tame(n) for n in names if n in MOBS_TAMEABLE]
+            if options:
+                return or_(*options)
             return self._any_mob(MOBS_TAMEABLE, self.h.can_tame) if not cond else None
         if trigger == "minecraft:bred_animals":
             # The bred species is pinned on the `child` predicate (e.g. bred_all_animals); empty
             # conditions mean "breed any animal".
             gid = self._predicate_value(cond.get("child"), "type")
-            name = self._entity_by_gid.get(gid) if gid else None
+            name = self._entity_by_gid.get(self._ns(gid)) if isinstance(gid, str) else None
             if name:
                 return self.h.can_breed(name)
             return self._any_mob(MOBS_BREEDABLE, self.h.can_breed) if not cond else None
@@ -284,21 +301,42 @@ class TriggerCompiler:
         return None
 
     # -- condition extractors ----------------------------------------------
-    def _entity_node(self, cond: dict) -> Rule | None:
-        """Reach the entity a criterion's `entity` predicate pins via `type` — a single id, or a
-        ``#tag`` (e.g. ``#raiders``) expanded to an OR over its members."""
+    @staticmethod
+    def _ns(gid: str) -> str:
+        """Normalise an id/tag-body to the ``minecraft:`` namespace when it has none — BACAP writes
+        many entity types/tags bare (``turtle``, ``#raiders``), and the registries are namespaced."""
+        return gid if ":" in gid else f"minecraft:{gid}"
+
+    def _entity_names(self, cond: dict) -> list:
+        """Display names for the entity/entities a criterion's `entity` predicate pins via `type` —
+        a single id or a ``#tag`` (``#raiders``, ``#blazeandcave:llamas``), with bare ids/tags
+        normalised to ``minecraft:`` so the namespaced registries resolve them."""
         gid = self._predicate_value(cond.get("entity"), "type")
         if not isinstance(gid, str):
-            return None
-        members = self._entity_tags.get(gid[1:], []) if gid.startswith("#") else [gid]
-        names = [self._entity_by_gid[m] for m in members if m in self._entity_by_gid]
-        options = [self.h.entity(name) for name in names]
+            return []
+        members = (self._entity_tags.get(self._ns(gid[1:]), [])
+                   if gid.startswith("#") else [self._ns(gid)])
+        return [self._entity_by_gid[m] for m in members if m in self._entity_by_gid]
+
+    def _entity_node(self, cond: dict) -> Rule | None:
+        """Reach the entity/entities a criterion's `entity` predicate pins (single id or ``#tag``)."""
+        options = [self.h.entity(name) for name in self._entity_names(cond)]
         return or_(*options) if options else None
 
-    def _entity_name(self, cond: dict) -> str | None:
-        """Display-name for the entity a criterion's `entity` predicate pins via a concrete type."""
-        gid = self._predicate_value(cond.get("entity"), "type")
-        return self._entity_by_gid.get(gid) if isinstance(gid, str) else None
+    def _excluded_entity_names(self, cond: dict) -> list:
+        """Display names an INVERTED `entity` predicate excludes (Lead the Way!'s vehicle/non-mob
+        list), resolved through the same namespaced registry/tags as ``_entity_names`` — so an
+        'any entity except X' constraint stays data-driven instead of assuming what X is."""
+        entries = cond.get("entity")
+        entries = entries if isinstance(entries, list) else [entries]
+        names = []
+        for sub in entries:
+            if not isinstance(sub, dict) or not str(sub.get("condition", "")).endswith("inverted"):
+                continue
+            term = sub.get("term")
+            if isinstance(term, dict):
+                names.extend(self._entity_names({"entity": term.get("predicate", term)}))
+        return names
 
     def _location_node(self, cond: dict) -> Rule | None:
         loc = self._predicate_value(cond.get("player"), "location")
