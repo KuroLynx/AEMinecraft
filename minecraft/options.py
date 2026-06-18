@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from Options import Choice, OptionSet, PerGameCommonOptions, Range, Toggle
 
-from .data import MOBS_BOSS, STRUCTURES
+from .data import ADVANCEMENT_LOCATIONS, MOBS_BOSS, STRUCTURES
 
 
 class BossList(OptionSet):
@@ -30,12 +30,20 @@ class AdvancementsRequired(Range):
     Set to 0 to disable this condition entirely.
     This is cumulative with the boss kill condition: all active conditions must be met to win.
 
+    The value is automatically reduced at generation to the number of advancement checks that
+    actually exist in your seed, which depends on your other options: vanilla has 100 advancements
+    with challenge_sanity off and 125 with it on, and blazeandcave adds up to ~1028 more.
+
     Minimum value is 0
-    Maximum value is 125 (the total number of advancements)
+    The maximum is the total number of advancements across vanilla and every supported datapack
+    (derived from the manifests in code, so it tracks the bundled content version).
     """
     display_name = "Advancements Required"
     range_start = 0
-    range_end = 125
+    # Derived from the loaded content so the cap always matches the bundled manifests (vanilla +
+    # BACAP); it shifts automatically when a manifest is updated for a new/older game version. The
+    # generator still clamps the chosen value down to the advancements that exist in each seed.
+    range_end = len(ADVANCEMENT_LOCATIONS)
     default = 0
 
 
@@ -147,13 +155,16 @@ class TrapChance(Range):
 
 
 class ChallengeSanity(Toggle):
-    """If enabled, includes extremely complex advancements in the location pool.
+    """If enabled, includes every 'challenge' advancement in the location pool.
 
-    This includes:
+    This gates all advancements with the challenge frame (the spiky border) — 25 in vanilla, e.g.:
     - A Furious Cocktail (have all potion effects simultaneously)
     - How Did We Get Here? (have all status effects simultaneously)
-    - Arbalistic (Kill 5 unique mobs with one arrow)
-    - A Balanced Diet (Eat every food items)
+    - Arbalistic (kill 5 unique mobs with one arrow)
+    - A Balanced Diet (eat every food item)
+
+    With blazeandcave enabled it also gates BACAP's 218 challenge advancements (scattered across most
+    tabs, not just the "Super Challenges" tab).
 
     These advancements are very difficult to complete and are excluded by default.
     """
@@ -216,6 +227,27 @@ class BiomeFinder(Choice):
     default = 2
 
 
+class BlazeAndCave(Toggle):
+    """Add BlazeandCave's Advancements Pack (BACAP) to the location pool.
+
+    When enabled, ~1028 custom BACAP advancements become checks alongside the (BACAP-rewritten)
+    vanilla ones — BACAP's `minecraft:` files rewrite the vanilla advancements in place, reusing
+    their locations, so vanilla checks are not replaced. BACAP's hidden "statistics" (auto-granted
+    stat counters) and "technical" (datapack plumbing) tabs are not real checks and are excluded;
+    its 218 challenge advancements are only included when challenge_sanity is on.
+
+    You must have the BlazeandCave's Advancements Pack datapack installed in your world for these
+    checks to fire. Their logic is derived automatically from each advancement's criteria (and its
+    parent advancement), the same way vanilla advancements are.
+
+    Leave disabled if you are not playing with the datapack.
+    """
+    display_name = "BlazeandCave's Advancements Pack"
+    option_true = 1
+    option_false = 0
+    default = 0
+
+
 @dataclass
 class MCOptions(PerGameCommonOptions):
     boss_list: BossList
@@ -230,3 +262,4 @@ class MCOptions(PerGameCommonOptions):
     challenge_sanity: ChallengeSanity
     structure_finder: StructureFinder
     biome_finder: BiomeFinder
+    blazeandcave: BlazeAndCave

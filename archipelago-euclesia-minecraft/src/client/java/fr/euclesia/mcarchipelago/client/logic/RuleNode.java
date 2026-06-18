@@ -10,12 +10,16 @@ import java.util.List;
 /**
  * A node of the serialized logic-rule AST shipped in {@code slot_data["logic"]}.
  *
- * <p>Mirrors {@code minecraft/rules/ast.py}: the only kinds that ever reach
+ * <p>Mirrors {@code minecraft/logic/ast.py}: the only kinds that ever reach
  * serialization are {@code const}, {@code has}, {@code region}, {@code loc},
- * {@code and}, {@code or} and {@code atleast}. The JSON is parsed once into this tree (via
- * {@link #parse(JsonElement)}); evaluation then walks the tree against a
+ * {@code and}, {@code or}, {@code atleast} and {@code ref}. The JSON is parsed once into this tree
+ * (via {@link #parse(JsonElement)}); evaluation then walks the tree against a
  * {@link LogicEvaluation} the same way {@code ExportEvaluator.eval} does in
  * {@code tools/logic_selfcheck.py}.
+ *
+ * <p>{@code ref} is a pointer into {@code slot_data["logic"]["definitions"]}: the exporter hoists
+ * every shared subtree there once (see {@code logic_export._dedup_rules}) and references it
+ * everywhere it occurs, keeping a BACAP export small. A ref evaluates to its definition.
  */
 public sealed interface RuleNode {
     boolean eval(LogicEvaluation evaluation);
@@ -31,6 +35,7 @@ public sealed interface RuleNode {
             case "and" -> new And(parseChildren(node.getAsJsonArray("c")));
             case "or" -> new Or(parseChildren(node.getAsJsonArray("c")));
             case "atleast" -> new AtLeast(node.get("n").getAsInt(), parseChildren(node.getAsJsonArray("c")));
+            case "ref" -> new Ref(node.get("id").getAsInt());
             default -> throw new IllegalArgumentException("unknown rule node kind: " + kind);
         };
     }
@@ -92,6 +97,14 @@ public sealed interface RuleNode {
                 }
             }
             return false;
+        }
+    }
+
+    /** A pointer into the graph's shared {@code definitions} table; evaluates to that subtree. */
+    record Ref(int id) implements RuleNode {
+        @Override
+        public boolean eval(LogicEvaluation evaluation) {
+            return evaluation.evalRef(id);
         }
     }
 

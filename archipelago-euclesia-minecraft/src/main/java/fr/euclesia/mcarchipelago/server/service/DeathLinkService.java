@@ -2,6 +2,7 @@ package fr.euclesia.mcarchipelago.server.service;
 
 import com.google.gson.JsonObject;
 import fr.euclesia.mcarchipelago.AEM;
+import fr.euclesia.mcarchipelago.AEMDebug;
 import fr.euclesia.mcarchipelago.protocol.APBounceType;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
 import net.minecraft.network.chat.Component;
@@ -17,10 +18,13 @@ public final class DeathLinkService {
 
     public static void onLocalPlayerDeath(ServerPlayer player) {
         if (!AEMServerRuntime.isArchipelagoReady() || suppressSend) {
+            AEMDebug.log("deathLink.local skipped (ready={} suppressSend={})",
+                    AEMServerRuntime.isArchipelagoReady(), suppressSend);
             return;
         }
 
         if (AEM.ARCHIPELAGO.client().state().parsedSlotData().deathLink()) {
+            AEMDebug.log("deathLink.local sending bounce for {}", player.getGameProfile().name());
             AEM.ARCHIPELAGO.gateway().bounce(APBounceType.DEATH_LINK, createPayload(player));
         }
     }
@@ -30,6 +34,7 @@ public final class DeathLinkService {
         if (server == null) {
             return;
         }
+        AEMDebug.log("deathLink.remote source='{}' cause='{}' -> killing online players", source, cause);
 
         Component message = Component.translatable("message.aem.deathlink", describe(source, cause));
         server.execute(() -> {

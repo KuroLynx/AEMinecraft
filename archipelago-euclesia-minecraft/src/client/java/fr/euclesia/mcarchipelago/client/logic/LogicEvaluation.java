@@ -1,8 +1,10 @@
 package fr.euclesia.mcarchipelago.client.logic;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * One reachability pass over a {@link LogicGraph} for a fixed snapshot of received items.
@@ -36,6 +38,7 @@ public final class LogicEvaluation {
     private final ItemAvailability items;
     private final Map<String, Boolean> regionReach = new HashMap<>();
     private final Map<String, Boolean> locationReach = new HashMap<>();
+    private final Set<Integer> resolvingRefs = new HashSet<>();
 
     LogicEvaluation(LogicGraph graph, ItemAvailability items) {
         this.graph = graph;
@@ -55,6 +58,26 @@ public final class LogicEvaluation {
     /** Reads the solved snapshot; {@link RuleNode.Loc} calls this during {@link #solve}. */
     public boolean canReachLocation(String name) {
         return Boolean.TRUE.equals(locationReach.get(name));
+    }
+
+    /**
+     * Evaluate a shared subtree behind a {@code ref}. Definitions are acyclic by construction
+     * (the exporter only hoists subtrees of the acyclic rule forest), so the guard below is purely
+     * defensive: a re-entered id means a cycle slipped through, which resolves to {@code false}
+     * (unreachable) rather than recursing forever. Results are NOT cached — region/location
+     * reachability flips during a {@link #solve} pass, so a ref must re-evaluate each time exactly
+     * like the inlined subtree it replaced.
+     */
+    boolean evalRef(int id) {
+        RuleNode definition = graph.definition(id);
+        if (definition == null || !resolvingRefs.add(id)) {
+            return false;
+        }
+        try {
+            return definition.eval(this);
+        } finally {
+            resolvingRefs.remove(id);
+        }
     }
 
     private void solve() {

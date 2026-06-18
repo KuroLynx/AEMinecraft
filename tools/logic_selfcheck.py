@@ -48,7 +48,9 @@ class ExportEvaluator:
         self.origin = export["origin"]
         self.regions = export["regions"]
         self.locations = export["locations"]
+        self.definitions = export.get("definitions", {})  # shared subtrees behind {"k":"ref"}
         self.items = item_counts
+        self._resolving: set[int] = set()
         self._region_reach: dict[str, bool] = {}
         self._loc_reach: dict[str, bool] = {}
         self._solve()
@@ -73,6 +75,16 @@ class ExportEvaluator:
             return any(self._eval(c) for c in node["c"])
         if k == "atleast":
             return sum(1 for c in node["c"] if self._eval(c)) >= node["n"]
+        if k == "ref":
+            ref_id = node["id"]
+            definition = self.definitions.get(str(ref_id))
+            if definition is None or ref_id in self._resolving:
+                return False  # acyclic by construction; guard is defensive (mirrors Java)
+            self._resolving.add(ref_id)
+            try:
+                return self._eval(definition)
+            finally:
+                self._resolving.discard(ref_id)
         raise ValueError(f"unknown node kind: {k}")
 
     def _solve(self) -> None:
@@ -147,6 +159,8 @@ def main() -> int:
         ev = ExportEvaluator(export, counts)
         mismatches = []
         for name in export["locations"]:
+            if name.startswith("__"):
+                continue  # synthetic tiles (the AP tab-root) aren't real AP locations
             ap = state.can_reach_location(name, player)
             mine = ev.can_reach_location(name)
             if ap != mine:

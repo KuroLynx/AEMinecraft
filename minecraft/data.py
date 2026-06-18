@@ -1,130 +1,45 @@
-import csv
-from dataclasses import dataclass
-from importlib.resources import files
-from pathlib import Path
-from BaseClasses import ItemClassification
-from .rules.constants import *
+"""Public data surface for the apworld.
 
-# Base IDs
-BASE_ID_ITEMS           = 0xEC0000
-BASE_ID_ENTITY_UNLOCK   = 0xEC0100
-BASE_ID_STRUCT_UNLOCK   = 0xEC0200
-BASE_ID_LOC_ADVANCEMENT = 0xEC1000
-BASE_ID_LOC_BOSS_KILL   = 0xEC1100
-BASE_ID_LOC_MOB_KILL    = 0xEC1200
-BASE_ID_LOC_STRUCTURE   = 0xEC1300
+Parsing of the content packs now lives in :mod:`content.registry`; this module loads the vanilla
+pack and re-exports its records (plus the gameplay lock maps and mob subsets) under the same
+module-level names the rest of the apworld already imports. ``from .data import *`` therefore still
+yields ITEMS / MOBS_ALL / STRUCTURES / ALL_LOCATIONS / the BASE_ID_* / dataclasses / etc., and —
+via ``from .logic.constants import *`` below — the rule constants (prefixes, ITEM_*, MAT_*, K_*).
+"""
+# NOTE: most names below are re-exported via `from .data import *` for the rest of the apworld;
+# they look "unused" to linters here, so do not auto-strip them.
+from BaseClasses import ItemClassification  # noqa: F401
 
-class MCLocationCategory:
-    ADVANCEMENT = "advancement"
-    MOB_KILL    = "mob_kill"
-    BOSS_KILL   = "boss_kill"
+from .content.registry import (  # noqa: F401
+    BASE_ID_ENTITY_UNLOCK,
+    BASE_ID_ITEMS,
+    BASE_ID_LOC_ADVANCEMENT,
+    BASE_ID_LOC_BACAP,
+    BASE_ID_LOC_BOSS_KILL,
+    BASE_ID_LOC_MOB_KILL,
+    BASE_ID_LOC_STRUCTURE,
+    BASE_ID_STRUCT_UNLOCK,
+    ContentRegistry,
+    MCEntityCategory,
+    MCItemData,
+    MCLocationCategory,
+    MCLocationData,
+    MCMobData,
+    MCStructureData,
+    load_manifest_advancements,
+    load_manifest_challenge,
+    load_pack,
+)
+from .logic.constants import *
 
-class MCEntityCategory:
-    PASSIVE = "passive"
-    NEUTRAL = "neutral"
-    HOSTILE = "hostile"
-    BOSS    = "boss"
+# Vanilla is always loaded; manifest-only datapack/mod packs (BACAP) are loaded too so their
+# location ids and the compiler's parent-chain lookup are always present (the option only gates
+# whether those locations are *created* this seed — see MCWorld._get_active_locations).
+_REGISTRY: ContentRegistry = load_pack("vanilla_26_1")
 
-@dataclass
-class MCItemData:
-    id: int
-    classification: ItemClassification
-    count: int
-
-@dataclass
-class MCLocationData:
-    id: int
-    category: str
-    region: str = "Overworld"
-    game_id: str = ""
-    challenge: bool = False
-
-@dataclass
-class MCMobData:
-    id: int
-    category: str
-    region: str
-    unlock_classification: ItemClassification
-    breedable: bool
-    tameable: bool
-    game_id: str
-
-@dataclass
-class MCStructureData:
-    id: int
-    classification: ItemClassification
-    region: str
-    game_id: str
-
-DATA_FOLDER = files(__package__).joinpath("data")
-
-def _load_items() -> dict[str, MCItemData]:
-    items = {}
-    csv_path = DATA_FOLDER.joinpath("items.csv")
-    with csv_path.open(mode="r", encoding="utf-8-sig") as f:
-        reader = csv.DictReader(f)
-        for index, row in enumerate(reader):
-            class_map = {
-                "progression": ItemClassification.progression,
-                "progression_skip_balancing": ItemClassification.progression_skip_balancing,
-                "useful": ItemClassification.useful,
-                "filler": ItemClassification.filler,
-                "trap": ItemClassification.trap
-            }
-            items[row["name"]] = MCItemData(
-                id = BASE_ID_ITEMS + index,
-                classification = class_map.get(row["classification"], ItemClassification.filler),
-                count = int(row["count"])
-            )
-    return items
-
-def _load_mobs() -> dict[str, MCMobData]:
-    mobs = {}
-    csv_path = DATA_FOLDER.joinpath("mobs.csv")
-    with csv_path.open(mode="r", encoding="utf-8-sig") as f:
-        reader = csv.DictReader(f)
-        for index, row in enumerate(reader):
-            class_map = {
-                "progression": ItemClassification.progression,
-                "progression_skip_balancing": ItemClassification.progression_skip_balancing,
-                "useful": ItemClassification.useful,
-                "filler": ItemClassification.filler
-            }
-            mobs[row["name"]] = MCMobData(
-                id = index,
-                category = row["category"],
-                region = row["region"],
-                unlock_classification = class_map.get(row["unlock_classification"], ItemClassification.filler),
-                breedable = row["breedable"].lower() == "true",
-                tameable = row["tameable"].lower() == "true",
-                game_id = f"minecraft:{row['name'].lower().replace(' ', '_')}"
-            )
-    return mobs
-
-def _load_structures() -> dict[str, MCStructureData]:
-    structs = {}
-    csv_path = DATA_FOLDER.joinpath("structures.csv")
-    with csv_path.open(mode="r", encoding="utf-8-sig") as f:
-        reader = csv.DictReader(f)
-        for index, row in enumerate(reader):
-            class_map = {
-                "progression": ItemClassification.progression,
-                "progression_skip_balancing": ItemClassification.progression_skip_balancing,
-                "useful": ItemClassification.useful,
-                "filler": ItemClassification.filler
-            }
-            structs[row["name"]] = MCStructureData(
-                id = index,
-                classification = class_map.get(row["classification"], ItemClassification.filler),
-                region = row["region"],
-                game_id = f"minecraft:{row['game_id']}"
-            )
-    return structs
-
-# Global parsing execution
-ITEMS: dict[str, MCItemData] = _load_items()
-MOBS_ALL: dict[str, MCMobData] = _load_mobs()
-STRUCTURES: dict[str, MCStructureData] = _load_structures()
+ITEMS: dict[str, MCItemData] = _REGISTRY.items
+MOBS_ALL: dict[str, MCMobData] = _REGISTRY.mobs
+STRUCTURES: dict[str, MCStructureData] = _REGISTRY.structures
 
 # MC items gated behind Progressive Material Handling tiers: the key is the number of copies of
 # "Progressive Material Handling" required to pick the item up. Tiers mirror rules.constants MAT_*
@@ -146,10 +61,10 @@ MATERIAL_HANDLING_ITEMS: dict[int, list[str]] = {
 # until the player has received the Knowledge item AND that many Material Handling copies — e.g. a
 # diamond sword needs "Knowledge: Sword Handling" and 5 Material Handling. Mirrors the apworld logic,
 # where these are gated by helper.knowledge(...) plus the relevant material tier. Tune freely.
-_TOOL_TIERS = {"wooden": MAT_WOOD, "stone": MAT_STONE, "iron": MAT_IRON,
+_TOOL_TIERS = {"wooden": MAT_WOOD, "stone": MAT_STONE, "copper": MAT_COPPER, "iron": MAT_IRON,
                "golden": MAT_GOLD, "diamond": MAT_DIAMOND, "netherite": MAT_NETHERITE}
 _TOOL_KINDS = {"sword": K_SWORD, "pickaxe": K_PICKAXE, "axe": K_AXE, "shovel": K_SHOVEL, "hoe": K_HOE}
-_ARMOR_TIERS = {"leather": MAT_WOOD, "chainmail": MAT_IRON, "iron": MAT_IRON,
+_ARMOR_TIERS = {"leather": MAT_WOOD, "chainmail": MAT_IRON, "copper": MAT_COPPER, "iron": MAT_IRON,
                 "golden": MAT_GOLD, "diamond": MAT_DIAMOND, "netherite": MAT_NETHERITE}
 _ARMOR_PIECES = ["helmet", "chestplate", "leggings", "boots"]
 
@@ -194,52 +109,41 @@ MOBS_BOSS     = {k: v for k, v in MOBS_ALL.items() if v.category == MCEntityCate
 MOBS_BREEDABLE = {k: v for k, v in MOBS_ALL.items() if v.breedable}
 MOBS_TAMEABLE  = {k: v for k, v in MOBS_ALL.items() if v.tameable}
 
-def _load_advancements() -> dict[str, MCLocationData]:
-    locations = {}
-    csv_path = DATA_FOLDER.joinpath("advancements.csv")
-    with csv_path.open(mode="r", encoding="utf-8-sig") as f:
-        reader = csv.DictReader(f)
-        for index, row in enumerate(reader):
-            full_game_id = f"minecraft:{row['tab']}/{row['game_id']}" if row["game_id"] != "root" else f"minecraft:{row['tab']}/root"
-            locations[f"{ADVANCEMENT_PREFIX}{row['name']}"] = MCLocationData(
-                id = BASE_ID_LOC_ADVANCEMENT + index,
-                category = MCLocationCategory.ADVANCEMENT,
-                region = row["region"],
-                game_id = full_game_id,
-                challenge = row.get("challenge", "false").strip().lower() == "true",
-            )
-    return locations
-
-def _load_mob_kill_locations() -> dict[str, MCLocationData]:
-    locations = {}
-    for name, mob in MOBS_ALL.items():
-        if mob.category == MCEntityCategory.BOSS:
-            continue
-        locations[f"{ENTITY_KILL_PREFIX}{name}"] = MCLocationData(
-            id = BASE_ID_LOC_MOB_KILL + mob.id,
-            category = MCLocationCategory.MOB_KILL,
-            region = mob.region,
-            game_id = mob.game_id,
-        )
-    return locations
-
-def _load_boss_kill_locations() -> dict[str, MCLocationData]:
-    locations = {}
-    for name, mob in MOBS_BOSS.items():
-        locations[f"{BOSS_KILL_PREFIX}{name}"] = MCLocationData(
-            id = BASE_ID_LOC_BOSS_KILL + mob.id,
-            category = MCLocationCategory.BOSS_KILL,
-            region = mob.region,
-            game_id = mob.game_id,
-        )
-    return locations
-
-LOCATIONS_ADVANCEMENT: dict[str, MCLocationData] = _load_advancements()
-LOCATIONS_MOB_KILL: dict[str, MCLocationData] = _load_mob_kill_locations()
-LOCATIONS_BOSS_KILL: dict[str, MCLocationData] = _load_boss_kill_locations()
+LOCATIONS_ADVANCEMENT: dict[str, MCLocationData] = _REGISTRY.advancements
+LOCATIONS_MOB_KILL: dict[str, MCLocationData] = _REGISTRY.mob_kill_locations
+LOCATIONS_BOSS_KILL: dict[str, MCLocationData] = _REGISTRY.boss_kill_locations
 
 ALL_LOCATIONS: dict[str, MCLocationData] = {
     **LOCATIONS_ADVANCEMENT,
     **LOCATIONS_MOB_KILL,
     **LOCATIONS_BOSS_KILL,
+}
+
+# BACAP (BlazeandCave's Advancements Pack): a manifest-only datapack of custom advancements, loaded
+# unconditionally so its location ids are stable in the data package; the `blazeandcave` option
+# gates whether they are created this seed. Only the new `blazeandcave:` advancements become
+# locations here — BACAP's `minecraft:` files REWRITE the vanilla advancements, so they reuse the
+# vanilla locations (their modified criteria come from the BACAP manifest in set_rules when on).
+# ADVANCEMENT_LOCATIONS is the vanilla+BACAP union the trigger compiler walks (parent-chain lookup).
+# Two BACAP tabs are dropped: `statistics` auto-grants from scoreboard counters and `technical` is
+# hidden datapack plumbing — neither is a real, player-earnable check. Every `frame=challenge`
+# advancement (BACAP scatters them across most tabs, not just the "Super Challenges" `challenges`
+# tab) is flagged challenge=True so the challenge_sanity option gates them like vanilla's.
+_VANILLA_ADVANCEMENT_GAME_IDS = frozenset(loc.game_id for loc in LOCATIONS_ADVANCEMENT.values())
+LOCATIONS_BACAP: dict[str, MCLocationData] = load_manifest_advancements(
+    "bacap", BASE_ID_LOC_BACAP, reserved=frozenset(ALL_LOCATIONS),
+    skip_game_ids=_VANILLA_ADVANCEMENT_GAME_IDS,
+    skip_tabs=frozenset({"statistics", "technical"}),
+    challenge_tabs=frozenset({"challenges"}))
+
+ADVANCEMENT_LOCATIONS: dict[str, MCLocationData] = {**LOCATIONS_ADVANCEMENT, **LOCATIONS_BACAP}
+
+# Vanilla advancement locations BACAP *rewrites* (its `minecraft:` files reuse them). BACAP can
+# give the advancement a different frame than vanilla, promoting a goal/task to a challenge or
+# demoting a challenge, so when blazeandcave is on the challenge_sanity gate must follow BACAP's
+# frame, not the vanilla flag baked into the location. Maps rewritten game_id -> BACAP challenge.
+_BACAP_CHALLENGE: dict[str, bool] = load_manifest_challenge("bacap")
+BACAP_REWRITE_CHALLENGE: dict[str, bool] = {
+    game_id: _BACAP_CHALLENGE[game_id]
+    for game_id in _VANILLA_ADVANCEMENT_GAME_IDS if game_id in _BACAP_CHALLENGE
 }

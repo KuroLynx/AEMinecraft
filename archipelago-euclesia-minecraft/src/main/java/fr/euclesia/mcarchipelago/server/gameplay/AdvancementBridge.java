@@ -8,6 +8,9 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.ServerAdvancementManager;
 import net.minecraft.server.level.ServerPlayer;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public final class AdvancementBridge {
     private AdvancementBridge() {}
 
@@ -16,9 +19,22 @@ public final class AdvancementBridge {
             return;
         }
 
+        // Recipe-unlock "advancements" (minecraft:recipes/...) fire constantly and are never
+        // randomized locations, so skip them before any lookup/network work.
+        if (advancementId.startsWith("minecraft:recipes/")) {
+            return;
+        }
+
         // The check result is reported back through Archipelago's PrintJSON (rendered to chat by
         // ArchipelagoChatListener), so no local confirmation message is needed here.
-        AEM.ARCHIPELAGO.gateway().checkLocation(advancementId);
+        boolean sent = AEM.ARCHIPELAGO.gateway().checkLocation(advancementId);
+        // Intentional [AEM-DIAG] server-log trace (server-side only, never shown to players): records
+        // each completion's id, whether a check was sent, and the location-mapping state so check
+        // problems can be diagnosed straight from the Minecraft log.
+        AEM.LOGGER.info("[AEM-DIAG] onCompleted id='{}' sent={} anyLocationsLoaded={} idIsActiveLocation={}",
+                advancementId, sent,
+                AEM.ARCHIPELAGO.client().registries().apLocations().hasLocations(),
+                AEM.ARCHIPELAGO.client().registries().apLocations().isActiveLocation(advancementId));
 
         // Count this toward the tab-root goal progress (one criterion per completed advancement),
         // but only for real advancement checks this seed — not the root tile itself.
@@ -64,10 +80,26 @@ public final class AdvancementBridge {
             return;
         }
 
+        // Collect every completed advancement and send the checks as a single LocationChecks packet
+        // rather than one packet per advancement — a join/connect scan can touch hundreds at once.
+        List<String> completed = new ArrayList<>();
         for (AdvancementHolder advancement : server.getAdvancements().getAllAdvancements()) {
-            if (player.getAdvancements().getOrStartProgress(advancement).isDone()) {
-                onCompleted(player, advancement.id().toString());
+            if (!player.getAdvancements().getOrStartProgress(advancement).isDone()) {
+                continue;
             }
+            String advancementId = advancement.id().toString();
+            if (advancementId.startsWith("minecraft:recipes/")) {
+                continue;
+            }
+            completed.add(advancementId);
         }
+
+        int sent = AEM.ARCHIPELAGO.gateway().checkLocationsByGameId(completed);
+        AEM.LOGGER.info("[AEM-DIAG] scanPlayer sent {} checks from {} completed advancements", sent, completed.size());
+
+        // Re-evaluate the advancement-count goal progress once after the batch (syncProgress is an
+        // idempotent recompute, so a single call covers every advancement just folded in above).
+        RootAdvancementService.syncProgress(player);
+        GoalTracker.evaluate();
     }
 }

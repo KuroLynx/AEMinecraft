@@ -1,5 +1,5 @@
 name: Player{number}
-description: Euclesia — Minecraft Randomizer by KuroLynx (mod by EDGN)
+description: Minecraft [AEM] — Minecraft Randomizer by KuroLynx (mod by EDGN)
 game: Minecraft
 requires:
   version: 0.6.7
@@ -65,13 +65,15 @@ Minecraft:
   advancements_required:
     # Number of advancements you must complete as an additional victory condition.
     # Set to 0 to disable this condition entirely.
-    # Minimum: 0, Maximum: 125 (the total number of advancements)
-    # If challenge_sanity is off, the requirement is clamped to the 121 available advancements.
+    # Minimum: 0, Maximum: 1153 (every advancement across vanilla + BACAP; this ceiling comes from
+    # the bundled manifests, so it shifts with the supported game/datapack version).
+    # The requirement is automatically clamped to the advancements that actually exist this seed:
+    # 100 for vanilla with challenge_sanity off, 125 with it on, and up to ~1028 more with BACAP.
     #
     # Note: this is cumulative with the boss kill condition.
     125: 50
     random: 0
-    random-range-0-125: 0
+    random-range-0-1153: 0
 
   # -------------------------------------------------------------------------
   # Kill Sanity
@@ -103,19 +105,23 @@ Minecraft:
     # "Entity Unlock: <mob>" item is received from the multiworld.
     # Leave empty to disable mob spawn locking entirely.
     #
-    # Valid values: passive, neutral, hostile
+    # Valid values: passive, neutral, hostile, boss
     # You can combine multiple categories.
+    #
+    # Locking "boss" gates the bosses (Ender Dragon, Elder Guardian, Warden, Wither) behind their
+    # "Entity Unlock: <boss>" item: they cannot spawn — so their kill check and any goal that needs
+    # them stays out of logic — until that item is received. (A monument that generates while Elder
+    # Guardian is locked stays without its elder guardians; monument mobs are not retro-spawned.)
     #
     # Example — lock only hostiles:
     #   - hostile
     #
-    # Example — lock everything:
+    # Example — lock everything including bosses:
     #   - passive
     #   - neutral
     #   - hostile
-    - "passive"
-    - "neutral"
-    - "hostile"
+    #   - boss
+    []
 
   # -------------------------------------------------------------------------
   # Structure Unlock
@@ -172,12 +178,15 @@ Minecraft:
   # Challenge Sanity
   # -------------------------------------------------------------------------
   challenge_sanity:
-    # If enabled, includes extremely complex advancements in the location pool:
+    # If enabled, includes every "challenge" advancement (the spiky-border ones) in the location
+    # pool. That is 25 advancements in vanilla, e.g.:
     #   - A Furious Cocktail (have all potion effects simultaneously)
     #   - How Did We Get Here? (have all status effects simultaneously)
     #   - Arbalistic (kill 5 unique mobs with one arrow)
     #   - A Balanced Diet (eat every food item)
     # These advancements are very difficult to complete and are excluded by default.
+    # With BACAP enabled, this also includes BACAP's 218 challenge advancements (scattered across
+    # most tabs, not just its "Super Challenges" tab).
     'false': 50
     'true': 0
 
@@ -201,6 +210,22 @@ Minecraft:
     in_pool: 50
     start: 0
     disabled: 0
+
+  # -------------------------------------------------------------------------
+  # BlazeandCave's Advancements Pack (BACAP)
+  # -------------------------------------------------------------------------
+  blazeandcave:
+    # Add BlazeandCave's Advancements Pack (BACAP) to the location pool. When enabled, ~1028 BACAP
+    # custom advancements become checks alongside the (BACAP-rewritten) vanilla ones — BACAP's
+    # minecraft: files rewrite the vanilla advancements in place and reuse their locations, so the
+    # vanilla checks are not replaced. The hidden "statistics" (auto-granted stat counters) and
+    # "technical" (datapack plumbing) tabs are not real checks and are excluded; BACAP's 218
+    # challenge advancements are only included when challenge_sanity is on.
+    # You MUST have the BlazeandCave's Advancements Pack datapack installed in your world for
+    # these checks to fire. Their logic is derived automatically from each advancement's criteria
+    # and parent — the same way the vanilla advancements are.
+    'false': 50
+    'true': 0
 
   # -------------------------------------------------------------------------
   # Standard item/location options

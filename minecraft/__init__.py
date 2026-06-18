@@ -1,16 +1,17 @@
+import logging
+
 from BaseClasses import Item, Location, Region, Tutorial
 from worlds.AutoWorld import WebWorld, World
 
 from .data import *
+from .filler import build_filler_export, build_trap_export
+from .logic.ast import Const
+from .logic.constants import *
+from .logic.root import set_rules
+from .logic_export import build_logic_export
 from .options import MCOptions, StartDimension, StructureFinder
 from .regions import MCRegion
-from .rules.root import set_rules
-from .rules.ast import Const
-from .rules.constants import *
-from .logic_export import build_logic_export
 from .trackers import build_trackers_export
-from .filler import build_filler_export, build_trap_export
-
 
 # ---------------------------------------------------------------------------
 # Classes Item et Location
@@ -45,7 +46,7 @@ class MCWebWorld(WebWorld):
     tutorials = [
         Tutorial(
             tutorial_name = "Setup Guide",
-            description = "Guide to set up the Euclesia Minecraft randomizer.",
+            description = "Guide to set up the Minecraft [AEM] randomizer.",
             language = "English",
             file_name = "setup_en.md",
             link = "setup/en",
@@ -73,7 +74,12 @@ class MCWorld(World):
            STRUCTURES.items()}
     }
 
-    location_name_to_id = {name: data.id for (name, data) in ALL_LOCATIONS.items()}
+    location_name_to_id = {
+        **{name: data.id for (name, data) in ALL_LOCATIONS.items()},
+        # BACAP's blazeandcave locations are always in the (static) data package; created only when
+        # the blazeandcave option is on. Its minecraft rewrites reuse the vanilla locations above.
+        **{name: data.id for (name, data) in LOCATIONS_BACAP.items()},
+    }
 
     # -----------------------------------------------------------------------
     # Génération
@@ -117,6 +123,13 @@ class MCWorld(World):
             if loc_data.category == MCLocationCategory.ADVANCEMENT
         )
         if self.options.advancements_required.value > active_advancement_count:
+            logging.warning(
+                "Minecraft [AEM] (%s): advancements_required (%d) exceeds the %d advancement checks this "
+                "seed has; clamping to %d. Enable challenge_sanity / blazeandcave for more.",
+                self.multiworld.get_player_name(self.player),
+                self.options.advancements_required.value,
+                active_advancement_count, active_advancement_count,
+            )
             self.options.advancements_required.value = active_advancement_count
 
     def _get_locked_structures(self) -> set[str]:
@@ -147,9 +160,19 @@ class MCWorld(World):
         if self.options.kill_sanity:
             locations.update(LOCATIONS_MOB_KILL)
 
+        # BACAP adds its new advancements; the vanilla advancement locations stay (BACAP rewrites
+        # them, so set_rules compiles their logic from BACAP's criteria instead — see set_rules).
+        if self.options.blazeandcave:
+            locations.update(LOCATIONS_BACAP)
+
         if not self.options.challenge_sanity:
+            # A reused vanilla location's challenge-ness follows the active manifest: BACAP's frame
+            # when blazeandcave is on (it can promote/demote a vanilla advancement), else the
+            # vanilla flag baked into the location.
+            rewrites = BACAP_REWRITE_CHALLENGE if self.options.blazeandcave else {}
             locations = {
-                name: loc_data for name, loc_data in locations.items() if not loc_data.challenge
+                name: loc_data for name, loc_data in locations.items()
+                if not rewrites.get(loc_data.game_id, loc_data.challenge)
             }
 
         return locations
@@ -168,7 +191,7 @@ class MCWorld(World):
         return ITEM_DIMENSION_OVERWORLD
 
     def create_regions(self) -> None:
-        from .rules.helpers import RuleHelper  # local import: avoids a top-level import cycle
+        from .logic.acquisition import RuleHelper  # local import: avoids a top-level import cycle
 
         added_regions: dict[str, Region] = {}
 
@@ -288,7 +311,7 @@ class MCWorld(World):
 
         if len(pool) > active_location_count:
             raise Exception(
-                f"Euclesia: required item pool ({len(pool)}) exceeds active locations "
+                f"Minecraft [AEM]: required item pool ({len(pool)}) exceeds active locations "
                 f"({active_location_count}). Enable kill_sanity / challenge_sanity, or reduce "
                 f"mob_spawn_lock_category."
             )
