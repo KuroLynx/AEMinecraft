@@ -65,14 +65,15 @@ Minecraft:
   advancements_required:
     # Number of advancements you must complete as an additional victory condition.
     # Set to 0 to disable this condition entirely.
-    # Minimum: 0, Maximum: 125
+    # Minimum: 0, Maximum: 1153 (every advancement across vanilla + BACAP; this ceiling comes from
+    # the bundled manifests, so it shifts with the supported game/datapack version).
     # The requirement is automatically clamped to the advancements that actually exist this seed:
     # 100 for vanilla with challenge_sanity off, 125 with it on, and up to ~1028 more with BACAP.
     #
     # Note: this is cumulative with the boss kill condition.
     125: 50
     random: 0
-    random-range-0-125: 0
+    random-range-0-1153: 0
 
   # -------------------------------------------------------------------------
   # Kill Sanity

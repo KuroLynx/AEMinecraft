@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from Options import Choice, OptionSet, PerGameCommonOptions, Range, Toggle
 
-from .data import MOBS_BOSS, STRUCTURES
+from .data import ADVANCEMENT_LOCATIONS, MOBS_BOSS, STRUCTURES
 
 
 class BossList(OptionSet):
@@ -35,11 +35,15 @@ class AdvancementsRequired(Range):
     with challenge_sanity off and 125 with it on, and blazeandcave adds up to ~1028 more.
 
     Minimum value is 0
-    Maximum value is 125
+    The maximum is the total number of advancements across vanilla and every supported datapack
+    (derived from the manifests in code, so it tracks the bundled content version).
     """
     display_name = "Advancements Required"
     range_start = 0
-    range_end = 125
+    # Derived from the loaded content so the cap always matches the bundled manifests (vanilla +
+    # BACAP); it shifts automatically when a manifest is updated for a new/older game version. The
+    # generator still clamps the chosen value down to the advancements that exist in each seed.
+    range_end = len(ADVANCEMENT_LOCATIONS)
     default = 0
 
 
