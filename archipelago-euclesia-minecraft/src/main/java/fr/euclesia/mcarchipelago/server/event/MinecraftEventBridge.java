@@ -95,7 +95,7 @@ public final class MinecraftEventBridge {
 
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, damageSource) -> {
             if (entity instanceof ServerPlayer player) {
-                DeathLinkService.onLocalPlayerDeath(player);
+                DeathLinkService.onLocalPlayerDeath(player, damageSource);
                 // A death clears any trap mobs/MLG platform aimed at the player.
                 TrapMobService.discardAll();
                 TrapPlatformService.onPlayerDeath(player);

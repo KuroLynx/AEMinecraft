@@ -8,6 +8,7 @@ import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.damagesource.DamageSource;
 
 import java.time.Instant;
 
@@ -16,7 +17,7 @@ public final class DeathLinkService {
 
     private DeathLinkService() {}
 
-    public static void onLocalPlayerDeath(ServerPlayer player) {
+    public static void onLocalPlayerDeath(ServerPlayer player, DamageSource source) {
         if (!AEMServerRuntime.isArchipelagoReady() || suppressSend) {
             AEMDebug.log("deathLink.local skipped (ready={} suppressSend={})",
                     AEMServerRuntime.isArchipelagoReady(), suppressSend);
@@ -25,7 +26,7 @@ public final class DeathLinkService {
 
         if (AEM.ARCHIPELAGO.client().state().parsedSlotData().deathLink()) {
             AEMDebug.log("deathLink.local sending bounce for {}", player.getGameProfile().name());
-            AEM.ARCHIPELAGO.gateway().bounce(APBounceType.DEATH_LINK, createPayload(player));
+            AEM.ARCHIPELAGO.gateway().bounce(APBounceType.DEATH_LINK, createPayload(player, source));
         }
     }
 
@@ -67,11 +68,15 @@ public final class DeathLinkService {
                 : Component.translatable("message.aem.deathlink.anonymous");
     }
 
-    private static JsonObject createPayload(ServerPlayer player) {
+    private static JsonObject createPayload(ServerPlayer player, DamageSource source) {
         JsonObject data = new JsonObject();
         data.addProperty("time", Instant.now().toEpochMilli() / 1000.0);
         data.addProperty("source", player.getGameProfile().name());
-        data.addProperty("cause", player.getCombatTracker().getDeathMessage().getString());
+        // The exact DamageSource MC just used to kill the player yields the real, fully-rendered
+        // death sentence ("Steve was slain by Zombie", "Steve fell from a high place", …). The
+        // CombatTracker fallback used previously degraded to the generic "Steve died" when the
+        // tracker couldn't attribute the kill at AFTER_DEATH time.
+        data.addProperty("cause", source.getLocalizedDeathMessage(player).getString());
         return data;
     }
 }
