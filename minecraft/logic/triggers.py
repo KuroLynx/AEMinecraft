@@ -250,8 +250,13 @@ class TriggerCompiler:
             return item if item is not None else self.h.acquire("minecraft:shears")
         if trigger in ("minecraft:thrown_item_picked_up_by_player",
                        "minecraft:thrown_item_picked_up_by_entity"):
-            # An item was tossed and picked up → obtain that item.
-            return self._item_predicate(cond.get("item"))
+            # An item was tossed and picked up → obtain that item. The *_by_entity form pins a
+            # specific pickerupper on `entity` (a piglin for Oh Shiny), so require reaching it too —
+            # the gold item alone must not put Oh Shiny in logic without the Nether/piglin.
+            item = self._item_predicate(cond.get("item"))
+            entity = self._entity_node(cond) if trigger.endswith("by_entity") else None
+            parts = [n for n in (item, entity) if n is not None]
+            return and_(*parts) if parts else None
         if trigger == "minecraft:crafter_recipe_crafted":
             # Auto-craft via a Crafter → build a Crafter (its ingredients gate it further).
             return self.h.acquire("minecraft:crafter")
@@ -292,9 +297,18 @@ class TriggerCompiler:
             return self.h.access_region(REGION_OVERWORLD)  # mountains / high builds
         if trigger == "minecraft:effects_changed":
             return self._effects_node(cond)
-        if trigger == "minecraft:impossible":
-            # Granted by the datapack's own scoreboard logic, never by gameplay — its real
-            # prerequisite isn't in the criterion, so defer to the parent-chain fallback.
+        if trigger == "minecraft:used_ender_eye":
+            # Throw an Eye of Ender (locate a stronghold) → obtain one (blaze powder + ender pearl).
+            return self.h.acquire("minecraft:ender_eye")
+        if trigger == "minecraft:tick":
+            # Fires every tick: an empty criterion is trivially met (its advancement's region
+            # placement still gates it); a populated one pins the requirement via a player predicate,
+            # so interpret a location predicate as the `location` trigger does, else fall back.
+            return and_() if not cond else self._location_node(cond)
+        if trigger in ("minecraft:impossible", "minecraft:recipe_unlocked"):
+            # impossible: granted by the datapack's own scoreboard logic, never by gameplay.
+            # recipe_unlocked: fires when a recipe is unlocked (usually on picking up an ingredient).
+            # Neither's real prerequisite is in the criterion, so defer to the parent-chain fallback.
             return None
         if trigger in _IMPLIED_ITEM:
             return self.h.acquire(_IMPLIED_ITEM[trigger])
@@ -501,7 +515,11 @@ class TriggerCompiler:
             if isinstance(value, str):
                 blocks.append(value)
             elif isinstance(value, dict):
-                blocks.extend(b for b in (value.get("blocks") or []) if isinstance(b, str))
+                ids = value.get("blocks")
+                if isinstance(ids, str):  # vanilla writes a single block as a bare string
+                    blocks.append(ids)
+                elif isinstance(ids, list):
+                    blocks.extend(b for b in ids if isinstance(b, str))
 
         location = cond.get("location")
         entries = location if isinstance(location, list) else [location]
@@ -581,19 +599,20 @@ class TriggerCompiler:
         return self.h.all_of(*parts)
 
     def _used_on_block_node(self, cond: dict) -> Rule | None:
-        """``item_used_on_block``: the item used (top-level ``item`` or a ``match_tool`` predicate),
-        else the target block(s)."""
-        if "item" in cond:
-            return self._item_predicate(cond.get("item"))
-        location = cond.get("location")
-        if isinstance(location, list):
-            for sub in location:
+        """``item_used_on_block``: require BOTH the item used (top-level ``item`` or a ``match_tool``
+        predicate) AND the target block. Dropping the block let Not Quite Nine Lives pass on the
+        glowstone alone without the respawn anchor (crying obsidian → Nether), and Country Lode on
+        the compass without the lodestone (netherite → Nether). An unresolvable half is omitted."""
+        item = self._item_predicate(cond.get("item")) if "item" in cond else None
+        if item is None:
+            location = cond.get("location")
+            for sub in (location if isinstance(location, list) else [location]):
                 if isinstance(sub, dict) and sub.get("condition") == "minecraft:match_tool":
-                    tool = self._any_acquire(sub.get("predicate", {}).get("items"))
-                    if tool is not None:
-                        return tool
-        block = self._predicate_value(location, "block")
-        return self._any_acquire(block.get("blocks")) if isinstance(block, dict) else None
+                    item = self._any_acquire((sub.get("predicate") or {}).get("items"))
+                    break
+        block = self._any_acquire(self._blocks_in(cond))
+        parts = [n for n in (item, block) if n is not None]
+        return and_(*parts) if parts else None
 
     def _any_mob(self, mobs, build) -> Rule | None:
         """OR over a per-mob rule builder (``can_breed`` / ``can_tame``) for a whole mob set."""

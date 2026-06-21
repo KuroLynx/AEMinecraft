@@ -20,6 +20,43 @@ _MATERIAL_TIER_BY_ITEM: dict[str, int] = {
     item: tier for tier, items in MATERIAL_HANDLING_ITEMS.items() for item in items
 }
 
+# 'gameplay' loot tables (tools/build_acquisition.py) that are really a single mob's reliable,
+# renewable output — a gift / interaction / growth table. Grounded in the 26.1.2 jar loot-table
+# types: gift tables ARE reliable (an armadillo sheds scute, a chicken lays eggs, a sniffer digs
+# seeds, a cat brings a morning gift), so they gate on reaching that mob rather than dropping the
+# requirement.
+_GAMEPLAY_MOB: dict[str, str] = {
+    "armadillo": E_ARMADILLO, "armadillo_shed": E_ARMADILLO,
+    "chicken_lay": E_CHICKEN, "turtle_grow": E_TURTLE, "panda_sneeze": E_PANDA,
+    "sniffer_digging": E_SNIFFER, "cat_morning_gift": E_CAT,
+}
+
+# Mob heads/skulls drop ONLY when a CHARGED creeper kills that mob — verified against the 26.1.2 jar
+# (data/minecraft/loot_table/charged_creeper/<mob>.json, dispatched from charged_creeper/root.json;
+# none of these heads have a direct mob drop). So the gate is "charge a creeper" — a creeper plus an
+# Overworld thunderstorm — AND reach the victim, not merely reaching the victim. (Note:
+# wither_skeleton_skull ALSO drops directly from a Wither Skeleton, so its `drops` path keeps the
+# simpler entity gate and absorption collapses the redundant charged-creeper AND.)
+_CHARGED_CREEPER_VICTIM: dict[str, str] = {
+    "creeper": E_CREEPER, "skeleton": E_SKELETON, "zombie": E_ZOMBIE,
+    "wither_skeleton": E_WITHER_SKELETON, "piglin": E_PIGLIN,
+}
+
+# Villager 'Hero of the Village' profession gift tables: a villager of that profession throws these
+# after the player wins a raid, so they gate on winning one (a pillager + a village).
+_GAMEPLAY_VILLAGER_GIFTS = frozenset({
+    "armorer_gift", "baby_gift", "butcher_gift", "cartographer_gift", "cleric_gift", "farmer_gift",
+    "fisherman_gift", "fletcher_gift", "leatherworker_gift", "librarian_gift", "mason_gift",
+    "shepherd_gift", "toolsmith_gift", "unemployed_gift", "weaponsmith_gift",
+})
+
+# Block-harvest 'gameplay' tables: pick/shear a block for its yield. (region, needs_shears) — the
+# block's dimension, plus shears when the table is a shear interaction (honeycomb, pumpkin seeds).
+_GAMEPLAY_HARVEST: dict[str, tuple] = {
+    "beehive": (REGION_OVERWORLD, True), "pumpkin": (REGION_OVERWORLD, True),
+    "cave_vine": (REGION_OVERWORLD, False), "sweet_berry_bush": (REGION_OVERWORLD, False),
+}
+
 # Lazily-loaded acquisition table (tools/build_acquisition.py) + reverse id lookups. Cached because
 # they are read once per generation but queried thousands of times by the trigger compiler.
 _MC_ROOT = __package__.rsplit(".", 1)[0]  # e.g. "worlds.minecraft"
@@ -1057,15 +1094,43 @@ class RuleHelper:
         return self.any_of(*routes)
 
     def _gameplay_node(self, table: str):
-        """A 'gameplay' loot source that is a real, repeatable acquisition path: any fishing table
-        needs a fishing rod; piglin bartering needs the Nether, a piglin and gold. Villager/animal
-        gift tables (``*_gift``, ``cat_morning_gift``, sniffer digging, …) are not reliable paths, so
-        they contribute nothing (``None``) rather than making everything obtainable 'from a gift'."""
+        """The gate for a 'gameplay' loot source — a real, repeatable acquisition path, grounded in
+        the 26.1.2 jar loot-table types:
+          * fishing tables → a fishing rod;
+          * piglin_bartering → the Nether, a piglin and gold;
+          * a mob's gift / interaction / growth table → reach that mob (gift tables ARE reliable
+            renewable sources — see ``_GAMEPLAY_MOB``);
+          * a charged-creeper head/skull table → charge a creeper (a creeper + an Overworld
+            thunderstorm) AND reach the victim (see ``_CHARGED_CREEPER_VICTIM``);
+          * a Hero-of-the-Village villager profession gift → win a raid (a pillager + a village);
+          * a block-harvest table → the block's dimension, plus shears for a shear interaction;
+          * trial-chamber spawner equipment / chest loot → the Trial Chambers structure."""
         if table in ("fishing", "fish", "junk", "treasure"):
             return self.acquire("minecraft:fishing_rod")
         if table == "piglin_bartering":
             return self.all_of(self.access_region(REGION_NETHER), self.entity(E_PIGLIN),
                                self.acquire("minecraft:gold_ingot"))
+        victim = _CHARGED_CREEPER_VICTIM.get(table)
+        if victim is not None:
+            # Head only drops from a CHARGED creeper's kill: charge a creeper (creeper + Overworld
+            # thunderstorm) AND reach the victim. dict.fromkeys dedups when the victim is a creeper.
+            mobs = list(dict.fromkeys([E_CREEPER, victim]))
+            return self.all_of(*[self.entity(name) for name in mobs],
+                               self.access_region(REGION_OVERWORLD))
+        mob = _GAMEPLAY_MOB.get(table)
+        if mob is not None:
+            return self.entity(mob)
+        if table in _GAMEPLAY_VILLAGER_GIFTS:
+            return self.all_of(self.entity(E_PILLAGER), self.any_village())  # Hero of the Village
+        harvest = _GAMEPLAY_HARVEST.get(table)
+        if harvest is not None:
+            region, needs_shears = harvest
+            parts = [self.access_region(region)]
+            if needs_shears:
+                parts.append(self.acquire("minecraft:shears"))
+            return self.all_of(*parts)
+        if table in ("corridor", "trial_chamber_melee", "trial_chamber_ranged"):
+            return self.structure(S_TRIAL_CHAMBERS)
         return None
 
     def _acquire_fallback(self, base: str):
