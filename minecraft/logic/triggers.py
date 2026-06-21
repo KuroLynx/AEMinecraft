@@ -297,9 +297,18 @@ class TriggerCompiler:
             return self.h.access_region(REGION_OVERWORLD)  # mountains / high builds
         if trigger == "minecraft:effects_changed":
             return self._effects_node(cond)
-        if trigger == "minecraft:impossible":
-            # Granted by the datapack's own scoreboard logic, never by gameplay — its real
-            # prerequisite isn't in the criterion, so defer to the parent-chain fallback.
+        if trigger == "minecraft:used_ender_eye":
+            # Throw an Eye of Ender (locate a stronghold) → obtain one (blaze powder + ender pearl).
+            return self.h.acquire("minecraft:ender_eye")
+        if trigger == "minecraft:tick":
+            # Fires every tick: an empty criterion is trivially met (its advancement's region
+            # placement still gates it); a populated one pins the requirement via a player predicate,
+            # so interpret a location predicate as the `location` trigger does, else fall back.
+            return and_() if not cond else self._location_node(cond)
+        if trigger in ("minecraft:impossible", "minecraft:recipe_unlocked"):
+            # impossible: granted by the datapack's own scoreboard logic, never by gameplay.
+            # recipe_unlocked: fires when a recipe is unlocked (usually on picking up an ingredient).
+            # Neither's real prerequisite is in the criterion, so defer to the parent-chain fallback.
             return None
         if trigger in _IMPLIED_ITEM:
             return self.h.acquire(_IMPLIED_ITEM[trigger])
