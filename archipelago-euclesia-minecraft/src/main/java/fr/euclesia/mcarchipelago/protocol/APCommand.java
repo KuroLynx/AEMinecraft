@@ -35,6 +35,9 @@ public enum APCommand {
     /** Request the data package (item/location name↔id mappings). */
     GET_DATA_PACKAGE("GetDataPackage"),
 
+    /** Ask the server to resend all received items (a full ReceivedItems resync, index 0). */
+    SYNC("Sync"),
+
     /** Broadcast a message to players with matching tags (used for DeathLink). */
     BOUNCE("Bounce"),
 
