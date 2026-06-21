@@ -5,6 +5,7 @@ from importlib.resources import files
 # AST primitives must be imported directly: `from .. import *` cannot supply them because the
 # package __init__ imports this module (via set_rules) before it defines Const/Has/and_/… .
 from .ast import Const, Has, ReachRegion, ReachLocation, and_, or_, at_least
+from .constants import VANILLA_PACK  # constants imports nothing, so this is import-cycle-safe
 from .. import *
 
 # Wood-family items (planks / logs / wood / stems / hyphae, stripped or not) have no knowledge or
@@ -67,7 +68,7 @@ _ENTITY_BY_GID: dict | None = None
 def _acquisition_table() -> dict:
     global _ACQUISITION
     if _ACQUISITION is None:
-        path = files(_MC_ROOT).joinpath("packs", "vanilla_26_1", "acquisition.json")
+        path = files(_MC_ROOT).joinpath("packs", VANILLA_PACK, "acquisition.json")
         with path.open(encoding="utf-8") as handle:
             _ACQUISITION = json.load(handle)
     return _ACQUISITION
@@ -111,7 +112,7 @@ _BLOCK_MINING: dict | None = None
 def _block_mining() -> dict:
     global _BLOCK_MINING
     if _BLOCK_MINING is None:
-        path = files(_MC_ROOT).joinpath("packs", "vanilla_26_1", "block_mining.json")
+        path = files(_MC_ROOT).joinpath("packs", VANILLA_PACK, "block_mining.json")
         with path.open(encoding="utf-8") as handle:
             _BLOCK_MINING = json.load(handle)
     return _BLOCK_MINING
