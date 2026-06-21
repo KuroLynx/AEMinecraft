@@ -51,6 +51,7 @@ from worlds.minecraft.trackers import (  # noqa: E402
     KNOWLEDGE_UTILITY_ITEMS,
     TRACKER_NAMESPACE,
     TRACKER_ROOT,
+    goal_boss_tracker_id,
     knowledge_count,
     knowledge_tracker_id,
     tracker_id,
@@ -299,11 +300,17 @@ def main() -> int:
     # Collect each category's tiles, then lay them out as grids (rows of ROW_WIDTH).
     kills: list[dict] = []
     entity_unlocks: list[dict] = []
+    # Per-boss tiles for the main-tab Bosses goal: one per possible boss, beneath the aggregate
+    # goal/bosses tile. Emitted for every boss; the runtime export lists only the goal's bosses, so
+    # the visibility gate shows just those (coloured by kill status like the Kills-tab boss tiles).
+    boss_goals: list[dict] = []
     for name, mob in MOBS_ALL.items():
         icon = mob_icon(mob.game_id, spawn_eggs)
         if mob.category == MCEntityCategory.BOSS:
             kills.append({"id": tracker_id(KIND_BOSS, mob.game_id), "icon": icon,
                           "title": name, "description": f"Defeat the {name}", "frame": "goal"})
+            boss_goals.append({"id": goal_boss_tracker_id(mob.game_id), "icon": icon,
+                               "title": name, "description": f"Defeat the {name}", "frame": "goal"})
         else:
             kills.append({"id": tracker_id(KIND_KILL, mob.game_id), "icon": icon,
                           "title": name, "description": f"Kill a {name}"})
@@ -327,7 +334,8 @@ def main() -> int:
     write_grid(CATEGORY_ENTITY_UNLOCKS, entity_unlocks)
     write_grid(CATEGORY_STRUCTURE_UNLOCKS, structure_unlocks)
     write_grid(CATEGORY_KNOWLEDGE, knowledge)
-    count += len(kills) + len(entity_unlocks) + len(structure_unlocks) + len(knowledge)
+    write_grid(GOAL_BOSSES, boss_goals)  # per-boss tiles chained beneath the Bosses goal (main tab)
+    count += len(kills) + len(entity_unlocks) + len(structure_unlocks) + len(knowledge) + len(boss_goals)
 
     print(f"wrote {count} advancements to {OUT_DIR}")
     return 0
