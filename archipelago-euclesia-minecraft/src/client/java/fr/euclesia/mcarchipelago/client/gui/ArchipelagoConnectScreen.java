@@ -4,77 +4,50 @@ import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.archipelago.APSessionState;
 import fr.euclesia.mcarchipelago.archipelago.DeathLinkPreference;
 import fr.euclesia.mcarchipelago.client.connect.APConnectConfig;
-import fr.euclesia.mcarchipelago.client.connect.APConnectController;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 /**
- * Main-menu / options screen for entering Archipelago connection details (address, port, slot name,
- * password) and connecting. Works from the title screen because the link is a plain WebSocket; the
- * session persists into whatever world is loaded next.
+ * Archipelago options / status panel, opened from the title and options screens. Connection
+ * credentials are entered in the world-creation screen ({@link ArchipelagoCreateTab}), so this
+ * screen no longer connects — once a session is live it shows the slot's details and the options
+ * that can change at runtime: a DeathLink on/off toggle and a Resync button (re-pull received items).
  */
 public final class ArchipelagoConnectScreen extends Screen {
 
-    private static final int FIELD_WIDTH = 220;
-    private static final int FIELD_HEIGHT = 20;
-    private static final int ROW_SPACING = 38;
+    private static final int PANEL_WIDTH = 220;
+    private static final int BUTTON_HEIGHT = 20;
+    private static final int ROW = 24;
 
     private final Screen parent;
-
-    private EditBox addressField;
-    private EditBox portField;
-    private EditBox slotField;
-    private EditBox passwordField;
     private Button deathLinkButton;
 
-    /** Set when the user pressed Connect, so we only auto-close on a connection we initiated. */
-    private boolean connectRequested;
-
     public ArchipelagoConnectScreen(Screen parent) {
-        super(Minecraft.getInstance(), Minecraft.getInstance().font, Component.translatable("gui.aem.connect.title"));
+        super(Minecraft.getInstance(), Minecraft.getInstance().font, Component.translatable("gui.aem.options.title"));
         this.parent = parent;
     }
 
     @Override
     protected void init() {
-        APConnectConfig config = APConnectConfig.get();
-        APConnectController.INSTANCE.syncFromSession();
+        int left = this.width / 2 - PANEL_WIDTH / 2;
+        int buttonsTop = this.height / 4 + 60;
 
-        int left = this.width / 2 - FIELD_WIDTH / 2;
-        int top = this.height / 4;
-
-        addressField = addField(left, top, "archipelago.gg", config.address);
-        portField = addField(left, top + ROW_SPACING, "38281", config.port);
-        slotField = addField(left, top + ROW_SPACING * 2, "Slot name", config.slot);
-        passwordField = addField(left, top + ROW_SPACING * 3, "(optional)", config.password);
-
-        int buttonsY = top + ROW_SPACING * 4 + 8;
-        int buttonWidth = (FIELD_WIDTH - 8) / 2;
-        addRenderableWidget(Button.builder(Component.translatable("gui.aem.connect.connect"), button -> onConnect())
-                .bounds(left, buttonsY, buttonWidth, FIELD_HEIGHT)
-                .build());
-        addRenderableWidget(Button.builder(Component.translatable("gui.aem.connect.back"), button -> onClose())
-                .bounds(left + FIELD_WIDTH - buttonWidth, buttonsY, buttonWidth, FIELD_HEIGHT)
-                .build());
-
-        // Once connected, the screen doubles as the slot's options panel: a DeathLink on/off toggle
-        // (the slot info itself is drawn in extractRenderState below, just under this button).
+        // Runtime options only exist for a live session; otherwise just an explanatory line + Back.
         if (isConnected()) {
             deathLinkButton = addRenderableWidget(Button.builder(deathLinkLabel(), button -> toggleDeathLink())
-                    .bounds(left, deathLinkButtonY(top), FIELD_WIDTH, FIELD_HEIGHT)
+                    .bounds(left, buttonsTop, PANEL_WIDTH, BUTTON_HEIGHT)
+                    .build());
+            addRenderableWidget(Button.builder(Component.translatable("gui.aem.options.resync"), button -> resync())
+                    .bounds(left, buttonsTop + ROW, PANEL_WIDTH, BUTTON_HEIGHT)
                     .build());
         }
 
-        setInitialFocus(slotField.getValue().isBlank() ? slotField : addressField);
-    }
-
-    /** Y of the DeathLink toggle button — below the Connect/Back row, shared by init and the renderer. */
-    private static int deathLinkButtonY(int top) {
-        return top + ROW_SPACING * 4 + 8 + ROW_SPACING + 18;
+        addRenderableWidget(Button.builder(Component.translatable("gui.aem.connect.back"), button -> onClose())
+                .bounds(left, buttonsTop + ROW * 2 + 8, PANEL_WIDTH, BUTTON_HEIGHT)
+                .build());
     }
 
     private boolean isConnected() {
@@ -92,32 +65,9 @@ public final class ArchipelagoConnectScreen extends Screen {
         deathLinkButton.setMessage(deathLinkLabel());
     }
 
-    private EditBox addField(int x, int y, String hint, String value) {
-        EditBox field = new EditBox(this.font, x, y + 12, FIELD_WIDTH, FIELD_HEIGHT, Component.literal(hint));
-        field.setMaxLength(256);
-        field.setHint(Component.literal(hint));
-        field.setValue(value);
-        return addRenderableWidget(field);
-    }
-
-    private void onConnect() {
-        APConnectConfig config = APConnectConfig.get();
-        config.address = addressField.getValue();
-        config.port = portField.getValue();
-        config.slot = slotField.getValue();
-        config.password = passwordField.getValue();
-        config.save();
-
-        connectRequested = true;
-        APConnectController.INSTANCE.connect(config.address, config.port, config.slot, config.password);
-    }
-
-    @Override
-    public void tick() {
-        super.tick();
-        // Close the screen once the connection we requested succeeds.
-        if (connectRequested && APConnectController.INSTANCE.status() == APConnectController.Status.CONNECTED) {
-            onClose();
+    private void resync() {
+        if (isConnected()) {
+            AEM.ARCHIPELAGO.gateway().resync();
         }
     }
 
@@ -125,27 +75,19 @@ public final class ArchipelagoConnectScreen extends Screen {
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
 
-        int left = this.width / 2 - FIELD_WIDTH / 2;
         int top = this.height / 4;
-
         graphics.centeredText(this.font, this.title.getString(), this.width / 2, top - 30, 0xFFFFFFFF);
-        graphics.text(this.font, Component.translatable("gui.aem.field.address").getString(), left, top, 0xFFA0A0A0);
-        graphics.text(this.font, Component.translatable("gui.aem.field.port").getString(), left, top + ROW_SPACING, 0xFFA0A0A0);
-        graphics.text(this.font, Component.translatable("gui.aem.field.slot").getString(), left, top + ROW_SPACING * 2, 0xFFA0A0A0);
-        graphics.text(this.font, Component.translatable("gui.aem.field.password").getString(), left, top + ROW_SPACING * 3, 0xFFA0A0A0);
-
-        String message = APConnectController.INSTANCE.message();
-        if (!message.isEmpty()) {
-            graphics.centeredText(this.font, message, this.width / 2, top + ROW_SPACING * 4 + 36, statusColor());
-        }
 
         if (isConnected()) {
-            drawSlotInfo(graphics, left, deathLinkButtonY(top) + FIELD_HEIGHT + 8);
+            drawSlotInfo(graphics, top);
+        } else {
+            graphics.centeredText(this.font, Component.translatable("gui.aem.options.disconnected").getString(),
+                    this.width / 2, top, 0xFFA0A0A0);
         }
     }
 
-    /** Draws the connected slot's details (name/number/team and server) beneath the DeathLink toggle. */
-    private void drawSlotInfo(GuiGraphicsExtractor graphics, int left, int y) {
+    /** Draws the connected slot's details (name/number/team and server), centred above the buttons. */
+    private void drawSlotInfo(GuiGraphicsExtractor graphics, int top) {
         APSessionState state = AEM.ARCHIPELAGO.client().state();
         APConnectConfig config = APConnectConfig.get();
 
@@ -153,20 +95,12 @@ public final class ArchipelagoConnectScreen extends Screen {
         if (name == null || name.isBlank()) {
             name = config.slot;
         }
-        graphics.text(this.font,
+        graphics.centeredText(this.font,
                 Component.translatable("gui.aem.connect.info.slot", name, state.slot(), state.team()).getString(),
-                left, y, 0xFFC0C0C0);
-        graphics.text(this.font,
+                this.width / 2, top, 0xFFC0C0C0);
+        graphics.centeredText(this.font,
                 Component.translatable("gui.aem.connect.info.server", config.address, config.port).getString(),
-                left, y + 12, 0xFFC0C0C0);
-    }
-
-    private int statusColor() {
-        return switch (APConnectController.INSTANCE.status()) {
-            case CONNECTED -> 0xFF55FF55;
-            case FAILED -> 0xFFFF5555;
-            default -> 0xFFFFFF55;
-        };
+                this.width / 2, top + 12, 0xFFC0C0C0);
     }
 
     @Override

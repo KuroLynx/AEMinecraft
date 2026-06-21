@@ -18,6 +18,7 @@ import fr.euclesia.mcarchipelago.protocol.packet.outbound.SetNotifyPacket;
 import fr.euclesia.mcarchipelago.protocol.packet.outbound.SetOperation;
 import fr.euclesia.mcarchipelago.protocol.packet.outbound.SetPacket;
 import fr.euclesia.mcarchipelago.protocol.packet.outbound.StatusUpdatePacket;
+import fr.euclesia.mcarchipelago.protocol.packet.outbound.SyncPacket;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -95,6 +96,12 @@ public final class APArchipelagoGateway implements ArchipelagoGateway {
     @Override
     public void getDataPackage() {
         client.send(new GetDataPackagePacket());
+    }
+
+    @Override
+    public void resync() {
+        AEMDebug.log("gateway.resync (Sync)");
+        client.send(new SyncPacket());
     }
 
     @Override

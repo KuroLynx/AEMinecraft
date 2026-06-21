@@ -12,6 +12,10 @@
   "gui.aem.connect.info.slot": "Slot: %s (#%s, team %s)",
   "gui.aem.connect.info.server": "Server: %s:%s",
 
+  "gui.aem.options.title": "Archipelago",
+  "gui.aem.options.resync": "Resync",
+  "gui.aem.options.disconnected": "Not connected. Connect from the world creation screen.",
+
   "gui.aem.toggle.on": "ON",
   "gui.aem.toggle.off": "OFF",
 
