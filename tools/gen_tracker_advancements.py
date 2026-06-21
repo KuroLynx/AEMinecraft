@@ -248,10 +248,22 @@ def write_grid(category_id: str, entries: list[dict]) -> None:
     i-1 (so the row extends right); the first tile of each row parents the category root (so rows
     stack down) — yielding a grid via tree topology.
     """
-    for i, entry in enumerate(entries):
-        parent = category_id if (i % ROW_WIDTH == 0) else entries[i - 1]["id"]
-        write(entry["id"], tile(parent, entry["icon"], entry["title"],
-                                entry["description"], entry.get("frame", "task")))
+    rows = [entries[i:i + ROW_WIDTH] for i in range(0, len(entries), ROW_WIDTH)]
+    write_rows(category_id, rows)
+
+
+def write_rows(category_id: str, rows: list[list[dict]]) -> None:
+    """Write a category as explicit rows. Each inner list is one horizontal parent->child chain
+    (tile i parents tile i-1), and every row's first tile parents the category root, so the rows
+    stack vertically. Use this (instead of write_grid) when row composition matters — e.g. to keep
+    every level of a progressive item together on a single row so its levels always follow each
+    other, instead of wrapping mid-item at the fixed ROW_WIDTH grid boundary.
+    """
+    for row in rows:
+        for i, entry in enumerate(row):
+            parent = category_id if i == 0 else row[i - 1]["id"]
+            write(entry["id"], tile(parent, entry["icon"], entry["title"],
+                                    entry["description"], entry.get("frame", "task")))
 
 
 def write(advancement_id: str, data: dict) -> None:
@@ -316,18 +328,33 @@ def main() -> int:
         for name, struct in STRUCTURES.items()
     ]
 
-    knowledge = []
+    # Knowledge tab layout: each progressive item (Material Handling, Villager Trust, Structure
+    # Finder) gets its OWN row so its levels always follow each other left-to-right and never wrap
+    # mid-item; the progressive rows are emitted first (so the progressives also follow one another),
+    # then the single-level items pack into rows of ROW_WIDTH below them.
+    progressive_rows: list[list[dict]] = []
+    single_tiles: list[dict] = []
     for item_name in KNOWLEDGE_UTILITY_ITEMS:
-        count = knowledge_count(item_name)
-        for level in range(1, count + 1):
-            meta = knowledge_level_tile(item_name, level, count)
-            knowledge.append({"id": knowledge_tracker_id(item_name, level), **meta})
+        levels = knowledge_count(item_name)
+        item_tiles = [
+            {"id": knowledge_tracker_id(item_name, level),
+             **knowledge_level_tile(item_name, level, levels)}
+            for level in range(1, levels + 1)
+        ]
+        if levels > 1:
+            progressive_rows.append(item_tiles)
+        else:
+            single_tiles.extend(item_tiles)
+    knowledge_rows = progressive_rows + [
+        single_tiles[i:i + ROW_WIDTH] for i in range(0, len(single_tiles), ROW_WIDTH)
+    ]
 
     write_grid(CATEGORY_KILLS, kills)
     write_grid(CATEGORY_ENTITY_UNLOCKS, entity_unlocks)
     write_grid(CATEGORY_STRUCTURE_UNLOCKS, structure_unlocks)
-    write_grid(CATEGORY_KNOWLEDGE, knowledge)
-    count += len(kills) + len(entity_unlocks) + len(structure_unlocks) + len(knowledge)
+    write_rows(CATEGORY_KNOWLEDGE, knowledge_rows)
+    count += (len(kills) + len(entity_unlocks) + len(structure_unlocks)
+              + sum(len(row) for row in knowledge_rows))
 
     print(f"wrote {count} advancements to {OUT_DIR}")
     return 0
