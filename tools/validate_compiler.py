@@ -24,7 +24,7 @@ from worlds.minecraft.logic.acquisition import RuleHelper  # noqa: E402
 from worlds.minecraft.logic.engine import collect_advancement_rules  # noqa: E402
 from worlds.minecraft.logic.triggers import TriggerCompiler  # noqa: E402
 
-WORLD = AutoWorldRegister.world_types["Minecraft"]
+WORLD = AutoWorldRegister.world_types["Minecraft [AEM]"]
 MANIFEST = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                         "minecraft", "packs", "vanilla_26_1", "manifest.json")
 

@@ -23,7 +23,7 @@ os.chdir(AP_ROOT)
 from test.general import setup_multiworld  # noqa: E402
 from worlds.AutoWorld import AutoWorldRegister  # noqa: E402
 
-WORLD = AutoWorldRegister.world_types["Minecraft"]
+WORLD = AutoWorldRegister.world_types["Minecraft [AEM]"]
 BASELINE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_slotdata_baseline")
 SEED = 1234567
 
