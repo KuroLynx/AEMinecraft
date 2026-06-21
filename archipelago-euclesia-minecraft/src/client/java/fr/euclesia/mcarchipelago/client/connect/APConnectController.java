@@ -152,6 +152,8 @@ public final class APConnectController implements APEventListener {
     public void onConnected(ArchipelagoClient client, APReceivedPacket packet) {
         status = Status.CONNECTED;
         everConnected = true;
+        // A fresh session follows its own slot data again (drop any previous toggle override).
+        fr.euclesia.mcarchipelago.archipelago.DeathLinkPreference.reset();
         message = translate("gui.aem.connect.status.connected_slot", client.state().slot());
     }
 

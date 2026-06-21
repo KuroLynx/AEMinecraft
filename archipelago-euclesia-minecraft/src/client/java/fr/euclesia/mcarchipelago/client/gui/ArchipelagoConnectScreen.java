@@ -1,5 +1,8 @@
 package fr.euclesia.mcarchipelago.client.gui;
 
+import fr.euclesia.mcarchipelago.AEM;
+import fr.euclesia.mcarchipelago.archipelago.APSessionState;
+import fr.euclesia.mcarchipelago.archipelago.DeathLinkPreference;
 import fr.euclesia.mcarchipelago.client.connect.APConnectConfig;
 import fr.euclesia.mcarchipelago.client.connect.APConnectController;
 import net.minecraft.client.Minecraft;
@@ -26,6 +29,7 @@ public final class ArchipelagoConnectScreen extends Screen {
     private EditBox portField;
     private EditBox slotField;
     private EditBox passwordField;
+    private Button deathLinkButton;
 
     /** Set when the user pressed Connect, so we only auto-close on a connection we initiated. */
     private boolean connectRequested;
@@ -57,7 +61,35 @@ public final class ArchipelagoConnectScreen extends Screen {
                 .bounds(left + FIELD_WIDTH - buttonWidth, buttonsY, buttonWidth, FIELD_HEIGHT)
                 .build());
 
+        // Once connected, the screen doubles as the slot's options panel: a DeathLink on/off toggle
+        // (the slot info itself is drawn in extractRenderState below, just under this button).
+        if (isConnected()) {
+            deathLinkButton = addRenderableWidget(Button.builder(deathLinkLabel(), button -> toggleDeathLink())
+                    .bounds(left, deathLinkButtonY(top), FIELD_WIDTH, FIELD_HEIGHT)
+                    .build());
+        }
+
         setInitialFocus(slotField.getValue().isBlank() ? slotField : addressField);
+    }
+
+    /** Y of the DeathLink toggle button — below the Connect/Back row, shared by init and the renderer. */
+    private static int deathLinkButtonY(int top) {
+        return top + ROW_SPACING * 4 + 8 + ROW_SPACING + 18;
+    }
+
+    private boolean isConnected() {
+        return AEM.ARCHIPELAGO.client().state().isConnected();
+    }
+
+    private Component deathLinkLabel() {
+        Component state = Component.translatable(
+                DeathLinkPreference.enabled() ? "gui.aem.toggle.on" : "gui.aem.toggle.off");
+        return Component.translatable("gui.aem.connect.deathlink", state);
+    }
+
+    private void toggleDeathLink() {
+        DeathLinkPreference.setEnabled(!DeathLinkPreference.enabled());
+        deathLinkButton.setMessage(deathLinkLabel());
     }
 
     private EditBox addField(int x, int y, String hint, String value) {
@@ -106,6 +138,27 @@ public final class ArchipelagoConnectScreen extends Screen {
         if (!message.isEmpty()) {
             graphics.centeredText(this.font, message, this.width / 2, top + ROW_SPACING * 4 + 36, statusColor());
         }
+
+        if (isConnected()) {
+            drawSlotInfo(graphics, left, deathLinkButtonY(top) + FIELD_HEIGHT + 8);
+        }
+    }
+
+    /** Draws the connected slot's details (name/number/team and server) beneath the DeathLink toggle. */
+    private void drawSlotInfo(GuiGraphicsExtractor graphics, int left, int y) {
+        APSessionState state = AEM.ARCHIPELAGO.client().state();
+        APConnectConfig config = APConnectConfig.get();
+
+        String name = state.playerName(state.slot());
+        if (name == null || name.isBlank()) {
+            name = config.slot;
+        }
+        graphics.text(this.font,
+                Component.translatable("gui.aem.connect.info.slot", name, state.slot(), state.team()).getString(),
+                left, y, 0xFFC0C0C0);
+        graphics.text(this.font,
+                Component.translatable("gui.aem.connect.info.server", config.address, config.port).getString(),
+                left, y + 12, 0xFFC0C0C0);
     }
 
     private int statusColor() {
