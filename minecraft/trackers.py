@@ -18,6 +18,7 @@ from __future__ import annotations
 from .data import (
     BASE_ID_ENTITY_UNLOCK,
     BASE_ID_STRUCT_UNLOCK,
+    BOSS_KILL_PREFIX,
     ITEM_BIOME_FINDER,
     ITEMS,
     MCLocationCategory,
@@ -82,6 +83,14 @@ def tracker_id(kind: str, game_id: str) -> str:
     return f"{TRACKER_NAMESPACE}:{kind}/{_slug(game_id)}"
 
 
+def goal_boss_tracker_id(game_id: str) -> str:
+    """Stable id for a per-boss tile under the main-tab Bosses goal, e.g. ``aem:goal/bosses/ender_dragon``.
+
+    These sit beneath the aggregate :data:`GOAL_BOSSES` tile and are linked (in the export) to that
+    boss's kill location, so they colour exactly like the Kills-tab boss tiles."""
+    return f"{GOAL_BOSSES}/{_slug(game_id)}"
+
+
 def knowledge_slug(item_name: str) -> str:
     """Advancement-path slug for a knowledge/utility item name.
 
@@ -115,7 +124,10 @@ def build_trackers_export(world) -> dict:
     """
     trackers: dict[str, dict] = {}
 
-    # Kill / boss checks (locations actually created this seed).
+    # Kill / boss checks (locations actually created this seed). Bosses additionally get a per-boss
+    # tile under the main-tab Bosses goal — but only those the goal requires (boss_list), so the
+    # aggregate goal/bosses tile is joined by one tile per boss you actually need to defeat.
+    goal_boss_loc_names = {f"{BOSS_KILL_PREFIX}{name}" for name in world.selected_bosses}
     for loc_name, loc in world._get_active_locations().items():
         if loc.category == MCLocationCategory.MOB_KILL:
             trackers[tracker_id(KIND_KILL, loc.game_id)] = {
@@ -129,6 +141,12 @@ def build_trackers_export(world) -> dict:
                 "location_name": loc_name,
                 "location_id": loc.id,
             }
+            if loc_name in goal_boss_loc_names:
+                trackers[goal_boss_tracker_id(loc.game_id)] = {
+                    "kind": KIND_BOSS,
+                    "location_name": loc_name,
+                    "location_id": loc.id,
+                }
 
     # Mob spawn unlocks (items the slot receives) — only the locked categories.
     locked_categories = set(world.options.mob_spawn_lock_category.value)
