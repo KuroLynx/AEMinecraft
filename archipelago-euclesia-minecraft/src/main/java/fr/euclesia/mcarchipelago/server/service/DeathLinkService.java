@@ -3,6 +3,7 @@ package fr.euclesia.mcarchipelago.server.service;
 import com.google.gson.JsonObject;
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.AEMDebug;
+import fr.euclesia.mcarchipelago.archipelago.DeathLinkPreference;
 import fr.euclesia.mcarchipelago.protocol.APBounceType;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
 import net.minecraft.network.chat.Component;
@@ -24,7 +25,7 @@ public final class DeathLinkService {
             return;
         }
 
-        if (AEM.ARCHIPELAGO.client().state().parsedSlotData().deathLink()) {
+        if (DeathLinkPreference.enabled()) {
             AEMDebug.log("deathLink.local sending bounce for {}", player.getGameProfile().name());
             AEM.ARCHIPELAGO.gateway().bounce(APBounceType.DEATH_LINK, createPayload(player, source));
         }

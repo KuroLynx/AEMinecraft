@@ -8,6 +8,12 @@
   "gui.aem.connect.title": "Connect to Archipelago",
   "gui.aem.connect.connect": "Connect",
   "gui.aem.connect.back": "Back",
+  "gui.aem.connect.deathlink": "DeathLink: %s",
+  "gui.aem.connect.info.slot": "Slot: %s (#%s, team %s)",
+  "gui.aem.connect.info.server": "Server: %s:%s",
+
+  "gui.aem.toggle.on": "ON",
+  "gui.aem.toggle.off": "OFF",
 
   "gui.aem.create.title": "Archipelago",
   "gui.aem.create.subtitle": "Connect this world to Archipelago",
