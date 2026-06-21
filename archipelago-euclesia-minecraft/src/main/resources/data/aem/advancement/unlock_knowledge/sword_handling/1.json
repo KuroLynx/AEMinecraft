@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_knowledge/material_handling/6",
+  "parent": "aem:unlock_knowledge/the_end/1",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"
