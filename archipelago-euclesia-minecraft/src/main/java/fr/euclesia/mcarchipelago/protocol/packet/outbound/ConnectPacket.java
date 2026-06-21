@@ -19,7 +19,7 @@ public record ConnectPacket(
         String uuid
 ) implements APPacket {
     public ConnectPacket(String name, String password, String uuid) {
-        this("Minecraft", name, password, APVersion.V0_6_0, APItemsHandling.ALL, List.of(), uuid);
+        this("Minecraft [AEM]", name, password, APVersion.V0_6_0, APItemsHandling.ALL, List.of(), uuid);
     }
 
     @Override
