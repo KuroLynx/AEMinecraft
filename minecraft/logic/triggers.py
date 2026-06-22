@@ -551,30 +551,99 @@ class TriggerCompiler:
         return self.h.acquire(recipe_id)
 
     def _location_node(self, cond: dict) -> Rule | None:
-        player = cond.get("player")
-        loc = self._predicate_value(player, "location")
+        """The `player` predicate, in any of its forms: a dict with `type_specific` (advancement/stat
+        prerequisites — BACAP's Milestones), or a list of entity_properties / any_of / inverted
+        conditions pinning a location, worn equipment, or the block stood on."""
+        return self._player_node(cond.get("player"))
+
+    def _player_node(self, player) -> Rule | None:
+        if isinstance(player, dict):
+            return self._type_specific_node(player.get("type_specific"))
+        if isinstance(player, list):
+            parts = [self._condition_node(sub) for sub in player]
+            parts = [p for p in parts if p is not None]
+            return self._all_req(*parts) if parts else None
+        return None
+
+    def _condition_node(self, sub) -> Rule | None:
+        """One predicate-condition: an `any_of`/`all_of` group (recursed), an inverted refinement
+        (ignored — "NOT somewhere" adds no positive gate), or an entity_properties/location predicate."""
+        if not isinstance(sub, dict):
+            return None
+        ctype = str(sub.get("condition", ""))
+        if ctype.endswith("inverted"):
+            return None
+        if ctype.endswith(("any_of", "all_of")):
+            opts = [self._condition_node(t) for t in sub.get("terms", [])]
+            opts = [o for o in opts if o is not None]
+            if not opts:
+                return None
+            return or_(*opts) if ctype.endswith("any_of") else and_(*opts)
+        return self._predicate_loc_node(sub.get("predicate", sub))
+
+    def _predicate_loc_node(self, pred) -> Rule | None:
+        """A single predicate's location / worn-equipment / stepping-on gates, AND-ed."""
+        if not isinstance(pred, dict):
+            return None
+        parts = []
+        loc = pred.get("location")
         if isinstance(loc, dict):
-            struct = loc.get("structures")
-            if isinstance(struct, str):
-                name = self._struct_name(struct)
-                return self.h.structure(name) if name else None
-            if "biomes" in loc:
-                # Locating a specific biome needs the Biome Finder (when enabled); the advancement's
-                # own region placement already gates which dimension it's in.
-                return self.h.needs_biome_finder()
-            dim = loc.get("dimension")
-            region = _DIMENSION_REGION.get(self._path(dim)) if isinstance(dim, str) else None
-            if region:
-                return self.h.access_region(region)
-        # No `location` key — the player predicate may instead pin worn equipment and/or the block
-        # being stood on (e.g. Light as a Rabbit: leather boots while on powder snow). Require the
-        # worn items AND that block.
-        parts = self._equipment_nodes(self._predicate_value(player, "equipment"))
-        stepping = self._predicate_value(player, "stepping_on")
+            node = self._loc_value_node(loc)
+            if node is not None:
+                parts.append(node)
+        parts += self._equipment_nodes(pred.get("equipment"))
+        stepping = pred.get("stepping_on")
         if isinstance(stepping, dict):
-            block_node = self._any_acquire(self._block_ids(stepping.get("block")))
-            if block_node is not None:
-                parts.append(block_node)
+            block = self._any_acquire(self._block_ids(stepping.get("block")))
+            if block is not None:
+                parts.append(block)
+        return self._all_req(*parts) if parts else None
+
+    def _loc_value_node(self, loc: dict) -> Rule | None:
+        struct = loc.get("structures")
+        if isinstance(struct, str):
+            if struct.startswith("#"):
+                # A structure #tag — the village tag is the only common one we can map.
+                return self.h.any_village() if "village" in struct else None
+            name = self._struct_name(struct)
+            return self.h.structure(name) if name else None
+        if "biomes" in loc:
+            # Locating a specific biome needs the Biome Finder (when enabled); the advancement's own
+            # region placement already gates which dimension it's in.
+            return self.h.needs_biome_finder()
+        dim = loc.get("dimension")
+        region = _DIMENSION_REGION.get(self._path(dim)) if isinstance(dim, str) else None
+        if region:
+            return self.h.access_region(region)
+        if "position" in loc:
+            return and_()  # a coordinate threshold isn't a logic gate; region placement still applies
+        return None
+
+    def _type_specific_node(self, ts) -> Rule | None:
+        """A `type_specific` player predicate: prerequisite advancements (BACAP Milestones reach
+        another advancement) and/or stats (a `mined` stat → being able to obtain that block)."""
+        if not isinstance(ts, dict):
+            return None
+        parts = []
+        advancements = ts.get("advancements")
+        if isinstance(advancements, dict):
+            for gid, required in advancements.items():
+                if required is False:
+                    continue
+                loc = self._adv_loc_by_gid.get(gid)
+                if loc is None or (self._active is not None and loc not in self._active):
+                    return None  # depends on an advancement not present this seed
+                parts.append(self.h.reached(loc))
+        for stat in (ts.get("stats") or []):
+            if not isinstance(stat, dict):
+                continue
+            if self._path(stat.get("type")) == "mined" and isinstance(stat.get("stat"), str):
+                node = self.h.acquire(stat["stat"])
+                if node is None:
+                    return None
+                parts.append(node)
+            else:
+                return None  # a custom counter stat isn't derivable
         return self._all_req(*parts) if parts else None
 
     def _equipment_nodes(self, equipment) -> list:
@@ -602,7 +671,14 @@ class TriggerCompiler:
         return []
 
     def _inventory_node(self, cond: dict) -> Rule | None:
-        return self._all_items(cond.get("items"))
+        """``inventory_changed``: every required item (the `items` list) AND any worn gear pinned via a
+        `player.equipment` predicate (BACAP's "wear iron armor" advancements)."""
+        parts = []
+        items = self._all_items(cond.get("items"))
+        if items is not None:
+            parts.append(items)
+        parts += self._equipment_nodes(self._predicate_value(cond.get("player"), "equipment"))
+        return self._all_req(*parts) if parts else None
 
     def _all_items(self, predicates) -> Rule | None:
         """AND over a list of item predicates (an ``inventory_changed`` items list or a
