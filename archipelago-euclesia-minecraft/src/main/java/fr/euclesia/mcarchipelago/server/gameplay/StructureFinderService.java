@@ -75,18 +75,19 @@ public final class StructureFinderService {
     }
 
     /**
-     * The structure types that are candidates for this player's finder: every registered structure
-     * that is not still gated by the structure-lock option. Position-independent, so the caller can
-     * compute this once and spread the (heavy) per-type nearest searches across ticks via
-     * {@link #nearest}. Empty when Archipelago is not ready.
+     * The structure types that are candidates for the finder in {@code level}: every registered
+     * structure that is not still gated by the structure-lock option. Position-independent, so the
+     * caller can compute this once and spread the (heavy) per-type nearest searches via {@link
+     * #nearest}. Takes a {@link ServerLevel} (not a player) so it can run at server start, before any
+     * player exists. Empty when Archipelago is not ready.
      */
-    public static List<Holder.Reference<Structure>> candidates(ServerPlayer player) {
+    public static List<Holder.Reference<Structure>> candidates(ServerLevel level) {
         if (!AEMServerRuntime.isArchipelagoReady()) {
             return List.of();
         }
         APStructureRegistry structures = AEM.ARCHIPELAGO.client().registries().apStructures();
         Registry<Structure> registry =
-                player.level().registryAccess().lookupOrThrow(Registries.STRUCTURE);
+                level.registryAccess().lookupOrThrow(Registries.STRUCTURE);
         List<Holder.Reference<Structure>> result = new ArrayList<>();
         for (Holder.Reference<Structure> ref : registry.listElements().toList()) {
             Identifier id = registry.getKey(ref.value());
@@ -99,14 +100,13 @@ public final class StructureFinderService {
     }
 
     /**
-     * The nearest instance of a single structure {@code ref} from {@code origin} in the player's
-     * dimension, or {@code null} if it has no placement here or none within the search radius. This
-     * is the heavy part (one {@code /locate}-style worldgen search) and must run on the server
-     * thread; callers should budget how many they run per tick to avoid stalling it.
+     * The nearest instance of a single structure {@code ref} from {@code origin} in {@code level}, or
+     * {@code null} if it has no placement there or none within the search radius. This is the heavy
+     * part (one {@code /locate}-style worldgen search) and must run on the server thread; callers
+     * either run it all at once behind the loading screen or budget how many they run per tick.
      */
-    public static FinderTarget nearest(ServerPlayer player, BlockPos origin,
+    public static FinderTarget nearest(ServerLevel level, BlockPos origin,
                                        Holder.Reference<Structure> ref) {
-        ServerLevel level = player.level();
         Identifier id = level.registryAccess().lookupOrThrow(Registries.STRUCTURE).getKey(ref.value());
         if (id == null) {
             return null;

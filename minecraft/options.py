@@ -192,6 +192,9 @@ class StructureFinder(Choice):
     - in_pool (default): the copies are shuffled into the multiworld for you to find.
     - start: you begin with the full finder already revealed.
     - disabled: the Structure Finder is not used in this game.
+
+    Note: each time you load into the world, it takes about 5-10 extra seconds to find the structures
+    around you before you can start playing.
     """
     display_name = "Structure Finder"
     option_disabled = 0
