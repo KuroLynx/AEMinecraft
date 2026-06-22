@@ -93,10 +93,12 @@ def _brewing() -> dict:
     return _BREWING
 
 # Minecraft dimension id -> our region name.
+# Keyed by the bare dimension path; lookups go through _path so minecraft:the_end / the_end /
+# (any namespace):the_end all resolve. BACAP writes these ids bare.
 _DIMENSION_REGION = {
-    "minecraft:overworld": REGION_OVERWORLD,
-    "minecraft:the_nether": REGION_NETHER,
-    "minecraft:the_end": REGION_END,
+    "overworld": REGION_OVERWORLD,
+    "the_nether": REGION_NETHER,
+    "the_end": REGION_END,
 }
 
 # "Reaching / interacting with an entity" triggers: the criterion names an entity type and the
@@ -130,10 +132,14 @@ class TriggerCompiler:
 
     def __init__(self, helper: RuleHelper, active_locations: frozenset | None = None):
         self.h = helper
-        # Reverse lookups from Minecraft id -> our display-name key.
+        # Reverse lookups from Minecraft id -> our display-name key. The *_by_path variants are keyed
+        # by the bare path so any namespace resolves (BACAP writes ids bare like "end_city" / "cow",
+        # vanilla uses "minecraft:"): see _entity_name / _struct_name.
         self._entity_by_gid = {data.game_id: name for name, data in MOBS_ALL.items()}
         self._struct_by_gid = {data.game_id: name for name, data in STRUCTURES.items()}
         self._adv_loc_by_gid = {data.game_id: name for name, data in ADVANCEMENT_LOCATIONS.items()}
+        self._entity_by_path = {self._path(gid): name for gid, name in self._entity_by_gid.items()}
+        self._struct_by_path = {self._path(gid): name for gid, name in self._struct_by_gid.items()}
         self._item_tags = _tags().get("item", {})
         self._entity_tags = _tags().get("entity_type", {})
         # Location names created this seed; a parent-chain rule must not reference a parent that was
@@ -224,15 +230,18 @@ class TriggerCompiler:
                 return or_(*options)
             return self._any_mob(MOBS_TAMEABLE, self.h.can_tame) if not cond else None
         if trigger == "minecraft:bred_animals":
-            # The bred species is pinned on the `child` predicate (e.g. bred_all_animals); empty
-            # conditions mean "breed any animal".
+            # The bred species is pinned on `child` (vanilla bred_all_animals) or directly on
+            # `parent` / `partner` (BACAP's "breed two cows"); empty conditions mean "breed any".
             gid = self._predicate_value(cond.get("child"), "type")
-            name = self._entity_by_gid.get(self._ns(gid)) if isinstance(gid, str) else None
+            if not isinstance(gid, str):
+                pair = cond.get("parent") or cond.get("partner")
+                gid = pair.get("type") if isinstance(pair, dict) else None
+            name = self._entity_name(gid)
             if name:
                 return self.h.can_breed(name)
             return self._any_mob(MOBS_BREEDABLE, self.h.can_breed) if not cond else None
         if trigger == "minecraft:changed_dimension":
-            region = _DIMENSION_REGION.get(cond.get("to"))
+            region = _DIMENSION_REGION.get(self._path(cond.get("to")))
             return self.h.access_region(region) if region else None
         if trigger == "minecraft:location":
             return self._location_node(cond)
@@ -357,6 +366,21 @@ class TriggerCompiler:
         many entity types/tags bare (``turtle``, ``#raiders``), and the registries are namespaced."""
         return gid if ":" in gid else f"minecraft:{gid}"
 
+    @staticmethod
+    def _path(gid):
+        """The bare path of an id (namespace dropped): ``minecraft:end_city`` / ``end_city`` /
+        ``bacap:end_city`` all become ``end_city``. The registries hold one path per namespace, so
+        matching on the path makes every id form resolve regardless of namespace."""
+        return gid.rsplit(":", 1)[-1] if isinstance(gid, str) else gid
+
+    def _entity_name(self, gid):
+        """Our display name for an entity id in any namespace (or bare), else ``None``."""
+        return self._entity_by_path.get(self._path(gid)) if isinstance(gid, str) else None
+
+    def _struct_name(self, gid):
+        """Our display name for a structure id in any namespace (or bare), else ``None``."""
+        return self._struct_by_path.get(self._path(gid)) if isinstance(gid, str) else None
+
     def _entity_names(self, cond: dict) -> list:
         """Display names for the entity/entities a criterion's `entity` predicate pins via `type` —
         a single id or a ``#tag`` (``#raiders``, ``#blazeandcave:llamas``), with bare ids/tags
@@ -365,8 +389,8 @@ class TriggerCompiler:
         if not isinstance(gid, str):
             return []
         members = (self._entity_tags.get(self._ns(gid[1:]), [])
-                   if gid.startswith("#") else [self._ns(gid)])
-        return [self._entity_by_gid[m] for m in members if m in self._entity_by_gid]
+                   if gid.startswith("#") else [gid])
+        return [name for name in map(self._entity_name, members) if name is not None]
 
     def _entity_node(self, cond: dict) -> Rule | None:
         """Reach the entity/entities a criterion's `entity` predicate pins (single id or ``#tag``)."""
@@ -467,8 +491,8 @@ class TriggerCompiler:
             if not isinstance(gid, str):
                 continue
             members = (self._entity_tags.get(self._ns(gid[1:]), [])
-                       if gid.startswith("#") else [self._ns(gid)])
-            names.extend(self._entity_by_gid[m] for m in members if m in self._entity_by_gid)
+                       if gid.startswith("#") else [gid])
+            names.extend(n for n in map(self._entity_name, members) if n is not None)
         return names
 
     def _recipe_id_node(self, recipe_id) -> Rule | None:
@@ -491,14 +515,14 @@ class TriggerCompiler:
         if isinstance(loc, dict):
             struct = loc.get("structures")
             if isinstance(struct, str):
-                name = self._struct_by_gid.get(struct)
+                name = self._struct_name(struct)
                 return self.h.structure(name) if name else None
             if "biomes" in loc:
                 # Locating a specific biome needs the Biome Finder (when enabled); the advancement's
                 # own region placement already gates which dimension it's in.
                 return self.h.needs_biome_finder()
             dim = loc.get("dimension")
-            region = _DIMENSION_REGION.get(dim) if isinstance(dim, str) else None
+            region = _DIMENSION_REGION.get(self._path(dim)) if isinstance(dim, str) else None
             if region:
                 return self.h.access_region(region)
         # No `location` key — the player predicate may instead pin worn equipment and/or the block
@@ -561,7 +585,7 @@ class TriggerCompiler:
         for key in components:
             match = re.match(r"minecraft:([a-z_]+)/variant", key)
             if match:
-                return self._entity_by_gid.get(f"minecraft:{match.group(1)}")
+                return self._entity_name(match.group(1))
         return None
 
     def _item_predicate(self, pred) -> Rule | None:
@@ -665,7 +689,7 @@ class TriggerCompiler:
         specific = self._predicate_value(cond.get("player"), "type_specific")
         looking = specific.get("looking_at") if isinstance(specific, dict) else None
         gid = looking.get("type") if isinstance(looking, dict) else None
-        target = self._entity_by_gid.get(gid) if gid else None
+        target = self._entity_name(gid) if gid else None
         return and_(item, self.h.entity(target)) if target in MOBS_ALL else item
 
     # A placed crop block isn't itself an item — placing it means using its seed. Map the crops whose
@@ -721,13 +745,13 @@ class TriggerCompiler:
         return or_(*present) if present else None
 
     def _entity_gid(self, gid: str) -> Rule | None:
-        """Reach the entity with this game id, or ``None`` when the active packs lack it."""
-        name = self._entity_by_gid.get(gid)
+        """Reach the entity with this id (any namespace), or ``None`` when the active packs lack it."""
+        name = self._entity_name(gid)
         return self.h.entity(name) if name in MOBS_ALL else None
 
     def _struct_gid(self, gid: str) -> Rule | None:
-        """Reach the structure with this game id, or ``None`` when the active packs lack it."""
-        name = self._struct_by_gid.get(gid)
+        """Reach the structure with this id (any namespace), or ``None`` when the packs lack it."""
+        name = self._struct_name(gid)
         return self.h.structure(name) if name in STRUCTURES else None
 
     def _cure_zombie_node(self) -> Rule:
@@ -812,7 +836,7 @@ class TriggerCompiler:
         if bucket is None:
             return None
         content = item.split(":")[-1].replace("_bucket", "")
-        mob = self._entity_by_gid.get(f"minecraft:{content}")
+        mob = self._entity_name(content)
         return and_(bucket, self.h.entity(mob)) if mob in MOBS_ALL else bucket
 
     def _container_loot_node(self, cond: dict) -> Rule | None:
@@ -823,11 +847,11 @@ class TriggerCompiler:
         if not isinstance(table, str):
             return None
         tail = table.split("/")[-1]
-        name = self._struct_by_gid.get(f"minecraft:{tail}")
+        name = self._struct_name(tail)
         if name is None:
             head = tail.split("_")[0]
-            name = next((n for gid, n in self._struct_by_gid.items()
-                         if gid.split(":")[-1].split("_")[0] == head), None)
+            name = next((n for path, n in self._struct_by_path.items()
+                         if path.split("_")[0] == head), None)
         return self.h.structure(name) if name else None
 
     @staticmethod
