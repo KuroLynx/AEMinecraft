@@ -57,7 +57,7 @@ Minecraft [AEM]:
     #   'Dimension Unlock' item.
     # - nether: you start trapped in the Nether. Getting out to the Overworld needs the
     #   'Dimension Unlock: Overworld' item, plus a way to build and light a return portal. The End is
-    #   still reached from the Overworld afterwards.
+    #   still reached from the Overworld afterward.
     #
     # You cannot start in The End, as there is no way to gear up there.
     overworld: 50
@@ -214,14 +214,14 @@ Minecraft [AEM]:
     # A locator bar that points you toward nearby structures.
     #
     # The Structure Finder shows nearby structures on an on-screen bar. It is progressive: each copy you
-    # collect reveals more of the structures around you, until eventually every one in range is shown.
+    # collect reveals more of the surrounding structures, until eventually every one in range is shown.
     #
     # - in_pool (default): the copies are shuffled into the multiworld for you to find.
     # - start: you begin with the full finder already revealed.
     # - disabled: the Structure Finder is not used in this game.
     #
-    # Note: each time you load into the world, it takes about 5-10 extra seconds to find the structures
-    # around you before you can start playing.
+    # Note: each time you load into the world, it takes about 5-10 extra seconds to find the surrounding structures
+    #  before you can start playing.
     in_pool: 50
     start: 0
     disabled: 0
