@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_knowledge/structure_finder/5",
+  "parent": "aem:unlock_knowledge/overworld/1",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

@@ -30,6 +30,9 @@ public interface ArchipelagoGateway {
 
     void getDataPackage();
 
+    /** Asks the server to resend all received items (full resync), re-applying every grant. */
+    void resync();
+
     void getDataStorage(List<String> keys);
 
     void setDataStorage(String key, JsonElement defaultValue, boolean wantReply, APDataStorageOperation operation, JsonElement value);

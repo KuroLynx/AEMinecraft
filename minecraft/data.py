@@ -35,7 +35,7 @@ from .logic.constants import *
 # Vanilla is always loaded; manifest-only datapack/mod packs (BACAP) are loaded too so their
 # location ids and the compiler's parent-chain lookup are always present (the option only gates
 # whether those locations are *created* this seed — see MCWorld._get_active_locations).
-_REGISTRY: ContentRegistry = load_pack("vanilla_26_1")
+_REGISTRY: ContentRegistry = load_pack(VANILLA_PACK)
 
 ITEMS: dict[str, MCItemData] = _REGISTRY.items
 MOBS_ALL: dict[str, MCMobData] = _REGISTRY.mobs
@@ -131,7 +131,7 @@ ALL_LOCATIONS: dict[str, MCLocationData] = {
 # tab) is flagged challenge=True so the challenge_sanity option gates them like vanilla's.
 _VANILLA_ADVANCEMENT_GAME_IDS = frozenset(loc.game_id for loc in LOCATIONS_ADVANCEMENT.values())
 LOCATIONS_BACAP: dict[str, MCLocationData] = load_manifest_advancements(
-    "bacap", BASE_ID_LOC_BACAP, reserved=frozenset(ALL_LOCATIONS),
+    BACAP_PACK, BASE_ID_LOC_BACAP, reserved=frozenset(ALL_LOCATIONS),
     skip_game_ids=_VANILLA_ADVANCEMENT_GAME_IDS,
     skip_tabs=frozenset({"statistics", "technical"}),
     challenge_tabs=frozenset({"challenges"}))
@@ -142,7 +142,7 @@ ADVANCEMENT_LOCATIONS: dict[str, MCLocationData] = {**LOCATIONS_ADVANCEMENT, **L
 # give the advancement a different frame than vanilla, promoting a goal/task to a challenge or
 # demoting a challenge, so when blazeandcave is on the challenge_sanity gate must follow BACAP's
 # frame, not the vanilla flag baked into the location. Maps rewritten game_id -> BACAP challenge.
-_BACAP_CHALLENGE: dict[str, bool] = load_manifest_challenge("bacap")
+_BACAP_CHALLENGE: dict[str, bool] = load_manifest_challenge(BACAP_PACK)
 BACAP_REWRITE_CHALLENGE: dict[str, bool] = {
     game_id: _BACAP_CHALLENGE[game_id]
     for game_id in _VANILLA_ADVANCEMENT_GAME_IDS if game_id in _BACAP_CHALLENGE

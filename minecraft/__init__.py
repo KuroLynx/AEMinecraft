@@ -18,11 +18,11 @@ from .trackers import build_trackers_export
 # ---------------------------------------------------------------------------
 
 class MCItem(Item):
-    game = "Minecraft"
+    game = "Minecraft [AEM]"
 
 
 class MCLocation(Location):
-    game = "Minecraft"
+    game = "Minecraft [AEM]"
 
 
 def _gate_classification(original: ItemClassification) -> ItemClassification:
@@ -61,7 +61,7 @@ class MCWebWorld(WebWorld):
 
 class MCWorld(World):
     """Minecraft Randomizer by KuroLynx (Mod by EDGN)"""
-    game = "Minecraft"
+    game = "Minecraft [AEM]"
     options: MCOptions
     options_dataclass = MCOptions
     web = MCWebWorld()

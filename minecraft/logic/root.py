@@ -40,7 +40,7 @@ def set_rules(world ) -> None:
     # vanilla advancements, reusing the same locations; its `blazeandcave:` ones are new locations).
     curated = collect_advancement_rules(helper)              # by display name
     compiler = TriggerCompiler(helper, frozenset(existing_locations))
-    manifest = _manifest("bacap" if world.options.blazeandcave else "vanilla_26_1")
+    manifest = _manifest(BACAP_PACK if world.options.blazeandcave else VANILLA_PACK)
 
     for location_name, loc_data in ADVANCEMENT_LOCATIONS.items():
         if location_name not in existing_locations:

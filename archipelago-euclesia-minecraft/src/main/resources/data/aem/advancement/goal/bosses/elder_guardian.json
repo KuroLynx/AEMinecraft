@@ -1,5 +1,5 @@
 {
-  "parent": "aem:category/knowledge",
+  "parent": "aem:goal/bosses",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"
@@ -12,11 +12,11 @@
   ],
   "display": {
     "icon": {
-      "id": "minecraft:netherrack"
+      "id": "minecraft:elder_guardian_spawn_egg"
     },
-    "title": "Dimension Unlock: Nether",
-    "description": "Unlock Dimension Unlock: Nether",
-    "frame": "task",
+    "title": "Elder Guardian",
+    "description": "Defeat the Elder Guardian",
+    "frame": "goal",
     "show_toast": false,
     "announce_to_chat": false,
     "hidden": false

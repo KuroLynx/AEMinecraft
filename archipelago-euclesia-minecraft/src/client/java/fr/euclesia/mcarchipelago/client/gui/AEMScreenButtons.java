@@ -8,16 +8,16 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.options.OptionsScreen;
 import net.minecraft.client.gui.screens.worldselection.SelectWorldScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 
 /**
- * Adds an Archipelago icon button (the advancement-tab logo) to the title screen and the options
- * screen, styled like the vanilla language / accessibility buttons. Clicking it opens the
- * {@link ArchipelagoConnectScreen}.
+ * Adds an Archipelago icon button (the advancement-tab logo) to the (in-game) options screen,
+ * styled like the vanilla language / accessibility buttons. Clicking it opens the
+ * {@link ArchipelagoConnectScreen} options panel. Not added to the title screen — there is no
+ * connected session there to show options for.
  */
 public final class AEMScreenButtons {
 
@@ -43,7 +43,9 @@ public final class AEMScreenButtons {
                 hideCreateWorldButton(screen);
             }
 
-            if (!(screen instanceof TitleScreen) && !(screen instanceof OptionsScreen)) {
+            // Only the (in-game) options screen — the main menu has no connected session to show
+            // options for; connecting happens from the world-creation screen instead.
+            if (!(screen instanceof OptionsScreen)) {
                 return;
             }
 

@@ -337,3 +337,16 @@ MAT_IRON = 3
 MAT_GOLD = 4
 MAT_DIAMOND = 5
 MAT_NETHERITE = 6
+
+# -----------------------------------------------------------------------
+# Content packs (packs/<name>/)
+# -----------------------------------------------------------------------
+# Pack directory names derive from the MC content version they target, so supporting a new MC
+# version (26.2, …) is a one-line bump here plus dropping in the matching
+# packs/<vanilla|bacap>_<ver>/ dirs — every pack reference in the apworld goes through these
+# constants. VANILLA_PACK is always loaded; BACAP_PACK is the BlazeandCave manifest for THIS
+# version and is loaded whenever the blazeandcave option is on, so "the good manifest version of
+# BACAP" tracks CONTENT_VERSION automatically instead of being pinned to a stale "bacap" dir.
+CONTENT_VERSION = "26_1"
+VANILLA_PACK = f"vanilla_{CONTENT_VERSION}"
+BACAP_PACK = f"bacap_{CONTENT_VERSION}"

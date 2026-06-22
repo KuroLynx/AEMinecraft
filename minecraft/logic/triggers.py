@@ -30,7 +30,14 @@ from ..data import (
 )
 from .acquisition import RuleHelper
 from .ast import Rule, and_, or_
-from .constants import K_BREWING, REGION_END, REGION_NETHER, REGION_OVERWORLD
+from .constants import (
+    BACAP_PACK,
+    K_BREWING,
+    REGION_END,
+    REGION_NETHER,
+    REGION_OVERWORLD,
+    VANILLA_PACK,
+)
 
 # Triggers that imply a specific tool/block the criterion never names: hitting a target block is
 # gated by crafting one (redstone + hay), brewing by a brewing stand, etc. Reaching the implied item
@@ -52,7 +59,7 @@ _TAGS: dict | None = None
 _BREWING: dict | None = None
 
 
-def _pack_json(filename: str, pack: str = "vanilla_26_1") -> dict:
+def _pack_json(filename: str, pack: str = VANILLA_PACK) -> dict:
     root = __package__.rsplit(".", 1)[0]  # e.g. "worlds.minecraft"
     with files(root).joinpath("packs", pack, filename).open(encoding="utf-8") as f:
         return json.load(f)
@@ -69,7 +76,7 @@ def _tags() -> dict:
     if _TAGS is None:
         merged = _pack_json("tags.json")
         try:
-            extra = _pack_json("tags.json", pack="bacap")
+            extra = _pack_json("tags.json", pack=BACAP_PACK)
         except (FileNotFoundError, OSError):
             extra = {}
         for registry, tags in extra.items():
