@@ -21,22 +21,19 @@ class BossList(OptionSet):
     """
     display_name = "Boss List"
     valid_keys = {"All"} | set(MOBS_BOSS.keys())
-    default = frozenset({"All"})
+    default = frozenset({"Ender Dragon"})
 
 
 class AdvancementsRequired(Range):
-    """Number of advancements you must complete as an additional victory condition.
+    """Number of advancements you must complete to win.
 
-    Set to 0 to disable this condition entirely.
-    This is cumulative with the boss kill condition: all active conditions must be met to win.
+    This is an extra victory condition on top of the boss kills: you must satisfy every active
+    condition to finish. Set to 0 to require no advancements.
 
-    The value is automatically reduced at generation to the number of advancement checks that
-    actually exist in your seed, which depends on your other options: vanilla has 100 advancements
-    with challenge_sanity off and 125 with it on, and blazeandcave adds up to ~1028 more.
+    If you ask for more advancements than your other options actually make available, the
+    requirement is lowered to fit, so you can safely set a high value.
 
-    Minimum value is 0
-    The maximum is the total number of advancements across vanilla and every supported datapack
-    (derived from the manifests in code, so it tracks the bundled content version).
+    Minimum value is 0.
     """
     display_name = "Advancements Required"
     range_start = 0
@@ -44,7 +41,7 @@ class AdvancementsRequired(Range):
     # BACAP); it shifts automatically when a manifest is updated for a new/older game version. The
     # generator still clamps the chosen value down to the advancements that exist in each seed.
     range_end = len(ADVANCEMENT_LOCATIONS)
-    default = 0
+    default = 75
 
 
 class DeathLink(Toggle):
@@ -55,19 +52,19 @@ class DeathLink(Toggle):
     display_name = "Death Link"
     option_true = 1
     option_false = 0
-    default = 0
+    default = 1
 
 
 class VillagerTrust(Toggle):
-    """If enabled, trading with villagers requires receiving Progressive Villager Trust items.
+    """Gate villager trading behind items you find in the multiworld.
 
-    One item per trade level, 5 levels total.
-    These items are added to the multiworld item pool.
+    When enabled, villagers will only trade once you have received enough Progressive Villager Trust
+    items. There are five trade levels, and each item unlocks the next one.
     """
     display_name = "Villager Trust"
     option_true = 1
     option_false = 0
-    default = 0
+    default = 1
 
 
 class KillSanity(Toggle):
@@ -82,18 +79,16 @@ class KillSanity(Toggle):
 
 
 class MobSpawnLockCategory(OptionSet):
-    """Define which mob categories are locked until their unlock item is received.
+    """Stop chosen kinds of mob from spawning until you unlock them.
 
-    When a mob category is locked, mobs of that type will not spawn in the world
-    until the corresponding 'Entity Unlock: <mob>' item is received from the multiworld.
+    For every category you list here, mobs of that kind will not spawn anywhere until you receive the
+    matching 'Entity Unlock: <mob>' item from the multiworld. Leave the list empty to let everything
+    spawn normally.
 
-    Leave empty to disable mob spawn locking entirely.
-
-    Locking "boss" gates the bosses (Ender Dragon, Elder Guardian, Warden, Wither) behind their
-    'Entity Unlock: <boss>' item: they cannot spawn — and so their kill check and the goal that
-    depends on them stays out of logic — until that item is received. Note that an Ocean Monument
-    that generates while Elder Guardian is locked stays without its elder guardians (monument mobs
-    are not retro-spawned); pair a boss lock with sensible logic if that matters to you.
+    Locking "boss" also holds back the bosses (Ender Dragon, Elder Guardian, Warden, Wither) until
+    their unlock item arrives, so they cannot be killed before then. Mobs that would have appeared in
+    a structure while locked (for example an Ocean Monument's elder guardians) are not lost: they are
+    placed once you receive their unlock item.
 
     Valid values: passive, neutral, hostile, boss
 
@@ -109,17 +104,15 @@ class MobSpawnLockCategory(OptionSet):
     """
     display_name = "Mob Spawn Lock Category"
     valid_keys = {"passive", "neutral", "hostile", "boss"}
-    default = frozenset()
+    default = frozenset({"boss"})
 
 
 class StructureUnlock(OptionSet):
-    """Define which structures are locked until their unlock item is received.
+    """Lock chosen structures until you unlock them.
 
-    When a structure is locked, it cannot be used (in logic) until the corresponding
-    'Structure Unlock: <structure>' item is received from the multiworld. Structures that
-    are not locked are always available once their dimension is reachable.
-
-    Leave empty to disable structure locking entirely.
+    A locked structure stays sealed until you receive its matching 'Structure Unlock: <structure>'
+    item from the multiworld. Structures you do not list are available as soon as you can reach their
+    dimension. Leave the list empty to keep every structure available from the start.
 
     Accepts dimension presets, the special value "All", and/or individual structure names
     (you can mix them freely):
@@ -138,7 +131,7 @@ class StructureUnlock(OptionSet):
     """
     display_name = "Structure Unlock"
     valid_keys = {"All", "Overworld", "Nether", "The End"} | set(STRUCTURES.keys())
-    default = frozenset()
+    default = frozenset({"Stronghold"})
 
 
 class TrapChance(Range):
@@ -155,18 +148,17 @@ class TrapChance(Range):
 
 
 class ChallengeSanity(Toggle):
-    """If enabled, includes every 'challenge' advancement in the location pool.
+    """Add the hardest advancements as checks.
 
-    This gates all advancements with the challenge frame (the spiky border) — 25 in vanilla, e.g.:
-    - A Furious Cocktail (have all potion effects simultaneously)
-    - How Did We Get Here? (have all status effects simultaneously)
+    When enabled, every advancement with the challenge frame (the spiky border) becomes a location
+    check, for example:
+    - A Furious Cocktail (have all potion effects at once)
+    - How Did We Get Here? (have all status effects at once)
     - Arbalistic (kill 5 unique mobs with one arrow)
     - A Balanced Diet (eat every food item)
 
-    With blazeandcave enabled it also gates BACAP's 218 challenge advancements (scattered across most
-    tabs, not just the "Super Challenges" tab).
-
-    These advancements are very difficult to complete and are excluded by default.
+    If you also enabled blazeandcave, its challenge advancements are included too. These are very
+    demanding to complete, so they are left out by default.
     """
     display_name = "Challenge Sanity"
     option_true = 1
@@ -177,15 +169,13 @@ class ChallengeSanity(Toggle):
 class StartDimension(Choice):
     """The dimension you spawn in at the start of the game.
 
-    - overworld (default): the classic start. The Nether and The End each require their
-      'Dimension Unlock' item to reach.
-    - nether: you spawn in the Nether (no Nether unlock item is added — you start there).
-      Reaching the Overworld then requires the 'Dimension Unlock: Overworld' item, a Nether
-      ruined portal (the obsidian to build the return portal) and the means to light it
-      (Knowledge: Pyromaniac). The End is still reached from the Overworld.
+    - overworld (default): the classic start. Reaching the Nether and The End each needs their
+      'Dimension Unlock' item.
+    - nether: you start trapped in the Nether. Getting out to the Overworld needs the
+      'Dimension Unlock: Overworld' item, plus a way to build and light a return portal. The End is
+      still reached from the Overworld afterwards.
 
-    The End cannot be a start dimension: it has no resources to gear up with, so the seed
-    would not be logically completable.
+    You cannot start in The End, as there is no way to gear up there.
     """
     display_name = "Start Dimension"
     option_overworld = 0
@@ -194,14 +184,14 @@ class StartDimension(Choice):
 
 
 class StructureFinder(Choice):
-    """How the Progressive Structure Finder is handled.
+    """A locator bar that points you toward nearby structures.
 
-    The Structure Finder is a locator bar that points to nearby structures; each copy received reveals
-    more of them (5 copies total).
+    The Structure Finder shows nearby structures on an on-screen bar. It is progressive: each copy you
+    collect reveals more of the structures around you, until eventually every one in range is shown.
 
-    - in_pool (default): the 5 copies are shuffled into the multiworld item pool to be found.
-    - start: you begin with all 5 copies (full reveal from the start); none are in the pool.
-    - disabled: the Structure Finder is removed entirely — no copies in the pool or on start.
+    - in_pool (default): the copies are shuffled into the multiworld for you to find.
+    - start: you begin with the full finder already revealed.
+    - disabled: the Structure Finder is not used in this game.
     """
     display_name = "Structure Finder"
     option_disabled = 0
@@ -213,12 +203,12 @@ class StructureFinder(Choice):
 class BiomeFinder(Choice):
     """How the Biome Finder is handled.
 
-    The Biome Finder is a soulbound compass: right-click it to search for any biome in your current
-    dimension, and its needle points to the nearest one.
+    The Biome Finder is a compass that stays with you when you die. Right-click it, pick a biome in
+    your current dimension, and its needle points to the nearest one.
 
-    - in_pool (default): the compass is shuffled into the multiworld item pool to be found.
-    - start: you begin with the compass; it is not in the pool.
-    - disabled: the Biome Finder is removed entirely — not in the pool or on start.
+    - in_pool (default): the compass is shuffled into the multiworld for you to find.
+    - start: you begin with the compass.
+    - disabled: the Biome Finder is not used in this game.
     """
     display_name = "Biome Finder"
     option_disabled = 0
@@ -228,19 +218,14 @@ class BiomeFinder(Choice):
 
 
 class BlazeAndCave(Toggle):
-    """Add BlazeandCave's Advancements Pack (BACAP) to the location pool.
+    """Include the BlazeandCave's Advancements Pack as extra checks.
 
-    When enabled, ~1028 custom BACAP advancements become checks alongside the (BACAP-rewritten)
-    vanilla ones — BACAP's `minecraft:` files rewrite the vanilla advancements in place, reusing
-    their locations, so vanilla checks are not replaced. BACAP's hidden "statistics" (auto-granted
-    stat counters) and "technical" (datapack plumbing) tabs are not real checks and are excluded;
-    its 218 challenge advancements are only included when challenge_sanity is on.
+    When enabled, the many custom advancements from BlazeandCave's Advancements Pack (BACAP) become
+    location checks alongside the usual ones, greatly expanding your game. Its challenge advancements
+    are only included if you also enable challenge_sanity.
 
     You must have the BlazeandCave's Advancements Pack datapack installed in your world for these
-    checks to fire. Their logic is derived automatically from each advancement's criteria (and its
-    parent advancement), the same way vanilla advancements are.
-
-    Leave disabled if you are not playing with the datapack.
+    checks to work. Leave this disabled if you are not playing with that datapack.
     """
     display_name = "BlazeandCave's Advancements Pack"
     option_true = 1
