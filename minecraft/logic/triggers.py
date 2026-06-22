@@ -105,7 +105,6 @@ _DIMENSION_REGION = {
 # rule is simply that the entity is reachable. (Killing it bare-handed is always possible; bosses
 # carry their own curated kill rule, so these stay reachability-only here.)
 _ENTITY_REACH_TRIGGERS = frozenset({
-    "minecraft:player_killed_entity",
     "minecraft:entity_killed_player",
 })
 
@@ -194,6 +193,8 @@ class TriggerCompiler:
 
         if trigger in _ENTITY_REACH_TRIGGERS:
             return self._entity_node(cond)
+        if trigger == "minecraft:player_killed_entity":
+            return self._player_killed_node(cond)
         if trigger == "minecraft:summoned_entity":
             # Summoning means *building* the entity (an Iron Golem from blocks + a carved pumpkin),
             # not merely encountering one — a naturally spawned village golem does not count. Gate on
@@ -425,14 +426,17 @@ class TriggerCompiler:
             return int(lo) if isinstance(lo, (int, float)) and not isinstance(lo, bool) else 0
         return 0
 
-    def _weapon_from_projectile(self, cond: dict) -> Rule | None:
-        """The launcher a damage criterion pins via its projectile (``damage.type.direct_entity``):
-        a trident, or a bow/crossbow + arrow. ``None`` for melee / unpinned damage."""
-        dtype = (cond.get("damage") or {}).get("type") or {}
-        direct = dtype.get("direct_entity")
-        proj = direct.get("type") if isinstance(direct, dict) else None
-        if not isinstance(proj, str):
-            return None
+    @staticmethod
+    def _has_tag(holder: dict, tag_id: str) -> bool:
+        """Whether a damage-type / killing-blow block expects a given damage `#tag` (is_projectile,
+        is_player_attack, …)."""
+        return any(isinstance(t, dict) and t.get("id") == tag_id and t.get("expected", True)
+                   for t in (holder.get("tags") or []))
+
+    def _projectile_item(self, proj: str) -> Rule | None:
+        """The means to land a hit with a given projectile entity: a trident, a bow/crossbow + arrow,
+        or — for any other throwable (wind charge, ender pearl, snowball, splash potion, …) — that
+        item (the projectile entity id is the throwable item id)."""
         if "trident" in proj:
             return self.h.can_get_trident()
         if "arrow" in proj:
@@ -440,29 +444,66 @@ class TriggerCompiler:
                 self._any_opt(self.h.acquire("minecraft:bow"), self.h.acquire("minecraft:crossbow")),
                 self.h.can_get_arrow(),
             )
+        return self.h.acquire(proj)
+
+    def _weapon_node(self, damage) -> Rule | None:
+        """The weapon a `damage` predicate pins: its projectile (`type.direct_entity`), else a melee
+        player attack (`is_player_attack`) → a real melee weapon. None when neither is pinned."""
+        dtype = (damage or {}).get("type") or {}
+        direct = dtype.get("direct_entity")
+        proj = direct.get("type") if isinstance(direct, dict) else None
+        if isinstance(proj, str):
+            return self._projectile_item(proj)
+        if self._has_tag(dtype, "minecraft:is_player_attack"):
+            return self.h.can_kill()
         return None
 
     def _player_hurt_node(self, cond: dict) -> Rule | None:
-        """``player_hurt_entity``: the player damages an entity. Require the pinned weapon (trident /
-        bow|crossbow + arrow) AND, when a specific victim is pinned, reaching it. An unpinned victim is
-        any mob (trivially reachable), so the weapon is the real gate."""
-        weapon = self._weapon_from_projectile(cond)
+        """``player_hurt_entity``: the player damages an entity. Require the pinned weapon AND, when a
+        specific victim is pinned, reaching it. An unpinned victim is any mob (trivially reachable),
+        so the weapon is the real gate."""
+        weapon = self._weapon_node(cond.get("damage"))
         victim = self._entity_node(cond)
         parts = [n for n in (weapon, victim) if n is not None]
         return and_(*parts) if parts else None
 
+    def _player_killed_node(self, cond: dict) -> Rule | None:
+        """``player_killed_entity``: kill an entity. The victim is on `entity`; any weapon constraint is
+        on `killing_blow` (a projectile, the killer's held mainhand item, or a melee player-attack)."""
+        weapon = self._killing_blow_weapon(cond.get("killing_blow"))
+        victim = self._entity_node(cond)
+        parts = [n for n in (weapon, victim) if n is not None]
+        return and_(*parts) if parts else None
+
+    def _killing_blow_weapon(self, kb) -> Rule | None:
+        if not isinstance(kb, dict):
+            return None
+        direct = kb.get("direct_entity")
+        proj = direct.get("type") if isinstance(direct, dict) else None
+        if isinstance(proj, str):
+            return self._projectile_item(proj)
+        source = kb.get("source_entity")
+        mainhand = ((source.get("equipment") or {}).get("mainhand")
+                    if isinstance(source, dict) else None)
+        held = self._item_predicate(mainhand) if isinstance(mainhand, dict) else None
+        if held is not None:
+            return held
+        return self.h.can_kill() if self._has_tag(kb, "minecraft:is_player_attack") else None
+
     def _entity_hurt_player_node(self, cond: dict) -> Rule | None:
-        """``entity_hurt_player``: the player takes damage. Deflecting a blocked projectile (the
-        criterion names no attacker) needs a shield AND any projectile-shooting mob; otherwise reach
-        the pinned attacker."""
+        """``entity_hurt_player``: the player takes damage. Reach the attacker pinned on
+        `damage.source_entity` (or `entity`); a *blocked* hit also needs a shield — plus that attacker,
+        or any projectile-shooting mob when none is named (deflecting a projectile)."""
         damage = cond.get("damage") or {}
-        tags = (damage.get("type") or {}).get("tags") or []
-        is_projectile = any(isinstance(t, dict) and t.get("id") == "minecraft:is_projectile"
-                            and t.get("expected", True) for t in tags)
-        if damage.get("blocked") and is_projectile:
-            shooter = self._any_opt(*[self._entity_gid(gid) for gid in _PROJECTILE_SHOOTERS])
+        source = damage.get("source_entity")
+        attacker = (self._entity_gid(source.get("type"))
+                    if isinstance(source, dict) and isinstance(source.get("type"), str) else None)
+        if attacker is None:
+            attacker = self._entity_node(cond)
+        if damage.get("blocked"):
+            shooter = attacker or self._any_opt(*[self._entity_gid(g) for g in _PROJECTILE_SHOOTERS])
             return self._all_req(self.h.acquire("minecraft:shield"), shooter)
-        return self._entity_node(cond)
+        return attacker
 
     def _killed_by_arrow_node(self, cond: dict) -> Rule | None:
         """``killed_by_arrow``: kill with an arrow/projectile. The victim(s) are on ``victims`` (an AND
@@ -496,9 +537,9 @@ class TriggerCompiler:
         return names
 
     def _recipe_id_node(self, recipe_id) -> Rule | None:
-        """``recipe_crafted`` with no ``ingredients`` (only a ``recipe_id``). Resolve the armor-trim
-        smithing recipes — ``<template>_smithing_trim`` — to a smithing table + that trim template
-        (structure loot); other no-ingredient recipes fall back to the parent chain."""
+        """``recipe_crafted`` with no ``ingredients`` (only a ``recipe_id``). An armor-trim smithing
+        recipe (``<template>_smithing_trim``) → a smithing table + that trim template (structure loot);
+        otherwise treat the recipe id as its crafted item id and acquire that (cake, melon, templates)."""
         if not isinstance(recipe_id, str):
             return None
         base = recipe_id.split(":", 1)[-1]
@@ -507,7 +548,7 @@ class TriggerCompiler:
             template = base[: -len(suffix)]
             return self._all_req(self.h.acquire("minecraft:smithing_table"),
                                  self.h.acquire(f"minecraft:{template}"))
-        return None
+        return self.h.acquire(recipe_id)
 
     def _location_node(self, cond: dict) -> Rule | None:
         player = cond.get("player")
@@ -700,9 +741,24 @@ class TriggerCompiler:
     }
 
     def _placed_block_node(self, cond: dict) -> Rule | None:
-        """``placed_block``: obtain the item that places the block (its seed, for crops)."""
+        """``placed_block``: obtain the item that places the block — its seed (crops), the same-named
+        block item, or the tool the criterion pins on ``match_tool`` (a cod bucket, scaffolding, …)."""
         items = [self._PLANT_ITEM.get(block, block) for block in self._blocks_in(cond)]
+        items += self._match_tool_items(cond)
         return self._any_acquire(items)
+
+    def _match_tool_items(self, cond: dict) -> list:
+        """Item ids a ``match_tool`` condition pins (BACAP names the placing item this way)."""
+        out = []
+        location = cond.get("location")
+        for entry in (location if isinstance(location, list) else [location]):
+            if isinstance(entry, dict) and str(entry.get("condition", "")).endswith("match_tool"):
+                ids = (entry.get("predicate") or {}).get("items")
+                if isinstance(ids, list):
+                    out.extend(i for i in ids if isinstance(i, str))
+                elif isinstance(ids, str):
+                    out.append(ids)
+        return out
 
     def _blocks_in(self, cond: dict) -> list:
         """Every block id a block-interaction criterion references. Tolerates the flat
@@ -730,6 +786,7 @@ class TriggerCompiler:
                 if isinstance(pred, dict):
                     add(pred.get("block"))
         add(cond.get("block"))
+        add({"blocks": cond.get("blocks")})  # BACAP slide_down_block: top-level `blocks` list
         return blocks
 
     @staticmethod
