@@ -108,7 +108,6 @@ _ENTITY_REACH_TRIGGERS = frozenset({
     "minecraft:player_hurt_entity",
     "minecraft:entity_hurt_player",
     "minecraft:killed_by_arrow",
-    "minecraft:summoned_entity",
 })
 
 # A few status effects with a non-brewing environmental source (the rest are gated on brewing in
@@ -183,6 +182,12 @@ class TriggerCompiler:
 
         if trigger in _ENTITY_REACH_TRIGGERS:
             return self._entity_node(cond)
+        if trigger == "minecraft:summoned_entity":
+            # Summoning means *building* the entity (an Iron Golem from blocks + a carved pumpkin),
+            # not merely encountering one — a naturally spawned village golem does not count. Gate on
+            # the build recipe (RuleHelper.summon), OR over the entity type(s) the criterion pins.
+            options = [self.h.summon(name) for name in self._entity_names(cond)]
+            return or_(*options) if options else None
         if trigger == "minecraft:player_interacted_with_entity":
             # Right-click an entity with an item (lead a mob, feed it, …): need the item AND a valid
             # target entity. A concrete type pins it; an inverted predicate ("any entity except the
