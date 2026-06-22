@@ -246,8 +246,9 @@ class TriggerCompiler:
         if trigger == "minecraft:placed_block":
             return self._placed_block_node(cond)
         if trigger == "minecraft:slide_down_block":
-            # Slide down a block (e.g. honey) → you must be able to obtain that block.
-            return self._any_acquire(cond.get("blocks"))
+            # Slide down a block (e.g. honey) → you must be able to obtain that block. The block sits
+            # on the `block` key (not `blocks`), so read every form via _blocks_in.
+            return self._any_acquire(self._blocks_in(cond))
         if trigger == "minecraft:item_used_on_block":
             return self._used_on_block_node(cond)
         if trigger == "minecraft:filled_bucket":
@@ -284,11 +285,12 @@ class TriggerCompiler:
             return item if item is not None else self.h.acquire("minecraft:shears")
         if trigger in ("minecraft:thrown_item_picked_up_by_player",
                        "minecraft:thrown_item_picked_up_by_entity"):
-            # An item was tossed and picked up → obtain that item. The *_by_entity form pins a
-            # specific pickerupper on `entity` (a piglin for Oh Shiny), so require reaching it too —
-            # the gold item alone must not put Oh Shiny in logic without the Nether/piglin.
+            # An item was tossed and picked up → obtain that item AND, whenever a specific entity is
+            # pinned on `entity`, reach it: the picker-upper for *_by_entity (a piglin for Oh Shiny),
+            # or the thrower for *_by_player (an allay for You've Got a Friend in Me, which pins no
+            # item at all — the allay is the whole gate).
             item = self._item_predicate(cond.get("item"))
-            entity = self._entity_node(cond) if trigger.endswith("by_entity") else None
+            entity = self._entity_node(cond)
             parts = [n for n in (item, entity) if n is not None]
             return and_(*parts) if parts else None
         if trigger == "minecraft:crafter_recipe_crafted":
@@ -484,20 +486,55 @@ class TriggerCompiler:
         return None
 
     def _location_node(self, cond: dict) -> Rule | None:
-        loc = self._predicate_value(cond.get("player"), "location")
-        if not isinstance(loc, dict):
-            return None
-        struct = loc.get("structures")
-        if isinstance(struct, str):
-            name = self._struct_by_gid.get(struct)
-            return self.h.structure(name) if name else None
-        if "biomes" in loc:
-            # Locating a specific biome needs the Biome Finder (when enabled); the advancement's own
-            # region placement already gates which dimension it's in.
-            return self.h.needs_biome_finder()
-        dim = loc.get("dimension")
-        region = _DIMENSION_REGION.get(dim) if isinstance(dim, str) else None
-        return self.h.access_region(region) if region else None
+        player = cond.get("player")
+        loc = self._predicate_value(player, "location")
+        if isinstance(loc, dict):
+            struct = loc.get("structures")
+            if isinstance(struct, str):
+                name = self._struct_by_gid.get(struct)
+                return self.h.structure(name) if name else None
+            if "biomes" in loc:
+                # Locating a specific biome needs the Biome Finder (when enabled); the advancement's
+                # own region placement already gates which dimension it's in.
+                return self.h.needs_biome_finder()
+            dim = loc.get("dimension")
+            region = _DIMENSION_REGION.get(dim) if isinstance(dim, str) else None
+            if region:
+                return self.h.access_region(region)
+        # No `location` key — the player predicate may instead pin worn equipment and/or the block
+        # being stood on (e.g. Light as a Rabbit: leather boots while on powder snow). Require the
+        # worn items AND that block.
+        parts = self._equipment_nodes(self._predicate_value(player, "equipment"))
+        stepping = self._predicate_value(player, "stepping_on")
+        if isinstance(stepping, dict):
+            block_node = self._any_acquire(self._block_ids(stepping.get("block")))
+            if block_node is not None:
+                parts.append(block_node)
+        return self._all_req(*parts) if parts else None
+
+    def _equipment_nodes(self, equipment) -> list:
+        """Acquisition nodes for the items an `equipment` predicate requires worn (per slot)."""
+        if not isinstance(equipment, dict):
+            return []
+        nodes = []
+        for slot_pred in equipment.values():
+            node = self._item_predicate(slot_pred)
+            if node is not None:
+                nodes.append(node)
+        return nodes
+
+    @staticmethod
+    def _block_ids(value) -> list:
+        """Block ids from a `block` predicate value: a bare id, or a ``{"blocks": id|[ids]}`` form."""
+        if isinstance(value, str):
+            return [value]
+        if isinstance(value, dict):
+            ids = value.get("blocks")
+            if isinstance(ids, str):
+                return [ids]
+            if isinstance(ids, list):
+                return [b for b in ids if isinstance(b, str)]
+        return []
 
     def _inventory_node(self, cond: dict) -> Rule | None:
         return self._all_items(cond.get("items"))
@@ -631,9 +668,17 @@ class TriggerCompiler:
         target = self._entity_by_gid.get(gid) if gid else None
         return and_(item, self.h.entity(target)) if target in MOBS_ALL else item
 
+    # A placed crop block isn't itself an item — placing it means using its seed. Map the crops whose
+    # block id differs from the planting item; every other block places from a same-named item.
+    _PLANT_ITEM = {
+        "minecraft:torchflower_crop": "minecraft:torchflower_seeds",
+        "minecraft:pitcher_crop": "minecraft:pitcher_pod",
+    }
+
     def _placed_block_node(self, cond: dict) -> Rule | None:
-        """``placed_block``: obtain the block being placed."""
-        return self._any_acquire(self._blocks_in(cond))
+        """``placed_block``: obtain the item that places the block (its seed, for crops)."""
+        items = [self._PLANT_ITEM.get(block, block) for block in self._blocks_in(cond)]
+        return self._any_acquire(items)
 
     def _blocks_in(self, cond: dict) -> list:
         """Every block id a block-interaction criterion references. Tolerates the flat
@@ -703,15 +748,22 @@ class TriggerCompiler:
         return self.h.all_of(*parts) if parts else self.h.access_region(REGION_OVERWORLD)
 
     def _started_riding_node(self, cond: dict) -> Rule | None:
-        """Ride a vehicle: a placeable item (minecart / boat) is acquired; a mount is reached."""
-        gid = self._predicate_value(cond.get("player"), "vehicle")
-        gid = gid.get("type") if isinstance(gid, dict) else gid
-        if not isinstance(gid, str):
-            return None
-        mount = self._entity_gid(gid)
-        if mount is not None:
-            return mount
-        return self.h.acquire(gid)  # minecart / *_boat / *_raft are items
+        """Ride a vehicle: a mount entity is reached, a placeable (minecart / boat) is acquired, and a
+        ``#tag`` vehicle (e.g. #minecraft:boat) expands to its items — plus any pinned passenger (a
+        goat in a boat for Whatever Floats Your Goat!) must be reached too."""
+        vehicle = self._predicate_value(cond.get("player"), "vehicle")
+        vtype = vehicle.get("type") if isinstance(vehicle, dict) else vehicle
+        veh_node = None
+        if isinstance(vtype, str):
+            if vtype.startswith("#"):
+                veh_node = self._any_acquire(vtype)  # tag → *_boat / *_raft items
+            else:
+                veh_node = self._entity_gid(vtype) or self.h.acquire(vtype)
+        passenger = vehicle.get("passenger") if isinstance(vehicle, dict) else None
+        ptype = passenger.get("type") if isinstance(passenger, dict) else None
+        pass_node = self._entity_gid(ptype) if isinstance(ptype, str) else None
+        parts = [n for n in (veh_node, pass_node) if n is not None]
+        return self._all_req(*parts) if parts else None
 
     def _effects_node(self, cond: dict) -> Rule:
         """Gain a status effect. Most effects come from a brewed potion, so gate on brewing

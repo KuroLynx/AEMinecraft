@@ -1001,6 +1001,12 @@ class RuleHelper:
         if wood_region is not None:
             return self.access_region(wood_region)
 
+        # Dragon's breath has no recipe or loot table — you bottle it from the Ender Dragon's breath
+        # mid-fight — so it is modeled here: the dragon must be reachable (and unlocked, when the
+        # boss-lock option gates it) plus a glass bottle.
+        if base == "dragon_breath":
+            return self.all_of(self.entity(E_ENDER_DRAGON), self.acquire("minecraft:glass_bottle"))
+
         # Materials collapse to their compact tier gate rather than expanding every recipe/chest
         # path — keeps the serialized tree small (iron/diamond/… otherwise recurse enormously).
         if base in _MATERIAL_TIER_BY_ITEM or base in (
