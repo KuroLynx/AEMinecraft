@@ -15,12 +15,17 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class APStructureRegistry {
     private final Map<String, Long> lockItemIds = new ConcurrentHashMap<>();
     private final Set<String> unlocked = ConcurrentHashMap.newKeySet();
+    // Bumped whenever the unlocked set changes. Lets the Structure Finder invalidate its cached scan
+    // on a structure unlock (which changes which structures are findable) without reacting to every
+    // received item — notably, receiving a finder must NOT invalidate it.
+    private volatile int unlockVersion;
 
     public void loadSlotData(APSlotData slotData) {
         lockItemIds.clear();
         lockItemIds.putAll(slotData.structureLocks());
         // Reset unlocks; the full ReceivedItems sent on connect re-applies them.
         unlocked.clear();
+        unlockVersion++;
     }
 
     public boolean isLocked(String structureGameId) {
@@ -30,6 +35,11 @@ public final class APStructureRegistry {
     /** Cheap guard so worldgen can skip the per-placement id lookup when nothing is locked at all. */
     public boolean hasLocks() {
         return !lockItemIds.isEmpty();
+    }
+
+    /** A counter that changes whenever the unlocked-structure set changes (load or new unlock). */
+    public int unlockVersion() {
+        return unlockVersion;
     }
 
     /**
@@ -43,6 +53,9 @@ public final class APStructureRegistry {
                 newlyUnlocked.add(structureId);
             }
         });
+        if (!newlyUnlocked.isEmpty()) {
+            unlockVersion++;
+        }
         return newlyUnlocked;
     }
 }

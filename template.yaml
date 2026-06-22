@@ -32,29 +32,34 @@ Minecraft [AEM]:
   # -------------------------------------------------------------------------
 
   boss_list:
-    # The bosses you must defeat to complete your game. You must defeat every boss listed.
-    # Use the special value "All" to require every boss.
+    # The bosses you must defeat to complete your game.
     #
-    # Valid values: All, Ender Dragon, Elder Guardian, Warden, Wither
+    # You must defeat every boss listed here. Use the special value "All" to require every boss.
     #
-    # Example — require every boss:
-    #   - All
+    # Valid values: "All", or any boss name (Ender Dragon, Elder Guardian, Warden, Wither).
     #
-    # Example — require only the Ender Dragon:
-    #   - Ender Dragon
-    - All
+    # Examples:
+    #     Require every boss:
+    #         - All
+    #
+    #     Require only the Ender Dragon:
+    #         - Ender Dragon
+    - "Ender Dragon"
 
   # -------------------------------------------------------------------------
   # Start Dimension
   # -------------------------------------------------------------------------
 
   start_dimension:
-    # The dimension you spawn in.
-    #   overworld: classic start. The Nether and The End each need their Dimension Unlock item.
-    #   nether:    spawn in the Nether (no Nether unlock item is added). Reaching the Overworld
-    #              then needs the "Dimension Unlock: Overworld" item, a Nether ruined portal, and
-    #              Knowledge: Pyromaniac to light it. The End is still reached from the Overworld.
-    # The End cannot be a start dimension (no resources to gear up — not completable).
+    # The dimension you spawn in at the start of the game.
+    #
+    # - overworld (default): the classic start. Reaching the Nether and The End each needs their
+    #   'Dimension Unlock' item.
+    # - nether: you start trapped in the Nether. Getting out to the Overworld needs the
+    #   'Dimension Unlock: Overworld' item, plus a way to build and light a return portal. The End is
+    #   still reached from the Overworld afterwards.
+    #
+    # You cannot start in The End, as there is no way to gear up there.
     overworld: 50
     nether: 0
 
@@ -63,15 +68,18 @@ Minecraft [AEM]:
   # -------------------------------------------------------------------------
 
   advancements_required:
-    # Number of advancements you must complete as an additional victory condition.
-    # Set to 0 to disable this condition entirely.
-    # Minimum: 0, Maximum: 1153 (every advancement across vanilla + BACAP; this ceiling comes from
-    # the bundled manifests, so it shifts with the supported game/datapack version).
-    # The requirement is automatically clamped to the advancements that actually exist this seed:
-    # 100 for vanilla with challenge_sanity off, 125 with it on, and up to ~1028 more with BACAP.
+    # Number of advancements you must complete to win.
     #
-    # Note: this is cumulative with the boss kill condition.
-    125: 50
+    # This is an extra victory condition on top of the boss kills: you must satisfy every active
+    # condition to finish. Set to 0 to require no advancements.
+    #
+    # If you ask for more advancements than your other options actually make available, the
+    # requirement is lowered to fit, so you can safely set a high value.
+    #
+    # Minimum value is 0.
+    0: 0
+    75: 50
+    125: 0
     random: 0
     random-range-0-1153: 0
 
@@ -81,18 +89,20 @@ Minecraft [AEM]:
 
   kill_sanity:
     # If enabled, killing a mob for the first time sends a location check.
+    #
     # Bosses always send a check regardless of this setting.
-    'false': 0
-    'true': 50
+    'false': 50
+    'true': 0
 
   # -------------------------------------------------------------------------
   # Villager Trust
   # -------------------------------------------------------------------------
 
   villager_trust:
-    # If enabled, trading with villagers requires receiving
-    # "Progressive Villager Trust" items (one per trade level, 5 total).
-    # These items are added to the item pool.
+    # Gate villager trading behind items you find in the multiworld.
+    #
+    # When enabled, villagers will only trade once you have received enough Progressive Villager Trust
+    # items. There are five trade levels, and each item unlocks the next one.
     'false': 0
     'true': 50
 
@@ -101,60 +111,64 @@ Minecraft [AEM]:
   # -------------------------------------------------------------------------
 
   mob_spawn_lock_category:
-    # Define which mob categories are locked until their
-    # "Entity Unlock: <mob>" item is received from the multiworld.
-    # Leave empty to disable mob spawn locking entirely.
+    # Stop chosen kinds of mob from spawning until you unlock them.
+    #
+    # For every category you list here, mobs of that kind will not spawn anywhere until you receive the
+    # matching 'Entity Unlock: <mob>' item from the multiworld. Leave the list empty to let everything
+    # spawn normally.
+    #
+    # Locking "boss" also holds back the bosses (Ender Dragon, Elder Guardian, Warden, Wither) until
+    # their unlock item arrives, so they cannot be killed before then. Mobs that would have appeared in
+    # a structure while locked (for example an Ocean Monument's elder guardians) are not lost: they are
+    # placed once you receive their unlock item.
     #
     # Valid values: passive, neutral, hostile, boss
-    # You can combine multiple categories.
     #
-    # Locking "boss" gates the bosses (Ender Dragon, Elder Guardian, Warden, Wither) behind their
-    # "Entity Unlock: <boss>" item: they cannot spawn — so their kill check and any goal that needs
-    # them stays out of logic — until that item is received. (A monument that generates while Elder
-    # Guardian is locked stays without its elder guardians; monument mobs are not retro-spawned.)
+    # Examples:
+    #     Lock only hostiles:
+    #         - hostile
     #
-    # Example — lock only hostiles:
-    #   - hostile
-    #
-    # Example — lock everything including bosses:
-    #   - passive
-    #   - neutral
-    #   - hostile
-    #   - boss
-    []
+    #     Lock everything including bosses:
+    #         - passive
+    #         - neutral
+    #         - hostile
+    #         - boss
+    ["boss"]
 
   # -------------------------------------------------------------------------
   # Structure Unlock
   # -------------------------------------------------------------------------
 
   structure_unlock:
-    # Define which structures are locked until their
-    # "Structure Unlock: <structure>" item is received from the multiworld.
-    # Structures that are not locked are available as soon as their dimension is reachable.
-    # Leave empty to disable structure locking entirely.
+    # Lock chosen structures until you unlock them.
+    #
+    # A locked structure stays sealed until you receive its matching 'Structure Unlock: <structure>'
+    # item from the multiworld. Structures you do not list are available as soon as you can reach their
+    # dimension. Leave the list empty to keep every structure available from the start.
     #
     # Accepts dimension presets, the special value "All", and/or individual structure names
     # (you can mix them freely):
-    #   - Dimension presets: "Overworld", "Nether", "The End"
-    #   - "All" — lock every structure
-    #   - Any structure name, e.g. "Ancient City", "Village (Plains)", "Nether Fortress"
+    #     - Dimension presets: "Overworld", "Nether", "The End" — lock every structure of that
+    #       dimension.
+    #     - "All" — lock every structure.
+    #     - Any structure name (e.g. "Ancient City", "Village (Plains)", "Nether Fortress").
     #
-    # Example — lock all Nether structures plus the Ancient City:
-    #   - Nether
-    #   - Ancient City
+    # Examples:
+    #     Lock everything in the Nether plus the Ancient City:
+    #         - Nether
+    #         - Ancient City
     #
-    # Example — lock everything:
-    #   - All
-    []
+    #     Lock all structures:
+    #         - All
+    ["Stronghold"]
 
   # -------------------------------------------------------------------------
   # Traps
   # -------------------------------------------------------------------------
 
   trap_chance:
-    # The probability (%) for each filler item to be replaced with a trap.
+    # The probability for each filler item to be replaced with a trap item.
     # Set to 0 to disable traps entirely.
-    # Trap types and their frequency are weighted by their count in the item pool.
     #
     # Minimum value is 0
     # Maximum value is 100
@@ -170,7 +184,8 @@ Minecraft [AEM]:
 
   death_link:
     # When you die, all players with Death Link enabled die too.
-    # When any of them dies, you die too.
+    #
+    # Of course the reverse is true too: when any of them dies, you die.
     'false': 0
     'true': 50
 
@@ -178,15 +193,17 @@ Minecraft [AEM]:
   # Challenge Sanity
   # -------------------------------------------------------------------------
   challenge_sanity:
-    # If enabled, includes every "challenge" advancement (the spiky-border ones) in the location
-    # pool. That is 25 advancements in vanilla, e.g.:
-    #   - A Furious Cocktail (have all potion effects simultaneously)
-    #   - How Did We Get Here? (have all status effects simultaneously)
-    #   - Arbalistic (kill 5 unique mobs with one arrow)
-    #   - A Balanced Diet (eat every food item)
-    # These advancements are very difficult to complete and are excluded by default.
-    # With BACAP enabled, this also includes BACAP's 218 challenge advancements (scattered across
-    # most tabs, not just its "Super Challenges" tab).
+    # Add the hardest advancements as checks.
+    #
+    # When enabled, every advancement with the challenge frame (the spiky border) becomes a location
+    # check, for example:
+    # - A Furious Cocktail (have all potion effects at once)
+    # - How Did We Get Here? (have all status effects at once)
+    # - Arbalistic (kill 5 unique mobs with one arrow)
+    # - A Balanced Diet (eat every food item)
+    #
+    # If you also enabled blazeandcave, its challenge advancements are included too. These are very
+    # demanding to complete, so they are left out by default.
     'false': 50
     'true': 0
 
@@ -194,19 +211,30 @@ Minecraft [AEM]:
   # Finders
   # -------------------------------------------------------------------------
   structure_finder:
-    # How the Progressive Structure Finder (5 copies; each reveals more nearby structures) is handled.
-    #   in_pool  - the 5 copies are shuffled into the multiworld item pool to be found.
-    #   start    - you begin with all 5 copies (full reveal from the start); none in the pool.
-    #   disabled - the Structure Finder is removed entirely.
+    # A locator bar that points you toward nearby structures.
+    #
+    # The Structure Finder shows nearby structures on an on-screen bar. It is progressive: each copy you
+    # collect reveals more of the structures around you, until eventually every one in range is shown.
+    #
+    # - in_pool (default): the copies are shuffled into the multiworld for you to find.
+    # - start: you begin with the full finder already revealed.
+    # - disabled: the Structure Finder is not used in this game.
+    #
+    # Note: each time you load into the world, it takes about 5-10 extra seconds to find the structures
+    # around you before you can start playing.
     in_pool: 50
     start: 0
     disabled: 0
 
   biome_finder:
-    # How the Biome Finder (a soulbound compass that points to a searched biome) is handled.
-    #   in_pool  - the compass is shuffled into the multiworld item pool to be found.
-    #   start    - you begin with the compass; it is not in the pool.
-    #   disabled - the Biome Finder is removed entirely.
+    # How the Biome Finder is handled.
+    #
+    # The Biome Finder is a compass that stays with you when you die. Right-click it, pick a biome in
+    # your current dimension, and its needle points to the nearest one.
+    #
+    # - in_pool (default): the compass is shuffled into the multiworld for you to find.
+    # - start: you begin with the compass.
+    # - disabled: the Biome Finder is not used in this game.
     in_pool: 50
     start: 0
     disabled: 0
@@ -215,15 +243,14 @@ Minecraft [AEM]:
   # BlazeandCave's Advancements Pack (BACAP)
   # -------------------------------------------------------------------------
   blazeandcave:
-    # Add BlazeandCave's Advancements Pack (BACAP) to the location pool. When enabled, ~1028 BACAP
-    # custom advancements become checks alongside the (BACAP-rewritten) vanilla ones — BACAP's
-    # minecraft: files rewrite the vanilla advancements in place and reuse their locations, so the
-    # vanilla checks are not replaced. The hidden "statistics" (auto-granted stat counters) and
-    # "technical" (datapack plumbing) tabs are not real checks and are excluded; BACAP's 218
-    # challenge advancements are only included when challenge_sanity is on.
-    # You MUST have the BlazeandCave's Advancements Pack datapack installed in your world for
-    # these checks to fire. Their logic is derived automatically from each advancement's criteria
-    # and parent — the same way the vanilla advancements are.
+    # Include the BlazeandCave's Advancements Pack as extra checks.
+    #
+    # When enabled, the many custom advancements from BlazeandCave's Advancements Pack (BACAP) become
+    # location checks alongside the usual ones, greatly expanding your game. Its challenge advancements
+    # are only included if you also enable challenge_sanity.
+    #
+    # You must have the BlazeandCave's Advancements Pack datapack installed in your world for these
+    # checks to work. Leave this disabled if you are not playing with that datapack.
     'false': 50
     'true': 0
 

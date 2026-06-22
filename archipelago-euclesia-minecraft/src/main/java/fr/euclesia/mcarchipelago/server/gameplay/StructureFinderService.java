@@ -17,7 +17,6 @@ import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.structure.Structure;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -76,36 +75,50 @@ public final class StructureFinderService {
     }
 
     /**
-     * Every findable structure (nearest instance per unlocked type) in the player's dimension, sorted
-     * nearest first. Uncapped — the caller applies {@link #cap} for the player's tier. Empty when
-     * Archipelago is not ready or nothing is found.
+     * The structure types that are candidates for the finder in {@code level}: every registered
+     * structure that is not still gated by the structure-lock option. Position-independent, so the
+     * caller can compute this once and spread the (heavy) per-type nearest searches via {@link
+     * #nearest}. Takes a {@link ServerLevel} (not a player) so it can run at server start, before any
+     * player exists. Empty when Archipelago is not ready.
      */
-    public static List<FinderTarget> findAll(ServerPlayer player) {
-        List<FinderTarget> results = new ArrayList<>();
+    public static List<Holder.Reference<Structure>> candidates(ServerLevel level) {
         if (!AEMServerRuntime.isArchipelagoReady()) {
-            return results;
+            return List.of();
         }
-        ServerLevel level = player.level();
-        BlockPos origin = player.blockPosition();
-        ChunkGenerator generator = level.getChunkSource().getGenerator();
         APStructureRegistry structures = AEM.ARCHIPELAGO.client().registries().apStructures();
-        Registry<Structure> registry = level.registryAccess().lookupOrThrow(Registries.STRUCTURE);
-
+        Registry<Structure> registry =
+                level.registryAccess().lookupOrThrow(Registries.STRUCTURE);
+        List<Holder.Reference<Structure>> result = new ArrayList<>();
         for (Holder.Reference<Structure> ref : registry.listElements().toList()) {
             Identifier id = registry.getKey(ref.value());
             if (id == null || structures.isLocked(id.toString())) {
                 continue;  // unknown key, or still gated by the structure-lock option
             }
-            HolderSet<Structure> single = HolderSet.direct(ref);
-            Pair<BlockPos, Holder<Structure>> nearest =
-                    generator.findNearestMapStructure(level, single, origin, SEARCH_RADIUS, false);
-            if (nearest == null) {
-                continue;  // no placement in this dimension, or none within the radius
-            }
-            BlockPos pos = nearest.getFirst();
-            results.add(new FinderTarget(id.toString(), pos, origin.distSqr(pos)));
+            result.add(ref);
         }
-        results.sort(Comparator.comparingDouble(FinderTarget::distanceSq));
-        return results;
+        return result;
+    }
+
+    /**
+     * The nearest instance of a single structure {@code ref} from {@code origin} in {@code level}, or
+     * {@code null} if it has no placement there or none within the search radius. This is the heavy
+     * part (one {@code /locate}-style worldgen search) and must run on the server thread; callers
+     * either run it all at once behind the loading screen or budget how many they run per tick.
+     */
+    public static FinderTarget nearest(ServerLevel level, BlockPos origin,
+                                       Holder.Reference<Structure> ref) {
+        Identifier id = level.registryAccess().lookupOrThrow(Registries.STRUCTURE).getKey(ref.value());
+        if (id == null) {
+            return null;
+        }
+        ChunkGenerator generator = level.getChunkSource().getGenerator();
+        HolderSet<Structure> single = HolderSet.direct(ref);
+        Pair<BlockPos, Holder<Structure>> found =
+                generator.findNearestMapStructure(level, single, origin, SEARCH_RADIUS, false);
+        if (found == null) {
+            return null;  // no placement in this dimension, or none within the radius
+        }
+        BlockPos pos = found.getFirst();
+        return new FinderTarget(id.toString(), pos, origin.distSqr(pos));
     }
 }

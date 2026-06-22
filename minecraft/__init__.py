@@ -397,6 +397,9 @@ class MCWorld(World):
             "kill_sanity"          : bool(self.options.kill_sanity.value),
             "advancements_required": self.options.advancements_required.value,
             "mob_spawn_lock"       : list(self.options.mob_spawn_lock_category.value),
+            # Whether the Structure Finder exists at all this seed (disabled = no item in the pool /
+            # on start). The mod uses this to skip its proactive structure scan when the finder is off.
+            "structure_finder"     : self.options.structure_finder.value != self.options.structure_finder.option_disabled,
 
             # --- Mapping item ID → nom (le mod applique l'effet depuis le nom) ---
             # Inclut les items de base ET chaque Entity/Structure unlock, pour que le mod
