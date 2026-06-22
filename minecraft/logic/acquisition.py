@@ -238,8 +238,10 @@ class RuleHelper:
         # a carved pumpkin, on top of reaching their region (see entity). The material helpers are
         # called with their golem-drop branch disabled, since that branch references the very golem
         # being built → infinite recursion at rule-build time.
-        self.constructed_mobs = {
-            # Build-only (never spawn naturally): N blocks + a carved pumpkin.
+        # Pure build recipes (N blocks + a carved pumpkin) for golems you summon by placing blocks.
+        # summon() uses these directly for minecraft:summoned_entity (e.g. "Hired Help"): a *naturally
+        # spawned* village Iron Golem does NOT count toward summoning, so the recipe must exclude it.
+        self.summon_recipes = {
             E_SNOW_GOLEM  : lambda: self.all_of(
                 self.can_get_snowball(include_snow_golem=False),  # → snow blocks
                 self.can_get_carved_pumpkin(),
@@ -248,13 +250,20 @@ class RuleHelper:
                 self.can_get_copper(include_copper_golem=False),  # → copper block
                 self.can_get_carved_pumpkin(),
             ),
-            # Iron Golem also spawns naturally in villages, so either suffices.
+            E_IRON_GOLEM  : lambda: self.all_of(  # iron blocks + carved pumpkin
+                self.can_get_iron(include_iron_golem=False),
+                self.can_get_carved_pumpkin(),
+            ),
+        }
+        # How entity() *reaches* each constructed mob: the build recipe, plus any natural spawn. Snow
+        # and Copper Golems never spawn naturally; an Iron Golem also spawns in villages, so for the
+        # encounter/kill gate either path suffices.
+        self.constructed_mobs = {
+            E_SNOW_GOLEM  : self.summon_recipes[E_SNOW_GOLEM],
+            E_COPPER_GOLEM: self.summon_recipes[E_COPPER_GOLEM],
             E_IRON_GOLEM  : lambda: self.any_of(
-                self.any_village(),  # natural village spawn
-                self.all_of(  # built: iron blocks + carved pumpkin
-                    self.can_get_iron(include_iron_golem=False),
-                    self.can_get_carved_pumpkin(),
-                ),
+                self.any_village(),                   # natural village spawn
+                self.summon_recipes[E_IRON_GOLEM](),  # or built
             ),
         }
         # Mobs whose only natural spawn is a specific, searchable biome — gated on the Biome Finder
@@ -842,6 +851,24 @@ class RuleHelper:
             build_node,
             parent_node,
             biome_node,
+            unlock_node,
+        )
+
+    def summon(self, entity_name: str):
+        """Gate for *summoning/building* an entity (minecraft:summoned_entity), e.g. constructing an
+        Iron Golem for "Hired Help". Unlike entity(), a naturally spawned mob does not count, so the
+        natural-spawn paths are excluded and the build recipe is required. Region access and the
+        spawn-lock unlock still apply (a locked mob cannot be built either). Entities with no known
+        recipe fall back to plain reachability."""
+        recipe = self.summon_recipes.get(entity_name)
+        if recipe is None:
+            return self.entity(entity_name)
+        entity_data = MOBS_ALL[entity_name]
+        category_locked = (entity_data.category in self.locked_categories)
+        unlock_node = self.has(f"{ENTITY_UNLOCK_PREFIX}{entity_name}") if category_locked else Const(True)
+        return self.all_of(
+            self.access_region(entity_data.region),
+            recipe(),
             unlock_node,
         )
 

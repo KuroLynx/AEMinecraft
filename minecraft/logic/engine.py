@@ -1,63 +1,79 @@
-"""Auto-discovering rule collector.
+"""Rule collectors for the two location families that aren't compiled from advancement criteria.
 
-Replaces the hand-maintained per-tab ``root.py`` aggregators (which imported and OR-merged every
-rule file by name) with a single walk over the rule packages. Each leaf rule module defines exactly
-one builder named after the module — verified 207/207 — that takes the :class:`RuleHelper` and
-returns a ``{name: Rule}`` dict. Dropping a new rule file into a tab package is now enough to wire
-it; there is no longer a list of imports to maintain.
+Advancement logic is derived from each advancement's Minecraft criteria by the trigger compiler
+(logic/triggers.py, driven by the pack manifest) — see logic/root.py. So there are no longer any
+hand-written per-advancement rule files; this module only supplies:
 
-Two collections are kept because their keys map to different AP locations:
-
-* **advancement rules** — keyed by advancement display name → ``Advancement: <name>`` locations
-* **entity rules**      — keyed by mob name                 → ``Kill Entity:`` / ``Kill Boss:`` locations
-
-The two tab *root* advancements that carry a real rule (Husbandry, Adventure) are injected here for
-now. Once the Fabric mod dumps the advancement manifest, tab roots come from that data instead and
-these injections go away (see the architecture plan, Milestone 3).
+* **entity rules** — the "Kill Entity:" / "Kill Boss:" locations, which are custom AP locations with
+  no advancement manifest to compile. Almost every mob reduces to plain reachability (``entity()``);
+  the four bosses carry bespoke gates (gear / knowledge / environment) since their kill is a goal
+  condition.
+* **the two tab-root advancements** (Husbandry, Adventure) that carry an explicit rule rather than
+  compilable criteria; they are offered to root.py as curated fallbacks.
 """
-import importlib
-import pkgutil
-from types import ModuleType
+from __future__ import annotations
 
 from ..data import MOBS_ALL
-from .constants import A_ADVENTURE, A_HUSBANDRY
 from .acquisition import RuleHelper
-from .vanilla import adventure, end, entities, husbandry, nether, story
-
-# Leaf modules named like these are aggregators / package markers, not rule builders.
-_SKIP = {"root", "__init__"}
-
-# Advancement tab packages — one builder per advancement.
-_ADVANCEMENT_TABS: tuple[ModuleType, ...] = (story, nether, end, adventure, husbandry)
-
-
-def _collect(helper: RuleHelper, package: ModuleType) -> dict:
-    """Import every leaf module under ``package`` (recursively) and merge the dict each module's
-    same-named builder returns. Mirrors the old per-tab ``root.py`` hand-merges, generically."""
-    merged: dict = {}
-    for info in pkgutil.walk_packages(package.__path__, package.__name__ + "."):
-        if info.ispkg:
-            continue
-        basename = info.name.rsplit(".", 1)[-1]
-        if basename in _SKIP:
-            continue
-        module = importlib.import_module(info.name)
-        merged.update(getattr(module, basename)(helper))
-    return merged
+from .constants import (
+    A_ADVENTURE,
+    A_HUSBANDRY,
+    A_SPOOKY_SCARY_SKELETON,
+    ADVANCEMENT_PREFIX,
+    E_ELDER_GUARDIAN,
+    E_ENDER_DRAGON,
+    E_WARDEN,
+    E_WITHER,
+    K_ARMOR,
+    K_BOW,
+    MAT_IRON,
+)
 
 
 def collect_advancement_rules(helper: RuleHelper) -> dict:
-    """All advancement rules across every story/nether/end/adventure/husbandry tab, plus the two
-    tab-root advancements that carry an explicit rule."""
-    merged: dict = {}
-    for tab in _ADVANCEMENT_TABS:
-        merged.update(_collect(helper, tab))
-    # Tab roots with real rules (the rest fall back to Const(True) in set_rules, as before).
-    merged[A_HUSBANDRY] = helper.can_get_food()
-    merged[A_ADVENTURE] = helper.has_any_entities(*MOBS_ALL.keys())
-    return merged
+    """Curated advancement fallbacks. Advancement logic is normally compiled from each advancement's
+    criteria (logic/root.py); only the two tab-root advancements, which have no compilable criteria,
+    carry an explicit rule here."""
+    return {
+        A_HUSBANDRY: helper.can_get_food(),
+        A_ADVENTURE: helper.has_any_entities(*MOBS_ALL.keys()),
+    }
 
 
 def collect_entity_rules(helper: RuleHelper) -> dict:
-    """All entity (mob/boss) kill rules across the passive/neutral/hostile/boss packages."""
-    return _collect(helper, entities)
+    """Kill-location logic for every mob: plain reachability (``entity()``) for all but the four
+    bosses, which gate on the gear / knowledge / environment their fight demands."""
+    rules = {name: helper.entity(name) for name in MOBS_ALL}
+    rules.update(_boss_rules(helper))
+    return rules
+
+
+def _boss_rules(helper: RuleHelper) -> dict:
+    """Bespoke kill gates for the four bosses (their kills are goal conditions, so they must not be
+    beatable from scratch)."""
+    return {
+        E_ENDER_DRAGON: helper.all_of(
+            helper.entity(E_ENDER_DRAGON),
+            helper.knowledge(K_BOW),  # shoot out the end crystals
+            helper.any_of(
+                helper.can_kill(),
+                helper.can_get_bed(),  # bed-bombing strategy
+            ),
+        ),
+        E_WITHER: helper.all_of(
+            helper.reached(f"{ADVANCEMENT_PREFIX}{A_SPOOKY_SCARY_SKELETON}"),  # wither skulls
+            helper.entity(E_WITHER),
+            helper.can_kill(),
+            helper.knowledge(K_ARMOR),  # survive the blast / wither effect
+            helper.material(MAT_IRON),  # at least iron-tier gear
+        ),
+        E_WARDEN: helper.all_of(
+            helper.entity(E_WARDEN),
+            helper.can_kill(),
+        ),
+        E_ELDER_GUARDIAN: helper.all_of(
+            helper.entity(E_ELDER_GUARDIAN),
+            helper.can_kill(),
+            helper.can_breath_underwater(),  # survive the fight underwater
+        ),
+    }
