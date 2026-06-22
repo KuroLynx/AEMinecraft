@@ -20099,6 +20099,11 @@
       "nether_sprouts"
     ]
   },
+  "nether_star": {
+    "drops": [
+      "wither"
+    ]
+  },
   "nether_wart": {
     "mining": [
       "nether_wart"

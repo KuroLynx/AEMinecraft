@@ -89,6 +89,14 @@ def _recipe_ingredients(recipe: dict) -> list:
     return out
 
 
+# Drops the game hardcodes in entity code instead of a loot table, so they never appear in the loot
+# JSONs the loader reads (the loader would otherwise miss them entirely). Item -> mob loot-table
+# basename(s), matching the keys acquisition.py resolves via minecraft:<basename>.
+_HARDCODED_DROPS = {
+    "nether_star": ["wither"],  # the Wither drops it in WitherBoss code, not via a loot table
+}
+
+
 class AcquisitionBuilder:
     def __init__(self):
         self.recipes: dict[str, list] = {}
@@ -317,6 +325,8 @@ class AcquisitionBuilder:
 
     # -- emit ---------------------------------------------------------------
     def table(self) -> dict:
+        for item, mobs in _HARDCODED_DROPS.items():
+            self.drops.setdefault(item, set()).update(mobs)
         items = set(self.recipes) | set(self.drops) | set(self.mining) | set(self.silk_mining) \
             | set(self.structures) | set(self.trades) | set(self.breeding) | set(self.gameplay)
         out: dict[str, dict] = {}

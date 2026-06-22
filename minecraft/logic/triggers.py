@@ -105,10 +105,16 @@ _DIMENSION_REGION = {
 _ENTITY_REACH_TRIGGERS = frozenset({
     "minecraft:player_killed_entity",
     "minecraft:entity_killed_player",
-    "minecraft:player_hurt_entity",
-    "minecraft:entity_hurt_player",
-    "minecraft:killed_by_arrow",
 })
+
+# Mobs that fire a projectile (for "deflect a projectile with a shield" — the criterion names no
+# attacker, so any of these reachable, plus a shield, satisfies it). Skeleton is overworld-universal,
+# so this is effectively "a shield + the Overworld".
+_PROJECTILE_SHOOTERS = (
+    "minecraft:skeleton", "minecraft:stray", "minecraft:bogged", "minecraft:pillager",
+    "minecraft:blaze", "minecraft:ghast", "minecraft:witch", "minecraft:drowned",
+    "minecraft:breeze",
+)
 
 # A few status effects with a non-brewing environmental source (the rest are gated on brewing in
 # _effects_node). Each maps the effect id to a builder taking the compiler -> a Rule (or None).
@@ -188,6 +194,12 @@ class TriggerCompiler:
             # the build recipe (RuleHelper.summon), OR over the entity type(s) the criterion pins.
             options = [self.h.summon(name) for name in self._entity_names(cond)]
             return or_(*options) if options else None
+        if trigger == "minecraft:player_hurt_entity":
+            return self._player_hurt_node(cond)
+        if trigger == "minecraft:entity_hurt_player":
+            return self._entity_hurt_player_node(cond)
+        if trigger == "minecraft:killed_by_arrow":
+            return self._killed_by_arrow_node(cond)
         if trigger == "minecraft:player_interacted_with_entity":
             # Right-click an entity with an item (lead a mob, feed it, …): need the item AND a valid
             # target entity. A concrete type pins it; an inverted predicate ("any entity except the
@@ -241,9 +253,16 @@ class TriggerCompiler:
         if trigger == "minecraft:filled_bucket":
             return self._filled_bucket_node(cond)
         if trigger == "minecraft:recipe_crafted":
-            return self._all_items(cond.get("ingredients"))
+            ingredients = cond.get("ingredients")
+            if ingredients:
+                return self._all_items(ingredients)
+            return self._recipe_id_node(cond.get("recipe_id"))
         if trigger == "minecraft:construct_beacon":
-            return self.h.acquire("minecraft:beacon")
+            node = self.h.acquire("minecraft:beacon")  # nether star (Wither) + glass + obsidian
+            if node is not None and self._min_level(cond.get("level")) >= 1:
+                # A pyramid is required → also need a base material (any beacon-base block).
+                node = self._all_req(node, self.h.can_get_beacon_base())
+            return node
         if trigger == "minecraft:villager_trade":
             return self.h.can_trade_villager()
         if trigger == "minecraft:slept_in_bed":
@@ -254,8 +273,11 @@ class TriggerCompiler:
             return self._container_loot_node(cond)
         if trigger in ("minecraft:default_block_use", "minecraft:any_block_use",
                        "minecraft:enter_block"):
-            # Use / stand in a block → you must be able to obtain or reach that block.
-            return self._any_acquire(self._blocks_in(cond))
+            # Use / stand in a block → obtain it if it is craftable/obtainable; a non-obtainable
+            # natural block (e.g. an end gateway) carries no item gate, so it reduces to its
+            # advancement's own region placement (and_() is trivially true; the export region-gates it).
+            node = self._any_acquire(self._blocks_in(cond))
+            return node if node is not None else and_()
         if trigger in ("minecraft:item_durability_changed", "minecraft:player_sheared_equipment"):
             # Wear an item down / shear with one → obtain that item (shears for shearing).
             item = self._item_predicate(cond.get("item"))
@@ -363,6 +385,103 @@ class TriggerCompiler:
             if isinstance(term, dict):
                 names.extend(self._entity_names({"entity": term.get("predicate", term)}))
         return names
+
+    @staticmethod
+    def _min_level(level) -> int:
+        """The minimum value a ``construct_beacon`` ``level`` condition demands — an exact int, the
+        ``min`` of a bounds object, or 0 when unconstrained (a level-0 beacon needs no pyramid)."""
+        if isinstance(level, bool):
+            return 0
+        if isinstance(level, (int, float)):
+            return int(level)
+        if isinstance(level, dict):
+            lo = level.get("min")
+            return int(lo) if isinstance(lo, (int, float)) and not isinstance(lo, bool) else 0
+        return 0
+
+    def _weapon_from_projectile(self, cond: dict) -> Rule | None:
+        """The launcher a damage criterion pins via its projectile (``damage.type.direct_entity``):
+        a trident, or a bow/crossbow + arrow. ``None`` for melee / unpinned damage."""
+        dtype = (cond.get("damage") or {}).get("type") or {}
+        direct = dtype.get("direct_entity")
+        proj = direct.get("type") if isinstance(direct, dict) else None
+        if not isinstance(proj, str):
+            return None
+        if "trident" in proj:
+            return self.h.can_get_trident()
+        if "arrow" in proj:
+            return self._all_req(
+                self._any_opt(self.h.acquire("minecraft:bow"), self.h.acquire("minecraft:crossbow")),
+                self.h.can_get_arrow(),
+            )
+        return None
+
+    def _player_hurt_node(self, cond: dict) -> Rule | None:
+        """``player_hurt_entity``: the player damages an entity. Require the pinned weapon (trident /
+        bow|crossbow + arrow) AND, when a specific victim is pinned, reaching it. An unpinned victim is
+        any mob (trivially reachable), so the weapon is the real gate."""
+        weapon = self._weapon_from_projectile(cond)
+        victim = self._entity_node(cond)
+        parts = [n for n in (weapon, victim) if n is not None]
+        return and_(*parts) if parts else None
+
+    def _entity_hurt_player_node(self, cond: dict) -> Rule | None:
+        """``entity_hurt_player``: the player takes damage. Deflecting a blocked projectile (the
+        criterion names no attacker) needs a shield AND any projectile-shooting mob; otherwise reach
+        the pinned attacker."""
+        damage = cond.get("damage") or {}
+        tags = (damage.get("type") or {}).get("tags") or []
+        is_projectile = any(isinstance(t, dict) and t.get("id") == "minecraft:is_projectile"
+                            and t.get("expected", True) for t in tags)
+        if damage.get("blocked") and is_projectile:
+            shooter = self._any_opt(*[self._entity_gid(gid) for gid in _PROJECTILE_SHOOTERS])
+            return self._all_req(self.h.acquire("minecraft:shield"), shooter)
+        return self._entity_node(cond)
+
+    def _killed_by_arrow_node(self, cond: dict) -> Rule | None:
+        """``killed_by_arrow``: kill with an arrow/projectile. The victim(s) are on ``victims`` (an AND
+        of OR-groups), not ``entity``; the launcher is on ``fired_from_weapon``. Require the weapon
+        (the pinned one, else any bow/crossbow + arrow) AND defeating each pinned victim group."""
+        weapon = self._any_acquire((cond.get("fired_from_weapon") or {}).get("items"))
+        if weapon is None:
+            weapon = self._all_req(
+                self._any_opt(self.h.acquire("minecraft:bow"), self.h.acquire("minecraft:crossbow")),
+                self.h.can_get_arrow(),
+            )
+        parts = [weapon] if weapon is not None else []
+        for group in cond.get("victims") or []:
+            options = [self.h.can_defeat(name) for name in self._victim_names(group)]
+            if options:
+                parts.append(or_(*options))
+        return and_(*parts) if parts else None
+
+    def _victim_names(self, group) -> list:
+        """Entity display names a ``killed_by_arrow`` ``victims`` OR-group pins (each entry an
+        ``entity_properties`` condition whose ``predicate.type`` is an id or a ``#tag``)."""
+        entries = group if isinstance(group, list) else [group]
+        names = []
+        for sub in entries:
+            gid = (sub.get("predicate") or {}).get("type") if isinstance(sub, dict) else None
+            if not isinstance(gid, str):
+                continue
+            members = (self._entity_tags.get(self._ns(gid[1:]), [])
+                       if gid.startswith("#") else [self._ns(gid)])
+            names.extend(self._entity_by_gid[m] for m in members if m in self._entity_by_gid)
+        return names
+
+    def _recipe_id_node(self, recipe_id) -> Rule | None:
+        """``recipe_crafted`` with no ``ingredients`` (only a ``recipe_id``). Resolve the armor-trim
+        smithing recipes — ``<template>_smithing_trim`` — to a smithing table + that trim template
+        (structure loot); other no-ingredient recipes fall back to the parent chain."""
+        if not isinstance(recipe_id, str):
+            return None
+        base = recipe_id.split(":", 1)[-1]
+        suffix = "_smithing_trim"
+        if base.endswith(suffix):
+            template = base[: -len(suffix)]
+            return self._all_req(self.h.acquire("minecraft:smithing_table"),
+                                 self.h.acquire(f"minecraft:{template}"))
+        return None
 
     def _location_node(self, cond: dict) -> Rule | None:
         loc = self._predicate_value(cond.get("player"), "location")

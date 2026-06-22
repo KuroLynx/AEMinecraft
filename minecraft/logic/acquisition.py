@@ -872,6 +872,36 @@ class RuleHelper:
             unlock_node,
         )
 
+    def can_defeat(self, entity_name: str):
+        """Gate for *killing* a mob — its drops and any kill goal. Ordinary mobs reduce to plain
+        reachability (beatable bare-handed via the boat trap); the four bosses require the gear,
+        knowledge and environment their fight demands. Single source of truth, shared by the
+        entity-kill locations (engine.collect_entity_rules) and boss drops resolved through acquire()
+        (e.g. a nether star from the Wither)."""
+        if entity_name == E_ENDER_DRAGON:
+            return self.all_of(
+                self.entity(E_ENDER_DRAGON),
+                self.knowledge(K_BOW),  # shoot out the end crystals
+                self.any_of(self.can_kill(), self.can_get_bed()),  # melee or bed-bombing
+            )
+        if entity_name == E_WITHER:
+            return self.all_of(
+                self.reached(f"{ADVANCEMENT_PREFIX}{A_SPOOKY_SCARY_SKELETON}"),  # wither skulls
+                self.entity(E_WITHER),
+                self.can_kill(),
+                self.knowledge(K_ARMOR),  # survive the blast / wither effect
+                self.material(MAT_IRON),  # at least iron-tier gear
+            )
+        if entity_name == E_WARDEN:
+            return self.all_of(self.entity(E_WARDEN), self.can_kill())
+        if entity_name == E_ELDER_GUARDIAN:
+            return self.all_of(
+                self.entity(E_ELDER_GUARDIAN),
+                self.can_kill(),
+                self.can_breath_underwater(),  # survive the fight underwater
+            )
+        return self.entity(entity_name)
+
     def can_tame(self, entity_name: str):
         """Reach the mob *and* hold its taming item (bones, fish, …). Mobs with no taming
         item (mount-tamed: horses, llamas, …) reduce to plain reachability."""
@@ -915,6 +945,19 @@ class RuleHelper:
             self.entity(E_PIGLIN),
             self.material(MAT_GOLD),
         )
+
+    def can_get_beacon_base(self):
+        """A block valid for a beacon pyramid base — any of iron / gold / emerald / diamond /
+        netherite. Required by the construct_beacon trigger whenever the beacon needs a pyramid
+        (level >= 1); the cheapest reachable one satisfies it."""
+        sources = [
+            self.acquire("minecraft:iron_block"),
+            self.acquire("minecraft:gold_block"),
+            self.acquire("minecraft:emerald_block"),
+            self.acquire("minecraft:diamond_block"),
+            self.acquire("minecraft:netherite_block"),
+        ]
+        return self.any_of(*[node for node in sources if node is not None])
 
     # -----------------------------------------------------------------------
     # AP Items
@@ -985,7 +1028,10 @@ class RuleHelper:
         for mob_file in record.get("drops", ()):
             name = _entity_by_gid().get(f"minecraft:{mob_file}")
             if name in MOBS_ALL:
-                options.append(self.entity(name))
+                # A drop needs the mob *defeated*, not merely reached: harmless for ordinary mobs
+                # (can_defeat == reachability) but correct for boss drops like the Wither's nether
+                # star, which must gate on the whole boss fight rather than just entering its arena.
+                options.append(self.can_defeat(name))
         mining_blocks = record.get("mining", ())
         # Data-driven: when the item has a tier-gated ORE source, a same-item block carrying no tier
         # info is a circular placed form (e.g. ``redstone_wire`` beside ``redstone_ore`` [iron]) whose
