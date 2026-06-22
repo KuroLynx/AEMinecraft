@@ -17,6 +17,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.storage.TagValueInput;
+import net.minecraft.world.level.storage.TagValueOutput;
 import net.minecraft.world.level.storage.ValueInput;
 
 import java.util.Set;
@@ -63,6 +64,38 @@ public final class StructureCaptureService {
                 }
             }
         }
+    }
+
+    /**
+     * Defers a worldgen-placed mob whose type is spawn-locked so it is not lost. The mob is serialized
+     * now (on the worldgen thread, with its generation-time position) and stored in
+     * {@link PendingMobData}, to be spawned by {@link #spawnPendingMobs} once the mob's unlock item
+     * arrives — exactly like the structure-lock path, but for mobs of structures that generated
+     * normally (i.e. were never captured). The store mutation is hopped to the server thread.
+     *
+     * <p>Only root entities are stored: a root's NBT already serializes its passenger stack, so
+     * storing passengers separately would double-spawn them on unlock (mirrors
+     * {@code CaptureSession#captureEntity}).
+     */
+    public static void deferWorldgenMob(ServerLevel level, Entity entity) {
+        if (entity.isPassenger()) {
+            return;
+        }
+        TagValueOutput output =
+                TagValueOutput.createWithContext(ProblemReporter.DISCARDING, level.registryAccess());
+        if (!entity.save(output)) {
+            return;
+        }
+        CompoundTag entityNbt = output.buildResult();
+        String mobId = entityNbt.getStringOr("id", "");
+        if (mobId.isEmpty()) {
+            return;
+        }
+        MinecraftServer server = AEMServerRuntime.server();
+        if (server == null) {
+            return;
+        }
+        server.execute(() -> pendingMobData(level).add(mobId, entityNbt));
     }
 
     /** Spawns structure mobs that were waiting on the given mob types to unlock. Server thread. */
