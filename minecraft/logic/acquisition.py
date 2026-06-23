@@ -1021,6 +1021,12 @@ class RuleHelper:
         if base == "dragon_breath":
             return self.all_of(self.entity(E_ENDER_DRAGON), self.acquire("minecraft:glass_bottle"))
 
+        # A froglight is made when a frog eats a small magma cube — the frog spawns only in the
+        # Overworld and the magma cube only in the Nether, so it genuinely needs BOTH dimensions.
+        # (The table mis-models it as a plain magma-cube drop, which would drop the frog/Overworld.)
+        if base in ("ochre_froglight", "pearlescent_froglight", "verdant_froglight"):
+            return self.all_of(self.entity(E_FROG), self.entity(E_MAGMA_CUBE))
+
         # Materials collapse to their compact tier gate rather than expanding every recipe/chest
         # path — keeps the serialized tree small (iron/diamond/… otherwise recurse enormously).
         if base in _MATERIAL_TIER_BY_ITEM or base in (
@@ -1028,17 +1034,30 @@ class RuleHelper:
                 "netherite_scrap", "ancient_debris"):
             return self._acquire_fallback(base)
 
-        # Tools / armor / gated craftables (bow, shears, stations, …) resolve to their
-        # Knowledge + material-tier gate, NOT their recipe: the mod needs the Knowledge to use one
-        # however it was obtained (craft, chest, trade, drop), so the recipe path — which would drop
-        # the Knowledge — must not win here. Mirrors the material short-circuit above.
+        # Tools / armor / gated craftables (bow, fishing rod, shears, …) need their Knowledge to be
+        # USED however they were obtained — but they are still obtained via their real sources, each
+        # carrying its own region. So gate on the Knowledge AND the obtainability (recipe ingredients,
+        # structure loot, a trade, a drop, …), not a lossy material-tier proxy that drops the
+        # ingredients' regions entirely (e.g. a fishing rod's string → spider/cobweb → Overworld). The
+        # sources are coarsened first so a big region-only tree collapses to its region floor instead
+        # of bloating every tool rule.
         if base in TOOL_LOCKS:
-            return self._acquire_fallback(base)
+            knowledge_name, tier = TOOL_LOCKS[base]
+            sources = self._acquire_from_sources(base, _stack)
+            obtain = self._coarsen(sources) if sources is not None else self.material(tier)
+            return self.all_of(self.knowledge(knowledge_name), obtain)
 
+        sources = self._acquire_from_sources(base, _stack)
+        result = sources if sources is not None else self._acquire_fallback(base)
+        return self._coarsen(result)
+
+    def _acquire_from_sources(self, base: str, _stack: frozenset):
+        """OR over every modeled way to obtain ``base`` (recipe, drop, mining, silk-mining, trade,
+        structure loot, gameplay), each carrying its region/tier gate; ``None`` when the item has no
+        acquisition record or no usable source. Shared by ordinary items and tool/armor gates."""
         record = _acquisition_table().get(base)
         if record is None:
-            return self._acquire_fallback(base)
-
+            return None
         inner = _stack | {base}
         options = []
         for recipe in record.get("recipes", ()):
@@ -1082,12 +1101,11 @@ class RuleHelper:
             if structure_name in STRUCTURES:
                 options.append(self.structure(structure_name))
         for table in record.get("gameplay", ()):
-            node = self._gameplay_node(table)
+            node = self._gameplay_node(table, inner)
             if node is not None:
                 options.append(node)
-
-        result = self._unique_or(options) if options else self._acquire_fallback(base)
-        return self._coarsen(result)
+        options = [o for o in options if o is not None]  # mining/silk paths may yield None on a cycle
+        return self._unique_or(options) if options else None
 
     def _coarsen(self, node):
         """Bound the serialized tree: a recipe-combinatorial item (dyes, beds, stews) past
@@ -1187,9 +1205,12 @@ class RuleHelper:
             routes.append(self.all_of(book, self.acquire("minecraft:anvil")))
         return self.any_of(*routes)
 
-    def _gameplay_node(self, table: str):
+    def _gameplay_node(self, table: str, stack: frozenset = frozenset()):
         """The gate for a 'gameplay' loot source — a real, repeatable acquisition path, grounded in
-        the 26.1.2 jar loot-table types:
+        the 26.1.2 jar loot-table types. ``stack`` is the acquisition recursion stack, threaded into
+        the items a source implies (a fishing rod for fishing, gold for bartering, shears for harvest)
+        so a circular source — fishing up the very fishing rod being resolved — breaks instead of
+        recursing forever:
           * fishing tables → a fishing rod;
           * piglin_bartering → the Nether, a piglin and gold;
           * a mob's gift / interaction / growth table → reach that mob (gift tables ARE reliable
@@ -1200,10 +1221,12 @@ class RuleHelper:
           * a block-harvest table → the block's dimension, plus shears for a shear interaction;
           * trial-chamber spawner equipment / chest loot → the Trial Chambers structure."""
         if table in ("fishing", "fish", "junk", "treasure"):
-            return self.acquire("minecraft:fishing_rod")
+            return self.acquire("minecraft:fishing_rod", stack)  # None on a cycle → caller drops it
         if table == "piglin_bartering":
-            return self.all_of(self.access_region(REGION_NETHER), self.entity(E_PIGLIN),
-                               self.acquire("minecraft:gold_ingot"))
+            gold = self.acquire("minecraft:gold_ingot", stack)
+            if gold is None:
+                return None  # circular (bartering FOR gold) — not a usable source here
+            return self.all_of(self.access_region(REGION_NETHER), self.entity(E_PIGLIN), gold)
         victim = _CHARGED_CREEPER_VICTIM.get(table)
         if victim is not None:
             # Head only drops from a CHARGED creeper's kill: charge a creeper (creeper + Overworld
@@ -1219,10 +1242,12 @@ class RuleHelper:
         harvest = _GAMEPLAY_HARVEST.get(table)
         if harvest is not None:
             region, needs_shears = harvest
-            parts = [self.access_region(region)]
             if needs_shears:
-                parts.append(self.acquire("minecraft:shears"))
-            return self.all_of(*parts)
+                shears = self.acquire("minecraft:shears", stack)
+                if shears is None:
+                    return None  # can't shear-harvest without shears (circular here)
+                return self.all_of(self.access_region(region), shears)
+            return self.access_region(region)
         if table in ("corridor", "trial_chamber_melee", "trial_chamber_ranged"):
             return self.structure(S_TRIAL_CHAMBERS)
         return None

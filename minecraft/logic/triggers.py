@@ -137,19 +137,28 @@ _CUSTOM_STAT_ITEM = {
 # enough for phantoms (BACAP's "Insomniac") is just waiting, reachable anywhere.
 _CUSTOM_STAT_TRIVIAL = frozenset({"minecraft:time_since_rest", "minecraft:time_since_death"})
 
-# Non-item natural blocks whose mere presence pins a dimension: entering / using one gates on reaching
-# that dimension. They carry no acquirable item to gate on, and every advancement is placed in the
-# Overworld region, so without this an `enter_block` on one would leak as Const(True) — reachable from
-# spawn (vanilla Remote Getaway's end gateway, BACAP's The End? / We Need to Go Deeper / Twisted …).
+# Non-item natural blocks whose mere presence pins the dimension(s) you can be in to interact with one
+# (entering / standing on / placing it). Each maps to the region(s) where that block exists — a block
+# carries no acquirable item, and every advancement is placed in the Overworld region, so without this
+# an `enter_block`/`stepping_on` on one would leak as Const(True), reachable from spawn (or, on a
+# Nether start, reachable without the Overworld). Values are a tuple of regions (the block is in ONE of
+# them → OR). Water exists in the Overworld AND the End (never the Nether); powder snow / berry bushes /
+# dirt paths are Overworld-only; the portal/vine/soul-fire blocks pin the Nether or the End.
 _BLOCK_REGION = {
-    "end_portal": REGION_END,
-    "end_gateway": REGION_END,
-    "nether_portal": REGION_NETHER,
-    "soul_fire": REGION_NETHER,
-    "twisting_vines": REGION_NETHER,
-    "twisting_vines_plant": REGION_NETHER,
-    "weeping_vines": REGION_NETHER,
-    "weeping_vines_plant": REGION_NETHER,
+    "end_portal": (REGION_END,),
+    "end_gateway": (REGION_END,),
+    "nether_portal": (REGION_NETHER,),
+    "soul_fire": (REGION_NETHER,),
+    "twisting_vines": (REGION_NETHER,),
+    "twisting_vines_plant": (REGION_NETHER,),
+    "weeping_vines": (REGION_NETHER,),
+    "weeping_vines_plant": (REGION_NETHER,),
+    "powder_snow": (REGION_OVERWORLD,),
+    "sweet_berry_bush": (REGION_OVERWORLD,),
+    "dirt_path": (REGION_OVERWORLD,),
+    "water": (REGION_OVERWORLD, REGION_END),
+    "bubble_column": (REGION_OVERWORLD, REGION_END),
+    "water_cauldron": (REGION_OVERWORLD, REGION_END),
 }
 
 
@@ -734,7 +743,8 @@ class TriggerCompiler:
         parts += self._equipment_nodes(pred.get("equipment"))
         stepping = pred.get("stepping_on")
         if isinstance(stepping, dict):
-            block = self._any_acquire(self._block_ids(stepping.get("block")))
+            ids = self._block_ids(stepping.get("block"))
+            block = self._block_region_node(ids) or self._any_acquire(ids)
             if block is not None:
                 parts.append(block)
         effects = pred.get("effects")
@@ -1083,9 +1093,12 @@ class TriggerCompiler:
         return blocks
 
     def _block_region_node(self, blocks: list) -> Rule | None:
-        """Reach the dimension a non-item natural block pins (``_BLOCK_REGION``), OR-ed over the blocks
-        a criterion lists as alternatives. ``None`` when no listed block pins a dimension."""
-        regions = {_BLOCK_REGION[self._path(b)] for b in blocks if self._path(b) in _BLOCK_REGION}
+        """Reach a dimension a non-item natural block pins (``_BLOCK_REGION``), OR-ed over every region
+        any listed block can be in (blocks in a criterion are alternatives). ``None`` when no listed
+        block pins a dimension."""
+        regions = set()
+        for block in blocks:
+            regions.update(_BLOCK_REGION.get(self._path(block), ()))
         return self._any_opt(*[self.h.access_region(r) for r in sorted(regions)]) if regions else None
 
     @staticmethod
@@ -1195,7 +1208,8 @@ class TriggerCompiler:
                 if isinstance(sub, dict) and sub.get("condition") == "minecraft:match_tool":
                     item = self._any_acquire((sub.get("predicate") or {}).get("items"))
                     break
-        block = self._any_acquire(self._blocks_in(cond))
+        blocks = self._blocks_in(cond)
+        block = self._block_region_node(blocks) or self._any_acquire(blocks)
         parts = [n for n in (item, block) if n is not None]
         return and_(*parts) if parts else None
 

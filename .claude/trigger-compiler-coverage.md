@@ -216,9 +216,63 @@ RULE-LEVEL STRAGGLERS — RESOLVED:
   **Vanilla now 125/125 — every advancement compiles.** verify_reachability + full BACAP gen
   (mob locks on, accessibility:full) PASS.
 
-OPEN ARCHITECTURE QUESTION (user chose "systemic"): uniform Overworld placement also OVER-restricts on
-a NETHER start — every advancement needs the Overworld unlock even if doable in the Nether (verify_
-reachability section B currently shows 0 locations reachable on nether-start-overworld-locked). The
-rule-level fixes close the dangerous (too-loose) leaks; making nether-start ergonomic would mean
-placing advancements in their real region (or origin + rule-only gating) — a 1137-location change
-touching mod/tracker/slot_data. Deferred pending go-ahead.
+## Round 5 (2026-06-23) — PLACEMENT BINDING + material/tool region floors (uncommitted)
+
+User chose systemic placement, with multi-dimension checks (kill any mob, travel) NOT pinned to one
+dimension. Implemented:
+
+**Placement derived from the rule** (logic/root.py `build_location_rules` + `derive_location_regions`,
+wired in __init__.create_regions; logic_export ships the placed region). Each location is placed in the
+region its rule REQUIRES (removing it makes the rule unsatisfiable): deepest of End>Nether>Overworld,
+or the always-reachable origin (Menu) when no single dimension is required (multi-dim OR / item-only).
+Placement now only reinforces a dimension the rule already needs — never the old spurious uniform-
+Overworld floor that over-gated Nether/End checks and broke Nether start. Rules are cached so
+create_regions and set_rules use the same ones. Sample: Nether root→Nether, The End?/Remote Getaway→
+The End, netherite/nether-biome→Nether, Adventure(kill-any-mob)/Husbandry→Menu.
+
+**Material region floors** (acquisition.material): copper/iron/diamond→Overworld, stone/gold→
+Overworld|Nether (cobblestone/blackstone, OW/nether gold), netherite→Nether; wood(tier 0)=trivially
+true. Single source of truth so every caller inherits the floor.
+
+**Tool/armor acquisition fix (the big one)**: `acquire(tool)` used to short-circuit to a lossy
+`knowledge + material(tier)` proxy, DISCARDING the item's real sources (recipe ingredients, structure
+loot, trades, drops) — so a fishing rod was just `Knowledge: Fishing + material(0)` with NO region.
+Now tools resolve as `knowledge(K) AND <real source OR-tree>` (factored into `_acquire_from_sources`,
+shared with ordinary items; coarsened so tool rules stay compact). `_gameplay_node` now threads the
+recursion stack so a circular source (fishing UP a fishing rod, bartering FOR gold) breaks instead of
+recursing. Now: fishing_rod→Fishing+Overworld, crossbow→Sharpshooter+(Nether|Overworld bastion loot),
+shears→Shear Handling+Overworld.
+
+**Verified**: vanilla 125/125; verify_reachability PASS both starts; full BACAP gen PASS for BOTH
+overworld AND nether start (accessibility:full, all mob locks, challenge). Nether-start section B went
+0→31 reachable (over-restriction fixed); the 31 are nether-legit (incl. Bastion loot for crossbow/
+diamond gear/books).
+
+## Round 6 (2026-06-24) — Overworld/water block region floors + froglight
+
+Closed the Nether-start block-condition leaks the placement refactor exposed:
+- `_BLOCK_REGION` extended (values now region TUPLES = OR): powder_snow/sweet_berry_bush/dirt_path →
+  Overworld; water/bubble_column/water_cauldron → Overworld|End (water never exists in the Nether);
+  existing portal/vine/soul_fire → Nether/End. `_block_region_node` ORs over all regions any listed
+  block can be in. Now consulted by `stepping_on` (Light as a Rabbit) and `_used_on_block_node`
+  (Pathways) too, not just enter_block — region is checked BEFORE item acquire (authoritative), and
+  ANDs with the criterion's other parts so an Overworld-block-in-Nether adv keeps both requirements.
+- **Froglight** acquire special-cased: `all_of(entity(Frog), entity(Magma Cube))` = AND(Overworld,
+  Nether) — a frog (OW-only spawn) eats a magma cube (Nether). The table mis-modeled it as a plain
+  magma-cube drop, dropping the frog. Fixes With Our Powers Combined!.
+
+Verified: vanilla 125/125, verify_reachability PASS, full BACAP gen PASS BOTH starts. Closed: Light as
+a Rabbit, This Snow is Snowier, Polar Opposites, Dive Bomb, Just Keep Swimming, Hot Spring, Pushed
+Around, Disen Berry Berry Bad!, Pathways, With Our Powers Combined!.
+
+KNOWN-FALSE-POSITIVES (legitimately Nether-doable, NOT leaks): The Power of Books (chiseled bookshelf
+= crimson planks + Bastion/Fortress-loot books; comparator = nether quartz), barrel/buttons/composter/
+walls/pressure-plates/tripwire/shelves (crimson/blackstone craftable).
+
+REMAINING long-tail (per-advancement criterion-shape gaps, user-flagged):
+- **placed_block adjacent conditions dropped**: The Power of Books' criterion needs a COMPARATOR
+  adjacent to the placed chiseled_bookshelf, but `_placed_block_node` ORs all blocks (incl. the
+  adjacent comparator pulled in by the `_blocks_in` terms-recursion) as placement ALTERNATIVES instead
+  of AND-ing adjacent-block location conditions. No leak here (both Nether-craftable) but a real gap.
+- **Stay Hydrated!** still reachable Nether-only (hydrating a dried ghast needs water → Overworld; the
+  water condition isn't captured).

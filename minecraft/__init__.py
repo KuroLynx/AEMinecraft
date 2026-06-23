@@ -192,14 +192,22 @@ class MCWorld(World):
 
     def create_regions(self) -> None:
         from .logic.acquisition import RuleHelper  # local import: avoids a top-level import cycle
+        from .logic.root import build_location_rules, derive_location_regions
 
         added_regions: dict[str, Region] = {}
 
         for region in MCRegion:
             added_regions[region] = Region(region, self.player, self.multiworld)
 
+        # Each location is placed in the region its reachability rule actually requires (a Nether-/
+        # End-native check goes in that dimension; a multi-dimension or item-only check goes in the
+        # always-reachable origin), instead of the legacy uniform-Overworld floor that over-gated
+        # non-Overworld checks and broke a Nether start. The rules are cached for set_rules so the two
+        # stay in lockstep. (Falls back to the data-declared region for any location without a rule.)
+        self._location_rules = build_location_rules(self)
+        placement = derive_location_regions(self._location_rules)
         for loc_name, loc_data in self._get_active_locations().items():
-            region = added_regions[MCRegion(loc_data.region)]
+            region = added_regions[MCRegion(placement.get(loc_name, loc_data.region))]
             location = MCLocation(self.player, loc_name, loc_data.id, region)
             region.locations.append(location)
 
