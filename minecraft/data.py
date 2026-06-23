@@ -134,7 +134,10 @@ LOCATIONS_BACAP: dict[str, MCLocationData] = load_manifest_advancements(
     BACAP_PACK, BASE_ID_LOC_BACAP, reserved=frozenset(ALL_LOCATIONS),
     skip_game_ids=_VANILLA_ADVANCEMENT_GAME_IDS,
     skip_tabs=frozenset({"statistics", "technical"}),
-    challenge_tabs=frozenset({"challenges"}))
+    challenge_tabs=frozenset({"challenges"}),
+    # The overview `bacap` tab's goal/challenge entries (per-tab Milestones, Advancement Legend) are
+    # aggregate markers earned by completing other advancements, not checks; its `task` entries stay.
+    skip_frame_tabs={"bacap": frozenset({"goal", "challenge"})})
 
 ADVANCEMENT_LOCATIONS: dict[str, MCLocationData] = {**LOCATIONS_ADVANCEMENT, **LOCATIONS_BACAP}
 

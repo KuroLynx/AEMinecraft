@@ -32,7 +32,9 @@ from .acquisition import RuleHelper
 from .ast import Rule, and_, or_
 from .constants import (
     BACAP_PACK,
+    K_ARMOR,
     K_BREWING,
+    MAT_IRON,
     REGION_END,
     REGION_NETHER,
     REGION_OVERWORLD,
@@ -125,6 +127,31 @@ _EFFECT_SOURCE = {
     "minecraft:conduit_power": lambda c: c.h.acquire("minecraft:conduit"),
 }
 
+# Custom counter stats whose real prerequisite is simply obtaining an item (the count isn't a logic
+# gate): eating cake slices needs access to cake (BACAP's "Must be your birthday").
+_CUSTOM_STAT_ITEM = {
+    "minecraft:eat_cake_slice": "minecraft:cake",
+}
+
+# Custom counter stats with no gameplay gate at all — pure elapsed-time counters: staying awake long
+# enough for phantoms (BACAP's "Insomniac") is just waiting, reachable anywhere.
+_CUSTOM_STAT_TRIVIAL = frozenset({"minecraft:time_since_rest", "minecraft:time_since_death"})
+
+# Non-item natural blocks whose mere presence pins a dimension: entering / using one gates on reaching
+# that dimension. They carry no acquirable item to gate on, and every advancement is placed in the
+# Overworld region, so without this an `enter_block` on one would leak as Const(True) — reachable from
+# spawn (vanilla Remote Getaway's end gateway, BACAP's The End? / We Need to Go Deeper / Twisted …).
+_BLOCK_REGION = {
+    "end_portal": REGION_END,
+    "end_gateway": REGION_END,
+    "nether_portal": REGION_NETHER,
+    "soul_fire": REGION_NETHER,
+    "twisting_vines": REGION_NETHER,
+    "twisting_vines_plant": REGION_NETHER,
+    "weeping_vines": REGION_NETHER,
+    "weeping_vines_plant": REGION_NETHER,
+}
+
 
 class TriggerCompiler:
     """Compiles a manifest record into a :class:`Rule`, or ``None`` if not confidently derivable."""
@@ -141,6 +168,7 @@ class TriggerCompiler:
         self._struct_by_path = {self._path(gid): name for gid, name in self._struct_by_gid.items()}
         self._item_tags = _tags().get("item", {})
         self._entity_tags = _tags().get("entity_type", {})
+        self._block_tags = _tags().get("block", {})
         # Location names created this seed; a parent-chain rule must not reference a parent that was
         # filtered out (e.g. a challenge advancement when challenge_sanity is off) — that would make
         # AP's reachability sweep raise on an unknown location. None = don't restrict.
@@ -192,7 +220,7 @@ class TriggerCompiler:
             trigger = f"minecraft:{trigger}"
 
         if trigger in _ENTITY_REACH_TRIGGERS:
-            return self._entity_node(cond)
+            return self._entity_killed_player_node(cond)
         if trigger == "minecraft:player_killed_entity":
             return self._player_killed_node(cond)
         if trigger == "minecraft:summoned_entity":
@@ -235,11 +263,17 @@ class TriggerCompiler:
             # `parent` / `partner` (BACAP's "breed two cows"); empty conditions mean "breed any".
             gid = self._predicate_value(cond.get("child"), "type")
             if not isinstance(gid, str):
-                pair = cond.get("parent") or cond.get("partner")
-                gid = pair.get("type") if isinstance(pair, dict) else None
-            name = self._entity_name(gid)
-            if name:
-                return self.h.can_breed(name)
+                # `parent`/`partner` may be a bare dict or the entity_properties list form (frog /
+                # sniffer / turtle, whose breeding yields a tadpole/egg, not a `child` entity).
+                gid = self._predicate_value(cond.get("parent") or cond.get("partner"), "type")
+            # `gid` may be a concrete species or a #tag (#blazeandcave:llamas → breed any llama). An
+            # explicitly pinned species is gated via can_breed regardless of the `breedable` flag —
+            # can_breed already models its food + reachability, and Two by Two pins frog/sniffer/turtle/
+            # nautilus which aren't flagged breedable but whose breeding (incl. the Nether strider &
+            # hoglin) is the real gate. The flag-derived MOBS_BREEDABLE is only for the "breed any" case.
+            names = self._entity_names_from_type(gid)
+            if names:
+                return or_(*[self.h.can_breed(n) for n in names])
             return self._any_mob(MOBS_BREEDABLE, self.h.can_breed) if not cond else None
         if trigger == "minecraft:changed_dimension":
             region = _DIMENSION_REGION.get(self._path(cond.get("to")))
@@ -284,10 +318,13 @@ class TriggerCompiler:
             return self._container_loot_node(cond)
         if trigger in ("minecraft:default_block_use", "minecraft:any_block_use",
                        "minecraft:enter_block"):
-            # Use / stand in a block → obtain it if it is craftable/obtainable; a non-obtainable
-            # natural block (e.g. an end gateway) carries no item gate, so it reduces to its
-            # advancement's own region placement (and_() is trivially true; the export region-gates it).
-            node = self._any_acquire(self._blocks_in(cond))
+            # Use / stand in a block. A block that pins a dimension (an end gateway / nether portal /
+            # Nether-only vine) gates on reaching that dimension — checked first, as that is the
+            # authoritative gate for these (the acquisition table even mis-models twisting_vines as
+            # Overworld-obtainable). Otherwise obtain it if craftable/obtainable; an Overworld-natural
+            # block carries no gate.
+            blocks = self._blocks_in(cond)
+            node = self._block_region_node(blocks) or self._any_acquire(blocks)
             return node if node is not None else and_()
         if trigger in ("minecraft:item_durability_changed", "minecraft:player_sheared_equipment"):
             # Wear an item down / shear with one → obtain that item (shears for shearing).
@@ -382,21 +419,43 @@ class TriggerCompiler:
         """Our display name for a structure id in any namespace (or bare), else ``None``."""
         return self._struct_by_path.get(self._path(gid)) if isinstance(gid, str) else None
 
-    def _entity_names(self, cond: dict) -> list:
-        """Display names for the entity/entities a criterion's `entity` predicate pins via `type` —
-        a single id or a ``#tag`` (``#raiders``, ``#blazeandcave:llamas``), with bare ids/tags
-        normalised to ``minecraft:`` so the namespaced registries resolve them."""
-        gid = self._predicate_value(cond.get("entity"), "type")
+    def _entity_names_from_type(self, gid) -> list:
+        """Display names for a `type` value — a single id or a ``#tag`` (``#raiders``,
+        ``#blazeandcave:llamas``), with bare ids/tags normalised to ``minecraft:`` so the namespaced
+        registries/tags resolve them."""
         if not isinstance(gid, str):
             return []
         members = (self._entity_tags.get(self._ns(gid[1:]), [])
                    if gid.startswith("#") else [gid])
         return [name for name in map(self._entity_name, members) if name is not None]
 
+    def _entity_names(self, cond: dict) -> list:
+        """Display names for the entity/entities a criterion's `entity` predicate pins via `type`."""
+        return self._entity_names_from_type(self._predicate_value(cond.get("entity"), "type"))
+
     def _entity_node(self, cond: dict) -> Rule | None:
         """Reach the entity/entities a criterion's `entity` predicate pins (single id or ``#tag``)."""
         options = [self.h.entity(name) for name in self._entity_names(cond)]
         return or_(*options) if options else None
+
+    def _entity_killed_player_node(self, cond: dict) -> Rule | None:
+        """``entity_killed_player``: a non-player entity kills you. An armor stand (BACAP's Living
+        Dummy) can only deal damage once you've built and kitted out an animated dummy — gate it on a
+        crafted armor stand plus the armour-handling knowledge, an enchanting table and iron-tier
+        material the kit demands. Otherwise reaching the killer is the gate."""
+        if self._path(self._predicate_value(cond.get("entity"), "type")) == "armor_stand":
+            return self._all_req(
+                self.h.acquire("minecraft:armor_stand"),
+                self.h.knowledge(K_ARMOR),
+                self.h.acquire("minecraft:enchanting_table"),
+                self.h.material(MAT_IRON),
+            )
+        node = self._entity_node(cond)
+        if node is not None:
+            return node
+        # Empty conditions = "be killed by any mob" (the Adventure root). Needs a mob to exist — under
+        # mob_spawn_lock that gates on unlocking one; can_kill_any_mob is the "some mob reachable" gate.
+        return self.h.can_kill_any_mob() if not cond else None
 
     def _excluded_entity_names(self, cond: dict) -> list:
         """Display names an INVERTED `entity` predicate excludes (Lead the Way!'s vehicle/non-mob
@@ -444,16 +503,30 @@ class TriggerCompiler:
                 self._any_opt(self.h.acquire("minecraft:bow"), self.h.acquire("minecraft:crossbow")),
                 self.h.can_get_arrow(),
             )
+        if "area_effect_cloud" in proj or proj.endswith("lingering_potion"):
+            # A lingering cloud is left by a lingering potion the player threw (Gas!, Multiclassed).
+            return self.h.acquire("minecraft:lingering_potion")
         return self.h.acquire(proj)
 
     def _weapon_node(self, damage) -> Rule | None:
-        """The weapon a `damage` predicate pins: its projectile (`type.direct_entity`), else a melee
-        player attack (`is_player_attack`) → a real melee weapon. None when neither is pinned."""
+        """The weapon a `damage` predicate pins: a specific item held in the attacker's mainhand (the
+        direct or source entity — a mace smash pins the mace on `direct_entity`, Multiclassed's
+        per-tool tags pin it on `source_entity`), else its projectile (`type.direct_entity`, a single
+        id or a list of alternatives), else any melee player attack (`is_player_attack`) → a real melee
+        weapon. None when nothing is pinned."""
         dtype = (damage or {}).get("type") or {}
         direct = dtype.get("direct_entity")
+        # A wielded weapon takes priority over treating the direct entity as a thrown projectile —
+        # a real projectile (arrow/snowball/…) has no mainhand equipment, so it still falls through.
+        for actor in (direct, dtype.get("source_entity")):
+            held = self._mainhand_weapon([{"predicate": actor}]) if isinstance(actor, dict) else None
+            if held is not None:
+                return held
         proj = direct.get("type") if isinstance(direct, dict) else None
         if isinstance(proj, str):
             return self._projectile_item(proj)
+        if isinstance(proj, list):
+            return self._any_opt(*[self._projectile_item(p) for p in proj if isinstance(p, str)])
         if self._has_tag(dtype, "minecraft:is_player_attack"):
             return self.h.can_kill()
         return None
@@ -463,9 +536,37 @@ class TriggerCompiler:
         specific victim is pinned, reaching it. An unpinned victim is any mob (trivially reachable),
         so the weapon is the real gate."""
         weapon = self._weapon_node(cond.get("damage"))
+        if weapon is None:
+            # No weapon pinned on `damage` (a damage-type #tag like mace_smash names no item): the held
+            # weapon may instead sit on the player's mainhand equipment (Nice to Mace You! → a mace).
+            weapon = self._mainhand_weapon(cond.get("player"))
         victim = self._entity_node(cond)
+        if victim is None and self._has_lava_fluid(cond):
+            # The victim is pinned only as "an entity in lava" (I'm in Lava With You names no type).
+            # Lava is not Nether-exclusive — an Overworld lava pool works too — so don't force a
+            # Strider/Nether; any reachable mob you can hit (bare-handed is fine) satisfies it.
+            victim = self.h.can_kill_any_mob()
         parts = [n for n in (weapon, victim) if n is not None]
         return and_(*parts) if parts else None
+
+    def _has_lava_fluid(self, cond: dict) -> bool:
+        """Whether any `entity`/`player` sub-condition requires standing in lava (a fluid predicate)."""
+        for key in ("entity", "player"):
+            entries = cond.get(key)
+            for sub in (entries if isinstance(entries, list) else [entries]):
+                pred = sub.get("predicate") if isinstance(sub, dict) else None
+                location = pred.get("location") if isinstance(pred, dict) else None
+                fluid = location.get("fluid") if isinstance(location, dict) else None
+                fluids = fluid.get("fluids") if isinstance(fluid, dict) else None
+                if isinstance(fluids, list) and any("lava" in f for f in fluids):
+                    return True
+        return False
+
+    def _mainhand_weapon(self, player) -> Rule | None:
+        """The item a player predicate requires held in the mainhand, as acquisition logic."""
+        equipment = self._predicate_value(player, "equipment")
+        mainhand = equipment.get("mainhand") if isinstance(equipment, dict) else None
+        return self._item_predicate(mainhand) if isinstance(mainhand, dict) else None
 
     def _player_killed_node(self, cond: dict) -> Rule | None:
         """``player_killed_entity``: kill an entity. The victim is on `entity`; any weapon constraint is
@@ -473,7 +574,18 @@ class TriggerCompiler:
         weapon = self._killing_blow_weapon(cond.get("killing_blow"))
         victim = self._entity_node(cond)
         parts = [n for n in (weapon, victim) if n is not None]
-        return and_(*parts) if parts else None
+        if victim is None and cond.get("entity"):
+            # Victim pinned only by what it wears (Trick or Treat!: kill any mob in a carved pumpkin):
+            # need a way to kill a mob, plus that worn item.
+            worn = self._equipment_nodes(self._predicate_value(cond.get("entity"), "equipment"))
+            if worn:
+                parts.append(self.h.can_kill())
+                parts.extend(worn)
+        if parts:
+            return and_(*parts)
+        # Empty conditions = "kill any mob" (the Adventure root). Needs at least one mob reachable —
+        # NOT trivially true: under mob_spawn_lock every mob is gated behind its unlock item.
+        return self.h.can_kill_any_mob() if not cond else None
 
     def _killing_blow_weapon(self, kb) -> Rule | None:
         if not isinstance(kb, dict):
@@ -488,7 +600,15 @@ class TriggerCompiler:
         held = self._item_predicate(mainhand) if isinstance(mainhand, dict) else None
         if held is not None:
             return held
-        return self.h.can_kill() if self._has_tag(kb, "minecraft:is_player_attack") else None
+        if self._has_tag(kb, "minecraft:is_player_attack"):
+            return self.h.can_kill()
+        if self._has_tag(kb, "minecraft:is_projectile"):
+            # Killed by an unspecified projectile (There it goes…) → a bow/crossbow + arrow.
+            return self._all_req(
+                self._any_opt(self.h.acquire("minecraft:bow"), self.h.acquire("minecraft:crossbow")),
+                self.h.can_get_arrow(),
+            )
+        return None
 
     def _entity_hurt_player_node(self, cond: dict) -> Rule | None:
         """``entity_hurt_player``: the player takes damage. Reach the attacker pinned on
@@ -503,7 +623,27 @@ class TriggerCompiler:
         if damage.get("blocked"):
             shooter = attacker or self._any_opt(*[self._entity_gid(g) for g in _PROJECTILE_SHOOTERS])
             return self._all_req(self.h.acquire("minecraft:shield"), shooter)
+        if attacker is None:
+            return self._dimpen_node(damage)  # arrow tagged through every dimension (Dimension Penetration)
         return attacker
+
+    # dimpen_<dim> scoreboard tags BACAP writes on the arrow once it has flown through that dimension.
+    _DIMPEN_REGION = {"overworld": REGION_OVERWORLD, "nether": REGION_NETHER, "end": REGION_END}
+
+    def _dimpen_node(self, damage: dict) -> Rule | None:
+        """Dimension Penetration: be hit by an arrow that has passed through every dimension. The
+        ``dimpen_overworld/nether/end`` nbt tags name the dimensions, so require a bow/crossbow + arrow
+        and access to each one named."""
+        direct = (damage.get("type") or {}).get("direct_entity")
+        nbt = direct.get("nbt") if isinstance(direct, dict) else None
+        if not isinstance(nbt, str) or "dimpen_" not in nbt:
+            return None
+        regions = {self._DIMPEN_REGION[m] for m in re.findall(r"dimpen_(\w+)", nbt)
+                   if m in self._DIMPEN_REGION}
+        weapon = self._all_req(
+            self._any_opt(self.h.acquire("minecraft:bow"), self.h.acquire("minecraft:crossbow")),
+            self.h.can_get_arrow())
+        return self._all_req(weapon, *[self.h.access_region(r) for r in sorted(regions)])
 
     def _killed_by_arrow_node(self, cond: dict) -> Rule | None:
         """``killed_by_arrow``: kill with an arrow/projectile. The victim(s) are on ``victims`` (an AND
@@ -597,6 +737,23 @@ class TriggerCompiler:
             block = self._any_acquire(self._block_ids(stepping.get("block")))
             if block is not None:
                 parts.append(block)
+        effects = pred.get("effects")
+        if isinstance(effects, dict):
+            # Standing somewhere while holding an effect (Marine Marauder's Water Breathing in water):
+            # the gate is gaining the effect; the paired fluid/location condition is not a logic gate.
+            parts.append(self._effect_node(effects))
+        vehicle = pred.get("vehicle")
+        if isinstance(vehicle, dict):
+            node = self._vehicle_node(vehicle)
+            if node is not None:
+                parts.append(node)
+        ts = pred.get("type_specific")
+        if isinstance(ts, dict):
+            # A list-form `player` predicate can carry the advancement/stat prerequisites that the
+            # dict form puts straight on `type_specific` (Insomniac's time_since_rest stat).
+            node = self._type_specific_node(ts)
+            if node is not None:
+                parts.append(node)
         return self._all_req(*parts) if parts else None
 
     def _loc_value_node(self, loc: dict) -> Rule | None:
@@ -608,16 +765,37 @@ class TriggerCompiler:
             name = self._struct_name(struct)
             return self.h.structure(name) if name else None
         if "biomes" in loc:
-            # Locating a specific biome needs the Biome Finder (when enabled); the advancement's own
-            # region placement already gates which dimension it's in.
-            return self.h.needs_biome_finder()
+            # Locating a specific biome needs the Biome Finder (when enabled) AND being in that biome's
+            # dimension — a Nether/End biome (basalt_deltas, the_end) carries its region (do NOT rely
+            # on placement, which is uniformly Overworld); an Overworld biome gates on the Overworld.
+            biomes = loc["biomes"]
+            region = self._biome_region(biomes if isinstance(biomes, str) else "")
+            return self._all_req(self.h.needs_biome_finder(), self.h.access_region(region))
         dim = loc.get("dimension")
         region = _DIMENSION_REGION.get(self._path(dim)) if isinstance(dim, str) else None
         if region:
             return self.h.access_region(region)
-        if "position" in loc:
-            return and_()  # a coordinate threshold isn't a logic gate; region placement still applies
+        if "position" in loc or "light" in loc or "fluid" in loc:
+            # A coordinate / light-level / standing-in-fluid threshold isn't a logic gate (Heart of
+            # Darkness is just "be somewhere dark"; the fluid half of Marine Marauder / Stayin' Frosty
+            # pairs with an effect that is the real gate). Region placement still applies.
+            return and_()
         return None
+
+    # Biomes that only exist in the Nether / the End; everything else is an Overworld biome.
+    _NETHER_BIOMES = frozenset({
+        "nether_wastes", "crimson_forest", "warped_forest", "soul_sand_valley", "basalt_deltas"})
+    _END_BIOMES = frozenset({
+        "the_end", "end_highlands", "end_midlands", "end_barrens", "small_end_islands"})
+
+    def _biome_region(self, biome) -> str:
+        """The region a biome id sits in (Overworld unless it is a known Nether/End biome)."""
+        path = self._path(biome)
+        if path in self._NETHER_BIOMES:
+            return REGION_NETHER
+        if path in self._END_BIOMES:
+            return REGION_END
+        return REGION_OVERWORLD
 
     def _type_specific_node(self, ts) -> Rule | None:
         """A `type_specific` player predicate: prerequisite advancements (BACAP Milestones reach
@@ -637,13 +815,25 @@ class TriggerCompiler:
         for stat in (ts.get("stats") or []):
             if not isinstance(stat, dict):
                 continue
-            if self._path(stat.get("type")) == "mined" and isinstance(stat.get("stat"), str):
-                node = self.h.acquire(stat["stat"])
-                if node is None:
-                    return None
-                parts.append(node)
+            stat_type, stat_id = self._path(stat.get("type")), stat.get("stat")
+            if stat_type == "mined" and isinstance(stat_id, str):
+                node = self.h.acquire(stat_id)
+            elif stat_type == "killed" and isinstance(stat_id, str):
+                # Kill N of a mob (Ring of the End: 20 Ender Dragons; Iceologer: 100 Glow Squids) →
+                # the count isn't a gate, but defeating that mob is (can_defeat carries boss logic).
+                name = self._entity_name(stat_id)
+                node = self.h.can_defeat(name) if name in MOBS_ALL else None
+            elif stat_type == "custom" and stat_id in _CUSTOM_STAT_ITEM:
+                # A custom counter we can map to an item: eating N cake slices (Must be your birthday)
+                # just needs access to cake.
+                node = self.h.acquire(_CUSTOM_STAT_ITEM[stat_id])
+            elif stat_type == "custom" and stat_id in _CUSTOM_STAT_TRIVIAL:
+                node = and_()  # a pure time counter (Insomniac) — no gate; region placement applies
             else:
-                return None  # a custom counter stat isn't derivable
+                return None  # an unmapped custom counter stat isn't derivable
+            if node is None:
+                return None
+            parts.append(node)
         return self._all_req(*parts) if parts else None
 
     def _equipment_nodes(self, equipment) -> list:
@@ -792,9 +982,13 @@ class TriggerCompiler:
         return or_(*options) if options else None
 
     def _expand_item(self, item_id: str) -> list:
-        """An item id as-is, or a ``#tag`` expanded to its member item ids."""
+        """An item id as-is, or a ``#tag`` expanded to its members. A tag in a block context
+        (``stepping_on``/``placed_block`` reference a *block* tag like ``#minecraft:ice``) isn't in
+        the item-tag table, so fall back to the block-tag table — its members are same-named items
+        for ``acquire`` (a non-obtainable member like ``frosted_ice`` simply drops out of the OR)."""
         if isinstance(item_id, str) and item_id.startswith("#"):
-            return self._item_tags.get(item_id[1:], [])
+            body = item_id[1:]
+            return self._item_tags.get(body) or self._block_tags.get(body, [])
         return [item_id] if isinstance(item_id, str) else []
 
     def _used_item_node(self, cond: dict) -> Rule | None:
@@ -814,12 +1008,29 @@ class TriggerCompiler:
     _PLANT_ITEM = {
         "minecraft:torchflower_crop": "minecraft:torchflower_seeds",
         "minecraft:pitcher_crop": "minecraft:pitcher_pod",
+        "minecraft:wheat": "minecraft:wheat_seeds",
+        "minecraft:beetroots": "minecraft:beetroot_seeds",
+        "minecraft:carrots": "minecraft:carrot",
+        "minecraft:potatoes": "minecraft:potato",
+        "minecraft:pumpkin_stem": "minecraft:pumpkin_seeds",
+        "minecraft:melon_stem": "minecraft:melon_seeds",
+        "minecraft:cocoa": "minecraft:cocoa_beans",
+        "minecraft:sweet_berry_bush": "minecraft:sweet_berries",
+        "minecraft:nether_wart": "minecraft:nether_wart",
+        "minecraft:bamboo_sapling": "minecraft:bamboo",
+        # Fire blocks aren't items — they're placed by igniting a surface with flint and steel or a
+        # fire charge (a value may be a list of alternative placing items, OR-ed in _placed_block_node).
+        "minecraft:fire": ["minecraft:flint_and_steel", "minecraft:fire_charge"],
+        "minecraft:soul_fire": ["minecraft:flint_and_steel", "minecraft:fire_charge"],
     }
 
     def _placed_block_node(self, cond: dict) -> Rule | None:
         """``placed_block``: obtain the item that places the block — its seed (crops), the same-named
         block item, or the tool the criterion pins on ``match_tool`` (a cod bucket, scaffolding, …)."""
-        items = [self._PLANT_ITEM.get(block, block) for block in self._blocks_in(cond)]
+        items: list = []
+        for block in self._blocks_in(cond):
+            mapped = self._PLANT_ITEM.get(block, block)  # a placing item, or a list of alternatives
+            items.extend(mapped if isinstance(mapped, list) else [mapped])
         items += self._match_tool_items(cond)
         return self._any_acquire(items)
 
@@ -840,7 +1051,8 @@ class TriggerCompiler:
         """Every block id a block-interaction criterion references. Tolerates the flat
         ``location:[{block: id}]`` form (vanilla ``block_state_property``) and BACAP's nested
         ``location_check`` → ``predicate.block.blocks`` form, plus a top-level ``block`` predicate
-        (``enter_block``). ``#tag`` ids are kept — ``_any_acquire`` expands them."""
+        (``enter_block``) and ``any_of``/``all_of`` ``terms`` groups (Locked and Loaded's chained
+        shelves). ``#tag`` ids are kept — ``_any_acquire`` expands them."""
         blocks: list = []
 
         def add(value):
@@ -853,17 +1065,28 @@ class TriggerCompiler:
                 elif isinstance(ids, list):
                     blocks.extend(b for b in ids if isinstance(b, str))
 
+        def walk(entry):
+            if not isinstance(entry, dict):
+                return
+            add(entry.get("block"))
+            pred = entry.get("predicate")
+            if isinstance(pred, dict):
+                add(pred.get("block"))
+            for term in entry.get("terms") or []:  # nested any_of / all_of condition groups
+                walk(term)
+
         location = cond.get("location")
-        entries = location if isinstance(location, list) else [location]
-        for entry in entries:
-            if isinstance(entry, dict):
-                add(entry.get("block"))
-                pred = entry.get("predicate")
-                if isinstance(pred, dict):
-                    add(pred.get("block"))
+        for entry in (location if isinstance(location, list) else [location]):
+            walk(entry)
         add(cond.get("block"))
         add({"blocks": cond.get("blocks")})  # BACAP slide_down_block: top-level `blocks` list
         return blocks
+
+    def _block_region_node(self, blocks: list) -> Rule | None:
+        """Reach the dimension a non-item natural block pins (``_BLOCK_REGION``), OR-ed over the blocks
+        a criterion lists as alternatives. ``None`` when no listed block pins a dimension."""
+        regions = {_BLOCK_REGION[self._path(b)] for b in blocks if self._path(b) in _BLOCK_REGION}
+        return self._any_opt(*[self.h.access_region(r) for r in sorted(regions)]) if regions else None
 
     @staticmethod
     def _all_req(*nodes) -> Rule | None:
@@ -905,27 +1128,49 @@ class TriggerCompiler:
         return self.h.all_of(*parts) if parts else self.h.access_region(REGION_OVERWORLD)
 
     def _started_riding_node(self, cond: dict) -> Rule | None:
-        """Ride a vehicle: a mount entity is reached, a placeable (minecart / boat) is acquired, and a
-        ``#tag`` vehicle (e.g. #minecraft:boat) expands to its items — plus any pinned passenger (a
-        goat in a boat for Whatever Floats Your Goat!) must be reached too."""
-        vehicle = self._predicate_value(cond.get("player"), "vehicle")
-        vtype = vehicle.get("type") if isinstance(vehicle, dict) else vehicle
-        veh_node = None
+        """Ride a vehicle. The simple form pins the vehicle directly on ``player[].vehicle``; the
+        nested form (Boatception's ``any_of`` over per-structure boats) hides it inside a condition
+        group, which the location-predicate machinery (``_player_node``) already unwraps."""
+        player = cond.get("player")
+        vehicle = self._predicate_value(player, "vehicle")
+        if isinstance(vehicle, dict):
+            return self._vehicle_node(vehicle)
+        return self._player_node(player)
+
+    def _vehicle_node(self, vehicle: dict) -> Rule | None:
+        """Be in/on a ``vehicle`` predicate: the mount (a mob reached, or a placeable boat/minecart
+        acquired — a ``#tag`` expands to its members), any worn ``equipment`` (Llama Festival's
+        carpet), the structure it pins (Boatception's shipwreck), and any pinned ``passenger`` (a goat
+        in a boat) reached too."""
+        parts = []
+        vtype = vehicle.get("type")
         if isinstance(vtype, str):
-            if vtype.startswith("#"):
-                veh_node = self._any_acquire(vtype)  # tag → *_boat / *_raft items
-            else:
-                veh_node = self._entity_gid(vtype) or self.h.acquire(vtype)
-        passenger = vehicle.get("passenger") if isinstance(vehicle, dict) else None
+            members = (self._entity_tags.get(self._ns(vtype[1:]), [])
+                       if vtype.startswith("#") else [vtype])
+            opts = [n for n in (self._entity_gid(m) or self.h.acquire(m) for m in members)
+                    if n is not None]
+            if opts:
+                parts.append(or_(*opts))
+        parts += self._equipment_nodes(vehicle.get("equipment"))
+        loc = vehicle.get("location")
+        if isinstance(loc, dict):
+            node = self._loc_value_node(loc)
+            if node is not None:
+                parts.append(node)
+        passenger = vehicle.get("passenger")
         ptype = passenger.get("type") if isinstance(passenger, dict) else None
         pass_node = self._entity_gid(ptype) if isinstance(ptype, str) else None
-        parts = [n for n in (veh_node, pass_node) if n is not None]
+        if pass_node is not None:
+            parts.append(pass_node)
         return self._all_req(*parts) if parts else None
 
     def _effects_node(self, cond: dict) -> Rule:
-        """Gain a status effect. Most effects come from a brewed potion, so gate on brewing
-        capability; a few environmental ones map to their source."""
-        effects = cond.get("effects")
+        """``effects_changed``: gain a status effect (the effects sit on the criterion's ``effects``)."""
+        return self._effect_node(cond.get("effects"))
+
+    def _effect_node(self, effects) -> Rule:
+        """Having a status effect (an ``effects`` map). Most effects come from a brewed potion, so gate
+        on brewing capability; a few environmental ones map to their source."""
         names = list(effects) if isinstance(effects, dict) else []
         parts = []
         for effect in names:
@@ -972,19 +1217,33 @@ class TriggerCompiler:
         mob = self._entity_name(content)
         return and_(bucket, self.h.entity(mob)) if mob in MOBS_ALL else bucket
 
+    # Loot tables whose name isn't a structure id: a chest that belongs to a feature the registry
+    # names differently (a dungeon's monster_room, an underwater ruin's ocean_ruin).
+    _LOOT_TABLE_STRUCT = {
+        "simple_dungeon": "minecraft:monster_room",
+        "abandoned_mineshaft": "minecraft:mineshaft",
+        "woodland_mansion": "minecraft:mansion",
+        "underwater_ruin_big": "minecraft:ocean_ruin_warm",
+        "underwater_ruin_small": "minecraft:ocean_ruin_warm",
+    }
+
     def _container_loot_node(self, cond: dict) -> Rule | None:
-        """``player_generates_container_loot``: reach the structure whose loot table this is. The
-        table name may be a variant (``bastion_bridge``), so fall back to matching a structure that
-        shares its leading segment (``bastion`` → Bastion Remnant)."""
+        """``player_generates_container_loot``: reach the structure whose loot table this is. The table
+        path (``chests/trial_chambers/corridor``) may name the structure in any segment, via an alias
+        (``simple_dungeon`` → Dungeon), or as a variant — so scan each segment most-specific-first
+        against the alias map and the registry, then fall back to a shared leading segment
+        (``bastion_bridge`` → Bastion Remnant)."""
         table = cond.get("loot_table")
         if not isinstance(table, str):
             return None
-        tail = table.split("/")[-1]
-        name = self._struct_name(tail)
-        if name is None:
-            head = tail.split("_")[0]
-            name = next((n for path, n in self._struct_by_path.items()
-                         if path.split("_")[0] == head), None)
+        segments = table.split(":")[-1].split("/")
+        for seg in reversed(segments):  # 'corridor' before 'trial_chambers' before 'chests'
+            name = self._struct_name(self._LOOT_TABLE_STRUCT.get(seg, seg))
+            if name:
+                return self.h.structure(name)
+        head = segments[-1].split("_")[0]
+        name = next((n for path, n in self._struct_by_path.items()
+                     if path.split("_")[0] == head), None)
         return self.h.structure(name) if name else None
 
     @staticmethod

@@ -142,7 +142,8 @@ def load_manifest_advancements(pack_name: str, id_base: int, region: str = "Over
                                reserved: frozenset = frozenset(),
                                skip_game_ids: frozenset = frozenset(),
                                skip_tabs: frozenset = frozenset(),
-                               challenge_tabs: frozenset = frozenset()
+                               challenge_tabs: frozenset = frozenset(),
+                               skip_frame_tabs: dict | None = None
                                ) -> dict[str, MCLocationData]:
     """Advancement locations for a manifest-only pack (a mod / datapack with no CSVs, e.g. BACAP).
 
@@ -157,6 +158,11 @@ def load_manifest_advancements(pack_name: str, id_base: int, region: str = "Over
     "Super Challenges" tab. ``challenge_tabs`` additionally flags whole tabs as challenge (kept for
     any challenge-tab advancement whose frame isn't literally ``challenge``).
 
+    ``skip_frame_tabs`` maps a tab to the frames within it that aren't real checks — used for BACAP's
+    overview ``bacap`` tab, whose ``goal`` (per-tab Milestones) and ``challenge`` (Advancement Legend)
+    entries are aggregate markers earned by completing other advancements, not player-earnable on
+    their own, while the same tab's ``task`` entries (Getting Wood, Time to Mine, …) stay real checks.
+
     The advancement *id* is the location's game_id (what the mod reports); the location name is the
     coherent ``Advancement: <title>`` (the datapack's literal display title), falling back to the
     unique ``Advancement: <namespace>/<path>`` when a title is missing or would collide with a
@@ -165,6 +171,7 @@ def load_manifest_advancements(pack_name: str, id_base: int, region: str = "Over
     from ``id_base`` (the kept ids in sorted order, so the mapping is deterministic across runs)."""
     with _pack_dir(pack_name).joinpath("manifest.json").open(encoding="utf-8") as handle:
         manifest = json.load(handle)
+    skip_frame_tabs = skip_frame_tabs or {}
     used = set(reserved)
     locations: dict[str, MCLocationData] = {}
     for advancement_id in sorted(manifest):
@@ -172,7 +179,8 @@ def load_manifest_advancements(pack_name: str, id_base: int, region: str = "Over
             continue
         entry = manifest[advancement_id]
         tab = entry.get("tab")
-        if tab in skip_tabs:
+        frame = entry.get("frame")
+        if tab in skip_tabs or frame in skip_frame_tabs.get(tab, ()):
             continue
         title = entry.get("title")
         location_name = f"{ADVANCEMENT_PREFIX}{title}" if title else None
@@ -184,7 +192,7 @@ def load_manifest_advancements(pack_name: str, id_base: int, region: str = "Over
             category=MCLocationCategory.ADVANCEMENT,
             region=region,
             game_id=advancement_id,
-            challenge=entry.get("frame") == "challenge" or tab in challenge_tabs,
+            challenge=frame == "challenge" or tab in challenge_tabs,
         )
     return locations
 

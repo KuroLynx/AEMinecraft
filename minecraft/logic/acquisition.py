@@ -963,7 +963,21 @@ class RuleHelper:
     # AP Items
     # -----------------------------------------------------------------------
     def material(self, tier: int):
-        return Has(self.player, ITEM_MATERIAL_HANDLING, tier)
+        node = Has(self.player, ITEM_MATERIAL_HANDLING, tier)
+        # A material tier carries the dimension its ore lives in, so a requirement gates on reaching
+        # that dimension — not just the item count (single source of truth: every caller, curated or
+        # compiled, inherits the floor). Copper/iron/diamond are Overworld-only ores; netherite is the
+        # Nether (ancient debris). Stone and gold exist in BOTH the Overworld and the Nether
+        # (cobblestone/blackstone, overworld/nether gold ore), so they gate on either. Wood tier is
+        # ``has(..., 0)`` (trivially true), so it needs no floor.
+        if tier >= MAT_NETHERITE:
+            return self.all_of(node, self.access_region(REGION_NETHER))
+        if tier in (MAT_COPPER, MAT_IRON, MAT_DIAMOND):
+            return self.all_of(node, self.access_region(REGION_OVERWORLD))
+        if tier in (MAT_STONE, MAT_GOLD):
+            return self.all_of(node, self.any_of(self.access_region(REGION_OVERWORLD),
+                                                 self.access_region(REGION_NETHER)))
+        return node
 
     def knowledge(self, item: str):
         return Has(self.player, f"Knowledge: {item}")

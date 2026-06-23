@@ -1,13 +1,15 @@
-"""Build a content pack's tag table (item + entity-type tags) from a Minecraft jar / datapack.
+"""Build a content pack's tag table (item + entity-type + block tags) from a Minecraft jar / datapack.
 
 Advancement criteria reference tags, not just concrete ids — ``#minecraft:stone_tool_materials`` in
-an ``inventory_changed``, ``#minecraft:raiders`` as a killed-entity type. The trigger compiler
-expands those into an OR over the tag's members, so it needs each tag flattened to its concrete ids.
-This reads ``data/<ns>/tags/{item,entity_type}/**.json`` (following nested ``#tag`` references) and
-writes ``packs/<pack>/tags.json``::
+an ``inventory_changed``, ``#minecraft:raiders`` as a killed-entity type, ``#minecraft:ice`` as the
+block stepped on (Smooth Operator). The trigger compiler expands those into an OR over the tag's
+members, so it needs each tag flattened to its concrete ids. This reads
+``data/<ns>/tags/{item,entity_type,block}/**.json`` (following nested ``#tag`` references) and writes
+``packs/<pack>/tags.json``::
 
     { "item":        { "<ns>:<tag>": ["<ns>:<id>", ...], ... },
-      "entity_type": { "<ns>:<tag>": ["<ns>:<id>", ...], ... } }
+      "entity_type": { "<ns>:<tag>": ["<ns>:<id>", ...], ... },
+      "block":       { "<ns>:<tag>": ["<ns>:<id>", ...], ... } }
 
 Usage:
     python tools/build_tags.py                  # vanilla -> packs/vanilla_26_1/tags.json
@@ -21,8 +23,9 @@ import zipfile
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # data/<ns>/tags/<registry>/<rel>.json — `items` is the legacy spelling of the `item` registry.
-_TAG_RE = re.compile(r"^data/([^/]+)/tags/(item|items|entity_type)/(.+)\.json$")
-_REGISTRY = {"item": "item", "items": "item", "entity_type": "entity_type"}
+_TAG_RE = re.compile(r"^data/([^/]+)/tags/(item|items|entity_type|block|blocks)/(.+)\.json$")
+_REGISTRY = {"item": "item", "items": "item", "entity_type": "entity_type",
+             "block": "block", "blocks": "block"}
 
 
 def _default_jar() -> str:
@@ -54,7 +57,7 @@ def _entries(source: str):
 
 def _load_raw(source: str) -> dict[str, dict[str, list]]:
     """registry -> {tag_id: raw values (ids and #nested-tag refs)}."""
-    raw: dict[str, dict[str, list]] = {"item": {}, "entity_type": {}}
+    raw: dict[str, dict[str, list]] = {"item": {}, "entity_type": {}, "block": {}}
     for name, data in _entries(source):
         match = _TAG_RE.match(name)
         if not match:
@@ -108,7 +111,8 @@ def main() -> int:
         handle.write("\n")
     print(f"wrote {sum(len(v) for v in table.values())} tags to {out}")
     print("  item:", len(table.get("item", {})),
-          "| entity_type:", len(table.get("entity_type", {})))
+          "| entity_type:", len(table.get("entity_type", {})),
+          "| block:", len(table.get("block", {})))
     return 0
 
 
