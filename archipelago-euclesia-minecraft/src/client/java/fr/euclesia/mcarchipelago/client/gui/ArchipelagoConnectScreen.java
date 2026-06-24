@@ -45,8 +45,14 @@ public final class ArchipelagoConnectScreen extends Screen {
                     .build());
         }
 
+        // Dump the data-driven content-pack files (works with no session — even from the title menu).
+        addRenderableWidget(Button.builder(Component.translatable("gui.aem.dump.open"),
+                        button -> minecraft.setScreen(new DumpScreen(this)))
+                .bounds(left, buttonsTop + ROW * 2, PANEL_WIDTH, BUTTON_HEIGHT)
+                .build());
+
         addRenderableWidget(Button.builder(Component.translatable("gui.aem.connect.back"), button -> onClose())
-                .bounds(left, buttonsTop + ROW * 2 + 8, PANEL_WIDTH, BUTTON_HEIGHT)
+                .bounds(left, buttonsTop + ROW * 3 + 8, PANEL_WIDTH, BUTTON_HEIGHT)
                 .build());
     }
 

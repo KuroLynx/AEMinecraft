@@ -5,7 +5,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.minecraft.resources.Identifier;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 
@@ -72,9 +71,8 @@ final class AcquisitionDump {
     private final Map<String, TreeSet<String>> gameplay = new TreeMap<>();
     private final Map<String, JsonArray> itemTags = new TreeMap<>();  // bare path -> raw values
 
-    static JsonObject build(MinecraftServer server) {
+    static JsonObject build(ResourceManager rm) {
         AcquisitionDump dump = new AcquisitionDump();
-        ResourceManager rm = server.getResourceManager();
         // Tags first so recipe ingredient expansion can resolve them, then recipes / loot / trades.
         dump.forEachJson(rm, "tags/item", dump::onItemTag);
         dump.forEachJson(rm, "tags/items", dump::onItemTag);

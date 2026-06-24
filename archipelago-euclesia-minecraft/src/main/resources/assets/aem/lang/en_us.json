@@ -16,6 +16,13 @@
   "gui.aem.options.resync": "Resync",
   "gui.aem.options.disconnected": "Not connected. Connect from the world creation screen.",
 
+  "gui.aem.dump.open": "Dump Content Pack",
+  "gui.aem.dump.title": "Dump Content Pack",
+  "gui.aem.dump.dir": "Writes to .minecraft/aem/",
+  "gui.aem.dump.run": "Dump",
+  "gui.aem.dump.running": "Dumping…",
+  "gui.aem.dump.none": "Select at least one file to dump.",
+
   "gui.aem.toggle.on": "ON",
   "gui.aem.toggle.off": "OFF",
 
