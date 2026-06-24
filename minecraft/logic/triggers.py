@@ -46,7 +46,6 @@ from .constants import (
 # is the meaningful gate, so the advancement inherits its acquisition logic.
 _IMPLIED_ITEM = {
     "minecraft:target_hit": "minecraft:target",
-    "minecraft:brewed_potion": "minecraft:brewing_stand",
     "minecraft:enchanted_item": "minecraft:enchanting_table",
     "minecraft:fishing_rod_hooked": "minecraft:fishing_rod",
 }
@@ -387,6 +386,10 @@ class TriggerCompiler:
                                  self.h.acquire("minecraft:tnt"))
         if trigger == "minecraft:fall_from_height":
             return self.h.access_region(REGION_OVERWORLD)  # mountains / high builds
+        if trigger == "minecraft:brewed_potion":
+            # Brewing anything (Local Brewery) needs the full capability — a water bottle in
+            # particular (glass + water = Overworld) — not just the stand (blackstone + blaze rod).
+            return self._can_brew()
         if trigger == "minecraft:effects_changed":
             return self._effects_node(cond)
         if trigger == "minecraft:used_ender_eye":
@@ -961,11 +964,18 @@ class TriggerCompiler:
         reagents = _brewing().get(potion_type)
         if reagents is None:
             return None
-        parts = [self.h.acquire("minecraft:brewing_stand"), self.h.knowledge(K_BREWING),
-                 self.h.acquire("minecraft:glass_bottle")]
+        parts = [self._can_brew()]
         parts += [self.h.acquire(f"minecraft:{reagent}") for reagent in reagents]
         parts = [node for node in parts if node is not None]
         return and_(*parts) if parts else None
+
+    def _can_brew(self) -> Rule | None:
+        """Capability to brew a potion: a brewing stand, Knowledge: Brewing, and a water bottle — a
+        glass bottle (glass = sand) filled with water. Both sand and water are Overworld-only, so
+        brewing gates on the Overworld even though the stand itself is buildable from Nether
+        blackstone + a blaze rod."""
+        return self.h.all_of(self.h.acquire("minecraft:brewing_stand"), self.h.knowledge(K_BREWING),
+                             self.h.acquire("minecraft:glass_bottle"))
 
     @staticmethod
     def _component(pred: dict, key: str):
@@ -1249,8 +1259,27 @@ class TriggerCompiler:
         return self._all_req(*parts) if parts else None
 
     def _effects_node(self, cond: dict) -> Rule:
-        """``effects_changed``: gain a status effect (the effects sit on the criterion's ``effects``)."""
+        """``effects_changed``: gain a status effect. Usually from a brewed potion (gate on the
+        effects), but a ``source`` entity predicate means the effect is granted BY that mob — e.g.
+        The Healing Power of Friendship's regeneration comes from an axolotl's kill — so it gates on
+        reaching that mob (an axolotl is Overworld-only) instead of the brewing chain."""
+        source = self._source_entity(cond.get("source"))
+        if source is not None:
+            return source
         return self._effect_node(cond.get("effects"))
+
+    def _source_entity(self, source) -> Rule | None:
+        """The mob an ``effects_changed`` ``source`` predicate names, as a reach-it gate (``None`` if
+        it names no resolvable entity type)."""
+        for term in (source if isinstance(source, list) else [source]):
+            if not isinstance(term, dict):
+                continue
+            predicate = term.get("predicate")
+            etype = predicate.get("type") if isinstance(predicate, dict) else None
+            node = self._entity_gid(etype) if isinstance(etype, str) else None
+            if node is not None:
+                return node
+        return None
 
     def _effect_node(self, effects) -> Rule:
         """Having a status effect (an ``effects`` map). Most effects come from a brewed potion, so gate

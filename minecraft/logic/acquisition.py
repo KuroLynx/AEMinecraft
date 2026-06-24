@@ -1045,6 +1045,13 @@ class RuleHelper:
         if base in ("ochre_froglight", "pearlescent_froglight", "verdant_froglight"):
             return self.all_of(self.entity(E_FROG), self.entity(E_MAGMA_CUBE))
 
+        # An elytra exists only in an End City ship — placed in an item frame, not a loot table the
+        # indexer reads — so it has no acquisition record and would fall back to its bare material
+        # tier (MAT_WOOD, trivially true), dropping the End requirement entirely. Gate it explicitly
+        # on the End City (region The End + any structure lock) plus Knowledge: Flying.
+        if base == "elytra":
+            return self.all_of(self.knowledge(K_FLYING), self.structure(S_END_CITY))
+
         # Materials collapse to their compact tier gate rather than expanding every recipe/chest
         # path — keeps the serialized tree small (iron/diamond/… otherwise recurse enormously).
         if base in _MATERIAL_TIER_BY_ITEM or base in (
