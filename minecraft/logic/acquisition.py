@@ -1052,13 +1052,6 @@ class RuleHelper:
         if base == "elytra":
             return self.all_of(self.knowledge(K_FLYING), self.structure(S_END_CITY))
 
-        # Materials collapse to their compact tier gate rather than expanding every recipe/chest
-        # path — keeps the serialized tree small (iron/diamond/… otherwise recurse enormously).
-        if base in _MATERIAL_TIER_BY_ITEM or base in (
-                "diamond", "diamond_block", "netherite_ingot", "netherite_block",
-                "netherite_scrap", "ancient_debris"):
-            return self._acquire_fallback(base)
-
         # Tools / armor / gated craftables (bow, fishing rod, shears, …) need their Knowledge to be
         # USED however they were obtained — but they are still obtained via their real sources, each
         # carrying its own region. So gate on the Knowledge AND the obtainability (recipe ingredients,

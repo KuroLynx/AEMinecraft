@@ -1301,16 +1301,25 @@ class TriggerCompiler:
         predicate) AND the target block. Dropping the block let Not Quite Nine Lives pass on the
         glowstone alone without the respawn anchor (crying obsidian → Nether), and Country Lode on
         the compass without the lodestone (netherite → Nether). An unresolvable half is omitted."""
+        location = cond.get("location")
+        locs = location if isinstance(location, list) else [location]
         item = self._item_predicate(cond.get("item")) if "item" in cond else None
         if item is None:
-            location = cond.get("location")
-            for sub in (location if isinstance(location, list) else [location]):
+            for sub in locs:
                 if isinstance(sub, dict) and sub.get("condition") == "minecraft:match_tool":
                     item = self._any_acquire((sub.get("predicate") or {}).get("items"))
                     break
         blocks = self._blocks_in(cond)
         block = self._block_region_node(blocks) or self._any_acquire(blocks)
         parts = [n for n in (item, block) if n is not None]
+        # A location_check can also pin the biome / dimension the block must be used IN — e.g. Sound
+        # of Music needs the jukebox played in a meadow (Overworld). Gate on it so a Nether-craftable
+        # jukebox alone doesn't satisfy the criterion anywhere.
+        for sub in locs:
+            if isinstance(sub, dict) and str(sub.get("condition", "")).endswith("location_check"):
+                node = self._loc_value_node(sub.get("predicate") or {})
+                if node is not None:
+                    parts.append(node)
         return and_(*parts) if parts else None
 
     def _any_mob(self, mobs, build) -> Rule | None:
