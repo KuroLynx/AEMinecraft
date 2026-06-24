@@ -118,6 +118,24 @@ def _block_mining() -> dict:
     return _BLOCK_MINING
 
 
+_BLOCK_STRUCTURES: dict | None = None
+
+
+def _block_structures() -> dict:
+    """Reverse of each structure's natural-generation palette (structures.json -> STRUCTURES): block
+    id -> the structures it generates in. Lets acquire() treat 'mine this block where it spawns in a
+    structure' as a source for a placed-only block (e.g. a comparator in an Ancient City) that
+    recipes/loot tables miss."""
+    global _BLOCK_STRUCTURES
+    if _BLOCK_STRUCTURES is None:
+        mapping: dict[str, list] = {}
+        for struct_name, data in STRUCTURES.items():
+            for block in data.blocks:
+                mapping.setdefault(block, []).append(struct_name)
+        _BLOCK_STRUCTURES = mapping
+    return _BLOCK_STRUCTURES
+
+
 def _block_region(block: str) -> str:
     if any(hint in block for hint in _END_BLOCK_HINTS):
         return REGION_END
@@ -1089,14 +1107,13 @@ class RuleHelper:
                            or base.endswith(("_head", "_skull", "_froglight")))
             if block == base and placed_only and base not in _NATURAL_SELF_MINED:
                 # The self-mine is circular (placed-only), but the block may still generate naturally
-                # inside a structure's template — reaching that structure and mining it there is a
-                # genuine source recipes/loot don't capture (e.g. a comparator in an Ancient City, an
-                # Overworld path its quartz recipe otherwise hides behind the Nether). Substitute
-                # those structures for the dropped self-mine; redundant ones (a block whose recipe is
-                # already reachable in the structure's dimension) collapse in _unique_or / _coarsen.
-                for struct_name in record.get("natural_structures", ()):
-                    if struct_name in STRUCTURES:
-                        options.append(self.structure(struct_name))
+                # inside a structure's template (structures.json palette) — reaching that structure
+                # and mining it there is a genuine source recipes/loot don't capture (e.g. a
+                # comparator in an Ancient City, an Overworld path its quartz recipe otherwise hides
+                # behind the Nether). Redundant ones (a block whose recipe is already reachable in the
+                # structure's dimension) collapse in _unique_or / _coarsen.
+                for struct_name in _block_structures().get(base, ()):
+                    options.append(self.structure(struct_name))
                 continue
             options.append(self._mining_node(block, base))
         for block in record.get("silk_mining", ()):

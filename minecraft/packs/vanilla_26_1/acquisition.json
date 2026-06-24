@@ -45,9 +45,6 @@
     "mining": [
       "acacia_door"
     ],
-    "natural_structures": [
-      "Village (Savanna)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -62,9 +59,6 @@
   "acacia_fence": {
     "mining": [
       "acacia_fence"
-    ],
-    "natural_structures": [
-      "Village (Savanna)"
     ],
     "recipes": [
       {
@@ -83,9 +77,6 @@
   "acacia_fence_gate": {
     "mining": [
       "acacia_fence_gate"
-    ],
-    "natural_structures": [
-      "Village (Savanna)"
     ],
     "recipes": [
       {
@@ -128,9 +119,6 @@
     "mining": [
       "acacia_log"
     ],
-    "natural_structures": [
-      "Village (Savanna)"
-    ],
     "trades": [
       [
         "wandering_trader",
@@ -141,9 +129,6 @@
   "acacia_planks": {
     "mining": [
       "acacia_planks"
-    ],
-    "natural_structures": [
-      "Village (Savanna)"
     ],
     "recipes": [
       {
@@ -176,9 +161,6 @@
     "mining": [
       "acacia_pressure_plate"
     ],
-    "natural_structures": [
-      "Village (Savanna)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -195,9 +177,6 @@
       "acacia_leaves",
       "acacia_sapling",
       "potted_acacia_sapling"
-    ],
-    "natural_structures": [
-      "Village (Savanna)"
     ],
     "structures": [
       "Village (Savanna)"
@@ -246,9 +225,6 @@
     "mining": [
       "acacia_slab"
     ],
-    "natural_structures": [
-      "Village (Savanna)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -263,9 +239,6 @@
   "acacia_stairs": {
     "mining": [
       "acacia_stairs"
-    ],
-    "natural_structures": [
-      "Village (Savanna)"
     ],
     "recipes": [
       {
@@ -296,9 +269,6 @@
   "acacia_wood": {
     "mining": [
       "acacia_wood"
-    ],
-    "natural_structures": [
-      "Village (Savanna)"
     ],
     "recipes": [
       {
@@ -972,14 +942,6 @@
     "mining": [
       "barrel"
     ],
-    "natural_structures": [
-      "Trial Chambers",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -1078,9 +1040,6 @@
   "basalt": {
     "mining": [
       "basalt"
-    ],
-    "natural_structures": [
-      "Bastion Remnant"
     ]
   },
   "beacon": {
@@ -1230,13 +1189,6 @@
     "mining": [
       "bell"
     ],
-    "natural_structures": [
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
-    ],
     "structures": [
       "Ruined Portal"
     ],
@@ -1318,11 +1270,6 @@
     "mining": [
       "birch_fence"
     ],
-    "natural_structures": [
-      "Mansion",
-      "Shipwreck",
-      "Shipwreck (Beached)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -1392,12 +1339,6 @@
   "birch_planks": {
     "mining": [
       "birch_planks"
-    ],
-    "natural_structures": [
-      "Mansion",
-      "Pillager Outpost",
-      "Shipwreck",
-      "Shipwreck (Beached)"
     ],
     "recipes": [
       {
@@ -1488,11 +1429,6 @@
     "mining": [
       "birch_slab"
     ],
-    "natural_structures": [
-      "Mansion",
-      "Shipwreck",
-      "Shipwreck (Beached)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -1507,11 +1443,6 @@
   "birch_stairs": {
     "mining": [
       "birch_stairs"
-    ],
-    "natural_structures": [
-      "Mansion",
-      "Shipwreck",
-      "Shipwreck (Beached)"
     ],
     "recipes": [
       {
@@ -1585,9 +1516,6 @@
   "black_bed": {
     "mining": [
       "black_bed"
-    ],
-    "natural_structures": [
-      "Trial Chambers"
     ],
     "recipes": [
       {
@@ -1793,9 +1721,6 @@
     "mining": [
       "black_carpet"
     ],
-    "natural_structures": [
-      "Mansion"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -1925,9 +1850,6 @@
   "black_glazed_terracotta": {
     "mining": [
       "black_glazed_terracotta"
-    ],
-    "natural_structures": [
-      "Trail Ruins"
     ],
     "recipes": [
       {
@@ -2169,9 +2091,6 @@
     "mining": [
       "black_wool"
     ],
-    "natural_structures": [
-      "Mansion"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -2251,17 +2170,11 @@
     ],
     "mining": [
       "blackstone"
-    ],
-    "natural_structures": [
-      "Bastion Remnant"
     ]
   },
   "blackstone_slab": {
     "mining": [
       "blackstone_slab"
-    ],
-    "natural_structures": [
-      "Bastion Remnant"
     ],
     "recipes": [
       {
@@ -2286,9 +2199,6 @@
     "mining": [
       "blackstone_stairs"
     ],
-    "natural_structures": [
-      "Bastion Remnant"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -2311,9 +2221,6 @@
   "blackstone_wall": {
     "mining": [
       "blackstone_wall"
-    ],
-    "natural_structures": [
-      "Bastion Remnant"
     ],
     "recipes": [
       {
@@ -2342,14 +2249,6 @@
   "blast_furnace": {
     "mining": [
       "blast_furnace"
-    ],
-    "natural_structures": [
-      "Trail Ruins",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
     ],
     "recipes": [
       {
@@ -2416,11 +2315,6 @@
   "blue_bed": {
     "mining": [
       "blue_bed"
-    ],
-    "natural_structures": [
-      "Trial Chambers",
-      "Village (Snowy)",
-      "Village (Taiga)"
     ],
     "recipes": [
       {
@@ -2625,11 +2519,6 @@
   "blue_carpet": {
     "mining": [
       "blue_carpet"
-    ],
-    "natural_structures": [
-      "Ancient City",
-      "Mansion",
-      "Village (Snowy)"
     ],
     "recipes": [
       {
@@ -3021,9 +2910,6 @@
     "mining": [
       "blue_terracotta"
     ],
-    "natural_structures": [
-      "Trail Ruins"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -3053,10 +2939,6 @@
     ],
     "mining": [
       "blue_wool"
-    ],
-    "natural_structures": [
-      "Ancient City",
-      "Mansion"
     ],
     "recipes": [
       {
@@ -3176,9 +3058,6 @@
     "mining": [
       "bone_block"
     ],
-    "natural_structures": [
-      "Trial Chambers"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -3268,14 +3147,6 @@
   "bookshelf": {
     "mining": [
       "bookshelf"
-    ],
-    "natural_structures": [
-      "Mansion",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
     ],
     "recipes": [
       {
@@ -3504,15 +3375,6 @@
     "mining": [
       "brewing_stand"
     ],
-    "natural_structures": [
-      "End City",
-      "Igloo",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -3563,9 +3425,6 @@
     "mining": [
       "brick_slab"
     ],
-    "natural_structures": [
-      "Trail Ruins"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -3588,9 +3447,6 @@
   "brick_stairs": {
     "mining": [
       "brick_stairs"
-    ],
-    "natural_structures": [
-      "Trail Ruins"
     ],
     "recipes": [
       {
@@ -3615,9 +3471,6 @@
     "mining": [
       "brick_wall"
     ],
-    "natural_structures": [
-      "Trail Ruins"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -3640,12 +3493,6 @@
   "bricks": {
     "mining": [
       "bricks"
-    ],
-    "natural_structures": [
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)",
-      "Trail Ruins",
-      "Village (Plains)"
     ],
     "recipes": [
       {
@@ -3689,9 +3536,6 @@
   "brown_bed": {
     "mining": [
       "brown_bed"
-    ],
-    "natural_structures": [
-      "Trial Chambers"
     ],
     "recipes": [
       {
@@ -3899,9 +3743,6 @@
   "brown_carpet": {
     "mining": [
       "brown_carpet"
-    ],
-    "natural_structures": [
-      "Mansion"
     ],
     "recipes": [
       {
@@ -4128,9 +3969,6 @@
       "brown_mushroom_block",
       "potted_brown_mushroom"
     ],
-    "natural_structures": [
-      "Mansion"
-    ],
     "trades": [
       [
         "wandering_trader",
@@ -4261,9 +4099,6 @@
     "mining": [
       "brown_terracotta"
     ],
-    "natural_structures": [
-      "Trail Ruins"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -4293,9 +4128,6 @@
     ],
     "mining": [
       "brown_wool"
-    ],
-    "natural_structures": [
-      "Mansion"
     ],
     "recipes": [
       {
@@ -4467,10 +4299,6 @@
       "cactus",
       "potted_cactus"
     ],
-    "natural_structures": [
-      "Trial Chambers",
-      "Village (Desert)"
-    ],
     "structures": [
       "Village (Desert)"
     ],
@@ -4555,11 +4383,6 @@
   "campfire": {
     "mining": [
       "campfire"
-    ],
-    "natural_structures": [
-      "Ancient City",
-      "Trail Ruins",
-      "Village (Taiga)"
     ],
     "recipes": [
       {
@@ -4729,10 +4552,6 @@
       "candle",
       "candle_cake"
     ],
-    "natural_structures": [
-      "Ancient City",
-      "Trial Chambers"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -4788,14 +4607,6 @@
     "mining": [
       "cartography_table"
     ],
-    "natural_structures": [
-      "Trail Ruins",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -4850,10 +4661,6 @@
   "carved_pumpkin": {
     "mining": [
       "carved_pumpkin"
-    ],
-    "natural_structures": [
-      "Mansion",
-      "Pillager Outpost"
     ]
   },
   "cauldron": {
@@ -4862,10 +4669,6 @@
       "lava_cauldron",
       "powder_snow_cauldron",
       "water_cauldron"
-    ],
-    "natural_structures": [
-      "Mansion",
-      "Trail Ruins"
     ],
     "recipes": [
       {
@@ -5421,23 +5224,6 @@
     "mining": [
       "chest"
     ],
-    "natural_structures": [
-      "Ancient City",
-      "Bastion Remnant",
-      "End City",
-      "Igloo",
-      "Mansion",
-      "Pillager Outpost",
-      "Ruined Portal",
-      "Shipwreck",
-      "Shipwreck (Beached)",
-      "Trial Chambers",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -5671,9 +5457,6 @@
     "mining": [
       "chiseled_deepslate"
     ],
-    "natural_structures": [
-      "Ancient City"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -5727,9 +5510,6 @@
   "chiseled_polished_blackstone": {
     "mining": [
       "chiseled_polished_blackstone"
-    ],
-    "natural_structures": [
-      "Bastion Remnant"
     ],
     "recipes": [
       {
@@ -5831,12 +5611,6 @@
     "mining": [
       "chiseled_sandstone"
     ],
-    "natural_structures": [
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)",
-      "Trial Chambers",
-      "Village (Desert)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -5859,12 +5633,6 @@
   "chiseled_stone_bricks": {
     "mining": [
       "chiseled_stone_bricks"
-    ],
-    "natural_structures": [
-      "Igloo",
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)",
-      "Ruined Portal"
     ],
     "recipes": [
       {
@@ -5906,9 +5674,6 @@
     "mining": [
       "chiseled_tuff"
     ],
-    "natural_structures": [
-      "Trial Chambers"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -5931,9 +5696,6 @@
   "chiseled_tuff_bricks": {
     "mining": [
       "chiseled_tuff_bricks"
-    ],
-    "natural_structures": [
-      "Trial Chambers"
     ],
     "recipes": [
       {
@@ -5989,12 +5751,6 @@
     ],
     "mining": [
       "clay"
-    ],
-    "natural_structures": [
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Taiga)"
     ],
     "recipes": [
       {
@@ -6125,9 +5881,6 @@
     "mining": [
       "coal_block"
     ],
-    "natural_structures": [
-      "Trail Ruins"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -6147,10 +5900,6 @@
   "coarse_dirt": {
     "mining": [
       "coarse_dirt"
-    ],
-    "natural_structures": [
-      "Mansion",
-      "Trail Ruins"
     ],
     "recipes": [
       {
@@ -6192,10 +5941,6 @@
       "cobbled_deepslate",
       "deepslate"
     ],
-    "natural_structures": [
-      "Ancient City",
-      "Trial Chambers"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -6210,9 +5955,6 @@
   "cobbled_deepslate_slab": {
     "mining": [
       "cobbled_deepslate_slab"
-    ],
-    "natural_structures": [
-      "Ancient City"
     ],
     "recipes": [
       {
@@ -6245,9 +5987,6 @@
     "mining": [
       "cobbled_deepslate_stairs"
     ],
-    "natural_structures": [
-      "Ancient City"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -6278,9 +6017,6 @@
   "cobbled_deepslate_wall": {
     "mining": [
       "cobbled_deepslate_wall"
-    ],
-    "natural_structures": [
-      "Ancient City"
     ],
     "recipes": [
       {
@@ -6314,19 +6050,6 @@
       "cobblestone",
       "stone"
     ],
-    "natural_structures": [
-      "Mansion",
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)",
-      "Pillager Outpost",
-      "Trail Ruins",
-      "Trial Chambers",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -6344,11 +6067,6 @@
   "cobblestone_slab": {
     "mining": [
       "cobblestone_slab"
-    ],
-    "natural_structures": [
-      "Mansion",
-      "Pillager Outpost",
-      "Village (Plains)"
     ],
     "recipes": [
       {
@@ -6381,12 +6099,6 @@
     "mining": [
       "cobblestone_stairs"
     ],
-    "natural_structures": [
-      "Mansion",
-      "Pillager Outpost",
-      "Village (Plains)",
-      "Village (Taiga)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -6418,14 +6130,6 @@
     "mining": [
       "cobblestone_wall"
     ],
-    "natural_structures": [
-      "Mansion",
-      "Pillager Outpost",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -6456,11 +6160,6 @@
   "cobweb": {
     "mining": [
       "cobweb"
-    ],
-    "natural_structures": [
-      "Igloo",
-      "Mansion",
-      "Trial Chambers"
     ]
   },
   "cocoa_beans": {
@@ -6507,9 +6206,6 @@
   "comparator": {
     "mining": [
       "comparator"
-    ],
-    "natural_structures": [
-      "Ancient City"
     ],
     "recipes": [
       {
@@ -6563,14 +6259,6 @@
   "composter": {
     "mining": [
       "composter"
-    ],
-    "natural_structures": [
-      "Trail Ruins",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
     ],
     "recipes": [
       {
@@ -6961,9 +6649,6 @@
   "copper_block": {
     "mining": [
       "copper_block"
-    ],
-    "natural_structures": [
-      "Trial Chambers"
     ],
     "recipes": [
       {
@@ -7516,9 +7201,6 @@
     "mining": [
       "cracked_deepslate_bricks"
     ],
-    "natural_structures": [
-      "Ancient City"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -7533,9 +7215,6 @@
   "cracked_deepslate_tiles": {
     "mining": [
       "cracked_deepslate_tiles"
-    ],
-    "natural_structures": [
-      "Ancient City"
     ],
     "recipes": [
       {
@@ -7567,9 +7246,6 @@
     "mining": [
       "cracked_polished_blackstone_bricks"
     ],
-    "natural_structures": [
-      "Bastion Remnant"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -7584,13 +7260,6 @@
   "cracked_stone_bricks": {
     "mining": [
       "cracked_stone_bricks"
-    ],
-    "natural_structures": [
-      "Igloo",
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)",
-      "Ruined Portal",
-      "Trail Ruins"
     ],
     "recipes": [
       {
@@ -7633,15 +7302,6 @@
   "crafting_table": {
     "mining": [
       "crafting_table"
-    ],
-    "natural_structures": [
-      "Igloo",
-      "Pillager Outpost",
-      "Trail Ruins",
-      "Trial Chambers",
-      "Village (Desert)",
-      "Village (Savanna)",
-      "Village (Taiga)"
     ],
     "recipes": [
       {
@@ -8181,11 +7841,6 @@
     "mining": [
       "cut_sandstone"
     ],
-    "natural_structures": [
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)",
-      "Village (Desert)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -8267,10 +7922,6 @@
   "cyan_bed": {
     "mining": [
       "cyan_bed"
-    ],
-    "natural_structures": [
-      "Trial Chambers",
-      "Village (Desert)"
     ],
     "recipes": [
       {
@@ -8476,10 +8127,6 @@
     "mining": [
       "cyan_carpet"
     ],
-    "natural_structures": [
-      "Ancient City",
-      "Mansion"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -8612,9 +8259,6 @@
   "cyan_glazed_terracotta": {
     "mining": [
       "cyan_glazed_terracotta"
-    ],
-    "natural_structures": [
-      "Trail Ruins"
     ],
     "recipes": [
       {
@@ -8826,9 +8470,6 @@
     "mining": [
       "cyan_terracotta"
     ],
-    "natural_structures": [
-      "Trail Ruins"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -8858,10 +8499,6 @@
     ],
     "mining": [
       "cyan_wool"
-    ],
-    "natural_structures": [
-      "Ancient City",
-      "Mansion"
     ],
     "recipes": [
       {
@@ -8932,10 +8569,6 @@
   "damaged_anvil": {
     "mining": [
       "damaged_anvil"
-    ],
-    "natural_structures": [
-      "Mansion",
-      "Trail Ruins"
     ]
   },
   "dandelion": {
@@ -8946,9 +8579,6 @@
     "mining": [
       "dandelion",
       "potted_dandelion"
-    ],
-    "natural_structures": [
-      "Village (Plains)"
     ],
     "structures": [
       "Village (Plains)"
@@ -9011,11 +8641,6 @@
     "mining": [
       "dark_oak_door"
     ],
-    "natural_structures": [
-      "Mansion",
-      "Shipwreck",
-      "Shipwreck (Beached)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -9030,13 +8655,6 @@
   "dark_oak_fence": {
     "mining": [
       "dark_oak_fence"
-    ],
-    "natural_structures": [
-      "Ancient City",
-      "Mansion",
-      "Pillager Outpost",
-      "Shipwreck",
-      "Shipwreck (Beached)"
     ],
     "recipes": [
       {
@@ -9055,9 +8673,6 @@
   "dark_oak_fence_gate": {
     "mining": [
       "dark_oak_fence_gate"
-    ],
-    "natural_structures": [
-      "Mansion"
     ],
     "recipes": [
       {
@@ -9094,21 +8709,11 @@
   "dark_oak_leaves": {
     "mining": [
       "dark_oak_leaves"
-    ],
-    "natural_structures": [
-      "Mansion"
     ]
   },
   "dark_oak_log": {
     "mining": [
       "dark_oak_log"
-    ],
-    "natural_structures": [
-      "Ancient City",
-      "Mansion",
-      "Pillager Outpost",
-      "Shipwreck",
-      "Shipwreck (Beached)"
     ],
     "structures": [
       "Pillager Outpost"
@@ -9123,15 +8728,6 @@
   "dark_oak_planks": {
     "mining": [
       "dark_oak_planks"
-    ],
-    "natural_structures": [
-      "Ancient City",
-      "Mansion",
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)",
-      "Pillager Outpost",
-      "Shipwreck",
-      "Shipwreck (Beached)"
     ],
     "recipes": [
       {
@@ -9178,9 +8774,6 @@
       "dark_oak_sapling",
       "potted_dark_oak_sapling"
     ],
-    "natural_structures": [
-      "Mansion"
-    ],
     "trades": [
       [
         "wandering_trader",
@@ -9225,11 +8818,6 @@
     "mining": [
       "dark_oak_slab"
     ],
-    "natural_structures": [
-      "Pillager Outpost",
-      "Shipwreck",
-      "Shipwreck (Beached)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -9245,12 +8833,6 @@
     "mining": [
       "dark_oak_stairs"
     ],
-    "natural_structures": [
-      "Mansion",
-      "Pillager Outpost",
-      "Shipwreck",
-      "Shipwreck (Beached)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -9265,10 +8847,6 @@
   "dark_oak_trapdoor": {
     "mining": [
       "dark_oak_trapdoor"
-    ],
-    "natural_structures": [
-      "Shipwreck",
-      "Shipwreck (Beached)"
     ],
     "recipes": [
       {
@@ -9455,10 +9033,6 @@
       "dead_bush",
       "potted_dead_bush"
     ],
-    "natural_structures": [
-      "Trial Chambers",
-      "Village (Desert)"
-    ],
     "structures": [
       "Trail Ruins",
       "Village (Desert)"
@@ -9516,9 +9090,6 @@
     "mining": [
       "decorated_pot"
     ],
-    "natural_structures": [
-      "Trial Chambers"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -9533,9 +9104,6 @@
   "deepslate": {
     "mining": [
       "deepslate"
-    ],
-    "natural_structures": [
-      "Ancient City"
     ],
     "recipes": [
       {
@@ -9554,9 +9122,6 @@
   "deepslate_brick_slab": {
     "mining": [
       "deepslate_brick_slab"
-    ],
-    "natural_structures": [
-      "Ancient City"
     ],
     "recipes": [
       {
@@ -9605,9 +9170,6 @@
     "mining": [
       "deepslate_brick_stairs"
     ],
-    "natural_structures": [
-      "Ancient City"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -9655,9 +9217,6 @@
     "mining": [
       "deepslate_brick_wall"
     ],
-    "natural_structures": [
-      "Ancient City"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -9704,9 +9263,6 @@
   "deepslate_bricks": {
     "mining": [
       "deepslate_bricks"
-    ],
-    "natural_structures": [
-      "Ancient City"
     ],
     "recipes": [
       {
@@ -9787,9 +9343,6 @@
     "mining": [
       "deepslate_tile_slab"
     ],
-    "natural_structures": [
-      "Ancient City"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -9844,9 +9397,6 @@
   "deepslate_tile_stairs": {
     "mining": [
       "deepslate_tile_stairs"
-    ],
-    "natural_structures": [
-      "Ancient City"
     ],
     "recipes": [
       {
@@ -9903,9 +9453,6 @@
     "mining": [
       "deepslate_tile_wall"
     ],
-    "natural_structures": [
-      "Ancient City"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -9960,9 +9507,6 @@
   "deepslate_tiles": {
     "mining": [
       "deepslate_tiles"
-    ],
-    "natural_structures": [
-      "Ancient City"
     ],
     "recipes": [
       {
@@ -10137,9 +9681,6 @@
     ],
     "mining": [
       "diamond_block"
-    ],
-    "natural_structures": [
-      "Mansion"
     ],
     "recipes": [
       {
@@ -10478,9 +10019,6 @@
     "mining": [
       "diorite"
     ],
-    "natural_structures": [
-      "Village (Snowy)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -10498,9 +10036,6 @@
   "diorite_slab": {
     "mining": [
       "diorite_slab"
-    ],
-    "natural_structures": [
-      "Village (Snowy)"
     ],
     "recipes": [
       {
@@ -10525,9 +10060,6 @@
     "mining": [
       "diorite_stairs"
     ],
-    "natural_structures": [
-      "Village (Snowy)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -10550,9 +10082,6 @@
   "diorite_wall": {
     "mining": [
       "diorite_wall"
-    ],
-    "natural_structures": [
-      "Village (Snowy)"
     ],
     "recipes": [
       {
@@ -10581,16 +10110,6 @@
       "grass_block",
       "mycelium",
       "podzol"
-    ],
-    "natural_structures": [
-      "Ancient City",
-      "Mansion",
-      "Trial Chambers",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
     ]
   },
   "disc_fragment_5": {
@@ -10601,9 +10120,6 @@
   "dispenser": {
     "mining": [
       "dispenser"
-    ],
-    "natural_structures": [
-      "Trial Chambers"
     ],
     "recipes": [
       {
@@ -11451,9 +10967,6 @@
     "mining": [
       "end_rod"
     ],
-    "natural_structures": [
-      "End City"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -11570,9 +11083,6 @@
     "mining": [
       "end_stone_bricks"
     ],
-    "natural_structures": [
-      "End City"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -11595,9 +11105,6 @@
   "ender_chest": {
     "mining": [
       "ender_chest"
-    ],
-    "natural_structures": [
-      "End City"
     ],
     "recipes": [
       {
@@ -12017,9 +11524,6 @@
       "large_fern",
       "potted_fern"
     ],
-    "natural_structures": [
-      "Village (Taiga)"
-    ],
     "structures": [
       "Village (Taiga)"
     ],
@@ -12184,13 +11688,6 @@
   "fletching_table": {
     "mining": [
       "fletching_table"
-    ],
-    "natural_structures": [
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
     ],
     "recipes": [
       {
@@ -12364,9 +11861,6 @@
       "potted_white_tulip",
       "potted_wither_rose"
     ],
-    "natural_structures": [
-      "Trial Chambers"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -12412,15 +11906,6 @@
   "furnace": {
     "mining": [
       "furnace"
-    ],
-    "natural_structures": [
-      "Ancient City",
-      "Igloo",
-      "Trail Ruins",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Snowy)",
-      "Village (Taiga)"
     ],
     "recipes": [
       {
@@ -12488,9 +11973,6 @@
   "gilded_blackstone": {
     "mining": [
       "gilded_blackstone"
-    ],
-    "natural_structures": [
-      "Bastion Remnant"
     ],
     "structures": [
       "Bastion Remnant"
@@ -12632,9 +12114,6 @@
     "mining": [
       "glowstone"
     ],
-    "natural_structures": [
-      "Bastion Remnant"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -12675,10 +12154,6 @@
   "gold_block": {
     "mining": [
       "gold_block"
-    ],
-    "natural_structures": [
-      "Bastion Remnant",
-      "Ruined Portal"
     ],
     "recipes": [
       {
@@ -13245,9 +12720,6 @@
     "mining": [
       "granite"
     ],
-    "natural_structures": [
-      "Village (Desert)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -13289,9 +12761,6 @@
     "mining": [
       "granite_stairs"
     ],
-    "natural_structures": [
-      "Village (Desert)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -13315,9 +12784,6 @@
     "mining": [
       "granite_wall"
     ],
-    "natural_structures": [
-      "Village (Desert)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -13340,14 +12806,6 @@
   "grass_block": {
     "mining": [
       "grass_block"
-    ],
-    "natural_structures": [
-      "Ancient City",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
     ]
   },
   "gravel": {
@@ -13356,12 +12814,6 @@
     ],
     "mining": [
       "gravel"
-    ],
-    "natural_structures": [
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)",
-      "Trail Ruins",
-      "Village (Taiga)"
     ]
   },
   "gray_banner": {
@@ -13395,9 +12847,6 @@
   "gray_bed": {
     "mining": [
       "gray_bed"
-    ],
-    "natural_structures": [
-      "Trial Chambers"
     ],
     "recipes": [
       {
@@ -13602,10 +13051,6 @@
   "gray_carpet": {
     "mining": [
       "gray_carpet"
-    ],
-    "natural_structures": [
-      "Ancient City",
-      "Mansion"
     ],
     "recipes": [
       {
@@ -13950,9 +13395,6 @@
     "mining": [
       "gray_terracotta"
     ],
-    "natural_structures": [
-      "Trail Ruins"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -13982,10 +13424,6 @@
     ],
     "mining": [
       "gray_wool"
-    ],
-    "natural_structures": [
-      "Ancient City",
-      "Mansion"
     ],
     "recipes": [
       {
@@ -14091,10 +13529,6 @@
   "green_bed": {
     "mining": [
       "green_bed"
-    ],
-    "natural_structures": [
-      "Trial Chambers",
-      "Village (Desert)"
     ],
     "recipes": [
       {
@@ -14302,11 +13736,6 @@
   "green_carpet": {
     "mining": [
       "green_carpet"
-    ],
-    "natural_structures": [
-      "Mansion",
-      "Village (Desert)",
-      "Village (Plains)"
     ],
     "recipes": [
       {
@@ -14673,9 +14102,6 @@
     "mining": [
       "green_wool"
     ],
-    "natural_structures": [
-      "Mansion"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -14745,14 +14171,6 @@
   "grindstone": {
     "mining": [
       "grindstone"
-    ],
-    "natural_structures": [
-      "Trail Ruins",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
     ],
     "recipes": [
       {
@@ -14854,11 +14272,6 @@
     ],
     "mining": [
       "hay_block"
-    ],
-    "natural_structures": [
-      "Pillager Outpost",
-      "Village (Desert)",
-      "Village (Plains)"
     ],
     "recipes": [
       {
@@ -14968,9 +14381,6 @@
   "hopper": {
     "mining": [
       "hopper"
-    ],
-    "natural_structures": [
-      "Trial Chambers"
     ],
     "recipes": [
       {
@@ -15102,16 +14512,6 @@
     "mining": [
       "iron_bars"
     ],
-    "natural_structures": [
-      "Igloo",
-      "Mansion",
-      "Ruined Portal",
-      "Trail Ruins",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -15196,10 +14596,6 @@
     "mining": [
       "iron_chain"
     ],
-    "natural_structures": [
-      "Bastion Remnant",
-      "Trial Chambers"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -15264,9 +14660,6 @@
   "iron_door": {
     "mining": [
       "iron_door"
-    ],
-    "natural_structures": [
-      "Mansion"
     ],
     "recipes": [
       {
@@ -15791,9 +15184,6 @@
     "mining": [
       "iron_trapdoor"
     ],
-    "natural_structures": [
-      "Ancient City"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -15915,9 +15305,6 @@
     "mining": [
       "jungle_button"
     ],
-    "natural_structures": [
-      "Village (Desert)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -15948,11 +15335,6 @@
     "mining": [
       "jungle_door"
     ],
-    "natural_structures": [
-      "Shipwreck",
-      "Shipwreck (Beached)",
-      "Village (Desert)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -15967,11 +15349,6 @@
   "jungle_fence": {
     "mining": [
       "jungle_fence"
-    ],
-    "natural_structures": [
-      "Shipwreck",
-      "Shipwreck (Beached)",
-      "Village (Desert)"
     ],
     "recipes": [
       {
@@ -15990,9 +15367,6 @@
   "jungle_fence_gate": {
     "mining": [
       "jungle_fence_gate"
-    ],
-    "natural_structures": [
-      "Village (Desert)"
     ],
     "recipes": [
       {
@@ -16035,10 +15409,6 @@
     "mining": [
       "jungle_log"
     ],
-    "natural_structures": [
-      "Shipwreck",
-      "Shipwreck (Beached)"
-    ],
     "trades": [
       [
         "wandering_trader",
@@ -16049,10 +15419,6 @@
   "jungle_planks": {
     "mining": [
       "jungle_planks"
-    ],
-    "natural_structures": [
-      "Shipwreck",
-      "Shipwreck (Beached)"
     ],
     "recipes": [
       {
@@ -16143,10 +15509,6 @@
     "mining": [
       "jungle_slab"
     ],
-    "natural_structures": [
-      "Shipwreck",
-      "Shipwreck (Beached)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -16162,10 +15524,6 @@
     "mining": [
       "jungle_stairs"
     ],
-    "natural_structures": [
-      "Shipwreck",
-      "Shipwreck (Beached)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -16180,11 +15538,6 @@
   "jungle_trapdoor": {
     "mining": [
       "jungle_trapdoor"
-    ],
-    "natural_structures": [
-      "Shipwreck",
-      "Shipwreck (Beached)",
-      "Village (Desert)"
     ],
     "recipes": [
       {
@@ -16228,17 +15581,6 @@
     "mining": [
       "ladder"
     ],
-    "natural_structures": [
-      "Ancient City",
-      "End City",
-      "Igloo",
-      "Mansion",
-      "Trail Ruins",
-      "Trial Chambers",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Taiga)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -16253,10 +15595,6 @@
   "lantern": {
     "mining": [
       "lantern"
-    ],
-    "natural_structures": [
-      "Bastion Remnant",
-      "Village (Snowy)"
     ],
     "recipes": [
       {
@@ -16281,9 +15619,6 @@
   "lapis_block": {
     "mining": [
       "lapis_block"
-    ],
-    "natural_structures": [
-      "Mansion"
     ],
     "recipes": [
       {
@@ -16623,14 +15958,6 @@
     "mining": [
       "lectern"
     ],
-    "natural_structures": [
-      "Ancient City",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -16686,10 +16013,6 @@
     "mining": [
       "lever"
     ],
-    "natural_structures": [
-      "Ancient City",
-      "Mansion"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -16735,9 +16058,6 @@
   "light_blue_bed": {
     "mining": [
       "light_blue_bed"
-    ],
-    "natural_structures": [
-      "Trial Chambers"
     ],
     "recipes": [
       {
@@ -16943,10 +16263,6 @@
     "mining": [
       "light_blue_carpet"
     ],
-    "natural_structures": [
-      "Ancient City",
-      "Mansion"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -17082,10 +16398,6 @@
   "light_blue_glazed_terracotta": {
     "mining": [
       "light_blue_glazed_terracotta"
-    ],
-    "natural_structures": [
-      "Trail Ruins",
-      "Village (Desert)"
     ],
     "recipes": [
       {
@@ -17300,10 +16612,6 @@
     "mining": [
       "light_blue_terracotta"
     ],
-    "natural_structures": [
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -17333,10 +16641,6 @@
     ],
     "mining": [
       "light_blue_wool"
-    ],
-    "natural_structures": [
-      "Ancient City",
-      "Mansion"
     ],
     "recipes": [
       {
@@ -17431,9 +16735,6 @@
   "light_gray_bed": {
     "mining": [
       "light_gray_bed"
-    ],
-    "natural_structures": [
-      "Trial Chambers"
     ],
     "recipes": [
       {
@@ -17639,10 +16940,6 @@
     "mining": [
       "light_gray_carpet"
     ],
-    "natural_structures": [
-      "Igloo",
-      "Mansion"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -17802,9 +17099,6 @@
   "light_gray_glazed_terracotta": {
     "mining": [
       "light_gray_glazed_terracotta"
-    ],
-    "natural_structures": [
-      "Trail Ruins"
     ],
     "recipes": [
       {
@@ -18016,9 +17310,6 @@
     "mining": [
       "light_gray_terracotta"
     ],
-    "natural_structures": [
-      "Trail Ruins"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -18048,10 +17339,6 @@
     ],
     "mining": [
       "light_gray_wool"
-    ],
-    "natural_structures": [
-      "Mansion",
-      "Village (Snowy)"
     ],
     "recipes": [
       {
@@ -18189,9 +17476,6 @@
     "mining": [
       "lily_pad"
     ],
-    "natural_structures": [
-      "Mansion"
-    ],
     "trades": [
       [
         "wandering_trader",
@@ -18230,10 +17514,6 @@
   "lime_bed": {
     "mining": [
       "lime_bed"
-    ],
-    "natural_structures": [
-      "Trial Chambers",
-      "Village (Desert)"
     ],
     "recipes": [
       {
@@ -18439,10 +17719,6 @@
     "mining": [
       "lime_carpet"
     ],
-    "natural_structures": [
-      "Mansion",
-      "Village (Desert)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -18575,9 +17851,6 @@
   "lime_glazed_terracotta": {
     "mining": [
       "lime_glazed_terracotta"
-    ],
-    "natural_structures": [
-      "Village (Desert)"
     ],
     "recipes": [
       {
@@ -18789,9 +18062,6 @@
     "mining": [
       "lime_terracotta"
     ],
-    "natural_structures": [
-      "Village (Desert)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -18821,9 +18091,6 @@
     ],
     "mining": [
       "lime_wool"
-    ],
-    "natural_structures": [
-      "Mansion"
     ],
     "recipes": [
       {
@@ -18922,14 +18189,6 @@
     "mining": [
       "loom"
     ],
-    "natural_structures": [
-      "Trail Ruins",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -19027,9 +18286,6 @@
   "magenta_bed": {
     "mining": [
       "magenta_bed"
-    ],
-    "natural_structures": [
-      "Trial Chambers"
     ],
     "recipes": [
       {
@@ -19234,9 +18490,6 @@
   "magenta_carpet": {
     "mining": [
       "magenta_carpet"
-    ],
-    "natural_structures": [
-      "Mansion"
     ],
     "recipes": [
       {
@@ -19720,13 +18973,6 @@
     "mining": [
       "magma_block"
     ],
-    "natural_structures": [
-      "Bastion Remnant",
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)",
-      "Ruined Portal",
-      "Trial Chambers"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -19873,17 +19119,11 @@
   "mangrove_leaves": {
     "mining": [
       "mangrove_leaves"
-    ],
-    "natural_structures": [
-      "Trial Chambers"
     ]
   },
   "mangrove_log": {
     "mining": [
       "mangrove_log"
-    ],
-    "natural_structures": [
-      "Trial Chambers"
     ],
     "trades": [
       [
@@ -19953,9 +19193,6 @@
   "mangrove_roots": {
     "mining": [
       "mangrove_roots"
-    ],
-    "natural_structures": [
-      "Trial Chambers"
     ]
   },
   "mangrove_shelf": {
@@ -20039,9 +19276,6 @@
   "mangrove_wood": {
     "mining": [
       "mangrove_wood"
-    ],
-    "natural_structures": [
-      "Trial Chambers"
     ],
     "recipes": [
       {
@@ -20143,10 +19377,6 @@
     "mining": [
       "melon"
     ],
-    "natural_structures": [
-      "Mansion",
-      "Village (Savanna)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -20235,9 +19465,6 @@
     "mining": [
       "moss_block"
     ],
-    "natural_structures": [
-      "Trial Chambers"
-    ],
     "structures": [
       "Shipwreck",
       "Trial Chambers"
@@ -20253,9 +19480,6 @@
     "mining": [
       "moss_carpet"
     ],
-    "natural_structures": [
-      "Trial Chambers"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -20270,14 +19494,6 @@
   "mossy_cobblestone": {
     "mining": [
       "mossy_cobblestone"
-    ],
-    "natural_structures": [
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)",
-      "Pillager Outpost",
-      "Trial Chambers",
-      "Village (Plains)",
-      "Village (Taiga)"
     ],
     "recipes": [
       {
@@ -20308,9 +19524,6 @@
     "mining": [
       "mossy_cobblestone_slab"
     ],
-    "natural_structures": [
-      "Pillager Outpost"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -20334,9 +19547,6 @@
     "mining": [
       "mossy_cobblestone_stairs"
     ],
-    "natural_structures": [
-      "Pillager Outpost"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -20359,9 +19569,6 @@
   "mossy_cobblestone_wall": {
     "mining": [
       "mossy_cobblestone_wall"
-    ],
-    "natural_structures": [
-      "Pillager Outpost"
     ],
     "recipes": [
       {
@@ -20455,12 +19662,6 @@
     "mining": [
       "mossy_stone_bricks"
     ],
-    "natural_structures": [
-      "Igloo",
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)",
-      "Ruined Portal"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -20497,18 +19698,11 @@
   "mud": {
     "mining": [
       "mud"
-    ],
-    "natural_structures": [
-      "Trail Ruins",
-      "Trial Chambers"
     ]
   },
   "mud_brick_slab": {
     "mining": [
       "mud_brick_slab"
-    ],
-    "natural_structures": [
-      "Trail Ruins"
     ],
     "recipes": [
       {
@@ -20533,9 +19727,6 @@
     "mining": [
       "mud_brick_stairs"
     ],
-    "natural_structures": [
-      "Trail Ruins"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -20558,9 +19749,6 @@
   "mud_brick_wall": {
     "mining": [
       "mud_brick_wall"
-    ],
-    "natural_structures": [
-      "Trail Ruins"
     ],
     "recipes": [
       {
@@ -20585,9 +19773,6 @@
     "mining": [
       "mud_bricks"
     ],
-    "natural_structures": [
-      "Trail Ruins"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -20602,9 +19787,6 @@
   "muddy_mangrove_roots": {
     "mining": [
       "muddy_mangrove_roots"
-    ],
-    "natural_structures": [
-      "Trial Chambers"
     ],
     "recipes": [
       {
@@ -20925,9 +20107,6 @@
   "nether_wart": {
     "mining": [
       "nether_wart"
-    ],
-    "natural_structures": [
-      "Bastion Remnant"
     ],
     "structures": [
       "Nether Fortress"
@@ -21302,18 +20481,11 @@
       "crimson_nylium",
       "netherrack",
       "warped_nylium"
-    ],
-    "natural_structures": [
-      "Bastion Remnant",
-      "Ruined Portal"
     ]
   },
   "note_block": {
     "mining": [
       "note_block"
-    ],
-    "natural_structures": [
-      "Ancient City"
     ],
     "recipes": [
       {
@@ -21382,9 +20554,6 @@
     "mining": [
       "oak_button"
     ],
-    "natural_structures": [
-      "Trial Chambers"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -21415,11 +20584,6 @@
     "mining": [
       "oak_door"
     ],
-    "natural_structures": [
-      "Shipwreck",
-      "Shipwreck (Beached)",
-      "Village (Plains)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -21434,13 +20598,6 @@
   "oak_fence": {
     "mining": [
       "oak_fence"
-    ],
-    "natural_structures": [
-      "Mansion",
-      "Shipwreck",
-      "Shipwreck (Beached)",
-      "Trial Chambers",
-      "Village (Plains)"
     ],
     "recipes": [
       {
@@ -21459,9 +20616,6 @@
   "oak_fence_gate": {
     "mining": [
       "oak_fence_gate"
-    ],
-    "natural_structures": [
-      "Village (Plains)"
     ],
     "recipes": [
       {
@@ -21501,21 +20655,11 @@
   "oak_leaves": {
     "mining": [
       "oak_leaves"
-    ],
-    "natural_structures": [
-      "Trial Chambers",
-      "Village (Plains)"
     ]
   },
   "oak_log": {
     "mining": [
       "oak_log"
-    ],
-    "natural_structures": [
-      "Shipwreck",
-      "Shipwreck (Beached)",
-      "Trial Chambers",
-      "Village (Plains)"
     ],
     "trades": [
       [
@@ -21527,12 +20671,6 @@
   "oak_planks": {
     "mining": [
       "oak_planks"
-    ],
-    "natural_structures": [
-      "Mansion",
-      "Shipwreck",
-      "Shipwreck (Beached)",
-      "Village (Plains)"
     ],
     "recipes": [
       {
@@ -21561,10 +20699,6 @@
   "oak_pressure_plate": {
     "mining": [
       "oak_pressure_plate"
-    ],
-    "natural_structures": [
-      "Trial Chambers",
-      "Village (Plains)"
     ],
     "recipes": [
       {
@@ -21634,13 +20768,6 @@
     "mining": [
       "oak_slab"
     ],
-    "natural_structures": [
-      "Mansion",
-      "Shipwreck",
-      "Shipwreck (Beached)",
-      "Trial Chambers",
-      "Village (Plains)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -21656,12 +20783,6 @@
     "mining": [
       "oak_stairs"
     ],
-    "natural_structures": [
-      "Mansion",
-      "Shipwreck",
-      "Shipwreck (Beached)",
-      "Village (Plains)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -21676,12 +20797,6 @@
   "oak_trapdoor": {
     "mining": [
       "oak_trapdoor"
-    ],
-    "natural_structures": [
-      "Igloo",
-      "Shipwreck",
-      "Shipwreck (Beached)",
-      "Village (Plains)"
     ],
     "recipes": [
       {
@@ -21737,13 +20852,6 @@
     "mining": [
       "ender_chest",
       "obsidian"
-    ],
-    "natural_structures": [
-      "End City",
-      "Mansion",
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)",
-      "Ruined Portal"
     ],
     "structures": [
       "Bastion Remnant",
@@ -21823,10 +20931,6 @@
   "orange_bed": {
     "mining": [
       "orange_bed"
-    ],
-    "natural_structures": [
-      "Trial Chambers",
-      "Village (Savanna)"
     ],
     "recipes": [
       {
@@ -22032,9 +21136,6 @@
     "mining": [
       "orange_carpet"
     ],
-    "natural_structures": [
-      "Village (Savanna)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -22186,10 +21287,6 @@
   "orange_glazed_terracotta": {
     "mining": [
       "orange_glazed_terracotta"
-    ],
-    "natural_structures": [
-      "Trail Ruins",
-      "Village (Savanna)"
     ],
     "recipes": [
       {
@@ -22401,10 +21498,6 @@
     "mining": [
       "orange_terracotta"
     ],
-    "natural_structures": [
-      "Trail Ruins",
-      "Village (Savanna)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -22449,9 +21542,6 @@
     ],
     "mining": [
       "orange_wool"
-    ],
-    "natural_structures": [
-      "Mansion"
     ],
     "recipes": [
       {
@@ -22526,9 +21616,6 @@
     "mining": [
       "oxeye_daisy",
       "potted_oxeye_daisy"
-    ],
-    "natural_structures": [
-      "Village (Plains)"
     ],
     "trades": [
       [
@@ -22650,17 +21737,11 @@
   "oxidized_copper_trapdoor": {
     "mining": [
       "oxidized_copper_trapdoor"
-    ],
-    "natural_structures": [
-      "Trial Chambers"
     ]
   },
   "oxidized_cut_copper": {
     "mining": [
       "oxidized_cut_copper"
-    ],
-    "natural_structures": [
-      "Trial Chambers"
     ],
     "recipes": [
       {
@@ -22775,9 +21856,6 @@
   "packed_mud": {
     "mining": [
       "packed_mud"
-    ],
-    "natural_structures": [
-      "Trail Ruins"
     ],
     "recipes": [
       {
@@ -23274,9 +22352,6 @@
     "mining": [
       "pink_bed"
     ],
-    "natural_structures": [
-      "Trial Chambers"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -23480,9 +22555,6 @@
   "pink_carpet": {
     "mining": [
       "pink_carpet"
-    ],
-    "natural_structures": [
-      "Mansion"
     ],
     "recipes": [
       {
@@ -24069,9 +23141,6 @@
     "mining": [
       "podzol"
     ],
-    "natural_structures": [
-      "Trial Chambers"
-    ],
     "trades": [
       [
         "wandering_trader",
@@ -24082,9 +23151,6 @@
   "pointed_dripstone": {
     "mining": [
       "pointed_dripstone"
-    ],
-    "natural_structures": [
-      "Trial Chambers"
     ],
     "trades": [
       [
@@ -24104,11 +23170,6 @@
   "polished_andesite": {
     "mining": [
       "polished_andesite"
-    ],
-    "natural_structures": [
-      "Igloo",
-      "Mansion",
-      "Trial Chambers"
     ],
     "recipes": [
       {
@@ -24201,10 +23262,6 @@
     "mining": [
       "polished_basalt"
     ],
-    "natural_structures": [
-      "Ancient City",
-      "Bastion Remnant"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -24290,9 +23347,6 @@
     "mining": [
       "polished_blackstone_brick_stairs"
     ],
-    "natural_structures": [
-      "Bastion Remnant"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -24370,9 +23424,6 @@
   "polished_blackstone_bricks": {
     "mining": [
       "polished_blackstone_bricks"
-    ],
-    "natural_structures": [
-      "Bastion Remnant"
     ],
     "recipes": [
       {
@@ -24528,9 +23579,6 @@
     "mining": [
       "polished_deepslate"
     ],
-    "natural_structures": [
-      "Ancient City"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -24561,9 +23609,6 @@
   "polished_deepslate_slab": {
     "mining": [
       "polished_deepslate_slab"
-    ],
-    "natural_structures": [
-      "Ancient City"
     ],
     "recipes": [
       {
@@ -24604,9 +23649,6 @@
     "mining": [
       "polished_deepslate_stairs"
     ],
-    "natural_structures": [
-      "Ancient City"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -24646,9 +23688,6 @@
     "mining": [
       "polished_deepslate_wall"
     ],
-    "natural_structures": [
-      "Ancient City"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -24687,10 +23726,6 @@
   "polished_diorite": {
     "mining": [
       "polished_diorite"
-    ],
-    "natural_structures": [
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)"
     ],
     "recipes": [
       {
@@ -24783,10 +23818,6 @@
     "mining": [
       "polished_granite"
     ],
-    "natural_structures": [
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -24878,9 +23909,6 @@
     "mining": [
       "polished_tuff"
     ],
-    "natural_structures": [
-      "Trial Chambers"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -24903,9 +23931,6 @@
   "polished_tuff_slab": {
     "mining": [
       "polished_tuff_slab"
-    ],
-    "natural_structures": [
-      "Trial Chambers"
     ],
     "recipes": [
       {
@@ -25022,11 +24047,6 @@
       "poppy",
       "potted_poppy"
     ],
-    "natural_structures": [
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Taiga)"
-    ],
     "structures": [
       "Village (Plains)"
     ],
@@ -25118,10 +24138,6 @@
   "prismarine": {
     "mining": [
       "prismarine"
-    ],
-    "natural_structures": [
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)"
     ],
     "recipes": [
       {
@@ -25313,11 +24329,6 @@
     "mining": [
       "pumpkin"
     ],
-    "natural_structures": [
-      "Mansion",
-      "Pillager Outpost",
-      "Village (Taiga)"
-    ],
     "structures": [
       "Shipwreck"
     ],
@@ -25434,10 +24445,6 @@
   "purple_bed": {
     "mining": [
       "purple_bed"
-    ],
-    "natural_structures": [
-      "Trial Chambers",
-      "Village (Taiga)"
     ],
     "recipes": [
       {
@@ -25646,10 +24653,6 @@
     "mining": [
       "purple_carpet"
     ],
-    "natural_structures": [
-      "Mansion",
-      "Village (Taiga)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -25774,10 +24777,6 @@
   "purple_glazed_terracotta": {
     "mining": [
       "purple_glazed_terracotta"
-    ],
-    "natural_structures": [
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)"
     ],
     "recipes": [
       {
@@ -26092,9 +25091,6 @@
     "mining": [
       "purpur_block"
     ],
-    "natural_structures": [
-      "End City"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -26109,9 +25105,6 @@
   "purpur_pillar": {
     "mining": [
       "purpur_pillar"
-    ],
-    "natural_structures": [
-      "End City"
     ],
     "recipes": [
       {
@@ -26135,9 +25128,6 @@
   "purpur_slab": {
     "mining": [
       "purpur_slab"
-    ],
-    "natural_structures": [
-      "End City"
     ],
     "recipes": [
       {
@@ -26168,9 +25158,6 @@
   "purpur_stairs": {
     "mining": [
       "purpur_stairs"
-    ],
-    "natural_structures": [
-      "End City"
     ],
     "recipes": [
       {
@@ -26230,9 +25217,6 @@
   "quartz_block": {
     "mining": [
       "quartz_block"
-    ],
-    "natural_structures": [
-      "Bastion Remnant"
     ],
     "recipes": [
       {
@@ -26451,9 +25435,6 @@
     "mining": [
       "rail"
     ],
-    "natural_structures": [
-      "Mansion"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -26631,12 +25612,6 @@
   "red_bed": {
     "mining": [
       "red_bed"
-    ],
-    "natural_structures": [
-      "Igloo",
-      "Trial Chambers",
-      "Village (Savanna)",
-      "Village (Snowy)"
     ],
     "recipes": [
       {
@@ -26824,9 +25799,6 @@
       "red_candle",
       "red_candle_cake"
     ],
-    "natural_structures": [
-      "Trial Chambers"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -26853,13 +25825,6 @@
   "red_carpet": {
     "mining": [
       "red_carpet"
-    ],
-    "natural_structures": [
-      "Igloo",
-      "Mansion",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
     ],
     "recipes": [
       {
@@ -26938,9 +25903,6 @@
   "red_concrete": {
     "mining": [
       "red_concrete"
-    ],
-    "natural_structures": [
-      "Trial Chambers"
     ]
   },
   "red_concrete_powder": {
@@ -27009,9 +25971,6 @@
   "red_glazed_terracotta": {
     "mining": [
       "red_glazed_terracotta"
-    ],
-    "natural_structures": [
-      "Trial Chambers"
     ],
     "recipes": [
       {
@@ -27116,10 +26075,6 @@
       "potted_red_mushroom",
       "red_mushroom",
       "red_mushroom_block"
-    ],
-    "natural_structures": [
-      "Mansion",
-      "Trial Chambers"
     ],
     "trades": [
       [
@@ -27453,10 +26408,6 @@
     "mining": [
       "red_terracotta"
     ],
-    "natural_structures": [
-      "Trail Ruins",
-      "Village (Savanna)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -27501,9 +26452,6 @@
     ],
     "mining": [
       "red_wool"
-    ],
-    "natural_structures": [
-      "Mansion"
     ],
     "recipes": [
       {
@@ -27647,9 +26595,6 @@
     "mining": [
       "redstone_block"
     ],
-    "natural_structures": [
-      "Ancient City"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -27664,9 +26609,6 @@
   "redstone_lamp": {
     "mining": [
       "redstone_lamp"
-    ],
-    "natural_structures": [
-      "Ancient City"
     ],
     "recipes": [
       {
@@ -27691,10 +26633,6 @@
     "mining": [
       "redstone_torch"
     ],
-    "natural_structures": [
-      "Ancient City",
-      "Igloo"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -27712,9 +26650,6 @@
   "repeater": {
     "mining": [
       "repeater"
-    ],
-    "natural_structures": [
-      "Ancient City"
     ],
     "recipes": [
       {
@@ -28024,13 +26959,6 @@
     "mining": [
       "sand"
     ],
-    "natural_structures": [
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)",
-      "Trial Chambers",
-      "Village (Desert)",
-      "Village (Taiga)"
-    ],
     "structures": [
       "Desert Pyramid"
     ],
@@ -28044,11 +26972,6 @@
   "sandstone": {
     "mining": [
       "sandstone"
-    ],
-    "natural_structures": [
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)",
-      "Village (Desert)"
     ],
     "recipes": [
       {
@@ -28064,9 +26987,6 @@
   "sandstone_slab": {
     "mining": [
       "sandstone_slab"
-    ],
-    "natural_structures": [
-      "Village (Desert)"
     ],
     "recipes": [
       {
@@ -28097,11 +27017,6 @@
   "sandstone_stairs": {
     "mining": [
       "sandstone_stairs"
-    ],
-    "natural_structures": [
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)",
-      "Village (Desert)"
     ],
     "recipes": [
       {
@@ -28135,9 +27050,6 @@
   "sandstone_wall": {
     "mining": [
       "sandstone_wall"
-    ],
-    "natural_structures": [
-      "Village (Desert)"
     ],
     "recipes": [
       {
@@ -28220,10 +27132,6 @@
     "mining": [
       "sea_lantern"
     ],
-    "natural_structures": [
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -28241,9 +27149,6 @@
   "sea_pickle": {
     "mining": [
       "sea_pickle"
-    ],
-    "natural_structures": [
-      "Village (Desert)"
     ],
     "trades": [
       [
@@ -28417,11 +27322,6 @@
       "short_grass",
       "tall_grass"
     ],
-    "natural_structures": [
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)"
-    ],
     "structures": [
       "Village (Savanna)"
     ]
@@ -28481,9 +27381,6 @@
     ],
     "mining": [
       "skeleton_skull"
-    ],
-    "natural_structures": [
-      "Ancient City"
     ]
   },
   "skull_banner_pattern": {
@@ -28568,14 +27465,6 @@
     "mining": [
       "smithing_table"
     ],
-    "natural_structures": [
-      "Trail Ruins",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -28630,13 +27519,6 @@
   "smoker": {
     "mining": [
       "smoker"
-    ],
-    "natural_structures": [
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
     ],
     "recipes": [
       {
@@ -28789,9 +27671,6 @@
     "mining": [
       "smooth_basalt"
     ],
-    "natural_structures": [
-      "Ancient City"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -28807,9 +27686,6 @@
     "mining": [
       "smooth_quartz"
     ],
-    "natural_structures": [
-      "Bastion Remnant"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -28824,9 +27700,6 @@
   "smooth_quartz_slab": {
     "mining": [
       "smooth_quartz_slab"
-    ],
-    "natural_structures": [
-      "Bastion Remnant"
     ],
     "recipes": [
       {
@@ -28935,9 +27808,6 @@
     "mining": [
       "smooth_sandstone"
     ],
-    "natural_structures": [
-      "Village (Desert)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -28952,9 +27822,6 @@
   "smooth_sandstone_slab": {
     "mining": [
       "smooth_sandstone_slab"
-    ],
-    "natural_structures": [
-      "Village (Desert)"
     ],
     "recipes": [
       {
@@ -28979,9 +27846,6 @@
     "mining": [
       "smooth_sandstone_stairs"
     ],
-    "natural_structures": [
-      "Village (Desert)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -29005,11 +27869,6 @@
     "mining": [
       "smooth_stone"
     ],
-    "natural_structures": [
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -29031,16 +27890,6 @@
   "smooth_stone_slab": {
     "mining": [
       "smooth_stone_slab"
-    ],
-    "natural_structures": [
-      "Mansion",
-      "Ruined Portal",
-      "Trail Ruins",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
     ],
     "recipes": [
       {
@@ -29099,10 +27948,6 @@
     "mining": [
       "snow"
     ],
-    "natural_structures": [
-      "Ancient City",
-      "Village (Snowy)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -29118,10 +27963,6 @@
     "mining": [
       "snow",
       "snow_block"
-    ],
-    "natural_structures": [
-      "Igloo",
-      "Village (Snowy)"
     ],
     "recipes": [
       {
@@ -29319,9 +28160,6 @@
     "mining": [
       "soul_lantern"
     ],
-    "natural_structures": [
-      "Ancient City"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -29342,10 +28180,6 @@
     ],
     "mining": [
       "soul_sand"
-    ],
-    "natural_structures": [
-      "Ancient City",
-      "Bastion Remnant"
     ],
     "structures": [
       "Bastion Remnant"
@@ -29527,12 +28361,6 @@
     "mining": [
       "spruce_door"
     ],
-    "natural_structures": [
-      "Shipwreck",
-      "Shipwreck (Beached)",
-      "Village (Snowy)",
-      "Village (Taiga)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -29547,12 +28375,6 @@
   "spruce_fence": {
     "mining": [
       "spruce_fence"
-    ],
-    "natural_structures": [
-      "Shipwreck",
-      "Shipwreck (Beached)",
-      "Village (Snowy)",
-      "Village (Taiga)"
     ],
     "recipes": [
       {
@@ -29571,10 +28393,6 @@
   "spruce_fence_gate": {
     "mining": [
       "spruce_fence_gate"
-    ],
-    "natural_structures": [
-      "Village (Snowy)",
-      "Village (Taiga)"
     ],
     "recipes": [
       {
@@ -29620,11 +28438,6 @@
     "mining": [
       "spruce_log"
     ],
-    "natural_structures": [
-      "Shipwreck",
-      "Shipwreck (Beached)",
-      "Village (Taiga)"
-    ],
     "structures": [
       "Village (Taiga)"
     ],
@@ -29638,14 +28451,6 @@
   "spruce_planks": {
     "mining": [
       "spruce_planks"
-    ],
-    "natural_structures": [
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)",
-      "Shipwreck",
-      "Shipwreck (Beached)",
-      "Village (Snowy)",
-      "Village (Taiga)"
     ],
     "recipes": [
       {
@@ -29674,9 +28479,6 @@
   "spruce_pressure_plate": {
     "mining": [
       "spruce_pressure_plate"
-    ],
-    "natural_structures": [
-      "Village (Taiga)"
     ],
     "recipes": [
       {
@@ -29745,13 +28547,6 @@
     "mining": [
       "spruce_slab"
     ],
-    "natural_structures": [
-      "Igloo",
-      "Shipwreck",
-      "Shipwreck (Beached)",
-      "Village (Snowy)",
-      "Village (Taiga)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -29766,13 +28561,6 @@
   "spruce_stairs": {
     "mining": [
       "spruce_stairs"
-    ],
-    "natural_structures": [
-      "Igloo",
-      "Shipwreck",
-      "Shipwreck (Beached)",
-      "Village (Snowy)",
-      "Village (Taiga)"
     ],
     "recipes": [
       {
@@ -29789,11 +28577,6 @@
     "mining": [
       "spruce_trapdoor"
     ],
-    "natural_structures": [
-      "Shipwreck",
-      "Shipwreck (Beached)",
-      "Village (Taiga)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -29808,9 +28591,6 @@
   "spruce_wood": {
     "mining": [
       "spruce_wood"
-    ],
-    "natural_structures": [
-      "Village (Taiga)"
     ],
     "recipes": [
       {
@@ -29928,9 +28708,6 @@
     "mining": [
       "sticky_piston"
     ],
-    "natural_structures": [
-      "Ancient City"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -29948,12 +28725,6 @@
   "stone": {
     "mining": [
       "stone"
-    ],
-    "natural_structures": [
-      "Igloo",
-      "Ruined Portal",
-      "Trail Ruins",
-      "Trial Chambers"
     ],
     "recipes": [
       {
@@ -30021,9 +28792,6 @@
     "mining": [
       "stone_brick_slab"
     ],
-    "natural_structures": [
-      "Ruined Portal"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -30054,11 +28822,6 @@
   "stone_brick_stairs": {
     "mining": [
       "stone_brick_stairs"
-    ],
-    "natural_structures": [
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)",
-      "Ruined Portal"
     ],
     "recipes": [
       {
@@ -30091,9 +28854,6 @@
     "mining": [
       "stone_brick_wall"
     ],
-    "natural_structures": [
-      "Ruined Portal"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -30124,15 +28884,6 @@
   "stone_bricks": {
     "mining": [
       "stone_bricks"
-    ],
-    "natural_structures": [
-      "Igloo",
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)",
-      "Ruined Portal",
-      "Trail Ruins",
-      "Trial Chambers",
-      "Village (Snowy)"
     ],
     "recipes": [
       {
@@ -30166,10 +28917,6 @@
   "stone_button": {
     "mining": [
       "stone_button"
-    ],
-    "natural_structures": [
-      "Trial Chambers",
-      "Village (Desert)"
     ],
     "recipes": [
       {
@@ -30257,9 +29004,6 @@
     "mining": [
       "stone_pressure_plate"
     ],
-    "natural_structures": [
-      "Ancient City"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -30308,9 +29052,6 @@
   "stone_slab": {
     "mining": [
       "stone_slab"
-    ],
-    "natural_structures": [
-      "Ruined Portal"
     ],
     "recipes": [
       {
@@ -30412,13 +29153,6 @@
     "mining": [
       "stonecutter"
     ],
-    "natural_structures": [
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -30466,9 +29200,6 @@
   "stripped_acacia_log": {
     "mining": [
       "stripped_acacia_log"
-    ],
-    "natural_structures": [
-      "Village (Savanna)"
     ]
   },
   "stripped_acacia_wood": {
@@ -30614,17 +29345,11 @@
   "stripped_oak_log": {
     "mining": [
       "stripped_oak_log"
-    ],
-    "natural_structures": [
-      "Village (Plains)"
     ]
   },
   "stripped_oak_wood": {
     "mining": [
       "stripped_oak_wood"
-    ],
-    "natural_structures": [
-      "Village (Plains)"
     ],
     "recipes": [
       {
@@ -30660,17 +29385,11 @@
   "stripped_spruce_log": {
     "mining": [
       "stripped_spruce_log"
-    ],
-    "natural_structures": [
-      "Village (Snowy)"
     ]
   },
   "stripped_spruce_wood": {
     "mining": [
       "stripped_spruce_wood"
-    ],
-    "natural_structures": [
-      "Village (Snowy)"
     ],
     "recipes": [
       {
@@ -31086,9 +29805,6 @@
     "mining": [
       "target"
     ],
-    "natural_structures": [
-      "Ancient City"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -31106,10 +29822,6 @@
   "terracotta": {
     "mining": [
       "terracotta"
-    ],
-    "natural_structures": [
-      "Village (Desert)",
-      "Village (Plains)"
     ],
     "recipes": [
       {
@@ -31194,9 +29906,6 @@
     "mining": [
       "tnt"
     ],
-    "natural_structures": [
-      "Mansion"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -31241,16 +29950,6 @@
   "torch": {
     "mining": [
       "torch"
-    ],
-    "natural_structures": [
-      "Ancient City",
-      "Mansion",
-      "Pillager Outpost",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
     ],
     "recipes": [
       {
@@ -31309,9 +30008,6 @@
     "mining": [
       "trapped_chest"
     ],
-    "natural_structures": [
-      "Mansion"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -31345,9 +30041,6 @@
     ],
     "mining": [
       "tripwire_hook"
-    ],
-    "natural_structures": [
-      "Trial Chambers"
     ],
     "recipes": [
       {
@@ -31579,9 +30272,6 @@
     "mining": [
       "tuff_bricks"
     ],
-    "natural_structures": [
-      "Trial Chambers"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -31738,11 +30428,6 @@
   "vine": {
     "mining": [
       "vine"
-    ],
-    "natural_structures": [
-      "Mansion",
-      "Pillager Outpost",
-      "Trial Chambers"
     ],
     "trades": [
       [
@@ -32054,9 +30739,6 @@
     "mining": [
       "waxed_chiseled_copper"
     ],
-    "natural_structures": [
-      "Trial Chambers"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -32117,9 +30799,6 @@
     "mining": [
       "waxed_copper_block"
     ],
-    "natural_structures": [
-      "Trial Chambers"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -32137,9 +30816,6 @@
   "waxed_copper_bulb": {
     "mining": [
       "waxed_copper_bulb"
-    ],
-    "natural_structures": [
-      "Trial Chambers"
     ],
     "recipes": [
       {
@@ -32209,9 +30885,6 @@
     "mining": [
       "waxed_copper_door"
     ],
-    "natural_structures": [
-      "Trial Chambers"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -32247,9 +30920,6 @@
   "waxed_copper_grate": {
     "mining": [
       "waxed_copper_grate"
-    ],
-    "natural_structures": [
-      "Trial Chambers"
     ],
     "recipes": [
       {
@@ -32321,9 +30991,6 @@
     "mining": [
       "waxed_cut_copper"
     ],
-    "natural_structures": [
-      "Trial Chambers"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -32357,9 +31024,6 @@
   "waxed_cut_copper_slab": {
     "mining": [
       "waxed_cut_copper_slab"
-    ],
-    "natural_structures": [
-      "Trial Chambers"
     ],
     "recipes": [
       {
@@ -32402,9 +31066,6 @@
   "waxed_cut_copper_stairs": {
     "mining": [
       "waxed_cut_copper_stairs"
-    ],
-    "natural_structures": [
-      "Trial Chambers"
     ],
     "recipes": [
       {
@@ -32854,9 +31515,6 @@
     "mining": [
       "waxed_oxidized_chiseled_copper"
     ],
-    "natural_structures": [
-      "Trial Chambers"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -32898,9 +31556,6 @@
   "waxed_oxidized_copper": {
     "mining": [
       "waxed_oxidized_copper"
-    ],
-    "natural_structures": [
-      "Trial Chambers"
     ],
     "recipes": [
       {
@@ -33006,9 +31661,6 @@
     "mining": [
       "waxed_oxidized_copper_door"
     ],
-    "natural_structures": [
-      "Trial Chambers"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -33044,9 +31696,6 @@
   "waxed_oxidized_copper_grate": {
     "mining": [
       "waxed_oxidized_copper_grate"
-    ],
-    "natural_structures": [
-      "Trial Chambers"
     ],
     "recipes": [
       {
@@ -33100,9 +31749,6 @@
     "mining": [
       "waxed_oxidized_copper_trapdoor"
     ],
-    "natural_structures": [
-      "Trial Chambers"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -33120,9 +31766,6 @@
   "waxed_oxidized_cut_copper": {
     "mining": [
       "waxed_oxidized_cut_copper"
-    ],
-    "natural_structures": [
-      "Trial Chambers"
     ],
     "recipes": [
       {
@@ -33157,9 +31800,6 @@
   "waxed_oxidized_cut_copper_slab": {
     "mining": [
       "waxed_oxidized_cut_copper_slab"
-    ],
-    "natural_structures": [
-      "Trial Chambers"
     ],
     "recipes": [
       {
@@ -33202,9 +31842,6 @@
   "waxed_oxidized_cut_copper_stairs": {
     "mining": [
       "waxed_oxidized_cut_copper_stairs"
-    ],
-    "natural_structures": [
-      "Trial Chambers"
     ],
     "recipes": [
       {
@@ -33901,14 +32538,6 @@
     "mining": [
       "wheat"
     ],
-    "natural_structures": [
-      "Mansion",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -33996,11 +32625,6 @@
   "white_bed": {
     "mining": [
       "white_bed"
-    ],
-    "natural_structures": [
-      "Trial Chambers",
-      "Village (Plains)",
-      "Village (Snowy)"
     ],
     "recipes": [
       {
@@ -34188,9 +32812,6 @@
       "white_candle",
       "white_candle_cake"
     ],
-    "natural_structures": [
-      "Ancient City"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -34208,14 +32829,6 @@
   "white_carpet": {
     "mining": [
       "white_carpet"
-    ],
-    "natural_structures": [
-      "Igloo",
-      "Mansion",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Taiga)"
     ],
     "recipes": [
       {
@@ -34294,9 +32907,6 @@
   "white_concrete": {
     "mining": [
       "white_concrete"
-    ],
-    "natural_structures": [
-      "Trial Chambers"
     ]
   },
   "white_concrete_powder": {
@@ -34352,9 +32962,6 @@
   "white_glazed_terracotta": {
     "mining": [
       "white_glazed_terracotta"
-    ],
-    "natural_structures": [
-      "Village (Desert)"
     ],
     "recipes": [
       {
@@ -34566,10 +33173,6 @@
     "mining": [
       "white_terracotta"
     ],
-    "natural_structures": [
-      "Trail Ruins",
-      "Village (Plains)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -34614,11 +33217,6 @@
     ],
     "mining": [
       "white_wool"
-    ],
-    "natural_structures": [
-      "Mansion",
-      "Pillager Outpost",
-      "Village (Plains)"
     ],
     "recipes": [
       {
@@ -35169,10 +33767,6 @@
     "mining": [
       "yellow_bed"
     ],
-    "natural_structures": [
-      "Trial Chambers",
-      "Village (Plains)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -35383,10 +33977,6 @@
     "mining": [
       "yellow_carpet"
     ],
-    "natural_structures": [
-      "Mansion",
-      "Village (Plains)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -35540,10 +34130,6 @@
   "yellow_glazed_terracotta": {
     "mining": [
       "yellow_glazed_terracotta"
-    ],
-    "natural_structures": [
-      "Trail Ruins",
-      "Village (Savanna)"
     ],
     "recipes": [
       {
@@ -35758,10 +34344,6 @@
     "mining": [
       "yellow_terracotta"
     ],
-    "natural_structures": [
-      "Trail Ruins",
-      "Village (Savanna)"
-    ],
     "recipes": [
       {
         "ingredients": [
@@ -35791,10 +34373,6 @@
     ],
     "mining": [
       "yellow_wool"
-    ],
-    "natural_structures": [
-      "Mansion",
-      "Village (Plains)"
     ],
     "recipes": [
       {

@@ -37,6 +37,20 @@ def _gate_classification(original: ItemClassification) -> ItemClassification:
     return ItemClassification.progression_skip_balancing
 
 
+# Structures that gate a goal boss (and thus the critical path) when that boss is required: such a
+# structure unlock is worth full progression (so progression balancing front-loads it); every other
+# structure unlock stays progression_skip_balancing — still logic-bearing, but not balanced. The
+# Nether Fortress gates the Wither (skulls) AND the Ender Dragon (blaze rods -> eyes of ender ->
+# End); the Stronghold is the only End portal. This is logic knowledge, so it lives with the rules,
+# not in structures.json (which is purely jar-derived).
+_STRUCTURE_BOSS_GATES = {
+    "Stronghold":      {"Ender Dragon"},
+    "Nether Fortress": {"Wither", "Ender Dragon"},
+    "Ocean Monument":  {"Elder Guardian"},
+    "Ancient City":    {"Warden"},
+}
+
+
 # ---------------------------------------------------------------------------
 # WebWorld
 # ---------------------------------------------------------------------------
@@ -101,13 +115,15 @@ class MCWorld(World):
             classification = _gate_classification(mob_data.unlock_classification)
             return MCItem(name, classification, BASE_ID_ENTITY_UNLOCK + mob_data.id, self.player)
 
-        # Structures are curated individually in structures.csv: gates are progression /
-        # progression_skip_balancing, while a structure no rule references (e.g. Nether Fossil) may
-        # be useful. Honour the CSV classification directly rather than forcing a gate upgrade.
+        # A Structure Unlock locks a structure, so it always gates that structure's locations — it
+        # must stay progression-flavoured (CollectionState only collects progression items). Whether
+        # it rises to full progression is a per-seed call, computed from the goal (see
+        # _structure_classification), not stored in the data.
         if name.startswith(STRUCT_UNLOCK_PREFIX):
             struct_name = name.removeprefix(STRUCT_UNLOCK_PREFIX)
             struct_data = STRUCTURES[struct_name]
-            return MCItem(name, struct_data.classification, BASE_ID_STRUCT_UNLOCK + struct_data.id, self.player)
+            classification = self._structure_classification(struct_name)
+            return MCItem(name, classification, BASE_ID_STRUCT_UNLOCK + struct_data.id, self.player)
 
         raise KeyError(f"Unknown item: {name}")
 
@@ -358,6 +374,14 @@ class MCWorld(World):
         if "All" in selected:
             return list(MOBS_BOSS.keys())
         return [name for name in MOBS_BOSS.keys() if name in selected]
+
+    def _structure_classification(self, struct_name: str) -> ItemClassification:
+        """A Structure Unlock's classification, computed for this seed. It is at least
+        progression_skip_balancing (it gates its structure's locations and must be collectable), and
+        full progression only when it gates a boss the goal requires (see _STRUCTURE_BOSS_GATES)."""
+        if _STRUCTURE_BOSS_GATES.get(struct_name, frozenset()) & set(self.selected_bosses):
+            return ItemClassification.progression
+        return ItemClassification.progression_skip_balancing
 
     def _get_primary_condition(self):
         boss_locations = [f"{BOSS_KILL_PREFIX}{name}" for name in self.selected_bosses]
