@@ -1088,6 +1088,15 @@ class RuleHelper:
             placed_only = (bool(record.get("recipes"))
                            or base.endswith(("_head", "_skull", "_froglight")))
             if block == base and placed_only and base not in _NATURAL_SELF_MINED:
+                # The self-mine is circular (placed-only), but the block may still generate naturally
+                # inside a structure's template — reaching that structure and mining it there is a
+                # genuine source recipes/loot don't capture (e.g. a comparator in an Ancient City, an
+                # Overworld path its quartz recipe otherwise hides behind the Nether). Substitute
+                # those structures for the dropped self-mine; redundant ones (a block whose recipe is
+                # already reachable in the structure's dimension) collapse in _unique_or / _coarsen.
+                for struct_name in record.get("natural_structures", ()):
+                    if struct_name in STRUCTURES:
+                        options.append(self.structure(struct_name))
                 continue
             options.append(self._mining_node(block, base))
         for block in record.get("silk_mining", ()):

@@ -14,6 +14,7 @@ Per-item record (only non-empty keys present); ``<ing>`` is
       "drops":      ["<mob>", ...],                    # mob loot table
       "mining":     ["<block>", ...],                  # block loot table
       "structures": ["<real structure name>", ...],    # chest / archaeology loot
+      "natural_structures": ["<structure>", ...],       # block generates in the structure's template
       "trades":     [["<profession>", "<file>"], ...],
       "breeding":   ["<mob>", ...],                    # appears in a mob's food/tempt tag
       "gameplay":   ["<table>", ...]                   # fishing / sniffing / misc
@@ -23,13 +24,74 @@ Usage:
     python tools/build_acquisition.py            # vanilla -> packs/vanilla_26_1/acquisition.json
     python tools/build_acquisition.py <jar|zip> <out>
 """
+import gzip
+import io
 import json
 import os
 import re
+import struct
 import sys
 import zipfile
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def _read_nbt(data: bytes):
+    """Parse a (gzipped) NBT byte string into nested Python ``dict`` / ``list`` / scalars. Minimal,
+    dependency-free — enough to read a structure template's block palette."""
+    buf = io.BytesIO(gzip.decompress(data) if data[:2] == b"\x1f\x8b" else data)
+
+    def u(fmt: str, size: int):
+        return struct.unpack(fmt, buf.read(size))[0]
+
+    def name() -> str:
+        return buf.read(u(">H", 2)).decode("utf-8", "replace")
+
+    def payload(tag: int):
+        if tag == 1: return u(">b", 1)            # byte
+        if tag == 2: return u(">h", 2)            # short
+        if tag == 3: return u(">i", 4)            # int
+        if tag == 4: return u(">q", 8)            # long
+        if tag == 5: return u(">f", 4)            # float
+        if tag == 6: return u(">d", 8)            # double
+        if tag == 7: return buf.read(u(">i", 4))  # byte array
+        if tag == 8: return name()                # string
+        if tag == 9:                              # list
+            item, count = u(">b", 1), u(">i", 4)
+            return [payload(item) for _ in range(count)]
+        if tag == 10:                             # compound
+            out = {}
+            while True:
+                child = u(">b", 1)
+                if child == 0:
+                    return out
+                key = name()  # read the name BEFORE the payload (Python evals RHS first otherwise)
+                out[key] = payload(child)
+        if tag == 11: return [u(">i", 4) for _ in range(u(">i", 4))]  # int array
+        if tag == 12: return [u(">q", 8) for _ in range(u(">i", 4))]  # long array
+        raise ValueError(f"unknown NBT tag {tag}")
+
+    root_tag = u(">b", 1)
+    name()  # root compound's (empty) name
+    return payload(root_tag)
+
+
+def _palette_block_names(root) -> set:
+    """Block ids in a structure template's palette(s) — ``palette`` (single) or ``palettes`` (rotation
+    variants). Each palette entry is a block state ``{"Name": "<id>", "Properties": {...}}``."""
+    names = set()
+    if not isinstance(root, dict):
+        return names
+    palettes = []
+    if isinstance(root.get("palette"), list):
+        palettes.append(root["palette"])
+    if isinstance(root.get("palettes"), list):
+        palettes.extend(p for p in root["palettes"] if isinstance(p, list))
+    for palette in palettes:
+        for state in palette:
+            if isinstance(state, dict) and isinstance(state.get("Name"), str):
+                names.add(_strip_ns(state["Name"]))
+    return names
 
 
 def _default_jar() -> str:
@@ -107,6 +169,8 @@ class AcquisitionBuilder:
         self.trades: dict[str, set] = {}
         self.breeding: dict[str, set] = {}
         self.gameplay: dict[str, set] = {}
+        self.natural_structures: dict[str, set] = {}  # block -> structures it generates in (palette)
+        self.struct_palette: dict[str, set] = {}  # raw block -> structures, resolved in table()
         self.item_tags: dict[str, list] = {}  # tag name -> raw values (items and #nested-tags)
 
     # -- loot helpers -------------------------------------------------------
@@ -188,15 +252,56 @@ class AcquisitionBuilder:
             return list(self._VILLAGE_BIOMES)  # profession building — present in every village
         return self._CHEST_STRUCTURE.get(name, [])
 
+    # Structure-template top folder (data/<ns>/structure/<top>/...) -> canonical apworld structure
+    # name(s). Folders with no apworld structure (fossil, nether_fossils, the empty marker) are
+    # absent and map to nothing. village is handled by biome subfolder in _nbt_structures.
+    _NBT_STRUCTURE = {
+        "ancient_city": ["Ancient City"],
+        "bastion": ["Bastion Remnant"],
+        "end_city": ["End City"],
+        "igloo": ["Igloo"],
+        "pillager_outpost": ["Pillager Outpost"],
+        "ruined_portal": ["Ruined Portal"],
+        "shipwreck": ["Shipwreck", "Shipwreck (Beached)"],  # palettes don't split by variant
+        "trail_ruins": ["Trail Ruins"],
+        "trial_chambers": ["Trial Chambers"],
+        "underwater_ruin": ["Ocean Ruin (Cold)", "Ocean Ruin (Warm)"],
+        "woodland_mansion": ["Mansion"],
+    }
+
+    def _nbt_structures(self, rel: str) -> list:
+        """Canonical structure name(s) a ``data/<ns>/structure/...nbt`` template belongs to."""
+        m = re.search(r"/structure/(.+)\.nbt$", rel)
+        if not m:
+            return []
+        parts = m.group(1).split("/")
+        if parts[0] == "village":  # village/<biome>/... ; common & decays are shared across all
+            biome = parts[1] if len(parts) > 1 else ""
+            if biome in ("desert", "plains", "savanna", "snowy", "taiga"):
+                return [f"Village ({biome.title()})"]
+            return list(self._VILLAGE_BIOMES)
+        return self._NBT_STRUCTURE.get(parts[0], [])
+
     # -- load ---------------------------------------------------------------
     def load(self, entries):
         for name, raw in entries:
-            if not name.endswith(".json"):
-                continue
             try:
-                self._dispatch(name, raw)
+                if name.endswith(".json"):
+                    self._dispatch(name, raw)
+                elif name.endswith(".nbt") and "/structure/" in name:
+                    self._structure_nbt(name, raw)
             except Exception:
                 continue
+
+    def _structure_nbt(self, name: str, raw: bytes):
+        """Record each block in a structure template's palette against that structure, so a block that
+        generates naturally inside it (e.g. a comparator in an Ancient City) becomes obtainable by
+        reaching the structure — a source recipes/loot tables don't capture."""
+        structures = self._nbt_structures(name)
+        if not structures:
+            return
+        for block in _palette_block_names(_read_nbt(raw)):
+            self.struct_palette.setdefault(block, set()).update(structures)
 
     def _dispatch(self, name: str, raw: bytes):
         if re.search(r"/recipes?/", name):
@@ -327,6 +432,12 @@ class AcquisitionBuilder:
     def table(self) -> dict:
         for item, mobs in _HARDCODED_DROPS.items():
             self.drops.setdefault(item, set()).update(mobs)
+        # A palette block becomes a natural-generation source only if it drops *itself* when mined
+        # (so reaching the structure and breaking it yields the item). Blocks that don't self-drop
+        # (spawners, reinforced deepslate, budding amethyst, …) are not obtainable this way.
+        for block, structs in self.struct_palette.items():
+            if block in self.mining and block in self.mining[block]:
+                self.natural_structures.setdefault(block, set()).update(structs)
         items = set(self.recipes) | set(self.drops) | set(self.mining) | set(self.silk_mining) \
             | set(self.structures) | set(self.trades) | set(self.breeding) | set(self.gameplay)
         out: dict[str, dict] = {}
@@ -342,6 +453,8 @@ class AcquisitionBuilder:
                 rec["silk_mining"] = sorted(self.silk_mining[item])
             if item in self.structures:
                 rec["structures"] = sorted(self.structures[item])
+            if item in self.natural_structures:
+                rec["natural_structures"] = sorted(self.natural_structures[item])
             if item in self.trades:
                 rec["trades"] = sorted([list(t) for t in self.trades[item]])
             if item in self.breeding:
