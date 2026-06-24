@@ -43,12 +43,15 @@ import java.util.TreeSet;
  * <ul>
  *   <li>{@code pack}         — every file below (the default).</li>
  *   <li>{@code advancements} — {@code manifest.json} (was {@code dump-advancements}).</li>
+ *   <li>{@code structures}   — {@code structures.json} (region from biome tags, palette from templates).</li>
+ *   <li>{@code block_mining} — {@code block_mining.json} (pickaxe-mineable blocks + tool tier).</li>
  *   <li>{@code tags}         — {@code tags.json} (item / block / entity_type tags, flattened).</li>
  *   <li>{@code meta}         — {@code meta.json} (pack name / namespace / mc_version).</li>
  * </ul>
  *
- * Files land in {@code <gameDir>/aem/}. ({@code structures}, {@code acquisition}, {@code block_mining}
- * and {@code brewing} are added alongside these; until then {@code pack} dumps what is available.)
+ * Files land in {@code <gameDir>/aem/}. {@code acquisition.json} (recipes / loot / trades / food) is
+ * not yet dumped — it needs recipe + loot-table re-serialization. {@code brewing.json} stays curated
+ * (MC brewing is hard-coded with no recipe data), like {@code items.csv} / {@code mobs.csv}.
  */
 public final class DumpCommandModule implements AEMCommandModule {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
