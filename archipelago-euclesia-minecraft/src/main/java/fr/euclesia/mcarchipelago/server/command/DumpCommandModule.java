@@ -23,6 +23,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.resources.RegistryOps;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.levelgen.structure.Structure;
 
 import java.io.IOException;
@@ -60,6 +61,7 @@ public final class DumpCommandModule implements AEMCommandModule {
                 .then(Commands.literal("pack").executes(c -> dumpPack(c.getSource())))
                 .then(Commands.literal("advancements").executes(c -> dumpAdvancements(c.getSource())))
                 .then(Commands.literal("structures").executes(c -> dumpStructures(c.getSource())))
+                .then(Commands.literal("block_mining").executes(c -> dumpBlockMining(c.getSource())))
                 .then(Commands.literal("tags").executes(c -> dumpTags(c.getSource())))
                 .then(Commands.literal("meta").executes(c -> dumpMeta(c.getSource()))));
     }
@@ -70,6 +72,7 @@ public final class DumpCommandModule implements AEMCommandModule {
         int ok = 0;
         ok += dumpAdvancements(source);
         ok += dumpStructures(source);
+        ok += dumpBlockMining(source);
         ok += dumpTags(source);
         ok += dumpMeta(source);
         source.sendSuccess(() -> Component.literal("Pack dump complete (" + outDir() + ")."), true);
@@ -337,6 +340,51 @@ public final class DumpCommandModule implements AEMCommandModule {
     private static String stripNamespace(String id) {
         int colon = id.indexOf(':');
         return colon >= 0 ? id.substring(colon + 1) : id;
+    }
+
+    // -- block_mining -> block_mining.json ----------------------------------
+
+    private static int dumpBlockMining(CommandSourceStack source) {
+        Registry<Block> registry = source.getServer().registryAccess().lookupOrThrow(Registries.BLOCK);
+        TreeSet<String> pickaxe = new TreeSet<>();          // pickaxe-mineable block paths (sorted)
+        Map<String, String> needs = new java.util.HashMap<>();  // block path -> tool tier
+        for (HolderSet.Named<Block> named : (Iterable<HolderSet.Named<Block>>) registry.getTags()::iterator) {
+            String tagPath = named.key().location().getPath();  // namespace-agnostic, like the offline tool
+            boolean mineable = tagPath.equals("mineable/pickaxe");
+            String tier = switch (tagPath) {
+                case "needs_stone_tool" -> "stone";
+                case "needs_iron_tool" -> "iron";
+                case "needs_diamond_tool" -> "diamond";
+                default -> null;
+            };
+            if (!mineable && tier == null) {
+                continue;
+            }
+            for (Holder<Block> holder : named) {
+                Identifier id = registry.getKey(holder.value());
+                if (id == null) {
+                    continue;
+                }
+                if (mineable) {
+                    pickaxe.add(id.getPath());
+                } else {
+                    needs.put(id.getPath(), tier);
+                }
+            }
+        }
+        JsonObject table = new JsonObject();  // only pickaxe-mineable blocks; tier from needs_*_tool
+        for (String block : pickaxe) {
+            JsonObject record = new JsonObject();
+            String tier = needs.get(block);
+            record.add("needs", tier == null ? JsonNull.INSTANCE : new com.google.gson.JsonPrimitive(tier));
+            table.add(block, record);
+        }
+        if (!write(source, "block_mining.json", table)) {
+            return 0;
+        }
+        int count = pickaxe.size();
+        source.sendSuccess(() -> Component.literal("  block_mining: " + count + " pickaxe-mineable blocks"), false);
+        return 1;
     }
 
     // -- meta -> meta.json --------------------------------------------------
