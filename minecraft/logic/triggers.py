@@ -1036,13 +1036,84 @@ class TriggerCompiler:
 
     def _placed_block_node(self, cond: dict) -> Rule | None:
         """``placed_block``: obtain the item that places the block — its seed (crops), the same-named
-        block item, or the tool the criterion pins on ``match_tool`` (a cod bucket, scaffolding, …)."""
-        items: list = []
-        for block in self._blocks_in(cond):
-            mapped = self._PLANT_ITEM.get(block, block)  # a placing item, or a list of alternatives
-            items.extend(mapped if isinstance(mapped, list) else [mapped])
-        items += self._match_tool_items(cond)
-        return self._any_acquire(items)
+        block item, or the tool the criterion pins on ``match_tool`` (a cod bucket, scaffolding, …) —
+        AND any block the criterion requires ADJACENT to it. The placement can be at any of several
+        positions/orientations (an ``any_of`` of ``location_check`` cells, e.g. The Power of Books'
+        chiseled bookshelf needing a comparator beside it), so the location conditions are walked as a
+        logic tree (list / ``all_of`` = AND, ``any_of`` = OR) rather than flattened into one OR."""
+        location = cond.get("location")
+        entries = location if isinstance(location, list) else [location]
+        placed_items: list = []   # the no-offset block being placed → its placing item(s)
+        context: list = []        # required adjacent blocks (offset / grouped) → AND-ed in
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            ctype = str(entry.get("condition", ""))
+            if ctype.endswith("match_tool"):
+                placed_items += self._match_tool_items({"location": [entry]})
+            elif ctype.endswith(("any_of", "all_of")) or self._has_offset(entry):
+                node = self._block_context_node(entry)
+                if node is not None:
+                    context.append(node)
+            else:  # a no-offset block_state_property / location_check → the placed block
+                for block in self._entry_block_ids(entry):
+                    mapped = self._PLANT_ITEM.get(block, block)
+                    placed_items += mapped if isinstance(mapped, list) else [mapped]
+        if self._requires_water(entries):  # waterlogged placement needs water → Overworld|End
+            water = self._block_region_node(["water"])
+            if water is not None:
+                context.append(water)
+        parts = [n for n in (self._any_acquire(placed_items), *context) if n is not None]
+        return and_(*parts) if parts else None
+
+    @classmethod
+    def _requires_water(cls, entries: list) -> bool:
+        """True if any location condition pins ``waterlogged: "true"`` — the block must be placed in
+        water (e.g. Stay Hydrated!'s dried ghast), which can't exist in the Nether. Recurses through
+        ``any_of`` / ``all_of`` groups."""
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            props = entry.get("properties")
+            if isinstance(props, dict) and str(props.get("waterlogged", "")).lower() == "true":
+                return True
+            if cls._requires_water(entry.get("terms", [])):
+                return True
+        return False
+
+    @staticmethod
+    def _has_offset(entry: dict) -> bool:
+        return any(k in entry for k in ("offsetX", "offsetY", "offsetZ"))
+
+    def _entry_block_ids(self, entry: dict) -> list:
+        """Block ids a single location condition names — a ``block_state_property``'s top-level
+        ``block`` or a ``location_check``'s ``predicate.block``."""
+        out = self._block_ids(entry.get("block"))
+        pred = entry.get("predicate")
+        if isinstance(pred, dict):
+            out += self._block_ids(pred.get("block"))
+        return out
+
+    def _block_context_node(self, entry: dict) -> Rule | None:
+        """A required-block location condition as a gate, recursing through ``any_of`` (OR) / ``all_of``
+        (AND) groups; each block leaf → reach its dimension or obtain it. ``None`` when unresolvable."""
+        if not isinstance(entry, dict):
+            return None
+        ctype = str(entry.get("condition", ""))
+        if ctype.endswith("inverted"):
+            return None
+        if ctype.endswith(("any_of", "all_of")):
+            opts = [self._block_context_node(t) for t in entry.get("terms", [])]
+            opts = [o for o in opts if o is not None]
+            if not opts:
+                return None
+            return or_(*opts) if ctype.endswith("any_of") else self._all_req(*opts)
+        ids = self._entry_block_ids(entry)
+        mapped: list = []
+        for block in ids:
+            m = self._PLANT_ITEM.get(block, block)
+            mapped += m if isinstance(m, list) else [m]
+        return self._block_region_node(ids) or self._any_acquire(mapped)
 
     def _match_tool_items(self, cond: dict) -> list:
         """Item ids a ``match_tool`` condition pins (BACAP names the placing item this way)."""
