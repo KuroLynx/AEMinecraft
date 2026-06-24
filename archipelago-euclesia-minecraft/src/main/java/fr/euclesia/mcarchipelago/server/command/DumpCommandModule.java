@@ -44,14 +44,14 @@ import java.util.TreeSet;
  *   <li>{@code pack}         — every file below (the default).</li>
  *   <li>{@code advancements} — {@code manifest.json} (was {@code dump-advancements}).</li>
  *   <li>{@code structures}   — {@code structures.json} (region from biome tags, palette from templates).</li>
+ *   <li>{@code acquisition}  — {@code acquisition.json} (recipes / loot / trades / food; {@link AcquisitionDump}).</li>
  *   <li>{@code block_mining} — {@code block_mining.json} (pickaxe-mineable blocks + tool tier).</li>
  *   <li>{@code tags}         — {@code tags.json} (item / block / entity_type tags, flattened).</li>
  *   <li>{@code meta}         — {@code meta.json} (pack name / namespace / mc_version).</li>
  * </ul>
  *
- * Files land in {@code <gameDir>/aem/}. {@code acquisition.json} (recipes / loot / trades / food) is
- * not yet dumped — it needs recipe + loot-table re-serialization. {@code brewing.json} stays curated
- * (MC brewing is hard-coded with no recipe data), like {@code items.csv} / {@code mobs.csv}.
+ * Files land in {@code <gameDir>/aem/}. {@code brewing.json} stays curated (MC brewing is hard-coded
+ * with no recipe data), like {@code items.csv} / {@code mobs.csv}.
  */
 public final class DumpCommandModule implements AEMCommandModule {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
@@ -64,6 +64,7 @@ public final class DumpCommandModule implements AEMCommandModule {
                 .then(Commands.literal("pack").executes(c -> dumpPack(c.getSource())))
                 .then(Commands.literal("advancements").executes(c -> dumpAdvancements(c.getSource())))
                 .then(Commands.literal("structures").executes(c -> dumpStructures(c.getSource())))
+                .then(Commands.literal("acquisition").executes(c -> dumpAcquisition(c.getSource())))
                 .then(Commands.literal("block_mining").executes(c -> dumpBlockMining(c.getSource())))
                 .then(Commands.literal("tags").executes(c -> dumpTags(c.getSource())))
                 .then(Commands.literal("meta").executes(c -> dumpMeta(c.getSource()))));
@@ -75,6 +76,7 @@ public final class DumpCommandModule implements AEMCommandModule {
         int ok = 0;
         ok += dumpAdvancements(source);
         ok += dumpStructures(source);
+        ok += dumpAcquisition(source);
         ok += dumpBlockMining(source);
         ok += dumpTags(source);
         ok += dumpMeta(source);
@@ -177,6 +179,18 @@ public final class DumpCommandModule implements AEMCommandModule {
         JsonObject out = new JsonObject();
         sorted.forEach(out::add);
         return out;
+    }
+
+    // -- acquisition -> acquisition.json ------------------------------------
+
+    private static int dumpAcquisition(CommandSourceStack source) {
+        JsonObject table = AcquisitionDump.build(source.getServer());
+        if (!write(source, "acquisition.json", table)) {
+            return 0;
+        }
+        int count = table.size();
+        source.sendSuccess(() -> Component.literal("  acquisition: " + count + " items"), false);
+        return 1;
     }
 
     // -- structures -> structures.json --------------------------------------
