@@ -23,10 +23,12 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.resources.RegistryOps;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.level.levelgen.structure.Structure;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -57,6 +59,7 @@ public final class DumpCommandModule implements AEMCommandModule {
                 .executes(context -> dumpPack(context.getSource()))            // /aem dump -> whole pack
                 .then(Commands.literal("pack").executes(c -> dumpPack(c.getSource())))
                 .then(Commands.literal("advancements").executes(c -> dumpAdvancements(c.getSource())))
+                .then(Commands.literal("structures").executes(c -> dumpStructures(c.getSource())))
                 .then(Commands.literal("tags").executes(c -> dumpTags(c.getSource())))
                 .then(Commands.literal("meta").executes(c -> dumpMeta(c.getSource()))));
     }
@@ -66,6 +69,7 @@ public final class DumpCommandModule implements AEMCommandModule {
     private static int dumpPack(CommandSourceStack source) {
         int ok = 0;
         ok += dumpAdvancements(source);
+        ok += dumpStructures(source);
         ok += dumpTags(source);
         ok += dumpMeta(source);
         source.sendSuccess(() -> Component.literal("Pack dump complete (" + outDir() + ")."), true);
@@ -167,6 +171,172 @@ public final class DumpCommandModule implements AEMCommandModule {
         JsonObject out = new JsonObject();
         sorted.forEach(out::add);
         return out;
+    }
+
+    // -- structures -> structures.json --------------------------------------
+
+    // Curated identity + stable id order (mirrors tools/build_structures.py); region/blocks derived.
+    private static final String[][] STRUCTURES = {
+            {"Ancient City", "ancient_city"}, {"Bastion Remnant", "bastion_remnant"},
+            {"Buried Treasure", "buried_treasure"}, {"Desert Pyramid", "desert_pyramid"},
+            {"End City", "end_city"}, {"Nether Fortress", "fortress"}, {"Igloo", "igloo"},
+            {"Jungle Pyramid", "jungle_pyramid"}, {"Mansion", "mansion"}, {"Mineshaft", "mineshaft"},
+            {"Mineshaft (Mesa)", "mineshaft_mesa"}, {"Ocean Monument", "monument"},
+            {"Nether Fossil", "nether_fossil"}, {"Ocean Ruin (Cold)", "ocean_ruin_cold"},
+            {"Ocean Ruin (Warm)", "ocean_ruin_warm"}, {"Pillager Outpost", "pillager_outpost"},
+            {"Ruined Portal", "ruined_portal"}, {"Ruined Portal (Desert)", "ruined_portal_desert"},
+            {"Ruined Portal (Jungle)", "ruined_portal_jungle"},
+            {"Ruined Portal (Mountain)", "ruined_portal_mountain"},
+            {"Ruined Portal (Nether)", "ruined_portal_nether"},
+            {"Ruined Portal (Ocean)", "ruined_portal_ocean"},
+            {"Ruined Portal (Swamp)", "ruined_portal_swamp"}, {"Shipwreck", "shipwreck"},
+            {"Shipwreck (Beached)", "shipwreck_beached"}, {"Stronghold", "stronghold"},
+            {"Swamp Hut", "swamp_hut"}, {"Trail Ruins", "trail_ruins"},
+            {"Trial Chambers", "trial_chambers"}, {"Village (Desert)", "village_desert"},
+            {"Village (Plains)", "village_plains"}, {"Village (Savanna)", "village_savanna"},
+            {"Village (Snowy)", "village_snowy"}, {"Village (Taiga)", "village_taiga"},
+            {"Dungeon", "monster_room"}, {"Desert Well", "desert_well"},
+    };
+
+    // Structure-template top folder (data/<ns>/structure/<top>/...) -> canonical structure name(s).
+    private static final Map<String, String[]> NBT_STRUCTURE = Map.ofEntries(
+            Map.entry("ancient_city", new String[]{"Ancient City"}),
+            Map.entry("bastion", new String[]{"Bastion Remnant"}),
+            Map.entry("end_city", new String[]{"End City"}),
+            Map.entry("igloo", new String[]{"Igloo"}),
+            Map.entry("nether_fossils", new String[]{"Nether Fossil"}),
+            Map.entry("pillager_outpost", new String[]{"Pillager Outpost"}),
+            Map.entry("ruined_portal", new String[]{"Ruined Portal"}),
+            Map.entry("shipwreck", new String[]{"Shipwreck", "Shipwreck (Beached)"}),
+            Map.entry("trail_ruins", new String[]{"Trail Ruins"}),
+            Map.entry("trial_chambers", new String[]{"Trial Chambers"}),
+            Map.entry("underwater_ruin", new String[]{"Ocean Ruin (Cold)", "Ocean Ruin (Warm)"}),
+            Map.entry("woodland_mansion", new String[]{"Mansion"}));
+    private static final List<String> VILLAGE_BIOMES = List.of(
+            "Village (Desert)", "Village (Plains)", "Village (Savanna)",
+            "Village (Snowy)", "Village (Taiga)");
+
+    private static int dumpStructures(CommandSourceStack source) {
+        MinecraftServer server = source.getServer();
+        Map<String, TreeSet<String>> palettes = structurePalettes(server);
+        Registry<Structure> registry = server.registryAccess().lookupOrThrow(Registries.STRUCTURE);
+
+        JsonArray table = new JsonArray();
+        int withPalette = 0;
+        for (String[] entry : STRUCTURES) {
+            String name = entry[0];
+            String gameId = entry[1];
+            JsonObject record = new JsonObject();
+            record.addProperty("name", name);
+            record.addProperty("game_id", gameId);
+            record.addProperty("region", structureRegion(registry, gameId));
+            JsonArray blocks = new JsonArray();
+            TreeSet<String> palette = palettes.get(name);
+            if (palette != null) {
+                palette.forEach(blocks::add);
+                withPalette++;
+            }
+            record.add("blocks", blocks);
+            table.add(record);
+        }
+        if (!write(source, "structures.json", table)) {
+            return 0;
+        }
+        int total = STRUCTURES.length;
+        int paletted = withPalette;
+        source.sendSuccess(() -> Component.literal(
+                "  structures: " + total + " (" + paletted + " with palette)"), false);
+        return 1;
+    }
+
+    /** Dimension a structure generates in, from its biome set (Nether/End biome tags). */
+    private static String structureRegion(Registry<Structure> registry, String gameId) {
+        Structure structure = registry.getValue(Identifier.withDefaultNamespace(gameId));
+        if (structure == null) {
+            return "Overworld";  // a feature with no worldgen structure (dungeon, desert well)
+        }
+        HolderSet<net.minecraft.world.level.biome.Biome> biomes = structure.biomes();
+        for (Holder<net.minecraft.world.level.biome.Biome> biome : biomes) {
+            if (biome.is(net.minecraft.tags.BiomeTags.IS_NETHER)) {
+                return "Nether";
+            }
+            if (biome.is(net.minecraft.tags.BiomeTags.IS_END)) {
+                return "The End";
+            }
+        }
+        return "Overworld";
+    }
+
+    /** Canonical structure name -> the block ids of every NBT template it is built from. */
+    private static Map<String, TreeSet<String>> structurePalettes(MinecraftServer server) {
+        Map<String, TreeSet<String>> palettes = new java.util.HashMap<>();
+        Map<Identifier, net.minecraft.server.packs.resources.Resource> resources =
+                server.getResourceManager().listResources(
+                        "structure", id -> id.getPath().endsWith(".nbt"));
+        for (Map.Entry<Identifier, net.minecraft.server.packs.resources.Resource> entry : resources.entrySet()) {
+            String[] names = nbtStructureNames(entry.getKey().getPath());
+            if (names.length == 0) {
+                continue;
+            }
+            TreeSet<String> blocks = paletteBlocks(entry.getValue());
+            for (String name : names) {
+                palettes.computeIfAbsent(name, k -> new TreeSet<>()).addAll(blocks);
+            }
+        }
+        return palettes;
+    }
+
+    /** Canonical structure name(s) a {@code structure/...nbt} resource path belongs to. */
+    private static String[] nbtStructureNames(String resourcePath) {
+        // resourcePath is e.g. "structure/ancient_city/city/entrance/...nbt".
+        String rel = resourcePath.substring("structure/".length(), resourcePath.length() - ".nbt".length());
+        String[] parts = rel.split("/");
+        if (parts[0].equals("village")) {
+            String biome = parts.length > 1 ? parts[1] : "";
+            return switch (biome) {
+                case "desert" -> new String[]{"Village (Desert)"};
+                case "plains" -> new String[]{"Village (Plains)"};
+                case "savanna" -> new String[]{"Village (Savanna)"};
+                case "snowy" -> new String[]{"Village (Snowy)"};
+                case "taiga" -> new String[]{"Village (Taiga)"};
+                default -> VILLAGE_BIOMES.toArray(new String[0]);  // common / decays — every village
+            };
+        }
+        return NBT_STRUCTURE.getOrDefault(parts[0], new String[0]);
+    }
+
+    /** Every block id named in a structure template's palette(s). */
+    private static TreeSet<String> paletteBlocks(net.minecraft.server.packs.resources.Resource resource) {
+        TreeSet<String> blocks = new TreeSet<>();
+        try (java.io.InputStream stream = resource.open()) {
+            net.minecraft.nbt.CompoundTag root =
+                    net.minecraft.nbt.NbtIo.readCompressed(stream, net.minecraft.nbt.NbtAccounter.unlimitedHeap());
+            java.util.List<net.minecraft.nbt.ListTag> palettes = new java.util.ArrayList<>();
+            root.getList("palette").ifPresent(palettes::add);
+            root.getList("palettes").ifPresent(list -> {
+                for (int i = 0; i < list.size(); i++) {
+                    list.getList(i).ifPresent(palettes::add);
+                }
+            });
+            for (net.minecraft.nbt.ListTag palette : palettes) {
+                for (int i = 0; i < palette.size(); i++) {
+                    palette.getCompound(i).ifPresent(state -> {
+                        String name = state.getStringOr("Name", "");
+                        if (!name.isEmpty()) {
+                            blocks.add(stripNamespace(name));
+                        }
+                    });
+                }
+            }
+        } catch (IOException ignored) {
+            // a template that won't parse contributes no palette
+        }
+        return blocks;
+    }
+
+    private static String stripNamespace(String id) {
+        int colon = id.indexOf(':');
+        return colon >= 0 ? id.substring(colon + 1) : id;
     }
 
     // -- meta -> meta.json --------------------------------------------------
