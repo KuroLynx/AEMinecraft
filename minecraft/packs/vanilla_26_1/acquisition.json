@@ -4916,31 +4916,6 @@
       }
     ]
   },
-  "charged_creeper/creeper": {
-    "gameplay": [
-      "root"
-    ]
-  },
-  "charged_creeper/piglin": {
-    "gameplay": [
-      "root"
-    ]
-  },
-  "charged_creeper/skeleton": {
-    "gameplay": [
-      "root"
-    ]
-  },
-  "charged_creeper/wither_skeleton": {
-    "gameplay": [
-      "root"
-    ]
-  },
-  "charged_creeper/zombie": {
-    "gameplay": [
-      "root"
-    ]
-  },
   "cherry_boat": {
     "recipes": [
       {
@@ -5285,36 +5260,6 @@
         ],
         "station": "crafting_shapeless"
       }
-    ]
-  },
-  "chests/trial_chambers/reward_common": {
-    "structures": [
-      "Trial Chambers"
-    ]
-  },
-  "chests/trial_chambers/reward_ominous_common": {
-    "structures": [
-      "Trial Chambers"
-    ]
-  },
-  "chests/trial_chambers/reward_ominous_rare": {
-    "structures": [
-      "Trial Chambers"
-    ]
-  },
-  "chests/trial_chambers/reward_ominous_unique": {
-    "structures": [
-      "Trial Chambers"
-    ]
-  },
-  "chests/trial_chambers/reward_rare": {
-    "structures": [
-      "Trial Chambers"
-    ]
-  },
-  "chests/trial_chambers/reward_unique": {
-    "structures": [
-      "Trial Chambers"
     ]
   },
   "chicken": {
@@ -11153,92 +11098,6 @@
       ]
     ]
   },
-  "entities/sheep/black": {
-    "drops": [
-      "sheep"
-    ]
-  },
-  "entities/sheep/blue": {
-    "drops": [
-      "sheep"
-    ]
-  },
-  "entities/sheep/brown": {
-    "drops": [
-      "sheep"
-    ]
-  },
-  "entities/sheep/cyan": {
-    "drops": [
-      "sheep"
-    ]
-  },
-  "entities/sheep/gray": {
-    "drops": [
-      "sheep"
-    ]
-  },
-  "entities/sheep/green": {
-    "drops": [
-      "sheep"
-    ]
-  },
-  "entities/sheep/light_blue": {
-    "drops": [
-      "sheep"
-    ]
-  },
-  "entities/sheep/light_gray": {
-    "drops": [
-      "sheep"
-    ]
-  },
-  "entities/sheep/lime": {
-    "drops": [
-      "sheep"
-    ]
-  },
-  "entities/sheep/magenta": {
-    "drops": [
-      "sheep"
-    ]
-  },
-  "entities/sheep/orange": {
-    "drops": [
-      "sheep"
-    ]
-  },
-  "entities/sheep/pink": {
-    "drops": [
-      "sheep"
-    ]
-  },
-  "entities/sheep/purple": {
-    "drops": [
-      "sheep"
-    ]
-  },
-  "entities/sheep/red": {
-    "drops": [
-      "sheep"
-    ]
-  },
-  "entities/sheep/white": {
-    "drops": [
-      "sheep"
-    ]
-  },
-  "entities/sheep/yellow": {
-    "drops": [
-      "sheep"
-    ]
-  },
-  "equipment/trial_chamber": {
-    "gameplay": [
-      "trial_chamber_melee",
-      "trial_chamber_ranged"
-    ]
-  },
   "experience_bottle": {
     "structures": [
       "Ancient City",
@@ -11651,11 +11510,6 @@
       }
     ]
   },
-  "fishes": {
-    "breeding": [
-      "nautilus"
-    ]
-  },
   "fishing_rod": {
     "gameplay": [
       "junk",
@@ -11944,25 +11798,6 @@
         ],
         "station": "crafting_shapeless"
       }
-    ]
-  },
-  "gameplay/fishing/fish": {
-    "drops": [
-      "elder_guardian",
-      "guardian"
-    ],
-    "gameplay": [
-      "fishing"
-    ]
-  },
-  "gameplay/fishing/junk": {
-    "gameplay": [
-      "fishing"
-    ]
-  },
-  "gameplay/fishing/treasure": {
-    "gameplay": [
-      "fishing"
     ]
   },
   "ghast_tear": {
@@ -14253,16 +14088,6 @@
   "hanging_roots": {
     "mining": [
       "hanging_roots"
-    ]
-  },
-  "happy_ghast_food": {
-    "breeding": [
-      "happy_ghast"
-    ]
-  },
-  "harnesses": {
-    "breeding": [
-      "happy_ghast"
     ]
   },
   "hay_block": {
@@ -19363,11 +19188,6 @@
       ]
     ]
   },
-  "meat": {
-    "breeding": [
-      "wolf"
-    ]
-  },
   "medium_amethyst_bud": {
     "silk_mining": [
       "medium_amethyst_bud"
@@ -19946,11 +19766,6 @@
         "wandering_trader",
         "emerald_name_tag"
       ]
-    ]
-  },
-  "nautilus_bucket_food": {
-    "breeding": [
-      "nautilus"
     ]
   },
   "nautilus_shell": {
@@ -29165,11 +28980,6 @@
         ],
         "station": "crafting_shaped"
       }
-    ]
-  },
-  "strider_food": {
-    "breeding": [
-      "strider"
     ]
   },
   "string": {

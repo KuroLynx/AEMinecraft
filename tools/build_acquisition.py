@@ -127,6 +127,8 @@ class AcquisitionBuilder:
             for key in ("value", "name", "id"):
                 if key in entry and isinstance(entry[key], str):
                     leaf = _strip_ns(entry[key])
+                    if "/" in leaf:
+                        break  # a referenced loot-table id (e.g. charged_creeper/creeper), not an item
                     items.append(leaf)
                     # No vanilla table names `enchanted_book`; it's a `book` carrying an enchant
                     # loot-function. Record enchanted_book too, so its loot/fishing/barter sources
@@ -285,8 +287,9 @@ class AcquisitionBuilder:
     def _food(self, mob: str, tag: dict):
         for value in tag.get("values", []):
             item = value if isinstance(value, str) else value.get("id", "")
-            if item:
-                self.breeding.setdefault(_strip_ns(item).replace("#", ""), set()).add(mob)
+            if not item or item.startswith("#"):
+                continue  # a nested #tag (e.g. #meat) is not an item id — skip, don't key it as one
+            self.breeding.setdefault(_strip_ns(item), set()).add(mob)
 
     # -- tags ---------------------------------------------------------------
     def _resolve_tag(self, tag_name: str, seen: set | None = None) -> list:

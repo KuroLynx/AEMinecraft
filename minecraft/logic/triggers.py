@@ -56,6 +56,17 @@ _POTION_ITEMS = {
     "minecraft:lingering_potion", "minecraft:tipped_arrow",
 }
 
+# Armor-trim material (a ``trim`` item predicate names it) -> the item that supplies it at a smithing
+# table. The material is the region-binding requirement (netherite/quartz are Nether, the rest
+# Overworld); the template and armor are region-neutral (templates appear in structures everywhere,
+# armor is trivial), so they aren't modeled.
+_TRIM_MATERIAL_ITEM = {
+    "amethyst": "amethyst_shard", "copper": "copper_ingot", "diamond": "diamond",
+    "emerald": "emerald", "gold": "gold_ingot", "iron": "iron_ingot", "lapis": "lapis_lazuli",
+    "netherite": "netherite_ingot", "quartz": "quartz", "redstone": "redstone",
+    "resin": "resin_brick",
+}
+
 _TAGS: dict | None = None
 _BREWING: dict | None = None
 
@@ -918,12 +929,25 @@ class TriggerCompiler:
         potion = self._potion_node(pred)
         if potion is not None:
             return potion
-        enchant = self._enchant_gate(pred)
-        base = self._any_acquire(pred.get("items"))
-        if enchant is not None:
-            # The item must be enchanted: need the base item (when named) AND a way to enchant it.
-            return and_(base, enchant) if base is not None else enchant
-        return base
+        # The base item (when named) AND any capability its predicate demands: being enchanted, or
+        # carrying an armor trim of a specific material (Chromatic Armory / Coordinated Flair).
+        parts = [self._any_acquire(pred.get("items")), self._enchant_gate(pred), self._trim_gate(pred)]
+        parts = [p for p in parts if p is not None]
+        return and_(*parts) if parts else None
+
+    def _trim_gate(self, pred: dict) -> Rule | None:
+        """The capability behind a ``trim`` item predicate: a smithing table plus the named trim
+        material (``None`` when the predicate names no resolvable trim material)."""
+        predicates = pred.get("predicates")
+        if not isinstance(predicates, dict):
+            return None
+        trim = predicates.get("minecraft:trim") or predicates.get("trim")
+        material = trim.get("material") if isinstance(trim, dict) else None
+        item = _TRIM_MATERIAL_ITEM.get(self._path(material)) if isinstance(material, str) else None
+        if item is None:
+            return None
+        return self.h.all_of(self.h.acquire("minecraft:smithing_table"),
+                             self.h.acquire(f"minecraft:{item}"))
 
     def _enchant_gate(self, pred: dict) -> Rule | None:
         """The capability to get an ENCHANTED item, or ``None`` when the predicate names no

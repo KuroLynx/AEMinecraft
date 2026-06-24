@@ -1016,8 +1016,16 @@ class RuleHelper:
         base = item_id.split(":", 1)[-1] if ":" in item_id else item_id
         if base.startswith("#"):
             return None  # a raw tag (recipe tags are pre-expanded; a bare tag can't be resolved)
-        if base in _stack or len(_stack) >= self._MAX_DEPTH:
-            return None  # recipe cycle / too deep — this path can't justify itself
+        if base in _stack:
+            return None  # recipe cycle — this path can't justify itself
+        if len(_stack) >= self._MAX_DEPTH:
+            # Too deep to keep expanding. A base material bottoms out at an ore/region regardless, so
+            # its tier floor is a sound TERMINAL here — this is not the lossy top-level bypass (a
+            # shallow acquire still uses the real sources, e.g. diamond via bastion loot); it only
+            # stops the runaway recursion of a deep crafting chain (waxed_copper_lantern → … →
+            # copper_ingot). A non-material this deep gives up.
+            tier = _MATERIAL_TIER_BY_ITEM.get(base)
+            return self.material(tier) if tier is not None else None
         # Memoize on (base, stack): the result is pure for this helper, so the same item is computed
         # once and shared. Datapack compilation calls acquire ~9M times for far fewer distinct keys.
         key = (base, _stack)
@@ -1051,6 +1059,11 @@ class RuleHelper:
         # on the End City (region The End + any structure lock) plus Knowledge: Flying.
         if base == "elytra":
             return self.all_of(self.knowledge(K_FLYING), self.structure(S_END_CITY))
+
+        # A dragon head sits on the End City ships' spires (no recipe or loot table, like the elytra),
+        # so it has no acquisition record — gate it on reaching an End City.
+        if base == "dragon_head":
+            return self.structure(S_END_CITY)
 
         # Tools / armor / gated craftables (bow, fishing rod, shears, …) need their Knowledge to be
         # USED however they were obtained — but they are still obtained via their real sources, each
