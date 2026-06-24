@@ -42,7 +42,10 @@ import java.util.TreeSet;
 public final class PackDump {
     private PackDump() {}
 
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+    // serializeNulls so a null field is written as `null` (block_mining "needs", advancement "parent"
+    // / "title") instead of being dropped — matching what the offline json.dump tools emit.
+    private static final Gson GSON = new GsonBuilder()
+            .setPrettyPrinting().disableHtmlEscaping().serializeNulls().create();
 
     /** Dumpable file ids (UI checkboxes); {@code meta} + {@code acquisition} etc. map to one file each. */
     public static final List<String> FILES = List.of(
