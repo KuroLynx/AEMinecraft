@@ -1,0 +1,698 @@
+[
+  {
+    "game_id": "minecraft:allay",
+    "category": "passive",
+    "region": "Overworld",
+    "breedable": true,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:armadillo",
+    "category": "passive",
+    "region": "Overworld",
+    "breedable": true,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:axolotl",
+    "category": "passive",
+    "region": "Overworld",
+    "breedable": true,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:bat",
+    "category": "passive",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:bee",
+    "category": "neutral",
+    "region": "Overworld",
+    "breedable": true,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:blaze",
+    "category": "hostile",
+    "region": "Nether",
+    "breedable": false,
+    "tameable": false,
+    "leashable": false
+  },
+  {
+    "game_id": "minecraft:bogged",
+    "category": "hostile",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": false
+  },
+  {
+    "game_id": "minecraft:breeze",
+    "category": "hostile",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": false
+  },
+  {
+    "game_id": "minecraft:camel",
+    "category": "passive",
+    "region": "Overworld",
+    "breedable": true,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:camel_husk",
+    "category": "passive",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:cat",
+    "category": "passive",
+    "region": "Overworld",
+    "breedable": true,
+    "tameable": true,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:cave_spider",
+    "category": "neutral",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:chicken",
+    "category": "passive",
+    "region": "Overworld",
+    "breedable": true,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:cod",
+    "category": "passive",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:copper_golem",
+    "category": "passive",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:cow",
+    "category": "passive",
+    "region": "Overworld",
+    "breedable": true,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:creaking",
+    "category": "hostile",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": false
+  },
+  {
+    "game_id": "minecraft:creeper",
+    "category": "hostile",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": false
+  },
+  {
+    "game_id": "minecraft:dolphin",
+    "category": "neutral",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:donkey",
+    "category": "passive",
+    "region": "Overworld",
+    "breedable": true,
+    "tameable": true,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:drowned",
+    "category": "neutral",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:elder_guardian",
+    "category": "boss",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": false
+  },
+  {
+    "game_id": "minecraft:ender_dragon",
+    "category": "boss",
+    "region": "The End",
+    "breedable": false,
+    "tameable": false,
+    "leashable": false
+  },
+  {
+    "game_id": "minecraft:enderman",
+    "category": "neutral",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:endermite",
+    "category": "hostile",
+    "region": "The End",
+    "breedable": false,
+    "tameable": false,
+    "leashable": false
+  },
+  {
+    "game_id": "minecraft:evoker",
+    "category": "hostile",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": false
+  },
+  {
+    "game_id": "minecraft:fox",
+    "category": "neutral",
+    "region": "Overworld",
+    "breedable": true,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:frog",
+    "category": "passive",
+    "region": "Overworld",
+    "breedable": true,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:ghast",
+    "category": "hostile",
+    "region": "Nether",
+    "breedable": false,
+    "tameable": false,
+    "leashable": false
+  },
+  {
+    "game_id": "minecraft:glow_squid",
+    "category": "passive",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:goat",
+    "category": "neutral",
+    "region": "Overworld",
+    "breedable": true,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:guardian",
+    "category": "hostile",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": false
+  },
+  {
+    "game_id": "minecraft:happy_ghast",
+    "category": "passive",
+    "region": "Nether",
+    "breedable": false,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:hoglin",
+    "category": "hostile",
+    "region": "Nether",
+    "breedable": true,
+    "tameable": false,
+    "leashable": false
+  },
+  {
+    "game_id": "minecraft:horse",
+    "category": "passive",
+    "region": "Overworld",
+    "breedable": true,
+    "tameable": true,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:husk",
+    "category": "hostile",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": false
+  },
+  {
+    "game_id": "minecraft:iron_golem",
+    "category": "neutral",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:llama",
+    "category": "neutral",
+    "region": "Overworld",
+    "breedable": true,
+    "tameable": true,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:magma_cube",
+    "category": "hostile",
+    "region": "Nether",
+    "breedable": false,
+    "tameable": false,
+    "leashable": false
+  },
+  {
+    "game_id": "minecraft:mooshroom",
+    "category": "passive",
+    "region": "Overworld",
+    "breedable": true,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:mule",
+    "category": "passive",
+    "region": "Overworld",
+    "breedable": true,
+    "tameable": true,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:nautilus",
+    "category": "neutral",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:ocelot",
+    "category": "passive",
+    "region": "Overworld",
+    "breedable": true,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:panda",
+    "category": "neutral",
+    "region": "Overworld",
+    "breedable": true,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:parched",
+    "category": "hostile",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": false
+  },
+  {
+    "game_id": "minecraft:parrot",
+    "category": "passive",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": true,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:phantom",
+    "category": "hostile",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": false
+  },
+  {
+    "game_id": "minecraft:pig",
+    "category": "passive",
+    "region": "Overworld",
+    "breedable": true,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:piglin",
+    "category": "neutral",
+    "region": "Nether",
+    "breedable": false,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:piglin_brute",
+    "category": "hostile",
+    "region": "Nether",
+    "breedable": false,
+    "tameable": false,
+    "leashable": false
+  },
+  {
+    "game_id": "minecraft:pillager",
+    "category": "hostile",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": false
+  },
+  {
+    "game_id": "minecraft:polar_bear",
+    "category": "neutral",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:pufferfish",
+    "category": "neutral",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:rabbit",
+    "category": "passive",
+    "region": "Overworld",
+    "breedable": true,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:ravager",
+    "category": "hostile",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": false
+  },
+  {
+    "game_id": "minecraft:salmon",
+    "category": "passive",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:sheep",
+    "category": "passive",
+    "region": "Overworld",
+    "breedable": true,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:shulker",
+    "category": "hostile",
+    "region": "The End",
+    "breedable": false,
+    "tameable": false,
+    "leashable": false
+  },
+  {
+    "game_id": "minecraft:silverfish",
+    "category": "hostile",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": false
+  },
+  {
+    "game_id": "minecraft:skeleton",
+    "category": "hostile",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": false
+  },
+  {
+    "game_id": "minecraft:skeleton_horse",
+    "category": "passive",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:slime",
+    "category": "hostile",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": false
+  },
+  {
+    "game_id": "minecraft:sniffer",
+    "category": "passive",
+    "region": "Overworld",
+    "breedable": true,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:snow_golem",
+    "category": "passive",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:spider",
+    "category": "neutral",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:squid",
+    "category": "passive",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:stray",
+    "category": "hostile",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": false
+  },
+  {
+    "game_id": "minecraft:strider",
+    "category": "passive",
+    "region": "Nether",
+    "breedable": true,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:tadpole",
+    "category": "passive",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:trader_llama",
+    "category": "neutral",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": true,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:tropical_fish",
+    "category": "passive",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:turtle",
+    "category": "passive",
+    "region": "Overworld",
+    "breedable": true,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:vex",
+    "category": "hostile",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": false
+  },
+  {
+    "game_id": "minecraft:villager",
+    "category": "passive",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:vindicator",
+    "category": "hostile",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": false
+  },
+  {
+    "game_id": "minecraft:wandering_trader",
+    "category": "passive",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:warden",
+    "category": "boss",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": false
+  },
+  {
+    "game_id": "minecraft:witch",
+    "category": "hostile",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": false
+  },
+  {
+    "game_id": "minecraft:wither",
+    "category": "boss",
+    "region": "Nether",
+    "breedable": false,
+    "tameable": false,
+    "leashable": false
+  },
+  {
+    "game_id": "minecraft:wither_skeleton",
+    "category": "hostile",
+    "region": "Nether",
+    "breedable": false,
+    "tameable": false,
+    "leashable": false
+  },
+  {
+    "game_id": "minecraft:wolf",
+    "category": "neutral",
+    "region": "Overworld",
+    "breedable": true,
+    "tameable": true,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:zoglin",
+    "category": "hostile",
+    "region": "Nether",
+    "breedable": false,
+    "tameable": false,
+    "leashable": false
+  },
+  {
+    "game_id": "minecraft:zombie",
+    "category": "hostile",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": false
+  },
+  {
+    "game_id": "minecraft:zombie_horse",
+    "category": "passive",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": true,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:zombie_nautilus",
+    "category": "neutral",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": true,
+    "leashable": true
+  },
+  {
+    "game_id": "minecraft:zombie_villager",
+    "category": "hostile",
+    "region": "Overworld",
+    "breedable": false,
+    "tameable": false,
+    "leashable": false
+  },
+  {
+    "game_id": "minecraft:zombified_piglin",
+    "category": "neutral",
+    "region": "Nether",
+    "breedable": false,
+    "tameable": false,
+    "leashable": true
+  }
+]

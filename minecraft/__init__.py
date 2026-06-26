@@ -25,18 +25,6 @@ class MCLocation(Location):
     game = "Minecraft [AEM]"
 
 
-def _gate_classification(original: ItemClassification) -> ItemClassification:
-    """Classification for an unlock item used as a logic gate.
-
-    Only progression items are collected into AP's CollectionState, so any gate MUST be
-    progression. Gates that were not originally progression are "insignificant progression":
-    kept logic-bearing, but flagged skip_balancing so progression balancing leaves them alone.
-    """
-    if original == ItemClassification.progression:
-        return ItemClassification.progression
-    return ItemClassification.progression_skip_balancing
-
-
 # Structures that gate a goal boss (and thus the critical path) when that boss is required: such a
 # structure unlock is worth full progression (so progression balancing front-loads it); every other
 # structure unlock stays progression_skip_balancing — still logic-bearing, but not balanced. The
@@ -48,6 +36,24 @@ _STRUCTURE_BOSS_GATES = {
     "fortress":   {"Wither", "Ender Dragon"},
     "monument":   {"Elder Guardian"},
     "ancient_city": {"Warden"},
+}
+
+
+# Mobs that gate a goal boss (and thus the critical path) when that boss is required: such an Entity
+# Unlock is worth full progression (so progression balancing front-loads it); every other Entity
+# Unlock stays progression_skip_balancing — still a logic gate (it gates its own Kill location), but
+# not balanced. Each boss mob gates itself; the key resource prerequisites are the Wither Skeleton
+# (skulls -> Wither) and Blaze + Enderman (blaze rods + ender pearls -> eyes of ender -> the End ->
+# Ender Dragon). Like _STRUCTURE_BOSS_GATES this is logic knowledge, so it lives with the rules, not
+# in entities.json (which is purely game-derived). Keyed by mob display name (the MOBS_ALL key).
+_MOB_BOSS_GATES = {
+    "Ender Dragon":    {"Ender Dragon"},
+    "Wither":          {"Wither"},
+    "Elder Guardian":  {"Elder Guardian"},
+    "Warden":          {"Warden"},
+    "Wither Skeleton": {"Wither"},
+    "Blaze":           {"Ender Dragon"},
+    "Enderman":        {"Ender Dragon"},
 }
 
 
@@ -105,14 +111,14 @@ class MCWorld(World):
             item_data: MCItemData = ITEMS[name]
             return MCItem(name, item_data.classification, item_data.id, self.player)
 
-        # Every Entity Unlock that enters the pool gates at least its own Kill Entity location, so
-        # it must stay progression-flavoured. AP's CollectionState only collects progression items,
-        # so a useful/filler gate is invisible to the solver; _gate_classification keeps them
-        # logic-bearing (progression, or skip_balancing when not originally progression).
+        # Every Entity Unlock that enters the pool gates at least its own Kill Entity location, so it
+        # must stay progression-flavoured. AP's CollectionState only collects progression items, so a
+        # useful/filler gate is invisible to the solver; _mob_classification keeps them logic-bearing
+        # (full progression when goal-gating, else skip_balancing) — the per-seed structure-unlock rule.
         if name.startswith(ENTITY_UNLOCK_PREFIX):
             mob_name = name.removeprefix(ENTITY_UNLOCK_PREFIX)
             mob_data = MOBS_ALL[mob_name]
-            classification = _gate_classification(mob_data.unlock_classification)
+            classification = self._mob_classification(mob_name)
             return MCItem(name, classification, BASE_ID_ENTITY_UNLOCK + mob_data.id, self.player)
 
         # A Structure Unlock locks a structure, so it always gates that structure's locations — it
@@ -396,6 +402,15 @@ class MCWorld(World):
         progression_skip_balancing (it gates its structure's locations and must be collectable), and
         full progression only when it gates a boss the goal requires (see _STRUCTURE_BOSS_GATES)."""
         if _STRUCTURE_BOSS_GATES.get(struct_name, frozenset()) & set(self.selected_bosses):
+            return ItemClassification.progression
+        return ItemClassification.progression_skip_balancing
+
+    def _mob_classification(self, mob_name: str) -> ItemClassification:
+        """An Entity Unlock's classification, computed for this seed. It is at least
+        progression_skip_balancing (it gates at least its own Kill location and must be collectable),
+        and full progression only when it gates a boss the goal requires (see _MOB_BOSS_GATES) —
+        the same per-seed, goal-driven rule the structure unlocks use."""
+        if _MOB_BOSS_GATES.get(mob_name, frozenset()) & set(self.selected_bosses):
             return ItemClassification.progression
         return ItemClassification.progression_skip_balancing
 
