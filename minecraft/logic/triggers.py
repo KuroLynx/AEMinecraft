@@ -31,15 +31,14 @@ from ..data import (
 from .acquisition import RuleHelper
 from .ast import Rule, and_, or_
 from .constants import (
-    BACAP_PACK,
     K_ARMOR,
     K_BREWING,
     MAT_IRON,
     REGION_END,
     REGION_NETHER,
     REGION_OVERWORLD,
-    VANILLA_PACK,
 )
+from ..content.registry import base_pack, overlay_packs
 
 # Triggers that imply a specific tool/block the criterion never names: hitting a target block is
 # gated by crafting one (redstone + hay), brewing by a brewing stand, etc. Reaching the implied item
@@ -71,7 +70,8 @@ _TAGS: dict | None = None
 _BREWING: dict | None = None
 
 
-def _pack_json(filename: str, pack: str = VANILLA_PACK) -> dict:
+def _pack_json(filename: str, pack: str | None = None) -> dict:
+    pack = pack or base_pack()  # default to the discovered vanilla base pack
     root = __package__.rsplit(".", 1)[0]  # e.g. "worlds.minecraft"
     with files(root).joinpath("packs", pack, filename).open(encoding="utf-8") as f:
         return json.load(f)
@@ -87,8 +87,9 @@ def _tags() -> dict:
     global _TAGS
     if _TAGS is None:
         merged = _pack_json("tags.json")
+        bacap = overlay_packs().get("blazeandcave")
         try:
-            extra = _pack_json("tags.json", pack=BACAP_PACK)
+            extra = _pack_json("tags.json", pack=bacap) if bacap else {}
         except (FileNotFoundError, OSError):
             extra = {}
         for registry, tags in extra.items():

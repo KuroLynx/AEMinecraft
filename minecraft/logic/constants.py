@@ -32,41 +32,44 @@ K_TRIDENT = "Trident Handling"
 # Structures
 # -----------------------------------------------------------------------
 
-S_ANCIENT_CITY = "Ancient City"
-S_BASTION_REMNANT = "Bastion Remnant"
-S_BURIED_TREASURE = "Buried Treasure"
-S_DESERT_PYRAMID = "Desert Pyramid"
-S_DESERT_WELL = "Desert Well"
-S_DUNGEON = "Dungeon"
-S_END_CITY = "End City"
-S_IGLOO = "Igloo"
-S_JUNGLE_PYRAMID = "Jungle Pyramid"
-S_MANSION = "Mansion"
-S_MINESHAFT = "Mineshaft"
-S_MINESHAFT_MESA = "Mineshaft (Mesa)"
-S_NETHER_FORTRESS = "Nether Fortress"
-S_OCEAN_MONUMENT = "Ocean Monument"
-S_OCEAN_RUIN_COLD = "Ocean Ruin (Cold)"
-S_OCEAN_RUIN_WARM = "Ocean Ruin (Warm)"
-S_PILLAGER_OUTPOST = "Pillager Outpost"
-S_RUINED_PORTAL = "Ruined Portal"
-S_RUINED_PORTAL_DESERT = "Ruined Portal (Desert)"
-S_RUINED_PORTAL_JUNGLE = "Ruined Portal (Jungle)"
-S_RUINED_PORTAL_MOUNTAIN = "Ruined Portal (Mountain)"
-S_RUINED_PORTAL_NETHER = "Ruined Portal (Nether)"
-S_RUINED_PORTAL_OCEAN = "Ruined Portal (Ocean)"
-S_RUINED_PORTAL_SWAMP = "Ruined Portal (Swamp)"
-S_SHIPWRECK = "Shipwreck"
-S_SHIPWRECK_BEACHED = "Shipwreck (Beached)"
-S_STRONGHOLD = "Stronghold"
-S_SWAMP_HUT = "Swamp Hut"
-S_TRAIL_RUINS = "Trail Ruins"
-S_TRIAL_CHAMBERS = "Trial Chambers"
-S_VILLAGE_DESERT = "Village (Desert)"
-S_VILLAGE_PLAINS = "Village (Plains)"
-S_VILLAGE_SAVANNA = "Village (Savanna)"
-S_VILLAGE_SNOWY = "Village (Snowy)"
-S_VILLAGE_TAIGA = "Village (Taiga)"
+# Structures are identified by their game_id (the stable key in structures.json / the MC registry),
+# NOT a display name — names are derived via prettify(game_id) for the YAML option and AP item label.
+# So a new structure needs no constant unless logic references it (boss gates, structure-bound mobs).
+S_ANCIENT_CITY = "ancient_city"
+S_BASTION_REMNANT = "bastion_remnant"
+S_BURIED_TREASURE = "buried_treasure"
+S_DESERT_PYRAMID = "desert_pyramid"
+S_DESERT_WELL = "desert_well"
+S_DUNGEON = "monster_room"
+S_END_CITY = "end_city"
+S_IGLOO = "igloo"
+S_JUNGLE_PYRAMID = "jungle_pyramid"
+S_MANSION = "mansion"
+S_MINESHAFT = "mineshaft"
+S_MINESHAFT_MESA = "mineshaft_mesa"
+S_NETHER_FORTRESS = "fortress"
+S_OCEAN_MONUMENT = "monument"
+S_OCEAN_RUIN_COLD = "ocean_ruin_cold"
+S_OCEAN_RUIN_WARM = "ocean_ruin_warm"
+S_PILLAGER_OUTPOST = "pillager_outpost"
+S_RUINED_PORTAL = "ruined_portal"
+S_RUINED_PORTAL_DESERT = "ruined_portal_desert"
+S_RUINED_PORTAL_JUNGLE = "ruined_portal_jungle"
+S_RUINED_PORTAL_MOUNTAIN = "ruined_portal_mountain"
+S_RUINED_PORTAL_NETHER = "ruined_portal_nether"
+S_RUINED_PORTAL_OCEAN = "ruined_portal_ocean"
+S_RUINED_PORTAL_SWAMP = "ruined_portal_swamp"
+S_SHIPWRECK = "shipwreck"
+S_SHIPWRECK_BEACHED = "shipwreck_beached"
+S_STRONGHOLD = "stronghold"
+S_SWAMP_HUT = "swamp_hut"
+S_TRAIL_RUINS = "trail_ruins"
+S_TRIAL_CHAMBERS = "trial_chambers"
+S_VILLAGE_DESERT = "village_desert"
+S_VILLAGE_PLAINS = "village_plains"
+S_VILLAGE_SAVANNA = "village_savanna"
+S_VILLAGE_SNOWY = "village_snowy"
+S_VILLAGE_TAIGA = "village_taiga"
 
 # -----------------------------------------------------------------------
 # Advancements
@@ -341,12 +344,10 @@ MAT_NETHERITE = 6
 # -----------------------------------------------------------------------
 # Content packs (packs/<name>/)
 # -----------------------------------------------------------------------
-# Pack directory names derive from the MC content version they target, so supporting a new MC
-# version (26.2, …) is a one-line bump here plus dropping in the matching
-# packs/<vanilla|bacap>_<ver>/ dirs — every pack reference in the apworld goes through these
-# constants. VANILLA_PACK is always loaded; BACAP_PACK is the BlazeandCave manifest for THIS
-# version and is loaded whenever the blazeandcave option is on, so "the good manifest version of
-# BACAP" tracks CONTENT_VERSION automatically instead of being pinned to a stale "bacap" dir.
-CONTENT_VERSION = "26_1"
-VANILLA_PACK = f"vanilla_{CONTENT_VERSION}"
-BACAP_PACK = f"bacap_{CONTENT_VERSION}"
+# The ONLY pack-related constant: the MC version the apworld targets. Packs are not referenced by
+# folder name anywhere — content.registry DISCOVERS them by scanning packs/ and keeping every pack
+# whose meta.json `mc_version` equals this string (the vanilla one is the base; the rest, e.g. BACAP,
+# are overlays). So supporting a new MC version is: dump the packs in-game (their meta.mc_version is
+# the running game version), drop the folders in packs/, and bump this one line — folder names are
+# irrelevant. Must match exactly the `mc_version` the dump writes (SharedConstants version name).
+CONTENT_VERSION = "26.1.2"

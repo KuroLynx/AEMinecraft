@@ -1,7 +1,0 @@
-{
-  "name": "vanilla_26_1",
-  "source": "vanilla",
-  "namespace": "minecraft",
-  "mc_version": ">=26.1",
-  "description": "Vanilla Minecraft content (items, mobs, structures, advancements) for MC 26.1.x."
-}

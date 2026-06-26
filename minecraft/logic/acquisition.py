@@ -5,7 +5,7 @@ from importlib.resources import files
 # AST primitives must be imported directly: `from .. import *` cannot supply them because the
 # package __init__ imports this module (via set_rules) before it defines Const/Has/and_/… .
 from .ast import Const, Has, ReachRegion, ReachLocation, and_, or_, at_least
-from .constants import VANILLA_PACK  # constants imports nothing, so this is import-cycle-safe
+from ..content.registry import base_pack  # registry only imports constants → import-cycle-safe
 from .. import *
 
 # Wood-family items (planks / logs / wood / stems / hyphae, stripped or not) have no knowledge or
@@ -68,7 +68,7 @@ _ENTITY_BY_GID: dict | None = None
 def _acquisition_table() -> dict:
     global _ACQUISITION
     if _ACQUISITION is None:
-        path = files(_MC_ROOT).joinpath("packs", VANILLA_PACK, "acquisition.json")
+        path = files(_MC_ROOT).joinpath("packs", base_pack(), "acquisition.json")
         with path.open(encoding="utf-8") as handle:
             _ACQUISITION = json.load(handle)
     return _ACQUISITION
@@ -112,7 +112,7 @@ _BLOCK_MINING: dict | None = None
 def _block_mining() -> dict:
     global _BLOCK_MINING
     if _BLOCK_MINING is None:
-        path = files(_MC_ROOT).joinpath("packs", VANILLA_PACK, "block_mining.json")
+        path = files(_MC_ROOT).joinpath("packs", base_pack(), "block_mining.json")
         with path.open(encoding="utf-8") as handle:
             _BLOCK_MINING = json.load(handle)
     return _BLOCK_MINING
@@ -159,6 +159,9 @@ class RuleHelper:
         # Structures locked behind a 'Structure Unlock' item (structure_unlock option). Others are
         # gated by their dimension being reachable instead (see self.structure).
         self.locked_structures = world._get_locked_structures()
+        # Structures that actually exist this seed (vanilla + overlay packs whose option is on). An
+        # inactive overlay structure can't be a source or a reachable target.
+        self.active_structures = world._get_active_structures()
         # Options resolved once, up front, so rule nodes never carry option logic.
         self.villager_trust = bool(world.options.villager_trust.value)
         self.locked_categories = set(world.options.mob_spawn_lock_category.value)
@@ -318,21 +321,24 @@ class RuleHelper:
     # -----------------------------------------------------------------------
     # Structures
     # -----------------------------------------------------------------------
-    def structure(self, struct_name: str):
-        if struct_name not in STRUCTURES:
-            print(f"Warning: {struct_name} not found !")
+    def structure(self, struct_gid: str):
+        if struct_gid not in STRUCTURES:
+            print(f"Warning: {struct_gid} not found !")
             return Const(False)
+        if struct_gid not in self.active_structures:
+            return Const(False)  # an overlay structure whose pack is off this seed never generates
         # A structure is reachable only once its dimension is reachable (Overworld is always
         # reachable, Nether/End need their access). Locked structures additionally require their
         # unlock item — but the dimension gate still applies, so e.g. the Nether ruined portal is
         # not reachable from the Overworld just because its unlock item was received.
-        region = self.access_region(STRUCTURES[struct_name].region)
-        if struct_name in self.locked_structures:
-            return self.all_of(self.has(f"{STRUCT_UNLOCK_PREFIX}{struct_name}"), region)
+        region = self.access_region(STRUCTURES[struct_gid].region)
+        if struct_gid in self.locked_structures:
+            return self.all_of(self.has(f"{STRUCT_UNLOCK_PREFIX}{STRUCTURES[struct_gid].label}"), region)
         return region
 
     def any_village(self):
-        return self.any_of(*[self.structure(f"Village ({biome})") for biome in ["Desert", "Plains", "Savanna", "Snowy", "Taiga"]])
+        return self.any_of(*[self.structure(gid) for gid in
+                             (S_VILLAGE_DESERT, S_VILLAGE_PLAINS, S_VILLAGE_SAVANNA, S_VILLAGE_SNOWY, S_VILLAGE_TAIGA)])
 
     def any_portal(self, nether_allowed: bool = False):
         portals = [
@@ -1126,7 +1132,8 @@ class RuleHelper:
                 # behind the Nether). Redundant ones (a block whose recipe is already reachable in the
                 # structure's dimension) collapse in _unique_or / _coarsen.
                 for struct_name in _block_structures().get(base, ()):
-                    options.append(self.structure(struct_name))
+                    if struct_name in self.active_structures:
+                        options.append(self.structure(struct_name))
                 continue
             options.append(self._mining_node(block, base))
         for block in record.get("silk_mining", ()):

@@ -44,10 +44,10 @@ def _gate_classification(original: ItemClassification) -> ItemClassification:
 # End); the Stronghold is the only End portal. This is logic knowledge, so it lives with the rules,
 # not in structures.json (which is purely jar-derived).
 _STRUCTURE_BOSS_GATES = {
-    "Stronghold":      {"Ender Dragon"},
-    "Nether Fortress": {"Wither", "Ender Dragon"},
-    "Ocean Monument":  {"Elder Guardian"},
-    "Ancient City":    {"Warden"},
+    "stronghold": {"Ender Dragon"},
+    "fortress":   {"Wither", "Ender Dragon"},
+    "monument":   {"Elder Guardian"},
+    "ancient_city": {"Warden"},
 }
 
 
@@ -84,8 +84,8 @@ class MCWorld(World):
     item_name_to_id = {
         **{name: data.id for (name, data) in ITEMS.items()},
         **{f"{ENTITY_UNLOCK_PREFIX}{name}": BASE_ID_ENTITY_UNLOCK + mob.id for (name, mob) in MOBS_ALL.items()},
-        **{f"{STRUCT_UNLOCK_PREFIX}{name}": BASE_ID_STRUCT_UNLOCK + structure.id for (name, structure) in
-           STRUCTURES.items()}
+        **{f"{STRUCT_UNLOCK_PREFIX}{structure.label}": BASE_ID_STRUCT_UNLOCK + structure.id
+           for structure in STRUCTURES.values()}
     }
 
     location_name_to_id = {
@@ -120,9 +120,9 @@ class MCWorld(World):
         # it rises to full progression is a per-seed call, computed from the goal (see
         # _structure_classification), not stored in the data.
         if name.startswith(STRUCT_UNLOCK_PREFIX):
-            struct_name = name.removeprefix(STRUCT_UNLOCK_PREFIX)
-            struct_data = STRUCTURES[struct_name]
-            classification = self._structure_classification(struct_name)
+            struct_gid = STRUCTURE_BY_LABEL[name.removeprefix(STRUCT_UNLOCK_PREFIX)]
+            struct_data = STRUCTURES[struct_gid]
+            classification = self._structure_classification(struct_gid)
             return MCItem(name, classification, BASE_ID_STRUCT_UNLOCK + struct_data.id, self.player)
 
         raise KeyError(f"Unknown item: {name}")
@@ -148,22 +148,38 @@ class MCWorld(World):
             )
             self.options.advancements_required.value = active_advancement_count
 
+    def _get_active_structures(self) -> set[str]:
+        """Structures that exist this seed: every vanilla (base) structure, plus an overlay pack's
+        structures only when that pack's option is enabled — mirroring how blazeandcave gates BACAP.
+        STRUCTURE_PACK_OPTION holds an overlay structure's gating option; base structures are absent
+        from it and so are always active."""
+        return {
+            name for name in STRUCTURES
+            if name not in STRUCTURE_PACK_OPTION
+            or getattr(self.options, STRUCTURE_PACK_OPTION[name])
+        }
+
     def _get_locked_structures(self) -> set[str]:
         """Structures locked behind a 'Structure Unlock' item, per the structure_unlock option.
 
         The option accepts dimension presets ("Overworld"/"Nether"/"The End"), "All", and/or
-        individual structure names; this resolves them to a concrete set of structure names.
+        individual structure display names; this resolves them to a concrete set of structure
+        game_ids. Only structures active this seed (see _get_active_structures) can be locked — a
+        disabled overlay pack's structures don't exist, so they can't be a Structure Unlock.
         """
+        active = self._get_active_structures()
         selected = self.options.structure_unlock.value
         if "All" in selected:
-            return set(STRUCTURES.keys())
+            return set(active)
 
         locked: set[str] = set()
         for entry in selected:
             if entry in ("Overworld", "Nether", "The End"):
-                locked |= {name for name, data in STRUCTURES.items() if data.region == entry}
-            elif entry in STRUCTURES:
-                locked.add(entry)
+                locked |= {gid for gid in active if STRUCTURES[gid].region == entry}
+            else:
+                gid = STRUCTURE_BY_LABEL.get(entry)  # the option lists display labels
+                if gid in active:
+                    locked.add(gid)
         return locked
 
     def _get_active_locations(self) -> dict[str, MCLocationData]:
@@ -328,8 +344,8 @@ class MCWorld(World):
 
         # Structure unlocks: only the structures locked by the structure_unlock option are added.
         # Unlocked structures are gated by their dimension instead (see RuleHelper.structure).
-        for struct_name in self._get_locked_structures():
-            pool.append(self.create_item(f"{STRUCT_UNLOCK_PREFIX}{struct_name}"))
+        for struct_gid in self._get_locked_structures():
+            pool.append(self.create_item(f"{STRUCT_UNLOCK_PREFIX}{STRUCTURES[struct_gid].label}"))
 
         active_location_count = len(self._get_active_locations())
 

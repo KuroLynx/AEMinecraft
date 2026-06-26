@@ -31,6 +31,9 @@ public final class DumpCommandModule implements AEMCommandModule {
         for (String file : PackDump.FILES) {
             dump.then(Commands.literal(file).executes(c -> run(c.getSource(), Set.of(file))));
         }
+        // opt-in verbatim datapack copy (not part of the default "pack" set)
+        dump.then(Commands.literal(PackDump.RAW_DATAPACK)
+                .executes(c -> run(c.getSource(), Set.of(PackDump.RAW_DATAPACK))));
         root.then(dump);
     }
 

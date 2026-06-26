@@ -35,27 +35,30 @@ final class AcquisitionDump {
 
     private static final List<String> ENCHANT_FUNCS = List.of(
             "enchant_randomly", "enchant_with_levels", "set_enchantments");
+    // Structures are referenced by game_id (the structures.json key); display names are derived in
+    // the apworld via prettify(game_id). monster_room (Dungeon) and desert_well are worldgen FEATURES,
+    // not registry structures, but the AP structure-lock gates them too (see PlacedFeatureMixin) so
+    // they keep a game_id here and an entry in structures.json.
     private static final List<String> VILLAGE_BIOMES = List.of(
-            "Village (Desert)", "Village (Plains)", "Village (Savanna)",
-            "Village (Snowy)", "Village (Taiga)");
+            "village_desert", "village_plains", "village_savanna", "village_snowy", "village_taiga");
     private static final Map<String, String[]> CHEST_STRUCTURE = Map.ofEntries(
-            Map.entry("abandoned_mineshaft", new String[]{"Mineshaft"}),
-            Map.entry("buried_treasure", new String[]{"Buried Treasure"}),
-            Map.entry("desert_pyramid", new String[]{"Desert Pyramid"}),
-            Map.entry("desert_well", new String[]{"Desert Well"}),
-            Map.entry("end_city_treasure", new String[]{"End City"}),
-            Map.entry("igloo_chest", new String[]{"Igloo"}),
-            Map.entry("jungle_temple", new String[]{"Jungle Pyramid"}),
-            Map.entry("jungle_temple_dispenser", new String[]{"Jungle Pyramid"}),
-            Map.entry("nether_bridge", new String[]{"Nether Fortress"}),
-            Map.entry("pillager_outpost", new String[]{"Pillager Outpost"}),
-            Map.entry("ruined_portal", new String[]{"Ruined Portal"}),
-            Map.entry("simple_dungeon", new String[]{"Dungeon"}),
-            Map.entry("woodland_mansion", new String[]{"Mansion"}),
-            Map.entry("ocean_ruin_cold", new String[]{"Ocean Ruin (Cold)"}),
-            Map.entry("ocean_ruin_warm", new String[]{"Ocean Ruin (Warm)"}),
-            Map.entry("trail_ruins_common", new String[]{"Trail Ruins"}),
-            Map.entry("trail_ruins_rare", new String[]{"Trail Ruins"}));
+            Map.entry("abandoned_mineshaft", new String[]{"mineshaft"}),
+            Map.entry("buried_treasure", new String[]{"buried_treasure"}),
+            Map.entry("desert_pyramid", new String[]{"desert_pyramid"}),
+            Map.entry("desert_well", new String[]{"desert_well"}),
+            Map.entry("end_city_treasure", new String[]{"end_city"}),
+            Map.entry("igloo_chest", new String[]{"igloo"}),
+            Map.entry("jungle_temple", new String[]{"jungle_pyramid"}),
+            Map.entry("jungle_temple_dispenser", new String[]{"jungle_pyramid"}),
+            Map.entry("nether_bridge", new String[]{"fortress"}),
+            Map.entry("pillager_outpost", new String[]{"pillager_outpost"}),
+            Map.entry("ruined_portal", new String[]{"ruined_portal"}),
+            Map.entry("simple_dungeon", new String[]{"monster_room"}),
+            Map.entry("woodland_mansion", new String[]{"mansion"}),
+            Map.entry("ocean_ruin_cold", new String[]{"ocean_ruin_cold"}),
+            Map.entry("ocean_ruin_warm", new String[]{"ocean_ruin_warm"}),
+            Map.entry("trail_ruins_common", new String[]{"trail_ruins"}),
+            Map.entry("trail_ruins_rare", new String[]{"trail_ruins"}));
     // Drops hard-coded in entity code (no loot table): item -> mob loot-table basename(s).
     private static final Map<String, String[]> HARDCODED_DROPS = Map.of("nether_star", new String[]{"wither"});
     private static final String TRADE_SEP = "";  // joins (profession, file); sorts below text
@@ -311,31 +314,31 @@ final class AcquisitionDump {
         return false;
     }
 
-    /** Canonical structure name(s) a chest/archaeology/spawner loot table belongs to. */
+    /** Structure game_id(s) a chest/archaeology/spawner loot table belongs to. */
     private static String[] structuresFor(String rel) {
         String name = rel.contains("/") ? rel.substring(rel.lastIndexOf('/') + 1) : rel;
         if (rel.contains("trial_chamber")) {
-            return new String[]{"Trial Chambers"};
+            return new String[]{"trial_chambers"};
         }
         if (name.startsWith("bastion")) {
-            return new String[]{"Bastion Remnant"};
+            return new String[]{"bastion_remnant"};
         }
         if (name.startsWith("stronghold")) {
-            return new String[]{"Stronghold"};
+            return new String[]{"stronghold"};
         }
         if (name.startsWith("shipwreck")) {
-            return new String[]{"Shipwreck"};
+            return new String[]{"shipwreck"};
         }
         if (name.startsWith("ancient_city")) {
-            return new String[]{"Ancient City"};
+            return new String[]{"ancient_city"};
         }
         if (name.startsWith("underwater_ruin")) {
-            return new String[]{"Ocean Ruin (Cold)", "Ocean Ruin (Warm)"};
+            return new String[]{"ocean_ruin_cold", "ocean_ruin_warm"};
         }
         if (rel.startsWith("village/")) {
             for (String biome : List.of("desert", "plains", "savanna", "snowy", "taiga")) {
                 if (name.contains(biome)) {
-                    return new String[]{"Village (" + capitalize(biome) + ")"};
+                    return new String[]{"village_" + biome};
                 }
             }
             return VILLAGE_BIOMES.toArray(new String[0]);
@@ -536,7 +539,4 @@ final class AcquisitionDump {
         return colon >= 0 ? id.substring(colon + 1) : id;
     }
 
-    private static String capitalize(String s) {
-        return s.isEmpty() ? s : Character.toUpperCase(s.charAt(0)) + s.substring(1);
-    }
 }

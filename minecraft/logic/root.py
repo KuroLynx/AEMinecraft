@@ -4,6 +4,7 @@ from importlib.resources import files
 from worlds.generic.Rules import set_rule
 
 from ..data import ADVANCEMENT_LOCATIONS, MOBS_ALL, MCEntityCategory
+from ..content.registry import base_pack, overlay_packs
 from .acquisition import RuleHelper
 from .ast import Const
 from .constants import *
@@ -28,7 +29,8 @@ def build_location_rules(world) -> dict:
     existing = set(world._get_active_locations())
     curated = collect_advancement_rules(helper)              # by display name
     compiler = TriggerCompiler(helper, frozenset(existing))
-    manifest = _manifest(BACAP_PACK if world.options.blazeandcave else VANILLA_PACK)
+    _bacap = overlay_packs().get("blazeandcave")
+    manifest = _manifest(_bacap if (world.options.blazeandcave and _bacap) else base_pack())
 
     rules: dict = {}
     for location_name, loc_data in ADVANCEMENT_LOCATIONS.items():

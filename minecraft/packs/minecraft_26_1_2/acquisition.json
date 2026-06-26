@@ -154,7 +154,7 @@
       }
     ],
     "structures": [
-      "Trial Chambers"
+      "trial_chambers"
     ]
   },
   "acacia_pressure_plate": {
@@ -179,7 +179,7 @@
       "potted_acacia_sapling"
     ],
     "structures": [
-      "Village (Savanna)"
+      "village_savanna"
     ],
     "trades": [
       [
@@ -302,7 +302,7 @@
       }
     ],
     "structures": [
-      "Mineshaft"
+      "mineshaft"
     ]
   },
   "allium": {
@@ -345,8 +345,8 @@
       "amethyst_cluster"
     ],
     "structures": [
-      "Ancient City",
-      "Trial Chambers"
+      "ancient_city",
+      "trial_chambers"
     ]
   },
   "ancient_debris": {
@@ -354,7 +354,7 @@
       "ancient_debris"
     ],
     "structures": [
-      "Bastion Remnant"
+      "bastion_remnant"
     ]
   },
   "andesite": {
@@ -446,7 +446,7 @@
   },
   "angler_pottery_sherd": {
     "structures": [
-      "Ocean Ruin (Warm)"
+      "ocean_ruin_warm"
     ]
   },
   "anvil": {
@@ -476,13 +476,13 @@
       "oak_leaves"
     ],
     "structures": [
-      "Igloo",
-      "Stronghold",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "igloo",
+      "stronghold",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ],
     "trades": [
       [
@@ -493,7 +493,7 @@
   },
   "archer_pottery_sherd": {
     "structures": [
-      "Desert Pyramid"
+      "desert_pyramid"
     ]
   },
   "armadillo_scute": {
@@ -519,7 +519,7 @@
   },
   "arms_up_pottery_sherd": {
     "structures": [
-      "Desert Well"
+      "desert_well"
     ]
   },
   "arrow": {
@@ -550,15 +550,15 @@
       }
     ],
     "structures": [
-      "Bastion Remnant",
-      "Jungle Pyramid",
-      "Pillager Outpost",
-      "Trial Chambers",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "bastion_remnant",
+      "jungle_pyramid",
+      "pillager_outpost",
+      "trial_chambers",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ],
     "trades": [
       [
@@ -622,8 +622,8 @@
       }
     ],
     "structures": [
-      "Ancient City",
-      "Trial Chambers"
+      "ancient_city",
+      "trial_chambers"
     ]
   },
   "bamboo": {
@@ -642,8 +642,8 @@
       "potted_bamboo"
     ],
     "structures": [
-      "Jungle Pyramid",
-      "Shipwreck"
+      "jungle_pyramid",
+      "shipwreck"
     ]
   },
   "bamboo_block": {
@@ -760,7 +760,7 @@
       }
     ],
     "structures": [
-      "Trial Chambers"
+      "trial_chambers"
     ]
   },
   "bamboo_mosaic": {
@@ -830,7 +830,7 @@
       }
     ],
     "structures": [
-      "Trial Chambers"
+      "trial_chambers"
     ]
   },
   "bamboo_pressure_plate": {
@@ -1030,11 +1030,11 @@
       }
     ],
     "structures": [
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ]
   },
   "basalt": {
@@ -1074,11 +1074,11 @@
       "mooshroom"
     ],
     "structures": [
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ]
   },
   "beehive": {
@@ -1153,12 +1153,12 @@
       "beetroots"
     ],
     "structures": [
-      "Dungeon",
-      "End City",
-      "Mansion",
-      "Mineshaft",
-      "Trail Ruins",
-      "Village (Snowy)"
+      "end_city",
+      "mansion",
+      "mineshaft",
+      "monster_room",
+      "trail_ruins",
+      "village_snowy"
     ],
     "trades": [
       [
@@ -1182,7 +1182,7 @@
       }
     ],
     "structures": [
-      "Village (Snowy)"
+      "village_snowy"
     ]
   },
   "bell": {
@@ -1190,13 +1190,9 @@
       "bell"
     ],
     "structures": [
-      "Ruined Portal"
+      "ruined_portal"
     ],
     "trades": [
-      [
-        "armorer",
-        "3/emerald_bell"
-      ],
       [
         "smith",
         "2/emerald_bell"
@@ -2151,11 +2147,11 @@
       }
     ],
     "structures": [
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ],
     "trades": [
       [
@@ -2243,7 +2239,7 @@
   },
   "blade_pottery_sherd": {
     "structures": [
-      "Ocean Ruin (Cold)"
+      "ocean_ruin_cold"
     ]
   },
   "blast_furnace": {
@@ -2640,7 +2636,7 @@
       }
     ],
     "structures": [
-      "Trail Ruins"
+      "trail_ruins"
     ],
     "trades": [
       [
@@ -2765,7 +2761,7 @@
       "blue_ice"
     ],
     "structures": [
-      "Village (Snowy)"
+      "village_snowy"
     ],
     "trades": [
       [
@@ -2903,7 +2899,7 @@
       "blue_stained_glass_pane"
     ],
     "structures": [
-      "Trail Ruins"
+      "trail_ruins"
     ]
   },
   "blue_terracotta": {
@@ -3031,7 +3027,7 @@
       }
     ],
     "structures": [
-      "Trial Chambers"
+      "trial_chambers"
     ]
   },
   "bone": {
@@ -3047,11 +3043,11 @@
       "junk"
     ],
     "structures": [
-      "Ancient City",
-      "Desert Pyramid",
-      "Dungeon",
-      "Jungle Pyramid",
-      "Mansion"
+      "ancient_city",
+      "desert_pyramid",
+      "jungle_pyramid",
+      "mansion",
+      "monster_room"
     ]
   },
   "bone_block": {
@@ -3069,7 +3065,7 @@
       }
     ],
     "structures": [
-      "Bastion Remnant"
+      "bastion_remnant"
     ]
   },
   "bone_meal": {
@@ -3101,7 +3097,7 @@
       }
     ],
     "structures": [
-      "Trial Chambers"
+      "trial_chambers"
     ]
   },
   "book": {
@@ -3127,21 +3123,21 @@
       }
     ],
     "structures": [
-      "Ancient City",
-      "Bastion Remnant",
-      "Desert Pyramid",
-      "Dungeon",
-      "Jungle Pyramid",
-      "Mansion",
-      "Mineshaft",
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)",
-      "Pillager Outpost",
-      "Shipwreck",
-      "Stronghold",
-      "Trial Chambers",
-      "Village (Desert)",
-      "Village (Plains)"
+      "ancient_city",
+      "bastion_remnant",
+      "desert_pyramid",
+      "jungle_pyramid",
+      "mansion",
+      "mineshaft",
+      "monster_room",
+      "ocean_ruin_cold",
+      "ocean_ruin_warm",
+      "pillager_outpost",
+      "shipwreck",
+      "stronghold",
+      "trial_chambers",
+      "village_desert",
+      "village_plains"
     ]
   },
   "bookshelf": {
@@ -3239,7 +3235,7 @@
       }
     ],
     "structures": [
-      "Trial Chambers"
+      "trial_chambers"
     ],
     "trades": [
       [
@@ -3343,16 +3339,16 @@
       }
     ],
     "structures": [
-      "Dungeon",
-      "Mansion",
-      "Mineshaft",
-      "Stronghold",
-      "Trial Chambers",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "mansion",
+      "mineshaft",
+      "monster_room",
+      "stronghold",
+      "trial_chambers",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ],
     "trades": [
       [
@@ -3368,7 +3364,7 @@
   },
   "brewer_pottery_sherd": {
     "structures": [
-      "Desert Well"
+      "desert_well"
     ]
   },
   "brewing_stand": {
@@ -3411,8 +3407,8 @@
       }
     ],
     "structures": [
-      "Desert Well",
-      "Trail Ruins"
+      "desert_well",
+      "trail_ruins"
     ],
     "trades": [
       [
@@ -3737,7 +3733,7 @@
       }
     ],
     "structures": [
-      "Trail Ruins"
+      "trail_ruins"
     ]
   },
   "brown_carpet": {
@@ -4189,11 +4185,11 @@
       }
     ],
     "structures": [
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ],
     "trades": [
       [
@@ -4253,10 +4249,10 @@
       }
     ],
     "structures": [
-      "Dungeon",
-      "Mansion",
-      "Trial Chambers",
-      "Village (Savanna)"
+      "mansion",
+      "monster_room",
+      "trial_chambers",
+      "village_savanna"
     ]
   },
   "bundle": {
@@ -4274,16 +4270,16 @@
       }
     ],
     "structures": [
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ]
   },
   "burn_pottery_sherd": {
     "structures": [
-      "Trail Ruins"
+      "trail_ruins"
     ]
   },
   "bush": {
@@ -4300,7 +4296,7 @@
       "potted_cactus"
     ],
     "structures": [
-      "Village (Desert)"
+      "village_desert"
     ],
     "trades": [
       [
@@ -4348,7 +4344,7 @@
       }
     ],
     "structures": [
-      "Trial Chambers"
+      "trial_chambers"
     ],
     "trades": [
       [
@@ -4566,7 +4562,7 @@
       }
     ],
     "structures": [
-      "Ancient City"
+      "ancient_city"
     ]
   },
   "carrot": {
@@ -4584,8 +4580,8 @@
       "carrots"
     ],
     "structures": [
-      "Pillager Outpost",
-      "Shipwreck"
+      "pillager_outpost",
+      "shipwreck"
     ]
   },
   "carrot_on_a_stick": {
@@ -4689,26 +4685,6 @@
       [
         "armorer",
         "2/emerald_chainmail_boots"
-      ],
-      [
-        "armorer",
-        "2/emerald_chainmail_boots_group_2"
-      ],
-      [
-        "armorer",
-        "4/emerald_enchanted_chainmail_boots_jungle"
-      ],
-      [
-        "armorer",
-        "4/emerald_enchanted_chainmail_boots_swamp"
-      ],
-      [
-        "armorer",
-        "5/emerald_chainmail_boots_jungle"
-      ],
-      [
-        "armorer",
-        "5/emerald_chainmail_boots_swamp"
       ]
     ]
   },
@@ -4717,24 +4693,12 @@
       "armorer_gift"
     ],
     "structures": [
-      "Mansion"
+      "mansion"
     ],
     "trades": [
       [
         "armorer",
-        "2/emerald_chainmail_chainmail_group_2"
-      ],
-      [
-        "armorer",
         "3/emerald_chainmail_chestplate"
-      ],
-      [
-        "armorer",
-        "4/emerald_enchanted_chainmail_chestplate_jungle"
-      ],
-      [
-        "armorer",
-        "4/emerald_enchanted_chainmail_chestplate_swamp"
       ]
     ]
   },
@@ -4745,27 +4709,7 @@
     "trades": [
       [
         "armorer",
-        "2/emerald_chainmail_helmet_group_2"
-      ],
-      [
-        "armorer",
         "3/emerald_chainmail_helmet"
-      ],
-      [
-        "armorer",
-        "4/emerald_enchanted_chainmail_helmet_jungle"
-      ],
-      [
-        "armorer",
-        "4/emerald_enchanted_chainmail_helmet_swamp"
-      ],
-      [
-        "armorer",
-        "5/emerald_chainmail_helmet_jungle"
-      ],
-      [
-        "armorer",
-        "5/emerald_chainmail_helmet_swamp"
       ]
     ]
   },
@@ -4777,18 +4721,6 @@
       [
         "armorer",
         "2/emerald_chainmail_leggings"
-      ],
-      [
-        "armorer",
-        "2/emerald_chainmail_leggings_group_2"
-      ],
-      [
-        "armorer",
-        "4/emerald_enchanted_chainmail_leggings_jungle"
-      ],
-      [
-        "armorer",
-        "4/emerald_enchanted_chainmail_leggings_swamp"
       ]
     ]
   },
@@ -5708,7 +5640,7 @@
       }
     ],
     "structures": [
-      "Trail Ruins"
+      "trail_ruins"
     ]
   },
   "clay_ball": {
@@ -5716,11 +5648,11 @@
       "clay"
     ],
     "structures": [
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ]
   },
   "clock": {
@@ -5738,8 +5670,8 @@
       }
     ],
     "structures": [
-      "Ruined Portal",
-      "Shipwreck"
+      "ruined_portal",
+      "shipwreck"
     ],
     "trades": [
       [
@@ -5805,21 +5737,21 @@
       }
     ],
     "structures": [
-      "Ancient City",
-      "Dungeon",
-      "Igloo",
-      "Mansion",
-      "Mineshaft",
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)",
-      "Shipwreck",
-      "Stronghold",
-      "Trail Ruins",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "ancient_city",
+      "igloo",
+      "mansion",
+      "mineshaft",
+      "monster_room",
+      "ocean_ruin_cold",
+      "ocean_ruin_warm",
+      "shipwreck",
+      "stronghold",
+      "trail_ruins",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ]
   },
   "coal_block": {
@@ -5878,7 +5810,7 @@
       }
     ],
     "structures": [
-      "Shipwreck"
+      "shipwreck"
     ]
   },
   "cobbled_deepslate": {
@@ -6130,11 +6062,11 @@
       "fisherman_gift"
     ],
     "structures": [
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ]
   },
   "cod_bucket": {
@@ -6184,15 +6116,15 @@
       }
     ],
     "structures": [
-      "Ancient City",
-      "Shipwreck",
-      "Stronghold",
-      "Trial Chambers",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "ancient_city",
+      "shipwreck",
+      "stronghold",
+      "trial_chambers",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ],
     "trades": [
       [
@@ -6302,7 +6234,7 @@
       }
     ],
     "structures": [
-      "Trial Chambers"
+      "trial_chambers"
     ]
   },
   "cooked_chicken": {
@@ -6336,7 +6268,7 @@
       }
     ],
     "structures": [
-      "Trial Chambers"
+      "trial_chambers"
     ],
     "trades": [
       [
@@ -6376,7 +6308,7 @@
       }
     ],
     "structures": [
-      "Buried Treasure"
+      "buried_treasure"
     ],
     "trades": [
       [
@@ -6450,7 +6382,7 @@
       }
     ],
     "structures": [
-      "Bastion Remnant"
+      "bastion_remnant"
     ],
     "trades": [
       [
@@ -6521,7 +6453,7 @@
       }
     ],
     "structures": [
-      "Buried Treasure"
+      "buried_treasure"
     ],
     "trades": [
       [
@@ -6763,17 +6695,17 @@
   },
   "copper_horse_armor": {
     "structures": [
-      "Desert Pyramid",
-      "Dungeon",
-      "End City",
-      "Jungle Pyramid",
-      "Nether Fortress",
-      "Stronghold",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "desert_pyramid",
+      "end_city",
+      "fortress",
+      "jungle_pyramid",
+      "monster_room",
+      "stronghold",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ]
   },
   "copper_ingot": {
@@ -6888,10 +6820,10 @@
   },
   "copper_nautilus_armor": {
     "structures": [
-      "Buried Treasure",
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)",
-      "Shipwreck"
+      "buried_treasure",
+      "ocean_ruin_cold",
+      "ocean_ruin_warm",
+      "shipwreck"
     ]
   },
   "copper_nugget": {
@@ -7058,11 +6990,11 @@
       }
     ],
     "structures": [
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ]
   },
   "copper_sword": {
@@ -7417,7 +7349,7 @@
       "potted_crimson_fungus"
     ],
     "structures": [
-      "Bastion Remnant"
+      "bastion_remnant"
     ]
   },
   "crimson_hanging_sign": {
@@ -7458,7 +7390,7 @@
       "crimson_nylium"
     ],
     "structures": [
-      "Bastion Remnant"
+      "bastion_remnant"
     ]
   },
   "crimson_planks": {
@@ -7510,7 +7442,7 @@
       "potted_crimson_roots"
     ],
     "structures": [
-      "Bastion Remnant"
+      "bastion_remnant"
     ]
   },
   "crimson_shelf": {
@@ -7617,9 +7549,9 @@
       }
     ],
     "structures": [
-      "Bastion Remnant",
-      "Pillager Outpost",
-      "Trial Chambers"
+      "bastion_remnant",
+      "pillager_outpost",
+      "trial_chambers"
     ],
     "trades": [
       [
@@ -7640,7 +7572,7 @@
       "crying_obsidian"
     ],
     "structures": [
-      "Bastion Remnant"
+      "bastion_remnant"
     ]
   },
   "cut_copper": {
@@ -8526,7 +8458,7 @@
       "potted_dandelion"
     ],
     "structures": [
-      "Village (Plains)"
+      "village_plains"
     ],
     "trades": [
       [
@@ -8537,7 +8469,7 @@
   },
   "danger_pottery_sherd": {
     "structures": [
-      "Trail Ruins"
+      "trail_ruins"
     ]
   },
   "dark_oak_boat": {
@@ -8661,7 +8593,7 @@
       "dark_oak_log"
     ],
     "structures": [
-      "Pillager Outpost"
+      "pillager_outpost"
     ],
     "trades": [
       [
@@ -8979,8 +8911,8 @@
       "potted_dead_bush"
     ],
     "structures": [
-      "Trail Ruins",
-      "Village (Desert)"
+      "trail_ruins",
+      "village_desert"
     ]
   },
   "dead_fire_coral": {
@@ -9517,7 +9449,7 @@
       }
     ],
     "structures": [
-      "Mineshaft"
+      "mineshaft"
     ]
   },
   "diamond": {
@@ -9571,21 +9503,21 @@
       }
     ],
     "structures": [
-      "Bastion Remnant",
-      "Buried Treasure",
-      "Desert Pyramid",
-      "End City",
-      "Jungle Pyramid",
-      "Mineshaft",
-      "Nether Fortress",
-      "Shipwreck",
-      "Stronghold",
-      "Trial Chambers",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "bastion_remnant",
+      "buried_treasure",
+      "desert_pyramid",
+      "end_city",
+      "fortress",
+      "jungle_pyramid",
+      "mineshaft",
+      "shipwreck",
+      "stronghold",
+      "trial_chambers",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ]
   },
   "diamond_axe": {
@@ -9607,7 +9539,7 @@
       }
     ],
     "structures": [
-      "Trial Chambers"
+      "trial_chambers"
     ],
     "trades": [
       [
@@ -9638,7 +9570,7 @@
       }
     ],
     "structures": [
-      "Trial Chambers"
+      "trial_chambers"
     ]
   },
   "diamond_boots": {
@@ -9653,25 +9585,13 @@
       }
     ],
     "structures": [
-      "Bastion Remnant",
-      "End City"
+      "bastion_remnant",
+      "end_city"
     ],
     "trades": [
       [
         "armorer",
-        "4/emerald_and_diamond_helmet_diamond_boots_taiga"
-      ],
-      [
-        "armorer",
         "4/emerald_enchanted_diamond_boots"
-      ],
-      [
-        "armorer",
-        "5/emerald_and_diamond_diamond_boots_plains"
-      ],
-      [
-        "armorer",
-        "5/emerald_and_diamond_diamond_boots_snow"
       ]
     ]
   },
@@ -9687,28 +9607,12 @@
       }
     ],
     "structures": [
-      "Bastion Remnant",
-      "End City",
-      "Mansion",
-      "Trial Chambers"
+      "bastion_remnant",
+      "end_city",
+      "mansion",
+      "trial_chambers"
     ],
     "trades": [
-      [
-        "armorer",
-        "4/emerald_and_diamond_leggings_diamond_chestplate_taiga"
-      ],
-      [
-        "armorer",
-        "5/emerald_and_diamond_diamond_chestplate_desert"
-      ],
-      [
-        "armorer",
-        "5/emerald_and_diamond_diamond_chestplate_savanna"
-      ],
-      [
-        "armorer",
-        "5/emerald_and_diamond_diamond_chestplate_taiga"
-      ],
       [
         "armorer",
         "5/emerald_enchanted_diamond_chestplate"
@@ -9727,22 +9631,10 @@
       }
     ],
     "structures": [
-      "Bastion Remnant",
-      "End City"
+      "bastion_remnant",
+      "end_city"
     ],
     "trades": [
-      [
-        "armorer",
-        "4/emerald_and_diamond_chestplate_diamond_helmet_taiga"
-      ],
-      [
-        "armorer",
-        "5/emerald_and_diamond_diamond_helmet_savanna"
-      ],
-      [
-        "armorer",
-        "5/emerald_and_diamond_diamond_helmet_snow"
-      ],
       [
         "armorer",
         "5/emerald_enchanted_diamond_helmet"
@@ -9768,8 +9660,8 @@
       }
     ],
     "structures": [
-      "Ancient City",
-      "Mansion"
+      "ancient_city",
+      "mansion"
     ],
     "trades": [
       [
@@ -9780,18 +9672,18 @@
   },
   "diamond_horse_armor": {
     "structures": [
-      "Ancient City",
-      "Desert Pyramid",
-      "Dungeon",
-      "End City",
-      "Jungle Pyramid",
-      "Nether Fortress",
-      "Stronghold",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "ancient_city",
+      "desert_pyramid",
+      "end_city",
+      "fortress",
+      "jungle_pyramid",
+      "monster_room",
+      "stronghold",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ]
   },
   "diamond_leggings": {
@@ -9806,39 +9698,23 @@
       }
     ],
     "structures": [
-      "Ancient City",
-      "Bastion Remnant",
-      "End City"
+      "ancient_city",
+      "bastion_remnant",
+      "end_city"
     ],
     "trades": [
       [
         "armorer",
-        "4/emerald_and_diamond_boots_diamond_leggings_taiga"
-      ],
-      [
-        "armorer",
         "4/emerald_enchanted_diamond_leggings"
-      ],
-      [
-        "armorer",
-        "5/emerald_and_diamond_diamond_leggings_desert"
-      ],
-      [
-        "armorer",
-        "5/emerald_and_diamond_diamond_leggings_plains"
-      ],
-      [
-        "armorer",
-        "5/emerald_and_diamond_diamond_leggings_taiga"
       ]
     ]
   },
   "diamond_nautilus_armor": {
     "structures": [
-      "Buried Treasure",
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)",
-      "Shipwreck"
+      "buried_treasure",
+      "ocean_ruin_cold",
+      "ocean_ruin_warm",
+      "shipwreck"
     ]
   },
   "diamond_ore": {
@@ -9865,9 +9741,9 @@
       }
     ],
     "structures": [
-      "Bastion Remnant",
-      "End City",
-      "Trial Chambers"
+      "bastion_remnant",
+      "end_city",
+      "trial_chambers"
     ],
     "trades": [
       [
@@ -9895,8 +9771,8 @@
       }
     ],
     "structures": [
-      "Bastion Remnant",
-      "End City"
+      "bastion_remnant",
+      "end_city"
     ],
     "trades": [
       [
@@ -9924,8 +9800,8 @@
       }
     ],
     "structures": [
-      "Bastion Remnant",
-      "End City"
+      "bastion_remnant",
+      "end_city"
     ]
   },
   "diamond_sword": {
@@ -9950,8 +9826,8 @@
       }
     ],
     "structures": [
-      "Bastion Remnant",
-      "End City"
+      "bastion_remnant",
+      "end_city"
     ],
     "trades": [
       [
@@ -10059,7 +9935,7 @@
   },
   "disc_fragment_5": {
     "structures": [
-      "Ancient City"
+      "ancient_city"
     ]
   },
   "dispenser": {
@@ -10222,12 +10098,12 @@
       }
     ],
     "structures": [
-      "Desert Pyramid"
+      "desert_pyramid"
     ]
   },
   "echo_shard": {
     "structures": [
-      "Ancient City"
+      "ancient_city"
     ]
   },
   "egg": {
@@ -10235,12 +10111,12 @@
       "chicken_lay"
     ],
     "structures": [
-      "Trial Chambers",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "trial_chambers",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ]
   },
   "emerald": {
@@ -10298,28 +10174,24 @@
       }
     ],
     "structures": [
-      "Buried Treasure",
-      "Desert Pyramid",
-      "Desert Well",
-      "End City",
-      "Igloo",
-      "Jungle Pyramid",
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)",
-      "Shipwreck",
-      "Trail Ruins",
-      "Trial Chambers",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "buried_treasure",
+      "desert_pyramid",
+      "desert_well",
+      "end_city",
+      "igloo",
+      "jungle_pyramid",
+      "ocean_ruin_cold",
+      "ocean_ruin_warm",
+      "shipwreck",
+      "trail_ruins",
+      "trial_chambers",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ],
     "trades": [
-      [
-        "armorer",
-        "1/iron_ingot_emerald"
-      ],
       [
         "armorer",
         "3/diamond_emerald"
@@ -10327,14 +10199,6 @@
       [
         "armorer",
         "3/lava_bucket_emerald"
-      ],
-      [
-        "armorer",
-        "5/diamond_block_emerald_taiga"
-      ],
-      [
-        "armorer",
-        "5/iron_block_emerald_non_taiga"
       ],
       [
         "butcher",
@@ -10696,7 +10560,7 @@
       }
     ],
     "structures": [
-      "Trial Chambers"
+      "trial_chambers"
     ]
   },
   "emerald_ore": {
@@ -10710,55 +10574,23 @@
       "treasure"
     ],
     "structures": [
-      "Ancient City",
-      "Bastion Remnant",
-      "Desert Pyramid",
-      "Dungeon",
-      "Jungle Pyramid",
-      "Mansion",
-      "Mineshaft",
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)",
-      "Pillager Outpost",
-      "Stronghold",
-      "Trial Chambers"
+      "ancient_city",
+      "bastion_remnant",
+      "desert_pyramid",
+      "jungle_pyramid",
+      "mansion",
+      "mineshaft",
+      "monster_room",
+      "ocean_ruin_cold",
+      "ocean_ruin_warm",
+      "pillager_outpost",
+      "stronghold",
+      "trial_chambers"
     ],
     "trades": [
       [
         "librarian",
-        "1/emerald_and_book_desert_enchanted_book"
-      ],
-      [
-        "librarian",
         "1/emerald_and_book_enchanted_book"
-      ],
-      [
-        "librarian",
-        "1/emerald_and_book_jungle_enchanted_book"
-      ],
-      [
-        "librarian",
-        "1/emerald_and_book_plains_enchanted_book"
-      ],
-      [
-        "librarian",
-        "1/emerald_and_book_savanna_enchanted_book"
-      ],
-      [
-        "librarian",
-        "1/emerald_and_book_snow_enchanted_book"
-      ],
-      [
-        "librarian",
-        "1/emerald_and_book_swamp_enchanted_book"
-      ],
-      [
-        "librarian",
-        "1/emerald_and_book_taiga_enchanted_book"
-      ],
-      [
-        "librarian",
-        "2/emerald_and_book_desert_enchanted_book"
       ],
       [
         "librarian",
@@ -10766,91 +10598,11 @@
       ],
       [
         "librarian",
-        "2/emerald_and_book_jungle_enchanted_book"
-      ],
-      [
-        "librarian",
-        "2/emerald_and_book_plains_enchanted_book"
-      ],
-      [
-        "librarian",
-        "2/emerald_and_book_savanna_enchanted_book"
-      ],
-      [
-        "librarian",
-        "2/emerald_and_book_snow_enchanted_book"
-      ],
-      [
-        "librarian",
-        "2/emerald_and_book_swamp_enchanted_book"
-      ],
-      [
-        "librarian",
-        "2/emerald_and_book_taiga_enchanted_book"
-      ],
-      [
-        "librarian",
-        "3/emerald_and_book_desert_enchanted_book"
-      ],
-      [
-        "librarian",
         "3/emerald_and_book_enchanted_book"
       ],
       [
         "librarian",
-        "3/emerald_and_book_jungle_enchanted_book"
-      ],
-      [
-        "librarian",
-        "3/emerald_and_book_plains_enchanted_book"
-      ],
-      [
-        "librarian",
-        "3/emerald_and_book_savanna_enchanted_book"
-      ],
-      [
-        "librarian",
-        "3/emerald_and_book_snow_enchanted_book"
-      ],
-      [
-        "librarian",
-        "3/emerald_and_book_swamp_enchanted_book"
-      ],
-      [
-        "librarian",
-        "3/emerald_and_book_taiga_enchanted_book"
-      ],
-      [
-        "librarian",
         "4/emerald_book_and_enchanted_book"
-      ],
-      [
-        "librarian",
-        "5/emerald_and_book_desert_enchanted_book"
-      ],
-      [
-        "librarian",
-        "5/emerald_and_book_jungle_enchanted_book"
-      ],
-      [
-        "librarian",
-        "5/emerald_and_book_plains_enchanted_book"
-      ],
-      [
-        "librarian",
-        "5/emerald_and_book_savanna_enchanted_book"
-      ],
-      [
-        "librarian",
-        "5/emerald_and_book_snow_enchanted_book"
-      ],
-      [
-        "librarian",
-        "5/emerald_and_book_swamp_enchanted_book"
-      ],
-      [
-        "librarian",
-        "5/emerald_and_book_taiga_enchanted_book"
       ]
     ]
   },
@@ -10859,14 +10611,14 @@
       "horse"
     ],
     "structures": [
-      "Ancient City",
-      "Bastion Remnant",
-      "Desert Pyramid",
-      "Dungeon",
-      "Mansion",
-      "Mineshaft",
-      "Ruined Portal",
-      "Trial Chambers"
+      "ancient_city",
+      "bastion_remnant",
+      "desert_pyramid",
+      "mansion",
+      "mineshaft",
+      "monster_room",
+      "ruined_portal",
+      "trial_chambers"
     ]
   },
   "enchanting_table": {
@@ -11088,8 +10840,8 @@
       "piglin_bartering"
     ],
     "structures": [
-      "Stronghold",
-      "Trial Chambers"
+      "stronghold",
+      "trial_chambers"
     ],
     "trades": [
       [
@@ -11100,9 +10852,9 @@
   },
   "experience_bottle": {
     "structures": [
-      "Ancient City",
-      "Pillager Outpost",
-      "Shipwreck"
+      "ancient_city",
+      "pillager_outpost",
+      "shipwreck"
     ],
     "trades": [
       [
@@ -11113,7 +10865,7 @@
   },
   "explorer_pottery_sherd": {
     "structures": [
-      "Ocean Ruin (Cold)"
+      "ocean_ruin_cold"
     ]
   },
   "exposed_chiseled_copper": {
@@ -11339,7 +11091,7 @@
       }
     ],
     "structures": [
-      "Stronghold"
+      "stronghold"
     ]
   },
   "feather": {
@@ -11351,12 +11103,12 @@
       "cat_morning_gift"
     ],
     "structures": [
-      "Shipwreck",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "shipwreck",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ]
   },
   "fermented_spider_eye": {
@@ -11384,7 +11136,7 @@
       "potted_fern"
     ],
     "structures": [
-      "Village (Taiga)"
+      "village_taiga"
     ],
     "trades": [
       [
@@ -11459,8 +11211,8 @@
       }
     ],
     "structures": [
-      "Ruined Portal",
-      "Trial Chambers"
+      "ruined_portal",
+      "trial_chambers"
     ]
   },
   "fire_coral": {
@@ -11529,8 +11281,8 @@
       }
     ],
     "structures": [
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)"
+      "ocean_ruin_cold",
+      "ocean_ruin_warm"
     ],
     "trades": [
       [
@@ -11599,12 +11351,12 @@
       "gravel"
     ],
     "structures": [
-      "Ruined Portal",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "ruined_portal",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ],
     "trades": [
       [
@@ -11628,8 +11380,8 @@
       }
     ],
     "structures": [
-      "Nether Fortress",
-      "Ruined Portal"
+      "fortress",
+      "ruined_portal"
     ]
   },
   "flow_armor_trim_smithing_template": {
@@ -11650,12 +11402,12 @@
       }
     ],
     "structures": [
-      "Trial Chambers"
+      "trial_chambers"
     ]
   },
   "flow_banner_pattern": {
     "structures": [
-      "Trial Chambers"
+      "trial_chambers"
     ]
   },
   "flower_banner_pattern": {
@@ -11726,12 +11478,12 @@
       }
     ],
     "structures": [
-      "Trail Ruins",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "trail_ruins",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ]
   },
   "flowering_azalea": {
@@ -11754,7 +11506,7 @@
   },
   "friend_pottery_sherd": {
     "structures": [
-      "Trail Ruins"
+      "trail_ruins"
     ]
   },
   "furnace": {
@@ -11782,7 +11534,7 @@
       }
     ],
     "structures": [
-      "Village (Snowy)"
+      "village_snowy"
     ]
   },
   "furnace_minecart": {
@@ -11810,7 +11562,7 @@
       "gilded_blackstone"
     ],
     "structures": [
-      "Bastion Remnant"
+      "bastion_remnant"
     ]
   },
   "glass": {
@@ -11886,7 +11638,7 @@
       }
     ],
     "structures": [
-      "Ruined Portal"
+      "ruined_portal"
     ],
     "trades": [
       [
@@ -11915,9 +11667,9 @@
       "cave_vines_plant"
     ],
     "structures": [
-      "Ancient City",
-      "Mineshaft",
-      "Trial Chambers"
+      "ancient_city",
+      "mineshaft",
+      "trial_chambers"
     ]
   },
   "glow_ink_sac": {
@@ -11960,7 +11712,7 @@
       }
     ],
     "structures": [
-      "Bastion Remnant"
+      "bastion_remnant"
     ],
     "trades": [
       [
@@ -11983,7 +11735,7 @@
   },
   "goat_horn": {
     "structures": [
-      "Pillager Outpost"
+      "pillager_outpost"
     ]
   },
   "gold_block": {
@@ -12001,8 +11753,8 @@
       }
     ],
     "structures": [
-      "Bastion Remnant",
-      "Ruined Portal"
+      "bastion_remnant",
+      "ruined_portal"
     ]
   },
   "gold_ingot": {
@@ -12092,23 +11844,23 @@
       }
     ],
     "structures": [
-      "Bastion Remnant",
-      "Buried Treasure",
-      "Desert Pyramid",
-      "Dungeon",
-      "End City",
-      "Jungle Pyramid",
-      "Mansion",
-      "Mineshaft",
-      "Nether Fortress",
-      "Ruined Portal",
-      "Shipwreck",
-      "Stronghold",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "bastion_remnant",
+      "buried_treasure",
+      "desert_pyramid",
+      "end_city",
+      "fortress",
+      "jungle_pyramid",
+      "mansion",
+      "mineshaft",
+      "monster_room",
+      "ruined_portal",
+      "shipwreck",
+      "stronghold",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ]
   },
   "gold_nugget": {
@@ -12220,15 +11972,15 @@
       }
     ],
     "structures": [
-      "Bastion Remnant",
-      "Igloo",
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)",
-      "Ruined Portal",
-      "Shipwreck",
-      "Trail Ruins",
-      "Village (Plains)",
-      "Village (Savanna)"
+      "bastion_remnant",
+      "igloo",
+      "ocean_ruin_cold",
+      "ocean_ruin_warm",
+      "ruined_portal",
+      "shipwreck",
+      "trail_ruins",
+      "village_plains",
+      "village_savanna"
     ]
   },
   "gold_ore": {
@@ -12254,17 +12006,17 @@
       }
     ],
     "structures": [
-      "Bastion Remnant",
-      "Desert Pyramid",
-      "Dungeon",
-      "Igloo",
-      "Mansion",
-      "Mineshaft",
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)",
-      "Ruined Portal",
-      "Stronghold",
-      "Trial Chambers"
+      "bastion_remnant",
+      "desert_pyramid",
+      "igloo",
+      "mansion",
+      "mineshaft",
+      "monster_room",
+      "ocean_ruin_cold",
+      "ocean_ruin_warm",
+      "ruined_portal",
+      "stronghold",
+      "trial_chambers"
     ]
   },
   "golden_axe": {
@@ -12289,9 +12041,9 @@
       }
     ],
     "structures": [
-      "Bastion Remnant",
-      "Ruined Portal",
-      "Trial Chambers"
+      "bastion_remnant",
+      "ruined_portal",
+      "trial_chambers"
     ]
   },
   "golden_boots": {
@@ -12306,8 +12058,8 @@
       }
     ],
     "structures": [
-      "Bastion Remnant",
-      "Ruined Portal"
+      "bastion_remnant",
+      "ruined_portal"
     ]
   },
   "golden_carrot": {
@@ -12329,10 +12081,10 @@
       }
     ],
     "structures": [
-      "Ancient City",
-      "Bastion Remnant",
-      "Ruined Portal",
-      "Trial Chambers"
+      "ancient_city",
+      "bastion_remnant",
+      "ruined_portal",
+      "trial_chambers"
     ],
     "trades": [
       [
@@ -12353,9 +12105,9 @@
       }
     ],
     "structures": [
-      "Bastion Remnant",
-      "Nether Fortress",
-      "Ruined Portal"
+      "bastion_remnant",
+      "fortress",
+      "ruined_portal"
     ]
   },
   "golden_dandelion": {
@@ -12395,10 +12147,10 @@
       }
     ],
     "structures": [
-      "Bastion Remnant",
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)",
-      "Ruined Portal"
+      "bastion_remnant",
+      "ocean_ruin_cold",
+      "ocean_ruin_warm",
+      "ruined_portal"
     ]
   },
   "golden_hoe": {
@@ -12420,23 +12172,23 @@
       }
     ],
     "structures": [
-      "Ruined Portal"
+      "ruined_portal"
     ]
   },
   "golden_horse_armor": {
     "structures": [
-      "Desert Pyramid",
-      "Dungeon",
-      "End City",
-      "Jungle Pyramid",
-      "Nether Fortress",
-      "Ruined Portal",
-      "Stronghold",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "desert_pyramid",
+      "end_city",
+      "fortress",
+      "jungle_pyramid",
+      "monster_room",
+      "ruined_portal",
+      "stronghold",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ]
   },
   "golden_leggings": {
@@ -12451,16 +12203,16 @@
       }
     ],
     "structures": [
-      "Bastion Remnant",
-      "Ruined Portal"
+      "bastion_remnant",
+      "ruined_portal"
     ]
   },
   "golden_nautilus_armor": {
     "structures": [
-      "Buried Treasure",
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)",
-      "Shipwreck"
+      "buried_treasure",
+      "ocean_ruin_cold",
+      "ocean_ruin_warm",
+      "shipwreck"
     ]
   },
   "golden_pickaxe": {
@@ -12482,8 +12234,8 @@
       }
     ],
     "structures": [
-      "Ruined Portal",
-      "Trial Chambers"
+      "ruined_portal",
+      "trial_chambers"
     ]
   },
   "golden_shovel": {
@@ -12505,7 +12257,7 @@
       }
     ],
     "structures": [
-      "Ruined Portal"
+      "ruined_portal"
     ]
   },
   "golden_spear": {
@@ -12546,9 +12298,9 @@
       }
     ],
     "structures": [
-      "Bastion Remnant",
-      "Nether Fortress",
-      "Ruined Portal"
+      "bastion_remnant",
+      "fortress",
+      "ruined_portal"
     ]
   },
   "granite": {
@@ -13320,11 +13072,11 @@
       }
     ],
     "structures": [
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ],
     "trades": [
       [
@@ -13565,7 +13317,7 @@
       }
     ],
     "structures": [
-      "Trail Ruins"
+      "trail_ruins"
     ]
   },
   "green_carpet": {
@@ -13684,7 +13436,7 @@
       }
     ],
     "structures": [
-      "Village (Desert)"
+      "village_desert"
     ],
     "trades": [
       [
@@ -14068,10 +13820,10 @@
       "witch"
     ],
     "structures": [
-      "Desert Pyramid",
-      "Dungeon",
-      "Mansion",
-      "Shipwreck"
+      "desert_pyramid",
+      "mansion",
+      "monster_room",
+      "shipwreck"
     ],
     "trades": [
       [
@@ -14082,7 +13834,7 @@
   },
   "guster_banner_pattern": {
     "structures": [
-      "Trial Chambers"
+      "trial_chambers"
     ]
   },
   "hanging_roots": {
@@ -14111,17 +13863,17 @@
   },
   "heart_of_the_sea": {
     "structures": [
-      "Buried Treasure"
+      "buried_treasure"
     ]
   },
   "heart_pottery_sherd": {
     "structures": [
-      "Trail Ruins"
+      "trail_ruins"
     ]
   },
   "heartbreak_pottery_sherd": {
     "structures": [
-      "Trail Ruins"
+      "trail_ruins"
     ]
   },
   "heavy_core": {
@@ -14129,7 +13881,7 @@
       "heavy_core"
     ],
     "structures": [
-      "Trial Chambers"
+      "trial_chambers"
     ]
   },
   "heavy_weighted_pressure_plate": {
@@ -14177,7 +13929,7 @@
       }
     ],
     "structures": [
-      "Trial Chambers"
+      "trial_chambers"
     ]
   },
   "honeycomb": {
@@ -14185,7 +13937,7 @@
       "beehive"
     ],
     "structures": [
-      "Trial Chambers"
+      "trial_chambers"
     ]
   },
   "honeycomb_block": {
@@ -14275,12 +14027,12 @@
       }
     ],
     "structures": [
-      "Trail Ruins"
+      "trail_ruins"
     ]
   },
   "howl_pottery_sherd": {
     "structures": [
-      "Trail Ruins"
+      "trail_ruins"
     ]
   },
   "ice": {
@@ -14318,9 +14070,9 @@
       }
     ],
     "structures": [
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)",
-      "Trial Chambers"
+      "ocean_ruin_cold",
+      "ocean_ruin_warm",
+      "trial_chambers"
     ],
     "trades": [
       [
@@ -14363,8 +14115,8 @@
       }
     ],
     "structures": [
-      "Bastion Remnant",
-      "Trial Chambers"
+      "bastion_remnant",
+      "trial_chambers"
     ]
   },
   "iron_boots": {
@@ -14382,38 +14134,18 @@
       }
     ],
     "structures": [
-      "End City",
-      "Stronghold",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "end_city",
+      "stronghold",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ],
     "trades": [
       [
         "armorer",
         "1/emerald_iron_boots"
-      ],
-      [
-        "armorer",
-        "2/emerald_iron_boots_group_1"
-      ],
-      [
-        "armorer",
-        "4/emerald_enchanted_iron_boots_desert"
-      ],
-      [
-        "armorer",
-        "4/emerald_enchanted_iron_boots_plains"
-      ],
-      [
-        "armorer",
-        "4/emerald_enchanted_iron_boots_savanna"
-      ],
-      [
-        "armorer",
-        "4/emerald_enchanted_iron_boots_snow"
       ]
     ]
   },
@@ -14435,7 +14167,7 @@
       }
     ],
     "structures": [
-      "Bastion Remnant"
+      "bastion_remnant"
     ]
   },
   "iron_chestplate": {
@@ -14450,35 +14182,19 @@
       }
     ],
     "structures": [
-      "End City",
-      "Stronghold",
-      "Trial Chambers",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "end_city",
+      "stronghold",
+      "trial_chambers",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ],
     "trades": [
       [
         "armorer",
         "1/emerald_iron_chestplate"
-      ],
-      [
-        "armorer",
-        "2/emerald_iron_chestplate_group_1"
-      ],
-      [
-        "armorer",
-        "4/emerald_enchanted_iron_chestplate_desert"
-      ],
-      [
-        "armorer",
-        "4/emerald_enchanted_iron_chestplate_plains"
-      ],
-      [
-        "armorer",
-        "4/emerald_enchanted_iron_chestplate_savanna"
       ]
     ]
   },
@@ -14509,38 +14225,18 @@
       }
     ],
     "structures": [
-      "End City",
-      "Stronghold",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "end_city",
+      "stronghold",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ],
     "trades": [
       [
         "armorer",
         "1/emerald_iron_helmet"
-      ],
-      [
-        "armorer",
-        "2/emerald_iron_helmet_group_1"
-      ],
-      [
-        "armorer",
-        "4/emerald_enchanted_iron_helmet_desert"
-      ],
-      [
-        "armorer",
-        "4/emerald_enchanted_iron_helmet_plains"
-      ],
-      [
-        "armorer",
-        "4/emerald_enchanted_iron_helmet_savanna"
-      ],
-      [
-        "armorer",
-        "4/emerald_enchanted_iron_helmet_snow"
       ]
     ]
   },
@@ -14565,17 +14261,17 @@
   },
   "iron_horse_armor": {
     "structures": [
-      "Desert Pyramid",
-      "Dungeon",
-      "End City",
-      "Jungle Pyramid",
-      "Nether Fortress",
-      "Stronghold",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "desert_pyramid",
+      "end_city",
+      "fortress",
+      "jungle_pyramid",
+      "monster_room",
+      "stronghold",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ]
   },
   "iron_ingot": {
@@ -14655,24 +14351,24 @@
       }
     ],
     "structures": [
-      "Bastion Remnant",
-      "Buried Treasure",
-      "Desert Pyramid",
-      "Dungeon",
-      "End City",
-      "Jungle Pyramid",
-      "Mansion",
-      "Mineshaft",
-      "Nether Fortress",
-      "Pillager Outpost",
-      "Shipwreck",
-      "Stronghold",
-      "Trial Chambers",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "bastion_remnant",
+      "buried_treasure",
+      "desert_pyramid",
+      "end_city",
+      "fortress",
+      "jungle_pyramid",
+      "mansion",
+      "mineshaft",
+      "monster_room",
+      "pillager_outpost",
+      "shipwreck",
+      "stronghold",
+      "trial_chambers",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ]
   },
   "iron_leggings": {
@@ -14687,44 +14383,28 @@
       }
     ],
     "structures": [
-      "Ancient City",
-      "End City",
-      "Stronghold",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "ancient_city",
+      "end_city",
+      "stronghold",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ],
     "trades": [
       [
         "armorer",
         "1/emerald_iron_leggings"
-      ],
-      [
-        "armorer",
-        "2/emerald_iron_leggings_group_1"
-      ],
-      [
-        "armorer",
-        "4/emerald_enchanted_iron_leggings_desert"
-      ],
-      [
-        "armorer",
-        "4/emerald_enchanted_iron_leggings_plains"
-      ],
-      [
-        "armorer",
-        "4/emerald_enchanted_iron_leggings_savanna"
       ]
     ]
   },
   "iron_nautilus_armor": {
     "structures": [
-      "Buried Treasure",
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)",
-      "Shipwreck"
+      "buried_treasure",
+      "ocean_ruin_cold",
+      "ocean_ruin_warm",
+      "shipwreck"
     ]
   },
   "iron_nugget": {
@@ -14856,10 +14536,10 @@
       }
     ],
     "structures": [
-      "Bastion Remnant",
-      "Ruined Portal",
-      "Shipwreck",
-      "Village (Taiga)"
+      "bastion_remnant",
+      "ruined_portal",
+      "shipwreck",
+      "village_taiga"
     ]
   },
   "iron_ore": {
@@ -14886,14 +14566,14 @@
       }
     ],
     "structures": [
-      "End City",
-      "Mineshaft",
-      "Stronghold",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "end_city",
+      "mineshaft",
+      "stronghold",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ],
     "trades": [
       [
@@ -14925,12 +14605,12 @@
       }
     ],
     "structures": [
-      "End City",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "end_city",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ],
     "trades": [
       [
@@ -14958,12 +14638,12 @@
       }
     ],
     "structures": [
-      "Buried Treasure",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "buried_treasure",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ]
   },
   "iron_sword": {
@@ -14988,15 +14668,15 @@
       }
     ],
     "structures": [
-      "Bastion Remnant",
-      "Buried Treasure",
-      "End City",
-      "Stronghold",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "bastion_remnant",
+      "buried_treasure",
+      "end_city",
+      "stronghold",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ],
     "trades": [
       [
@@ -15507,13 +15187,13 @@
       }
     ],
     "structures": [
-      "Mineshaft",
-      "Shipwreck",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "mineshaft",
+      "shipwreck",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ],
     "trades": [
       [
@@ -15534,7 +15214,7 @@
   },
   "large_fern": {
     "structures": [
-      "Village (Taiga)"
+      "village_taiga"
     ]
   },
   "lead": {
@@ -15549,9 +15229,9 @@
       }
     ],
     "structures": [
-      "Ancient City",
-      "Mansion",
-      "Trail Ruins"
+      "ancient_city",
+      "mansion",
+      "trail_ruins"
     ]
   },
   "leaf_litter": {
@@ -15630,17 +15310,17 @@
       }
     ],
     "structures": [
-      "Ancient City",
-      "Bastion Remnant",
-      "Desert Pyramid",
-      "Dungeon",
-      "Jungle Pyramid",
-      "Stronghold",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "ancient_city",
+      "bastion_remnant",
+      "desert_pyramid",
+      "jungle_pyramid",
+      "monster_room",
+      "stronghold",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ]
   },
   "leather_boots": {
@@ -15658,12 +15338,12 @@
       }
     ],
     "structures": [
-      "Shipwreck",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "shipwreck",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ],
     "trades": [
       [
@@ -15684,15 +15364,15 @@
       }
     ],
     "structures": [
-      "Buried Treasure",
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)",
-      "Shipwreck",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "buried_treasure",
+      "ocean_ruin_cold",
+      "ocean_ruin_warm",
+      "shipwreck",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ],
     "trades": [
       [
@@ -15717,12 +15397,12 @@
       }
     ],
     "structures": [
-      "Shipwreck",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "shipwreck",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ],
     "trades": [
       [
@@ -15765,12 +15445,12 @@
       }
     ],
     "structures": [
-      "Shipwreck",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "shipwreck",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ],
     "trades": [
       [
@@ -16211,7 +15891,7 @@
       }
     ],
     "structures": [
-      "Trail Ruins"
+      "trail_ruins"
     ],
     "trades": [
       [
@@ -16430,7 +16110,7 @@
       "light_blue_stained_glass_pane"
     ],
     "structures": [
-      "Trail Ruins"
+      "trail_ruins"
     ]
   },
   "light_blue_terracotta": {
@@ -17225,11 +16905,11 @@
       }
     ],
     "structures": [
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ],
     "trades": [
       [
@@ -17253,7 +16933,7 @@
       }
     ],
     "structures": [
-      "Ruined Portal"
+      "ruined_portal"
     ]
   },
   "lightning_rod": {
@@ -17985,7 +17665,7 @@
   },
   "lingering_potion": {
     "structures": [
-      "Trial Chambers"
+      "trial_chambers"
     ]
   },
   "lodestone": {
@@ -18006,8 +17686,8 @@
       }
     ],
     "structures": [
-      "Bastion Remnant",
-      "Ruined Portal"
+      "bastion_remnant",
+      "ruined_portal"
     ]
   },
   "loom": {
@@ -18691,7 +18371,7 @@
       "magenta_stained_glass_pane"
     ],
     "structures": [
-      "Trail Ruins"
+      "trail_ruins"
     ]
   },
   "magenta_terracotta": {
@@ -18827,7 +18507,7 @@
       }
     ],
     "structures": [
-      "Bastion Remnant"
+      "bastion_remnant"
     ]
   },
   "mangrove_boat": {
@@ -19131,15 +18811,15 @@
       }
     ],
     "structures": [
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)",
-      "Shipwreck",
-      "Stronghold",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "ocean_ruin_cold",
+      "ocean_ruin_warm",
+      "shipwreck",
+      "stronghold",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ],
     "trades": [
       [
@@ -19228,9 +18908,9 @@
       }
     ],
     "structures": [
-      "Dungeon",
-      "Mansion",
-      "Mineshaft"
+      "mansion",
+      "mineshaft",
+      "monster_room"
     ],
     "trades": [
       [
@@ -19246,7 +18926,7 @@
   },
   "milk_bucket": {
     "structures": [
-      "Trial Chambers"
+      "trial_chambers"
     ]
   },
   "minecart": {
@@ -19263,7 +18943,7 @@
   },
   "miner_pottery_sherd": {
     "structures": [
-      "Desert Pyramid"
+      "desert_pyramid"
     ]
   },
   "mojang_banner_pattern": {
@@ -19286,8 +18966,8 @@
       "moss_block"
     ],
     "structures": [
-      "Shipwreck",
-      "Trial Chambers"
+      "shipwreck",
+      "trial_chambers"
     ],
     "trades": [
       [
@@ -19512,7 +19192,7 @@
   },
   "mourner_pottery_sherd": {
     "structures": [
-      "Ocean Ruin (Cold)"
+      "ocean_ruin_cold"
     ]
   },
   "mud": {
@@ -19647,9 +19327,9 @@
   },
   "music_disc_13": {
     "structures": [
-      "Ancient City",
-      "Dungeon",
-      "Mansion"
+      "ancient_city",
+      "mansion",
+      "monster_room"
     ]
   },
   "music_disc_5": {
@@ -19666,14 +19346,14 @@
   },
   "music_disc_cat": {
     "structures": [
-      "Ancient City",
-      "Dungeon",
-      "Mansion"
+      "ancient_city",
+      "mansion",
+      "monster_room"
     ]
   },
   "music_disc_creator": {
     "structures": [
-      "Trial Chambers"
+      "trial_chambers"
     ]
   },
   "music_disc_creator_music_box": {
@@ -19688,24 +19368,24 @@
   },
   "music_disc_otherside": {
     "structures": [
-      "Ancient City",
-      "Dungeon",
-      "Stronghold"
+      "ancient_city",
+      "monster_room",
+      "stronghold"
     ]
   },
   "music_disc_pigstep": {
     "structures": [
-      "Bastion Remnant"
+      "bastion_remnant"
     ]
   },
   "music_disc_precipice": {
     "structures": [
-      "Trial Chambers"
+      "trial_chambers"
     ]
   },
   "music_disc_relic": {
     "structures": [
-      "Trail Ruins"
+      "trail_ruins"
     ]
   },
   "music_disc_tears": {
@@ -19718,11 +19398,11 @@
       "sheep"
     ],
     "structures": [
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ]
   },
   "mycelium": {
@@ -19758,8 +19438,8 @@
       }
     ],
     "structures": [
-      "Dungeon",
-      "Mineshaft"
+      "mineshaft",
+      "monster_room"
     ],
     "trades": [
       [
@@ -19924,7 +19604,7 @@
       "nether_wart"
     ],
     "structures": [
-      "Nether Fortress"
+      "fortress"
     ]
   },
   "nether_wart_block": {
@@ -20112,7 +19792,7 @@
       }
     ],
     "structures": [
-      "Bastion Remnant"
+      "bastion_remnant"
     ]
   },
   "netherite_leggings": {
@@ -20201,7 +19881,7 @@
       }
     ],
     "structures": [
-      "Bastion Remnant"
+      "bastion_remnant"
     ]
   },
   "netherite_shovel": {
@@ -20288,7 +19968,7 @@
       }
     ],
     "structures": [
-      "Bastion Remnant"
+      "bastion_remnant"
     ]
   },
   "netherrack": {
@@ -20464,7 +20144,7 @@
       }
     ],
     "structures": [
-      "Trail Ruins"
+      "trail_ruins"
     ]
   },
   "oak_leaves": {
@@ -20533,11 +20213,11 @@
       "potted_oak_sapling"
     ],
     "structures": [
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ],
     "trades": [
       [
@@ -20669,14 +20349,14 @@
       "obsidian"
     ],
     "structures": [
-      "Bastion Remnant",
-      "Nether Fortress",
-      "Ruined Portal",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "bastion_remnant",
+      "fortress",
+      "ruined_portal",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ]
   },
   "ochre_froglight": {
@@ -20692,12 +20372,12 @@
       "pillager"
     ],
     "structures": [
-      "Trial Chambers"
+      "trial_chambers"
     ]
   },
   "ominous_trial_key": {
     "structures": [
-      "Trial Chambers"
+      "trial_chambers"
     ]
   },
   "open_eyeblossom": {
@@ -21090,7 +20770,7 @@
       }
     ],
     "structures": [
-      "Trail Ruins"
+      "trail_ruins"
     ],
     "trades": [
       [
@@ -21659,7 +21339,7 @@
       "packed_ice"
     ],
     "structures": [
-      "Ancient City"
+      "ancient_city"
     ],
     "trades": [
       [
@@ -22084,13 +21764,13 @@
       }
     ],
     "structures": [
-      "Shipwreck",
-      "Stronghold",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "shipwreck",
+      "stronghold",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ]
   },
   "pearlescent_froglight": {
@@ -22124,7 +21804,7 @@
   },
   "piglin_banner_pattern": {
     "structures": [
-      "Bastion Remnant"
+      "bastion_remnant"
     ]
   },
   "piglin_head": {
@@ -22742,7 +22422,7 @@
       "pink_stained_glass_pane"
     ],
     "structures": [
-      "Trail Ruins"
+      "trail_ruins"
     ]
   },
   "pink_terracotta": {
@@ -22949,7 +22629,7 @@
   },
   "plenty_pottery_sherd": {
     "structures": [
-      "Ocean Ruin (Cold)"
+      "ocean_ruin_cold"
     ]
   },
   "podzol": {
@@ -22979,7 +22659,7 @@
       "potatoes"
     ],
     "structures": [
-      "Shipwreck"
+      "shipwreck"
     ]
   },
   "polished_andesite": {
@@ -23863,7 +23543,7 @@
       "potted_poppy"
     ],
     "structures": [
-      "Village (Plains)"
+      "village_plains"
     ],
     "trades": [
       [
@@ -23881,12 +23561,12 @@
       "pig"
     ],
     "structures": [
-      "Bastion Remnant",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "bastion_remnant",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ]
   },
   "potato": {
@@ -23902,11 +23582,11 @@
       "potatoes"
     ],
     "structures": [
-      "Pillager Outpost",
-      "Shipwreck",
-      "Village (Plains)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "pillager_outpost",
+      "shipwreck",
+      "village_plains",
+      "village_snowy",
+      "village_taiga"
     ]
   },
   "potion": {
@@ -23915,9 +23595,9 @@
       "piglin_bartering"
     ],
     "structures": [
-      "Ancient City",
-      "Buried Treasure",
-      "Trial Chambers"
+      "ancient_city",
+      "buried_treasure",
+      "trial_chambers"
     ],
     "trades": [
       [
@@ -23947,7 +23627,7 @@
       }
     ],
     "structures": [
-      "Mineshaft"
+      "mineshaft"
     ]
   },
   "prismarine": {
@@ -24035,7 +23715,7 @@
       "sea_lantern"
     ],
     "structures": [
-      "Buried Treasure"
+      "buried_treasure"
     ]
   },
   "prismarine_shard": {
@@ -24115,7 +23795,7 @@
   },
   "prize_pottery_sherd": {
     "structures": [
-      "Desert Pyramid"
+      "desert_pyramid"
     ]
   },
   "pufferfish": {
@@ -24145,7 +23825,7 @@
       "pumpkin"
     ],
     "structures": [
-      "Shipwreck"
+      "shipwreck"
     ],
     "trades": [
       [
@@ -24185,7 +23865,7 @@
       }
     ],
     "structures": [
-      "Village (Taiga)"
+      "village_taiga"
     ],
     "trades": [
       [
@@ -24217,10 +23897,10 @@
       }
     ],
     "structures": [
-      "Dungeon",
-      "Mansion",
-      "Mineshaft",
-      "Village (Taiga)"
+      "mansion",
+      "mineshaft",
+      "monster_room",
+      "village_taiga"
     ],
     "trades": [
       [
@@ -24461,7 +24141,7 @@
       }
     ],
     "structures": [
-      "Trail Ruins"
+      "trail_ruins"
     ]
   },
   "purple_carpet": {
@@ -24799,7 +24479,7 @@
       "purple_stained_glass_pane"
     ],
     "structures": [
-      "Trail Ruins"
+      "trail_ruins"
     ]
   },
   "purple_terracotta": {
@@ -25026,7 +24706,7 @@
       }
     ],
     "structures": [
-      "Bastion Remnant"
+      "bastion_remnant"
     ]
   },
   "quartz_block": {
@@ -25264,7 +24944,7 @@
       }
     ],
     "structures": [
-      "Mineshaft"
+      "mineshaft"
     ]
   },
   "raiser_armor_trim_smithing_template": {
@@ -25285,7 +24965,7 @@
       }
     ],
     "structures": [
-      "Trail Ruins"
+      "trail_ruins"
     ]
   },
   "raw_copper": {
@@ -25628,7 +25308,7 @@
       }
     ],
     "structures": [
-      "Trail Ruins"
+      "trail_ruins"
     ],
     "trades": [
       [
@@ -26216,7 +25896,7 @@
       "red_stained_glass_pane"
     ],
     "structures": [
-      "Trail Ruins"
+      "trail_ruins"
     ]
   },
   "red_terracotta": {
@@ -26389,15 +26069,15 @@
       }
     ],
     "structures": [
-      "Dungeon",
-      "Mansion",
-      "Mineshaft",
-      "Stronghold",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "mansion",
+      "mineshaft",
+      "monster_room",
+      "stronghold",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ],
     "trades": [
       [
@@ -26610,7 +26290,7 @@
       }
     ],
     "structures": [
-      "Mansion"
+      "mansion"
     ]
   },
   "respawn_anchor": {
@@ -26649,7 +26329,7 @@
       }
     ],
     "structures": [
-      "Nether Fortress"
+      "fortress"
     ]
   },
   "rooted_dirt": {
@@ -26688,19 +26368,19 @@
       "junk"
     ],
     "structures": [
-      "Desert Pyramid",
-      "Dungeon",
-      "Igloo",
-      "Jungle Pyramid",
-      "Mansion",
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)",
-      "Shipwreck",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "desert_pyramid",
+      "igloo",
+      "jungle_pyramid",
+      "mansion",
+      "monster_room",
+      "ocean_ruin_cold",
+      "ocean_ruin_warm",
+      "shipwreck",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ]
   },
   "saddle": {
@@ -26724,17 +26404,14 @@
       }
     ],
     "structures": [
-      "Ancient City",
-      "Bastion Remnant",
-      "Desert Pyramid",
-      "End City",
-      "Jungle Pyramid",
-      "Nether Fortress",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "bastion_remnant",
+      "end_city",
+      "fortress",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ],
     "trades": [
       [
@@ -26758,11 +26435,11 @@
       "fisherman_gift"
     ],
     "structures": [
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ]
   },
   "salmon_bucket": {
@@ -26775,7 +26452,7 @@
       "sand"
     ],
     "structures": [
-      "Desert Pyramid"
+      "desert_pyramid"
     ],
     "trades": [
       [
@@ -26903,7 +26580,7 @@
       }
     ],
     "structures": [
-      "Trial Chambers"
+      "trial_chambers"
     ]
   },
   "sculk": {
@@ -26911,7 +26588,7 @@
       "sculk"
     ],
     "structures": [
-      "Ancient City"
+      "ancient_city"
     ]
   },
   "sculk_catalyst": {
@@ -26922,7 +26599,7 @@
       "sculk_catalyst"
     ],
     "structures": [
-      "Ancient City"
+      "ancient_city"
     ]
   },
   "sculk_sensor": {
@@ -26930,7 +26607,7 @@
       "sculk_sensor"
     ],
     "structures": [
-      "Ancient City"
+      "ancient_city"
     ]
   },
   "sculk_shrieker": {
@@ -27002,7 +26679,7 @@
       }
     ],
     "structures": [
-      "Pillager Outpost"
+      "pillager_outpost"
     ]
   },
   "shaper_armor_trim_smithing_template": {
@@ -27023,12 +26700,12 @@
       }
     ],
     "structures": [
-      "Trail Ruins"
+      "trail_ruins"
     ]
   },
   "sheaf_pottery_sherd": {
     "structures": [
-      "Trail Ruins"
+      "trail_ruins"
     ]
   },
   "shears": {
@@ -27043,11 +26720,11 @@
       }
     ],
     "structures": [
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ],
     "trades": [
       [
@@ -27058,7 +26735,7 @@
   },
   "shelter_pottery_sherd": {
     "structures": [
-      "Ocean Ruin (Warm)"
+      "ocean_ruin_warm"
     ]
   },
   "sherds": {
@@ -27118,7 +26795,7 @@
       }
     ],
     "structures": [
-      "Trial Chambers"
+      "trial_chambers"
     ],
     "trades": [
       [
@@ -27138,7 +26815,7 @@
       "tall_grass"
     ],
     "structures": [
-      "Village (Savanna)"
+      "village_savanna"
     ]
   },
   "shroomlight": {
@@ -27187,7 +26864,7 @@
       }
     ],
     "structures": [
-      "Ancient City"
+      "ancient_city"
     ]
   },
   "skeleton_skull": {
@@ -27215,7 +26892,7 @@
   },
   "skull_pottery_sherd": {
     "structures": [
-      "Desert Pyramid"
+      "desert_pyramid"
     ]
   },
   "slime_ball": {
@@ -27695,11 +27372,11 @@
       }
     ],
     "structures": [
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ]
   },
   "smooth_stone_slab": {
@@ -27730,12 +27407,12 @@
       "sniffer_egg"
     ],
     "structures": [
-      "Ocean Ruin (Warm)"
+      "ocean_ruin_warm"
     ]
   },
   "snort_pottery_sherd": {
     "structures": [
-      "Ocean Ruin (Warm)"
+      "ocean_ruin_warm"
     ]
   },
   "snout_armor_trim_smithing_template": {
@@ -27756,7 +27433,7 @@
       }
     ],
     "structures": [
-      "Bastion Remnant"
+      "bastion_remnant"
     ]
   },
   "snow": {
@@ -27790,7 +27467,7 @@
       }
     ],
     "structures": [
-      "Village (Snowy)"
+      "village_snowy"
     ]
   },
   "snowball": {
@@ -27805,9 +27482,9 @@
       "snow_block"
     ],
     "structures": [
-      "Ancient City",
-      "Trial Chambers",
-      "Village (Snowy)"
+      "ancient_city",
+      "trial_chambers",
+      "village_snowy"
     ]
   },
   "soul_campfire": {
@@ -27997,7 +27674,7 @@
       "soul_sand"
     ],
     "structures": [
-      "Bastion Remnant"
+      "bastion_remnant"
     ]
   },
   "soul_soil": {
@@ -28041,7 +27718,7 @@
       }
     ],
     "structures": [
-      "Ancient City"
+      "ancient_city"
     ]
   },
   "spectral_arrow": {
@@ -28062,7 +27739,7 @@
       }
     ],
     "structures": [
-      "Bastion Remnant"
+      "bastion_remnant"
     ]
   },
   "spider_eye": {
@@ -28075,7 +27752,7 @@
       "witch"
     ],
     "structures": [
-      "Desert Pyramid"
+      "desert_pyramid"
     ]
   },
   "spire_armor_trim_smithing_template": {
@@ -28096,7 +27773,7 @@
       }
     ],
     "structures": [
-      "End City"
+      "end_city"
     ]
   },
   "splash_potion": {
@@ -28104,7 +27781,7 @@
       "piglin_bartering"
     ],
     "structures": [
-      "Trial Chambers"
+      "trial_chambers"
     ]
   },
   "sponge": {
@@ -28241,7 +27918,7 @@
       }
     ],
     "structures": [
-      "Trail Ruins"
+      "trail_ruins"
     ]
   },
   "spruce_leaves": {
@@ -28254,7 +27931,7 @@
       "spruce_log"
     ],
     "structures": [
-      "Village (Taiga)"
+      "village_taiga"
     ],
     "trades": [
       [
@@ -28313,7 +27990,7 @@
       "spruce_sapling"
     ],
     "structures": [
-      "Village (Taiga)"
+      "village_taiga"
     ],
     "trades": [
       [
@@ -28355,7 +28032,7 @@
       }
     ],
     "structures": [
-      "Village (Taiga)"
+      "village_taiga"
     ]
   },
   "spruce_slab": {
@@ -28510,13 +28187,13 @@
       }
     ],
     "structures": [
-      "Desert Well",
-      "Trial Chambers",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "desert_well",
+      "trial_chambers",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ]
   },
   "sticky_piston": {
@@ -28555,11 +28232,11 @@
       "infested_stone"
     ],
     "structures": [
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ]
   },
   "stone_axe": {
@@ -28591,10 +28268,10 @@
       }
     ],
     "structures": [
-      "Igloo",
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)",
-      "Trial Chambers"
+      "igloo",
+      "ocean_ruin_cold",
+      "ocean_ruin_warm",
+      "trial_chambers"
     ],
     "trades": [
       [
@@ -28722,11 +28399,11 @@
       "infested_stone_bricks"
     ],
     "structures": [
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ]
   },
   "stone_button": {
@@ -28806,7 +28483,7 @@
       }
     ],
     "structures": [
-      "Trial Chambers"
+      "trial_chambers"
     ],
     "trades": [
       [
@@ -28912,8 +28589,8 @@
       }
     ],
     "structures": [
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)"
+      "ocean_ruin_cold",
+      "ocean_ruin_warm"
     ]
   },
   "stone_stairs": {
@@ -28999,12 +28676,12 @@
       "tripwire"
     ],
     "structures": [
-      "Bastion Remnant",
-      "Desert Pyramid",
-      "Dungeon",
-      "Mansion",
-      "Pillager Outpost",
-      "Trail Ruins"
+      "bastion_remnant",
+      "desert_pyramid",
+      "mansion",
+      "monster_room",
+      "pillager_outpost",
+      "trail_ruins"
     ]
   },
   "stripped_acacia_log": {
@@ -29570,9 +29247,9 @@
       }
     ],
     "structures": [
-      "Ancient City",
-      "Desert Well",
-      "Shipwreck"
+      "ancient_city",
+      "desert_well",
+      "shipwreck"
     ],
     "trades": [
       [
@@ -29592,7 +29269,7 @@
       "sweet_berry_bush"
     ],
     "structures": [
-      "Village (Taiga)"
+      "village_taiga"
     ]
   },
   "tall_dry_grass": {
@@ -29608,7 +29285,7 @@
   },
   "tall_grass": {
     "structures": [
-      "Village (Savanna)"
+      "village_savanna"
     ]
   },
   "target": {
@@ -29703,7 +29380,7 @@
       }
     ],
     "structures": [
-      "Trial Chambers"
+      "trial_chambers"
     ],
     "trades": [
       [
@@ -29737,9 +29414,9 @@
       }
     ],
     "structures": [
-      "Buried Treasure",
-      "Desert Pyramid",
-      "Shipwreck"
+      "buried_treasure",
+      "desert_pyramid",
+      "shipwreck"
     ]
   },
   "tnt_minecart": {
@@ -29782,9 +29459,9 @@
       }
     ],
     "structures": [
-      "Mineshaft",
-      "Trial Chambers",
-      "Village (Savanna)"
+      "mineshaft",
+      "trial_chambers",
+      "village_savanna"
     ]
   },
   "torchflower": {
@@ -29837,12 +29514,12 @@
       "corridor"
     ],
     "structures": [
-      "Trial Chambers"
+      "trial_chambers"
     ]
   },
   "trident": {
     "structures": [
-      "Trial Chambers"
+      "trial_chambers"
     ]
   },
   "tripwire_hook": {
@@ -29906,7 +29583,7 @@
       }
     ],
     "structures": [
-      "Pillager Outpost"
+      "pillager_outpost"
     ]
   },
   "tropical_fish": {
@@ -29958,7 +29635,7 @@
       "tuff"
     ],
     "structures": [
-      "Trial Chambers"
+      "trial_chambers"
     ]
   },
   "tuff_brick_slab": {
@@ -30232,7 +29909,7 @@
       }
     ],
     "structures": [
-      "Mansion"
+      "mansion"
     ]
   },
   "vine": {
@@ -30264,7 +29941,7 @@
       }
     ],
     "structures": [
-      "Ancient City"
+      "ancient_city"
     ]
   },
   "warped_button": {
@@ -30537,12 +30214,12 @@
   },
   "water_bucket": {
     "structures": [
-      "Trial Chambers",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "trial_chambers",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ]
   },
   "waxed_chiseled_copper": {
@@ -32115,7 +31792,7 @@
       }
     ],
     "structures": [
-      "Trail Ruins"
+      "trail_ruins"
     ]
   },
   "weathered_chiseled_copper": {
@@ -32359,19 +32036,19 @@
       }
     ],
     "structures": [
-      "Dungeon",
-      "Igloo",
-      "Mansion",
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)",
-      "Pillager Outpost",
-      "Shipwreck",
-      "Trail Ruins",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "igloo",
+      "mansion",
+      "monster_room",
+      "ocean_ruin_cold",
+      "ocean_ruin_warm",
+      "pillager_outpost",
+      "shipwreck",
+      "trail_ruins",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ]
   },
   "wheat_seeds": {
@@ -32390,12 +32067,12 @@
       "wheat"
     ],
     "structures": [
-      "Trail Ruins",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "trail_ruins",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ],
     "trades": [
       [
@@ -32760,7 +32437,7 @@
       }
     ],
     "structures": [
-      "Trail Ruins"
+      "trail_ruins"
     ],
     "trades": [
       [
@@ -33096,11 +32773,11 @@
       }
     ],
     "structures": [
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ],
     "trades": [
       [
@@ -33127,7 +32804,7 @@
       }
     ],
     "structures": [
-      "Jungle Pyramid"
+      "jungle_pyramid"
     ]
   },
   "wildflowers": {
@@ -33156,7 +32833,7 @@
       }
     ],
     "structures": [
-      "Trial Chambers"
+      "trial_chambers"
     ]
   },
   "wither_rose": {
@@ -33243,7 +32920,7 @@
       }
     ],
     "structures": [
-      "Trial Chambers"
+      "trial_chambers"
     ]
   },
   "wooden_hoe": {
@@ -33298,9 +32975,9 @@
       }
     ],
     "structures": [
-      "Ocean Ruin (Cold)",
-      "Ocean Ruin (Warm)",
-      "Trail Ruins"
+      "ocean_ruin_cold",
+      "ocean_ruin_warm",
+      "trail_ruins"
     ]
   },
   "wooden_pickaxe": {
@@ -33923,12 +33600,12 @@
       }
     ],
     "structures": [
-      "Trail Ruins",
-      "Village (Desert)",
-      "Village (Plains)",
-      "Village (Savanna)",
-      "Village (Snowy)",
-      "Village (Taiga)"
+      "trail_ruins",
+      "village_desert",
+      "village_plains",
+      "village_savanna",
+      "village_snowy",
+      "village_taiga"
     ],
     "trades": [
       [
@@ -34147,7 +33824,7 @@
       "yellow_stained_glass_pane"
     ],
     "structures": [
-      "Trail Ruins"
+      "trail_ruins"
     ]
   },
   "yellow_terracotta": {

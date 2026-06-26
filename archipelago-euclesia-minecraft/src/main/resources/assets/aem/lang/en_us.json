@@ -20,6 +20,10 @@
   "gui.aem.dump.title": "Dump Content Pack",
   "gui.aem.dump.dir": "Writes to .minecraft/aem/",
   "gui.aem.dump.run": "Dump",
+  "gui.aem.dump.open_dump": "Open Dump Folder",
+  "gui.aem.dump.open_source": "Open Source Folder",
+  "gui.aem.dump.open_failed": "Could not open folder.",
+  "gui.aem.dump.no_packs": "No datapacks in aem-datapacks/ (use Open Source Folder)",
   "gui.aem.dump.running": "Dumping…",
   "gui.aem.dump.none": "Select at least one file to dump.",
 

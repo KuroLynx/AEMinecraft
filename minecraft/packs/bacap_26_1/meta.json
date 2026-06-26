@@ -1,7 +1,0 @@
-{
-  "name": "bacap",
-  "source": "datapack",
-  "namespace": "blazeandcave",
-  "mc_version": "1.20.3",
-  "description": "BlazeandCave's Advancements Pack (BACAP) — 1162 custom advancements, enabled by the blazeandcave option. Advancement logic is derived from the manifest by the trigger compiler + parent-chain."
-}
