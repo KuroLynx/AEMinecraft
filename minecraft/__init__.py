@@ -37,6 +37,20 @@ def _gate_classification(original: ItemClassification) -> ItemClassification:
     return ItemClassification.progression_skip_balancing
 
 
+# Structures that gate a goal boss (and thus the critical path) when that boss is required: such a
+# structure unlock is worth full progression (so progression balancing front-loads it); every other
+# structure unlock stays progression_skip_balancing — still logic-bearing, but not balanced. The
+# Nether Fortress gates the Wither (skulls) AND the Ender Dragon (blaze rods -> eyes of ender ->
+# End); the Stronghold is the only End portal. This is logic knowledge, so it lives with the rules,
+# not in structures.json (which is purely jar-derived).
+_STRUCTURE_BOSS_GATES = {
+    "stronghold": {"Ender Dragon"},
+    "fortress":   {"Wither", "Ender Dragon"},
+    "monument":   {"Elder Guardian"},
+    "ancient_city": {"Warden"},
+}
+
+
 # ---------------------------------------------------------------------------
 # WebWorld
 # ---------------------------------------------------------------------------
@@ -70,8 +84,8 @@ class MCWorld(World):
     item_name_to_id = {
         **{name: data.id for (name, data) in ITEMS.items()},
         **{f"{ENTITY_UNLOCK_PREFIX}{name}": BASE_ID_ENTITY_UNLOCK + mob.id for (name, mob) in MOBS_ALL.items()},
-        **{f"{STRUCT_UNLOCK_PREFIX}{name}": BASE_ID_STRUCT_UNLOCK + structure.id for (name, structure) in
-           STRUCTURES.items()}
+        **{f"{STRUCT_UNLOCK_PREFIX}{structure.label}": BASE_ID_STRUCT_UNLOCK + structure.id
+           for structure in STRUCTURES.values()}
     }
 
     location_name_to_id = {
@@ -101,13 +115,15 @@ class MCWorld(World):
             classification = _gate_classification(mob_data.unlock_classification)
             return MCItem(name, classification, BASE_ID_ENTITY_UNLOCK + mob_data.id, self.player)
 
-        # Structures are curated individually in structures.csv: gates are progression /
-        # progression_skip_balancing, while a structure no rule references (e.g. Nether Fossil) may
-        # be useful. Honour the CSV classification directly rather than forcing a gate upgrade.
+        # A Structure Unlock locks a structure, so it always gates that structure's locations — it
+        # must stay progression-flavoured (CollectionState only collects progression items). Whether
+        # it rises to full progression is a per-seed call, computed from the goal (see
+        # _structure_classification), not stored in the data.
         if name.startswith(STRUCT_UNLOCK_PREFIX):
-            struct_name = name.removeprefix(STRUCT_UNLOCK_PREFIX)
-            struct_data = STRUCTURES[struct_name]
-            return MCItem(name, struct_data.classification, BASE_ID_STRUCT_UNLOCK + struct_data.id, self.player)
+            struct_gid = STRUCTURE_BY_LABEL[name.removeprefix(STRUCT_UNLOCK_PREFIX)]
+            struct_data = STRUCTURES[struct_gid]
+            classification = self._structure_classification(struct_gid)
+            return MCItem(name, classification, BASE_ID_STRUCT_UNLOCK + struct_data.id, self.player)
 
         raise KeyError(f"Unknown item: {name}")
 
@@ -132,22 +148,38 @@ class MCWorld(World):
             )
             self.options.advancements_required.value = active_advancement_count
 
+    def _get_active_structures(self) -> set[str]:
+        """Structures that exist this seed: every vanilla (base) structure, plus an overlay pack's
+        structures only when that pack's option is enabled — mirroring how blazeandcave gates BACAP.
+        STRUCTURE_PACK_OPTION holds an overlay structure's gating option; base structures are absent
+        from it and so are always active."""
+        return {
+            name for name in STRUCTURES
+            if name not in STRUCTURE_PACK_OPTION
+            or getattr(self.options, STRUCTURE_PACK_OPTION[name])
+        }
+
     def _get_locked_structures(self) -> set[str]:
         """Structures locked behind a 'Structure Unlock' item, per the structure_unlock option.
 
         The option accepts dimension presets ("Overworld"/"Nether"/"The End"), "All", and/or
-        individual structure names; this resolves them to a concrete set of structure names.
+        individual structure display names; this resolves them to a concrete set of structure
+        game_ids. Only structures active this seed (see _get_active_structures) can be locked — a
+        disabled overlay pack's structures don't exist, so they can't be a Structure Unlock.
         """
+        active = self._get_active_structures()
         selected = self.options.structure_unlock.value
         if "All" in selected:
-            return set(STRUCTURES.keys())
+            return set(active)
 
         locked: set[str] = set()
         for entry in selected:
             if entry in ("Overworld", "Nether", "The End"):
-                locked |= {name for name, data in STRUCTURES.items() if data.region == entry}
-            elif entry in STRUCTURES:
-                locked.add(entry)
+                locked |= {gid for gid in active if STRUCTURES[gid].region == entry}
+            else:
+                gid = STRUCTURE_BY_LABEL.get(entry)  # the option lists display labels
+                if gid in active:
+                    locked.add(gid)
         return locked
 
     def _get_active_locations(self) -> dict[str, MCLocationData]:
@@ -192,14 +224,22 @@ class MCWorld(World):
 
     def create_regions(self) -> None:
         from .logic.acquisition import RuleHelper  # local import: avoids a top-level import cycle
+        from .logic.root import build_location_rules, derive_location_regions
 
         added_regions: dict[str, Region] = {}
 
         for region in MCRegion:
             added_regions[region] = Region(region, self.player, self.multiworld)
 
+        # Each location is placed in the region its reachability rule actually requires (a Nether-/
+        # End-native check goes in that dimension; a multi-dimension or item-only check goes in the
+        # always-reachable origin), instead of the legacy uniform-Overworld floor that over-gated
+        # non-Overworld checks and broke a Nether start. The rules are cached for set_rules so the two
+        # stay in lockstep. (Falls back to the data-declared region for any location without a rule.)
+        self._location_rules = build_location_rules(self)
+        placement = derive_location_regions(self._location_rules)
         for loc_name, loc_data in self._get_active_locations().items():
-            region = added_regions[MCRegion(loc_data.region)]
+            region = added_regions[MCRegion(placement.get(loc_name, loc_data.region))]
             location = MCLocation(self.player, loc_name, loc_data.id, region)
             region.locations.append(location)
 
@@ -304,8 +344,8 @@ class MCWorld(World):
 
         # Structure unlocks: only the structures locked by the structure_unlock option are added.
         # Unlocked structures are gated by their dimension instead (see RuleHelper.structure).
-        for struct_name in self._get_locked_structures():
-            pool.append(self.create_item(f"{STRUCT_UNLOCK_PREFIX}{struct_name}"))
+        for struct_gid in self._get_locked_structures():
+            pool.append(self.create_item(f"{STRUCT_UNLOCK_PREFIX}{STRUCTURES[struct_gid].label}"))
 
         active_location_count = len(self._get_active_locations())
 
@@ -350,6 +390,14 @@ class MCWorld(World):
         if "All" in selected:
             return list(MOBS_BOSS.keys())
         return [name for name in MOBS_BOSS.keys() if name in selected]
+
+    def _structure_classification(self, struct_name: str) -> ItemClassification:
+        """A Structure Unlock's classification, computed for this seed. It is at least
+        progression_skip_balancing (it gates its structure's locations and must be collectable), and
+        full progression only when it gates a boss the goal requires (see _STRUCTURE_BOSS_GATES)."""
+        if _STRUCTURE_BOSS_GATES.get(struct_name, frozenset()) & set(self.selected_bosses):
+            return ItemClassification.progression
+        return ItemClassification.progression_skip_balancing
 
     def _get_primary_condition(self):
         boss_locations = [f"{BOSS_KILL_PREFIX}{name}" for name in self.selected_bosses]

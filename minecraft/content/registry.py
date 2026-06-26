@@ -1,10 +1,10 @@
 """Content registry: parses a *content pack* into typed records with stable Archipelago IDs.
 
 A pack is a directory under ``minecraft/packs/<name>/`` holding ``items.csv``, ``mobs.csv`` and
-``structures.csv`` plus a ``manifest.json`` (and ``meta.json``), describing one content source —
-vanilla today, mods / datapacks / other MC versions later. Advancement *locations* come from the
-manifest (the data-driven source the trigger compiler also reads), so vanilla, mods and datapacks
-are handled uniformly; the CSVs only describe items/mobs/structures.
+``structures.json`` plus a ``manifest.json`` (and ``meta.json``), describing one content source —
+vanilla today, mods / datapacks / other MC versions later. ``structures.json`` is generated from the
+jar (tools/build_structures.py); advancement *locations* come from the manifest (the data-driven
+source the trigger compiler also reads), so vanilla, mods and datapacks are handled uniformly.
 
 ``load_pack(name)`` returns a :class:`ContentRegistry` bundling the parsed records; ``data.py``
 re-exports them as the module-level globals the rest of the apworld already imports.
@@ -17,7 +17,7 @@ from BaseClasses import ItemClassification
 
 # Location-name prefixes live with the other rule constants; the loaders build AP location names
 # from them. logic.constants is import-cycle-safe (it imports nothing from this package).
-from ..logic.constants import ADVANCEMENT_PREFIX, BOSS_KILL_PREFIX, ENTITY_KILL_PREFIX
+from ..logic.constants import ADVANCEMENT_PREFIX, BOSS_KILL_PREFIX, CONTENT_VERSION, ENTITY_KILL_PREFIX
 
 # Base IDs (unchanged from data.py — moving them here keeps every AP id identical).
 BASE_ID_ITEMS           = 0xEC0000
@@ -73,9 +73,13 @@ class MCMobData:
 @dataclass
 class MCStructureData:
     id: int
-    classification: ItemClassification
     region: str
-    game_id: str
+    game_id: str             # the mod-facing registry id ("minecraft:ancient_city"), for slot_data
+    label: str = ""          # display name = prettify(game_id); cosmetic — YAML option + AP item label
+    blocks: tuple = ()  # palette block ids (natural generation); see logic.acquisition
+    # classification is NOT stored: a Structure Unlock is always a logic gate, and whether it rises
+    # from progression_skip_balancing to progression depends on the seed (does it gate a goal boss?),
+    # so it is computed at item creation — see MCWorld.create_item.
 
 
 _CLASS_MAP = {
@@ -94,15 +98,59 @@ def _pack_dir(name: str):
     return files(_MC_ROOT).joinpath("packs", name)
 
 
+# Packs are discovered, never named by a constant: scan packs/ once and keep every pack whose
+# meta.json `mc_version` equals CONTENT_VERSION. The vanilla pack (source == "vanilla") is the base;
+# the rest (datapacks/mods like BACAP) are overlays, keyed by their namespace. A new MC version is
+# adopted by dumping the packs (their meta.mc_version is the running game version), dropping them in
+# packs/, and bumping CONTENT_VERSION — folder names don't matter.
+_DISCOVERED: dict | None = None
+
+
+def _discover() -> dict:
+    """{namespace: (dir_name, source)} for every packs/<dir> whose meta.mc_version == CONTENT_VERSION."""
+    global _DISCOVERED
+    if _DISCOVERED is None:
+        found: dict[str, tuple[str, str]] = {}
+        for entry in sorted(files(_MC_ROOT).joinpath("packs").iterdir(), key=lambda p: p.name):
+            meta = entry.joinpath("meta.json")
+            if not (entry.is_dir() and meta.is_file()):
+                continue
+            with meta.open(encoding="utf-8") as f:
+                data = json.load(f)
+            if str(data.get("mc_version")) == str(CONTENT_VERSION):
+                found[data.get("namespace")] = (entry.name, data.get("source"))
+        _DISCOVERED = found
+    return _DISCOVERED
+
+
+def base_pack() -> str:
+    """The vanilla base pack's directory name for CONTENT_VERSION (the one with source == "vanilla")."""
+    for name, source in _discover().values():
+        if source == "vanilla":
+            return name
+    raise FileNotFoundError(
+        f"No vanilla content pack with meta.mc_version == {CONTENT_VERSION!r} found in packs/ "
+        f"(dump one in-game and drop it in, or fix CONTENT_VERSION).")
+
+
+def overlay_packs() -> dict[str, str]:
+    """Non-vanilla packs (datapacks/mods, e.g. BACAP) for CONTENT_VERSION, as namespace -> dir name."""
+    return {ns: name for ns, (name, source) in _discover().items() if source != "vanilla"}
+
+
 def _read_csv(pack_dir, filename: str):
     with pack_dir.joinpath(filename).open(mode="r", encoding="utf-8-sig") as f:
         import csv
         return list(csv.DictReader(f))
 
 
-def _load_items(pack_dir) -> dict[str, MCItemData]:
+def _load_items() -> dict[str, MCItemData]:
+    """AP item classifications/counts live with the apworld (minecraft/content/items.csv), not in a
+    content pack: they are randomizer-design decisions (a diamond is progression in any MC version),
+    so they are version-independent and shared across packs. The pack still says *which* items exist
+    and how to get them (acquisition.json)."""
     items = {}
-    for index, row in enumerate(_read_csv(pack_dir, "items.csv")):
+    for index, row in enumerate(_read_csv(files(__package__), "items.csv")):
         items[row["name"]] = MCItemData(
             id=BASE_ID_ITEMS + index,
             classification=_CLASS_MAP.get(row["classification"], ItemClassification.filler),
@@ -126,23 +174,57 @@ def _load_mobs(pack_dir) -> dict[str, MCMobData]:
     return mobs
 
 
+def _prettify(game_id: str) -> str:
+    """Display label from a structure game_id: 'ancient_city' -> 'Ancient City',
+    'twilightforest:hollow_hill' -> 'Hollow Hill'. Purely cosmetic — the game_id is the key
+    everywhere; this is only what the YAML structure_unlock option and the AP item label show."""
+    bare = game_id.split(":")[-1]
+    return " ".join(word[0].upper() + word[1:] for word in bare.split("_") if word)
+
+
+def _struct_record(row: dict, sid: int) -> MCStructureData:
+    # The dump leaves vanilla game_ids bare ("ancient_city") and namespaces mod/datapack ones
+    # ("twilightforest:hollow_hill"); only bare ones get the implicit minecraft: namespace for the mod.
+    game_id = row["game_id"]
+    return MCStructureData(
+        id=sid,
+        region=row["region"],
+        game_id=game_id if ":" in game_id else f"minecraft:{game_id}",
+        label=_prettify(game_id),
+        blocks=tuple(row.get("blocks", ())),
+    )
+
+
 def _load_structures(pack_dir) -> dict[str, MCStructureData]:
+    """Read a pack's structures.json, keyed by game_id (the stable identifier; the display name is
+    derived via prettify). The list order is the stable Structure Unlock item id (id = index)."""
     structs = {}
-    for index, row in enumerate(_read_csv(pack_dir, "structures.csv")):
-        structs[row["name"]] = MCStructureData(
-            id=index,
-            classification=_CLASS_MAP.get(row["classification"], ItemClassification.filler),
-            region=row["region"],
-            game_id=f"minecraft:{row['game_id']}",
-        )
+    with pack_dir.joinpath("structures.json").open(encoding="utf-8") as f:
+        rows = json.load(f)
+    for index, row in enumerate(rows):
+        structs[row["game_id"]] = _struct_record(row, index)
     return structs
+
+
+def load_structures(pack_name: str, id_start: int = 0) -> dict[str, MCStructureData]:
+    """Read one pack's structures.json (keyed by game_id), assigning Structure-Unlock ids from
+    ``id_start`` in list order. A pack with no structures.json (a manifest-only datapack like BACAP,
+    or any mod that adds no worldgen structures) yields ``{}`` — the caller layers these onto the
+    vanilla base, so an overlay pack contributes only the structures it actually defines."""
+    path = _pack_dir(pack_name).joinpath("structures.json")
+    if not path.is_file():
+        return {}
+    with path.open(encoding="utf-8") as f:
+        rows = json.load(f)
+    return {row["game_id"]: _struct_record(row, id_start + index) for index, row in enumerate(rows)}
 
 
 def load_manifest_advancements(pack_name: str, id_base: int, region: str = "Overworld",
                                reserved: frozenset = frozenset(),
                                skip_game_ids: frozenset = frozenset(),
                                skip_tabs: frozenset = frozenset(),
-                               challenge_tabs: frozenset = frozenset()
+                               challenge_tabs: frozenset = frozenset(),
+                               skip_frame_tabs: dict | None = None
                                ) -> dict[str, MCLocationData]:
     """Advancement locations for a manifest-only pack (a mod / datapack with no CSVs, e.g. BACAP).
 
@@ -157,6 +239,11 @@ def load_manifest_advancements(pack_name: str, id_base: int, region: str = "Over
     "Super Challenges" tab. ``challenge_tabs`` additionally flags whole tabs as challenge (kept for
     any challenge-tab advancement whose frame isn't literally ``challenge``).
 
+    ``skip_frame_tabs`` maps a tab to the frames within it that aren't real checks — used for BACAP's
+    overview ``bacap`` tab, whose ``goal`` (per-tab Milestones) and ``challenge`` (Advancement Legend)
+    entries are aggregate markers earned by completing other advancements, not player-earnable on
+    their own, while the same tab's ``task`` entries (Getting Wood, Time to Mine, …) stay real checks.
+
     The advancement *id* is the location's game_id (what the mod reports); the location name is the
     coherent ``Advancement: <title>`` (the datapack's literal display title), falling back to the
     unique ``Advancement: <namespace>/<path>`` when a title is missing or would collide with a
@@ -165,6 +252,7 @@ def load_manifest_advancements(pack_name: str, id_base: int, region: str = "Over
     from ``id_base`` (the kept ids in sorted order, so the mapping is deterministic across runs)."""
     with _pack_dir(pack_name).joinpath("manifest.json").open(encoding="utf-8") as handle:
         manifest = json.load(handle)
+    skip_frame_tabs = skip_frame_tabs or {}
     used = set(reserved)
     locations: dict[str, MCLocationData] = {}
     for advancement_id in sorted(manifest):
@@ -172,7 +260,8 @@ def load_manifest_advancements(pack_name: str, id_base: int, region: str = "Over
             continue
         entry = manifest[advancement_id]
         tab = entry.get("tab")
-        if tab in skip_tabs:
+        frame = entry.get("frame")
+        if tab in skip_tabs or frame in skip_frame_tabs.get(tab, ()):
             continue
         title = entry.get("title")
         location_name = f"{ADVANCEMENT_PREFIX}{title}" if title else None
@@ -184,7 +273,7 @@ def load_manifest_advancements(pack_name: str, id_base: int, region: str = "Over
             category=MCLocationCategory.ADVANCEMENT,
             region=region,
             game_id=advancement_id,
-            challenge=entry.get("frame") == "challenge" or tab in challenge_tabs,
+            challenge=frame == "challenge" or tab in challenge_tabs,
         )
     return locations
 
@@ -242,7 +331,7 @@ class ContentRegistry:
 
 def load_pack(name: str) -> ContentRegistry:
     pack_dir = _pack_dir(name)
-    items = _load_items(pack_dir)
+    items = _load_items()
     mobs = _load_mobs(pack_dir)
     structures = _load_structures(pack_dir)
     return ContentRegistry(

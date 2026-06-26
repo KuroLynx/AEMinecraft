@@ -1,0 +1,14 @@
+[
+  {
+    "name": "Desert Well",
+    "game_id": "desert_well",
+    "region": "Overworld",
+    "blocks": []
+  },
+  {
+    "name": "Monster Room",
+    "game_id": "monster_room",
+    "region": "Overworld",
+    "blocks": []
+  }
+]

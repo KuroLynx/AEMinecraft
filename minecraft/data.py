@@ -26,20 +26,63 @@ from .content.registry import (  # noqa: F401
     MCLocationData,
     MCMobData,
     MCStructureData,
+    base_pack,
     load_manifest_advancements,
     load_manifest_challenge,
     load_pack,
+    load_structures,
+    overlay_packs,
 )
 from .logic.constants import *
 
-# Vanilla is always loaded; manifest-only datapack/mod packs (BACAP) are loaded too so their
-# location ids and the compiler's parent-chain lookup are always present (the option only gates
-# whether those locations are *created* this seed — see MCWorld._get_active_locations).
-_REGISTRY: ContentRegistry = load_pack(VANILLA_PACK)
+# Vanilla is the discovered base pack (the source=="vanilla" pack whose meta.mc_version matches
+# CONTENT_VERSION); manifest-only datapack/mod packs (BACAP) are loaded too so their location ids and
+# the compiler's parent-chain lookup are always present (the option only gates whether those locations
+# are *created* this seed — see MCWorld._get_active_locations).
+_REGISTRY: ContentRegistry = load_pack(base_pack())
 
 ITEMS: dict[str, MCItemData] = _REGISTRY.items
 MOBS_ALL: dict[str, MCMobData] = _REGISTRY.mobs
-STRUCTURES: dict[str, MCStructureData] = _REGISTRY.structures
+
+# Overlay packs: mod/datapack content (dumped in-game via /aem dump, then dropped into packs/)
+# layered on top of the vanilla base. They are DISCOVERED by content.registry (every non-vanilla pack
+# whose meta.mc_version matches CONTENT_VERSION), then wired to the option that enables them via this
+# namespace -> option map. Each is loaded unconditionally so the structures/locations it adds always
+# have stable ids in the (static) AP data package; the option then gates whether that content is
+# actually created/active this seed — exactly how `blazeandcave` gates BACAP. To add a mod/datapack:
+# dump it, drop the pack into packs/, give it an option in options.py, and add its namespace here.
+OVERLAY_OPTIONS: dict[str, str] = {"blazeandcave": "blazeandcave"}  # pack namespace -> enabling option
+OVERLAY_PACKS: list[tuple[str, str]] = [
+    (pack_name, OVERLAY_OPTIONS[namespace])
+    for namespace, pack_name in overlay_packs().items()
+    if namespace in OVERLAY_OPTIONS
+]
+
+# The discovered BACAP pack for this version (None if none is installed for CONTENT_VERSION).
+BACAP_PACK: str | None = overlay_packs().get("blazeandcave")
+
+# STRUCTURES is the vanilla base plus every overlay pack's worldgen structures (e.g. a datapack/mod
+# that generates new structures), so each becomes a Structure Unlock item and its palette feeds the
+# acquisition logic. Keyed by game_id (the stable identifier); ids continue past vanilla's so they
+# stay stable as packs are added; an overlay never shadows a base structure. STRUCTURE_PACK_OPTION
+# maps an overlay structure (by game_id) to the option that must be on for it to exist this seed
+# (vanilla structures are absent here = always active).
+STRUCTURES: dict[str, MCStructureData] = dict(_REGISTRY.structures)
+STRUCTURE_PACK_OPTION: dict[str, str] = {}
+_next_struct_id = max((s.id for s in STRUCTURES.values()), default=-1) + 1
+for _overlay_pack, _overlay_option in OVERLAY_PACKS:
+    _overlay_structs = load_structures(_overlay_pack, id_start=_next_struct_id)
+    for _struct_gid, _struct_data in _overlay_structs.items():
+        if _struct_gid in STRUCTURES:
+            continue  # an overlay never shadows a base (vanilla) structure
+        STRUCTURES[_struct_gid] = _struct_data
+        STRUCTURE_PACK_OPTION[_struct_gid] = _overlay_option
+    if _overlay_structs:
+        _next_struct_id = max(s.id for s in _overlay_structs.values()) + 1
+
+# Reverse of the cosmetic display label -> game_id, for the user-facing edges (the structure_unlock
+# YAML option and parsing a "Structure Unlock: <label>" item name back to its structure).
+STRUCTURE_BY_LABEL: dict[str, str] = {data.label: gid for gid, data in STRUCTURES.items()}
 
 # MC items gated behind Progressive Material Handling tiers: the key is the number of copies of
 # "Progressive Material Handling" required to pick the item up. Tiers mirror rules.constants MAT_*
@@ -134,7 +177,10 @@ LOCATIONS_BACAP: dict[str, MCLocationData] = load_manifest_advancements(
     BACAP_PACK, BASE_ID_LOC_BACAP, reserved=frozenset(ALL_LOCATIONS),
     skip_game_ids=_VANILLA_ADVANCEMENT_GAME_IDS,
     skip_tabs=frozenset({"statistics", "technical"}),
-    challenge_tabs=frozenset({"challenges"}))
+    challenge_tabs=frozenset({"challenges"}),
+    # The overview `bacap` tab's goal/challenge entries (per-tab Milestones, Advancement Legend) are
+    # aggregate markers earned by completing other advancements, not checks; its `task` entries stay.
+    skip_frame_tabs={"bacap": frozenset({"goal", "challenge"})}) if BACAP_PACK else {}
 
 ADVANCEMENT_LOCATIONS: dict[str, MCLocationData] = {**LOCATIONS_ADVANCEMENT, **LOCATIONS_BACAP}
 
@@ -142,7 +188,7 @@ ADVANCEMENT_LOCATIONS: dict[str, MCLocationData] = {**LOCATIONS_ADVANCEMENT, **L
 # give the advancement a different frame than vanilla, promoting a goal/task to a challenge or
 # demoting a challenge, so when blazeandcave is on the challenge_sanity gate must follow BACAP's
 # frame, not the vanilla flag baked into the location. Maps rewritten game_id -> BACAP challenge.
-_BACAP_CHALLENGE: dict[str, bool] = load_manifest_challenge(BACAP_PACK)
+_BACAP_CHALLENGE: dict[str, bool] = load_manifest_challenge(BACAP_PACK) if BACAP_PACK else {}
 BACAP_REWRITE_CHALLENGE: dict[str, bool] = {
     game_id: _BACAP_CHALLENGE[game_id]
     for game_id in _VANILLA_ADVANCEMENT_GAME_IDS if game_id in _BACAP_CHALLENGE

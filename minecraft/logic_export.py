@@ -43,13 +43,18 @@ def build_logic_export(world) -> dict:
     # appear in logic_rules — resolve here instead of raising KeyError.
     loc_lookup = world._get_active_locations()
 
+    # Actual region each location was placed in (create_regions derives it from the rule, so it is not
+    # the data-declared default) — the mod gates region reachability on this.
+    placed_region = {loc.name: loc.parent_region.name
+                     for loc in world.multiworld.get_locations(world.player)}
+
     # Per-location rules captured during set_rules (only locations created this seed).
     locations: dict[str, dict] = {}
     for name, rule in getattr(world, "logic_rules", {}).items():
         loc_data = loc_lookup[name]
         locations[name] = {
             "game_id": loc_data.game_id,
-            "region": loc_data.region,
+            "region": placed_region.get(name, loc_data.region),
             "rule": rule.to_dict(),
         }
 

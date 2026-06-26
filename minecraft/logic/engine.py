@@ -15,19 +15,7 @@ from __future__ import annotations
 
 from ..data import MOBS_ALL
 from .acquisition import RuleHelper
-from .constants import (
-    A_ADVENTURE,
-    A_HUSBANDRY,
-    A_SPOOKY_SCARY_SKELETON,
-    ADVANCEMENT_PREFIX,
-    E_ELDER_GUARDIAN,
-    E_ENDER_DRAGON,
-    E_WARDEN,
-    E_WITHER,
-    K_ARMOR,
-    K_BOW,
-    MAT_IRON,
-)
+from .constants import A_ADVENTURE, A_HUSBANDRY
 
 
 def collect_advancement_rules(helper: RuleHelper) -> dict:
@@ -41,39 +29,7 @@ def collect_advancement_rules(helper: RuleHelper) -> dict:
 
 
 def collect_entity_rules(helper: RuleHelper) -> dict:
-    """Kill-location logic for every mob: plain reachability (``entity()``) for all but the four
-    bosses, which gate on the gear / knowledge / environment their fight demands."""
-    rules = {name: helper.entity(name) for name in MOBS_ALL}
-    rules.update(_boss_rules(helper))
-    return rules
-
-
-def _boss_rules(helper: RuleHelper) -> dict:
-    """Bespoke kill gates for the four bosses (their kills are goal conditions, so they must not be
-    beatable from scratch)."""
-    return {
-        E_ENDER_DRAGON: helper.all_of(
-            helper.entity(E_ENDER_DRAGON),
-            helper.knowledge(K_BOW),  # shoot out the end crystals
-            helper.any_of(
-                helper.can_kill(),
-                helper.can_get_bed(),  # bed-bombing strategy
-            ),
-        ),
-        E_WITHER: helper.all_of(
-            helper.reached(f"{ADVANCEMENT_PREFIX}{A_SPOOKY_SCARY_SKELETON}"),  # wither skulls
-            helper.entity(E_WITHER),
-            helper.can_kill(),
-            helper.knowledge(K_ARMOR),  # survive the blast / wither effect
-            helper.material(MAT_IRON),  # at least iron-tier gear
-        ),
-        E_WARDEN: helper.all_of(
-            helper.entity(E_WARDEN),
-            helper.can_kill(),
-        ),
-        E_ELDER_GUARDIAN: helper.all_of(
-            helper.entity(E_ELDER_GUARDIAN),
-            helper.can_kill(),
-            helper.can_breath_underwater(),  # survive the fight underwater
-        ),
-    }
+    """Kill-location logic for every mob. Delegated to ``RuleHelper.can_defeat`` — plain reachability
+    for ordinary mobs, bespoke gates for the four bosses — so the boss kill logic has a single home
+    shared with boss-drop resolution in acquire() (e.g. the Wither's nether star)."""
+    return {name: helper.can_defeat(name) for name in MOBS_ALL}

@@ -5,7 +5,7 @@ from importlib.resources import files
 # AST primitives must be imported directly: `from .. import *` cannot supply them because the
 # package __init__ imports this module (via set_rules) before it defines Const/Has/and_/… .
 from .ast import Const, Has, ReachRegion, ReachLocation, and_, or_, at_least
-from .constants import VANILLA_PACK  # constants imports nothing, so this is import-cycle-safe
+from ..content.registry import base_pack  # registry only imports constants → import-cycle-safe
 from .. import *
 
 # Wood-family items (planks / logs / wood / stems / hyphae, stripped or not) have no knowledge or
@@ -68,7 +68,7 @@ _ENTITY_BY_GID: dict | None = None
 def _acquisition_table() -> dict:
     global _ACQUISITION
     if _ACQUISITION is None:
-        path = files(_MC_ROOT).joinpath("packs", VANILLA_PACK, "acquisition.json")
+        path = files(_MC_ROOT).joinpath("packs", base_pack(), "acquisition.json")
         with path.open(encoding="utf-8") as handle:
             _ACQUISITION = json.load(handle)
     return _ACQUISITION
@@ -112,10 +112,28 @@ _BLOCK_MINING: dict | None = None
 def _block_mining() -> dict:
     global _BLOCK_MINING
     if _BLOCK_MINING is None:
-        path = files(_MC_ROOT).joinpath("packs", VANILLA_PACK, "block_mining.json")
+        path = files(_MC_ROOT).joinpath("packs", base_pack(), "block_mining.json")
         with path.open(encoding="utf-8") as handle:
             _BLOCK_MINING = json.load(handle)
     return _BLOCK_MINING
+
+
+_BLOCK_STRUCTURES: dict | None = None
+
+
+def _block_structures() -> dict:
+    """Reverse of each structure's natural-generation palette (structures.json -> STRUCTURES): block
+    id -> the structures it generates in. Lets acquire() treat 'mine this block where it spawns in a
+    structure' as a source for a placed-only block (e.g. a comparator in an Ancient City) that
+    recipes/loot tables miss."""
+    global _BLOCK_STRUCTURES
+    if _BLOCK_STRUCTURES is None:
+        mapping: dict[str, list] = {}
+        for struct_name, data in STRUCTURES.items():
+            for block in data.blocks:
+                mapping.setdefault(block, []).append(struct_name)
+        _BLOCK_STRUCTURES = mapping
+    return _BLOCK_STRUCTURES
 
 
 def _block_region(block: str) -> str:
@@ -141,6 +159,9 @@ class RuleHelper:
         # Structures locked behind a 'Structure Unlock' item (structure_unlock option). Others are
         # gated by their dimension being reachable instead (see self.structure).
         self.locked_structures = world._get_locked_structures()
+        # Structures that actually exist this seed (vanilla + overlay packs whose option is on). An
+        # inactive overlay structure can't be a source or a reachable target.
+        self.active_structures = world._get_active_structures()
         # Options resolved once, up front, so rule nodes never carry option logic.
         self.villager_trust = bool(world.options.villager_trust.value)
         self.locked_categories = set(world.options.mob_spawn_lock_category.value)
@@ -300,21 +321,24 @@ class RuleHelper:
     # -----------------------------------------------------------------------
     # Structures
     # -----------------------------------------------------------------------
-    def structure(self, struct_name: str):
-        if struct_name not in STRUCTURES:
-            print(f"Warning: {struct_name} not found !")
+    def structure(self, struct_gid: str):
+        if struct_gid not in STRUCTURES:
+            print(f"Warning: {struct_gid} not found !")
             return Const(False)
+        if struct_gid not in self.active_structures:
+            return Const(False)  # an overlay structure whose pack is off this seed never generates
         # A structure is reachable only once its dimension is reachable (Overworld is always
         # reachable, Nether/End need their access). Locked structures additionally require their
         # unlock item — but the dimension gate still applies, so e.g. the Nether ruined portal is
         # not reachable from the Overworld just because its unlock item was received.
-        region = self.access_region(STRUCTURES[struct_name].region)
-        if struct_name in self.locked_structures:
-            return self.all_of(self.has(f"{STRUCT_UNLOCK_PREFIX}{struct_name}"), region)
+        region = self.access_region(STRUCTURES[struct_gid].region)
+        if struct_gid in self.locked_structures:
+            return self.all_of(self.has(f"{STRUCT_UNLOCK_PREFIX}{STRUCTURES[struct_gid].label}"), region)
         return region
 
     def any_village(self):
-        return self.any_of(*[self.structure(f"Village ({biome})") for biome in ["Desert", "Plains", "Savanna", "Snowy", "Taiga"]])
+        return self.any_of(*[self.structure(gid) for gid in
+                             (S_VILLAGE_DESERT, S_VILLAGE_PLAINS, S_VILLAGE_SAVANNA, S_VILLAGE_SNOWY, S_VILLAGE_TAIGA)])
 
     def any_portal(self, nether_allowed: bool = False):
         portals = [
@@ -872,6 +896,36 @@ class RuleHelper:
             unlock_node,
         )
 
+    def can_defeat(self, entity_name: str):
+        """Gate for *killing* a mob — its drops and any kill goal. Ordinary mobs reduce to plain
+        reachability (beatable bare-handed via the boat trap); the four bosses require the gear,
+        knowledge and environment their fight demands. Single source of truth, shared by the
+        entity-kill locations (engine.collect_entity_rules) and boss drops resolved through acquire()
+        (e.g. a nether star from the Wither)."""
+        if entity_name == E_ENDER_DRAGON:
+            return self.all_of(
+                self.entity(E_ENDER_DRAGON),
+                self.knowledge(K_BOW),  # shoot out the end crystals
+                self.any_of(self.can_kill(), self.can_get_bed()),  # melee or bed-bombing
+            )
+        if entity_name == E_WITHER:
+            return self.all_of(
+                self.reached(f"{ADVANCEMENT_PREFIX}{A_SPOOKY_SCARY_SKELETON}"),  # wither skulls
+                self.entity(E_WITHER),
+                self.can_kill(),
+                self.knowledge(K_ARMOR),  # survive the blast / wither effect
+                self.material(MAT_IRON),  # at least iron-tier gear
+            )
+        if entity_name == E_WARDEN:
+            return self.all_of(self.entity(E_WARDEN), self.can_kill())
+        if entity_name == E_ELDER_GUARDIAN:
+            return self.all_of(
+                self.entity(E_ELDER_GUARDIAN),
+                self.can_kill(),
+                self.can_breath_underwater(),  # survive the fight underwater
+            )
+        return self.entity(entity_name)
+
     def can_tame(self, entity_name: str):
         """Reach the mob *and* hold its taming item (bones, fish, …). Mobs with no taming
         item (mount-tamed: horses, llamas, …) reduce to plain reachability."""
@@ -916,11 +970,38 @@ class RuleHelper:
             self.material(MAT_GOLD),
         )
 
+    def can_get_beacon_base(self):
+        """A block valid for a beacon pyramid base — any of iron / gold / emerald / diamond /
+        netherite. Required by the construct_beacon trigger whenever the beacon needs a pyramid
+        (level >= 1); the cheapest reachable one satisfies it."""
+        sources = [
+            self.acquire("minecraft:iron_block"),
+            self.acquire("minecraft:gold_block"),
+            self.acquire("minecraft:emerald_block"),
+            self.acquire("minecraft:diamond_block"),
+            self.acquire("minecraft:netherite_block"),
+        ]
+        return self.any_of(*[node for node in sources if node is not None])
+
     # -----------------------------------------------------------------------
     # AP Items
     # -----------------------------------------------------------------------
     def material(self, tier: int):
-        return Has(self.player, ITEM_MATERIAL_HANDLING, tier)
+        node = Has(self.player, ITEM_MATERIAL_HANDLING, tier)
+        # A material tier carries the dimension its ore lives in, so a requirement gates on reaching
+        # that dimension — not just the item count (single source of truth: every caller, curated or
+        # compiled, inherits the floor). Copper/iron/diamond are Overworld-only ores; netherite is the
+        # Nether (ancient debris). Stone and gold exist in BOTH the Overworld and the Nether
+        # (cobblestone/blackstone, overworld/nether gold ore), so they gate on either. Wood tier is
+        # ``has(..., 0)`` (trivially true), so it needs no floor.
+        if tier >= MAT_NETHERITE:
+            return self.all_of(node, self.access_region(REGION_NETHER))
+        if tier in (MAT_COPPER, MAT_IRON, MAT_DIAMOND):
+            return self.all_of(node, self.access_region(REGION_OVERWORLD))
+        if tier in (MAT_STONE, MAT_GOLD):
+            return self.all_of(node, self.any_of(self.access_region(REGION_OVERWORLD),
+                                                 self.access_region(REGION_NETHER)))
+        return node
 
     def knowledge(self, item: str):
         return Has(self.player, f"Knowledge: {item}")
@@ -941,8 +1022,16 @@ class RuleHelper:
         base = item_id.split(":", 1)[-1] if ":" in item_id else item_id
         if base.startswith("#"):
             return None  # a raw tag (recipe tags are pre-expanded; a bare tag can't be resolved)
-        if base in _stack or len(_stack) >= self._MAX_DEPTH:
-            return None  # recipe cycle / too deep — this path can't justify itself
+        if base in _stack:
+            return None  # recipe cycle — this path can't justify itself
+        if len(_stack) >= self._MAX_DEPTH:
+            # Too deep to keep expanding. A base material bottoms out at an ore/region regardless, so
+            # its tier floor is a sound TERMINAL here — this is not the lossy top-level bypass (a
+            # shallow acquire still uses the real sources, e.g. diamond via bastion loot); it only
+            # stops the runaway recursion of a deep crafting chain (waxed_copper_lantern → … →
+            # copper_ingot). A non-material this deep gives up.
+            tier = _MATERIAL_TIER_BY_ITEM.get(base)
+            return self.material(tier) if tier is not None else None
         # Memoize on (base, stack): the result is pure for this helper, so the same item is computed
         # once and shared. Datapack compilation calls acquire ~9M times for far fewer distinct keys.
         key = (base, _stack)
@@ -958,24 +1047,54 @@ class RuleHelper:
         if wood_region is not None:
             return self.access_region(wood_region)
 
-        # Materials collapse to their compact tier gate rather than expanding every recipe/chest
-        # path — keeps the serialized tree small (iron/diamond/… otherwise recurse enormously).
-        if base in _MATERIAL_TIER_BY_ITEM or base in (
-                "diamond", "diamond_block", "netherite_ingot", "netherite_block",
-                "netherite_scrap", "ancient_debris"):
-            return self._acquire_fallback(base)
+        # Dragon's breath has no recipe or loot table — you bottle it from the Ender Dragon's breath
+        # mid-fight — so it is modeled here: the dragon must be reachable (and unlocked, when the
+        # boss-lock option gates it) plus a glass bottle.
+        if base == "dragon_breath":
+            return self.all_of(self.entity(E_ENDER_DRAGON), self.acquire("minecraft:glass_bottle"))
 
-        # Tools / armor / gated craftables (bow, shears, stations, …) resolve to their
-        # Knowledge + material-tier gate, NOT their recipe: the mod needs the Knowledge to use one
-        # however it was obtained (craft, chest, trade, drop), so the recipe path — which would drop
-        # the Knowledge — must not win here. Mirrors the material short-circuit above.
+        # A froglight is made when a frog eats a small magma cube — the frog spawns only in the
+        # Overworld and the magma cube only in the Nether, so it genuinely needs BOTH dimensions.
+        # (The table mis-models it as a plain magma-cube drop, which would drop the frog/Overworld.)
+        if base in ("ochre_froglight", "pearlescent_froglight", "verdant_froglight"):
+            return self.all_of(self.entity(E_FROG), self.entity(E_MAGMA_CUBE))
+
+        # An elytra exists only in an End City ship — placed in an item frame, not a loot table the
+        # indexer reads — so it has no acquisition record and would fall back to its bare material
+        # tier (MAT_WOOD, trivially true), dropping the End requirement entirely. Gate it explicitly
+        # on the End City (region The End + any structure lock) plus Knowledge: Flying.
+        if base == "elytra":
+            return self.all_of(self.knowledge(K_FLYING), self.structure(S_END_CITY))
+
+        # A dragon head sits on the End City ships' spires (no recipe or loot table, like the elytra),
+        # so it has no acquisition record — gate it on reaching an End City.
+        if base == "dragon_head":
+            return self.structure(S_END_CITY)
+
+        # Tools / armor / gated craftables (bow, fishing rod, shears, …) need their Knowledge to be
+        # USED however they were obtained — but they are still obtained via their real sources, each
+        # carrying its own region. So gate on the Knowledge AND the obtainability (recipe ingredients,
+        # structure loot, a trade, a drop, …), not a lossy material-tier proxy that drops the
+        # ingredients' regions entirely (e.g. a fishing rod's string → spider/cobweb → Overworld). The
+        # sources are coarsened first so a big region-only tree collapses to its region floor instead
+        # of bloating every tool rule.
         if base in TOOL_LOCKS:
-            return self._acquire_fallback(base)
+            knowledge_name, tier = TOOL_LOCKS[base]
+            sources = self._acquire_from_sources(base, _stack)
+            obtain = self._coarsen(sources) if sources is not None else self.material(tier)
+            return self.all_of(self.knowledge(knowledge_name), obtain)
 
+        sources = self._acquire_from_sources(base, _stack)
+        result = sources if sources is not None else self._acquire_fallback(base)
+        return self._coarsen(result)
+
+    def _acquire_from_sources(self, base: str, _stack: frozenset):
+        """OR over every modeled way to obtain ``base`` (recipe, drop, mining, silk-mining, trade,
+        structure loot, gameplay), each carrying its region/tier gate; ``None`` when the item has no
+        acquisition record or no usable source. Shared by ordinary items and tool/armor gates."""
         record = _acquisition_table().get(base)
         if record is None:
-            return self._acquire_fallback(base)
-
+            return None
         inner = _stack | {base}
         options = []
         for recipe in record.get("recipes", ()):
@@ -985,7 +1104,10 @@ class RuleHelper:
         for mob_file in record.get("drops", ()):
             name = _entity_by_gid().get(f"minecraft:{mob_file}")
             if name in MOBS_ALL:
-                options.append(self.entity(name))
+                # A drop needs the mob *defeated*, not merely reached: harmless for ordinary mobs
+                # (can_defeat == reachability) but correct for boss drops like the Wither's nether
+                # star, which must gate on the whole boss fight rather than just entering its arena.
+                options.append(self.can_defeat(name))
         mining_blocks = record.get("mining", ())
         # Data-driven: when the item has a tier-gated ORE source, a same-item block carrying no tier
         # info is a circular placed form (e.g. ``redstone_wire`` beside ``redstone_ore`` [iron]) whose
@@ -1003,6 +1125,15 @@ class RuleHelper:
             placed_only = (bool(record.get("recipes"))
                            or base.endswith(("_head", "_skull", "_froglight")))
             if block == base and placed_only and base not in _NATURAL_SELF_MINED:
+                # The self-mine is circular (placed-only), but the block may still generate naturally
+                # inside a structure's template (structures.json palette) — reaching that structure
+                # and mining it there is a genuine source recipes/loot don't capture (e.g. a
+                # comparator in an Ancient City, an Overworld path its quartz recipe otherwise hides
+                # behind the Nether). Redundant ones (a block whose recipe is already reachable in the
+                # structure's dimension) collapse in _unique_or / _coarsen.
+                for struct_name in _block_structures().get(base, ()):
+                    if struct_name in self.active_structures:
+                        options.append(self.structure(struct_name))
                 continue
             options.append(self._mining_node(block, base))
         for block in record.get("silk_mining", ()):
@@ -1016,12 +1147,11 @@ class RuleHelper:
             if structure_name in STRUCTURES:
                 options.append(self.structure(structure_name))
         for table in record.get("gameplay", ()):
-            node = self._gameplay_node(table)
+            node = self._gameplay_node(table, inner)
             if node is not None:
                 options.append(node)
-
-        result = self._unique_or(options) if options else self._acquire_fallback(base)
-        return self._coarsen(result)
+        options = [o for o in options if o is not None]  # mining/silk paths may yield None on a cycle
+        return self._unique_or(options) if options else None
 
     def _coarsen(self, node):
         """Bound the serialized tree: a recipe-combinatorial item (dyes, beds, stews) past
@@ -1121,9 +1251,12 @@ class RuleHelper:
             routes.append(self.all_of(book, self.acquire("minecraft:anvil")))
         return self.any_of(*routes)
 
-    def _gameplay_node(self, table: str):
+    def _gameplay_node(self, table: str, stack: frozenset = frozenset()):
         """The gate for a 'gameplay' loot source — a real, repeatable acquisition path, grounded in
-        the 26.1.2 jar loot-table types:
+        the 26.1.2 jar loot-table types. ``stack`` is the acquisition recursion stack, threaded into
+        the items a source implies (a fishing rod for fishing, gold for bartering, shears for harvest)
+        so a circular source — fishing up the very fishing rod being resolved — breaks instead of
+        recursing forever:
           * fishing tables → a fishing rod;
           * piglin_bartering → the Nether, a piglin and gold;
           * a mob's gift / interaction / growth table → reach that mob (gift tables ARE reliable
@@ -1134,10 +1267,12 @@ class RuleHelper:
           * a block-harvest table → the block's dimension, plus shears for a shear interaction;
           * trial-chamber spawner equipment / chest loot → the Trial Chambers structure."""
         if table in ("fishing", "fish", "junk", "treasure"):
-            return self.acquire("minecraft:fishing_rod")
+            return self.acquire("minecraft:fishing_rod", stack)  # None on a cycle → caller drops it
         if table == "piglin_bartering":
-            return self.all_of(self.access_region(REGION_NETHER), self.entity(E_PIGLIN),
-                               self.acquire("minecraft:gold_ingot"))
+            gold = self.acquire("minecraft:gold_ingot", stack)
+            if gold is None:
+                return None  # circular (bartering FOR gold) — not a usable source here
+            return self.all_of(self.access_region(REGION_NETHER), self.entity(E_PIGLIN), gold)
         victim = _CHARGED_CREEPER_VICTIM.get(table)
         if victim is not None:
             # Head only drops from a CHARGED creeper's kill: charge a creeper (creeper + Overworld
@@ -1153,10 +1288,12 @@ class RuleHelper:
         harvest = _GAMEPLAY_HARVEST.get(table)
         if harvest is not None:
             region, needs_shears = harvest
-            parts = [self.access_region(region)]
             if needs_shears:
-                parts.append(self.acquire("minecraft:shears"))
-            return self.all_of(*parts)
+                shears = self.acquire("minecraft:shears", stack)
+                if shears is None:
+                    return None  # can't shear-harvest without shears (circular here)
+                return self.all_of(self.access_region(region), shears)
+            return self.access_region(region)
         if table in ("corridor", "trial_chamber_melee", "trial_chamber_ranged"):
             return self.structure(S_TRIAL_CHAMBERS)
         return None

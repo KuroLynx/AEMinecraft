@@ -119,7 +119,7 @@ class StructureUnlock(OptionSet):
         - Dimension presets: "Overworld", "Nether", "The End" — lock every structure of that
           dimension.
         - "All" — lock every structure.
-        - Any structure name (e.g. "Ancient City", "Village (Plains)", "Nether Fortress").
+        - Any structure name (e.g. "Ancient City", "Village Plains", "Fortress").
 
     Examples:
         Lock everything in the Nether plus the Ancient City:
@@ -130,7 +130,7 @@ class StructureUnlock(OptionSet):
             - All
     """
     display_name = "Structure Unlock"
-    valid_keys = {"All", "Overworld", "Nether", "The End"} | set(STRUCTURES.keys())
+    valid_keys = {"All", "Overworld", "Nether", "The End"} | {data.label for data in STRUCTURES.values()}
     default = frozenset({"Stronghold"})
 
 
