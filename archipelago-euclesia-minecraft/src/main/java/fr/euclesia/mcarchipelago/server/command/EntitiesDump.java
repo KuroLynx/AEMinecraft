@@ -19,6 +19,7 @@ import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.NeutralMob;
 import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.animal.Animal;
+import net.minecraft.world.entity.animal.equine.AbstractHorse;
 
 import java.io.BufferedReader;
 import java.util.Map;
@@ -32,9 +33,10 @@ import java.util.TreeSet;
  * dump uniformly, the same principle as {@link PackDump}:
  * <ul>
  *   <li>{@code category} (passive/neutral/hostile/boss), {@code tameable}, {@code leashable},
- *       {@code breedable} — runtime CLASS BEHAVIOUR, read off a throwaway entity instance. This is
- *       why entities can only be dumped from {@code /aem dump entities} in a loaded world (it needs a
- *       {@link ServerLevel}); unlike {@link PackDump} it can't run from the title-menu UI.</li>
+ *       {@code breedable} — runtime CLASS BEHAVIOUR, read off a throwaway entity instance. This needs
+ *       a live {@link ServerLevel}, so unlike {@link PackDump} (raw datapack JSON) it can't run off a
+ *       world-free resource manager: {@code /aem dump entities} reads the loaded world, and the
+ *       title-menu UI spins up a disposable one ({@code HeadlessEntitiesDump}).</li>
  *   <li>{@code region} (Overworld/Nether/The End) — derived from biome spawn data: which biomes list
  *       the mob in their {@code spawners}, mapped to a dimension via the {@code is_nether}/{@code is_end}
  *       biome tags. A mob's region is the SHALLOWEST dimension it naturally spawns in (where you first
@@ -49,6 +51,18 @@ public final class EntitiesDump {
     /** Bosses gate the goal, not a spawn category — a fixed known set (no generic registry flag). */
     private static final Set<String> BOSSES =
             Set.of("minecraft:ender_dragon", "minecraft:wither", "minecraft:elder_guardian", "minecraft:warden");
+
+    /** Registered Mobs that are never encountered in normal play — no natural spawn, no build/convert
+     *  path — so the registry omits them (matching the old curated list). The registry can't tell these
+     *  apart from a real mob (both are {@link Mob}s), so a tiny game-knowledge set excludes them. */
+    private static final Set<String> EXCLUDED =
+            Set.of("minecraft:giant", "minecraft:illusioner");
+
+    /** {@link AbstractHorse}s the player can't actually tame, so they must NOT count as tameable: camels
+     *  are saddle-ridden (never tamed), skeleton/zombie horses can't be tamed in survival. Everything
+     *  else extending AbstractHorse is mount-tamed (horse/donkey/mule/llama/trader_llama). */
+    private static final Set<String> NON_TAMEABLE_EQUINES =
+            Set.of("minecraft:camel", "minecraft:skeleton_horse", "minecraft:zombie_horse");
 
     /** Region for mobs with no biome spawner (built / structure-only / End-ship): they can't be
      *  derived from biome spawn data, so a small game-knowledge fallback supplies it; anything not
@@ -71,32 +85,30 @@ public final class EntitiesDump {
         // game_id -> record, TreeMap keeps deterministic game_id order.
         Map<String, JsonObject> records = new TreeMap<>();
         for (EntityType<?> type : BuiltInRegistries.ENTITY_TYPE) {
-            if (type.getCategory() == MobCategory.MISC) {
-                continue;  // items, projectiles, boats, armor stands, …
-            }
             Identifier key = BuiltInRegistries.ENTITY_TYPE.getKey(type);
             String gameId = key.toString();
+            if (EXCLUDED.contains(gameId)) {
+                continue;  // registered but never encountered (Giant, Illusioner)
+            }
 
+            // Keep only true mobs. Filtering on Mob (not MobCategory.MISC) is deliberate: MISC holds
+            // both non-mobs (items, projectiles, boats, armor stands — NOT Mobs, so skipped here) AND
+            // real built/structure mobs (villagers, golems — Mobs, so KEPT). Bosses are Mobs too.
             Entity sample = type.create(level, EntitySpawnReason.COMMAND);
-            String category;
-            boolean tameable = false;
-            boolean leashable = false;
-            boolean breedable = false;
-            if (sample instanceof Mob mob) {
-                category = categoryOf(gameId, type, mob);
-                tameable = mob instanceof TamableAnimal;
-                leashable = mob.canBeLeashed();
-                breedable = mob instanceof Animal;  // the breedable farm-animal base (coarse "breed any" flag)
-                mob.discard();
-            } else {
-                // create() returned null or a non-Mob LivingEntity; keep it only if it's clearly a mob
-                // category, with behaviour flags defaulted off (can't introspect without an instance).
+            if (!(sample instanceof Mob mob)) {
                 if (sample != null) {
                     sample.discard();
                 }
-                category = BOSSES.contains(gameId) ? "boss"
-                        : type.getCategory() == MobCategory.MONSTER ? "hostile" : "passive";
+                continue;
             }
+            String category = categoryOf(gameId, type, mob);
+            // TamableAnimal covers wolf/cat/parrot; the equines are mount-tamed (no TamableAnimal
+            // interface), minus the few AbstractHorses that can't actually be tamed.
+            boolean tameable = mob instanceof TamableAnimal
+                    || (mob instanceof AbstractHorse && !NON_TAMEABLE_EQUINES.contains(gameId));
+            boolean leashable = mob.canBeLeashed();
+            boolean breedable = isBreedable(type, level, mob);
+            mob.discard();
 
             JsonObject record = new JsonObject();
             record.addProperty("game_id", gameId);
@@ -122,6 +134,88 @@ public final class EntitiesDump {
             return "neutral";
         }
         return type.getCategory() == MobCategory.MONSTER ? "hostile" : "passive";
+    }
+
+    /**
+     * Whether a mob can actually be bred — the membership test for the generic "breed any animal" gate.
+     * Rather than read a coarse class flag, this drives the game's own breeding code on a throwaway
+     * pair: put both into the maximal <em>legitimate</em> breeding state, then ask {@link Animal#canMate}.
+     * The two gates that matter, traced through {@code Animal.spawnChildFromBreeding}:
+     * <ol>
+     *   <li><b>{@link Animal#canFallInLove} + {@link #hasBreedingFood}</b> — can the species ever be fed
+     *       into love at all? Both read on the FRESH sample (inLove == 0): {@code canFallInLove -> false}
+     *       excludes mobs that never enter love ({@code HappyGhast}); {@code isFood -> false} excludes
+     *       mobs with no breeding food ({@code Parrot}/{@code PolarBear}). These stateless gates drop the
+     *       old {@code instanceof Animal} flag's worst "breed any" leaks without touching mutable state.</li>
+     *   <li><b>{@link Animal#canMate}</b> in the maximal state — this is where sterility and breeding
+     *       rules live: {@code Mule}/{@code AbstractHorse.canMate} is a hard {@code false} (mule excluded),
+     *       horses/llamas/wolves/cats require {@code isTamed} (so we tame the samples), {@code Sniffer}
+     *       needs an idle state (the fresh default), pandas/foxes use the base love check.</li>
+     * </ol>
+     * Forcing love is faithful, not a cheat: the food gate already proved love is reachable. This is the
+     * runtime counterpart of Mojang's hand-curated breedable list, and unlike {@code getBreedOffspring}
+     * it correctly INCLUDES the egg-layers (frog/turtle/sniffer produce frogspawn/eggs via a custom
+     * {@code spawnChildFromBreeding}, so their {@code getBreedOffspring} is {@code null}).
+     *
+     * <p>Verified against Two by Two / {@code bred_all_animals} (26 pinned species): this test includes
+     * all 26 plus {@code trader_llama} and {@code zombie_nautilus}, and those two extras are CORRECT, not
+     * leaks — both genuinely tame+breed (trader_llama inherits Llama's breeding, its only addition being a
+     * despawn timer; zombie_nautilus is a hostile <em>variant</em> of the breedable {@code Nautilus} class
+     * and nothing in the breeding/taming code is variant-gated). They're merely absent from Two by Two,
+     * whose criteria pin the specific types {@code minecraft:llama}/{@code minecraft:nautilus}; breeding
+     * either variant still fires the generic "breed any" trigger, so flagging them breedable is right.
+     * Conversely {@code mule} reads NOT breedable, also correct: Two by Two pins it only as a {@code child}
+     * (bred FROM horse×donkey) and the mule itself is sterile ({@code AbstractHorse.canMate -> false}).
+     */
+    private static boolean isBreedable(EntityType<?> type, ServerLevel level, Mob mob) {
+        // `a` is a FRESH sample (inLove == 0), so these read the species capability before we force state:
+        //   canFallInLove() -> false  excludes mobs that can never enter love at all (happy_ghast);
+        //   hasBreedingFood  -> false  excludes mobs with no breeding food (parrot, polar_bear).
+        if (!(mob instanceof Animal a) || !a.canFallInLove() || !hasBreedingFood(a)) {
+            return false;
+        }
+        Entity partner = type.create(level, EntitySpawnReason.BREEDING);
+        if (!(partner instanceof Animal b)) {
+            if (partner != null) {
+                partner.discard();
+            }
+            return false;
+        }
+        try {
+            makeBreedingReady(a);
+            makeBreedingReady(b);
+            return a.canMate(b);  // honours sterility (mule) and taming/state rules in the species override
+        } finally {
+            b.discard();
+        }
+    }
+
+    /** True if any registered item is a breeding food for this animal — i.e. it can be fed into love at
+     *  all. Stateless (no love/tame needed), so it cleanly excludes the never-breedable {@link Animal}s
+     *  ({@code Parrot}/{@code PolarBear}: {@code isFood} is always false). Iterating the item registry is
+     *  fine here — {@code /aem dump} is a manual one-off, and the scan short-circuits on the first food. */
+    private static boolean hasBreedingFood(Animal a) {
+        for (var item : BuiltInRegistries.ITEM) {
+            if (a.isFood(item.getDefaultInstance())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Put a throwaway sample into the maximal legitimate breeding state so {@link Animal#canMate} reports
+     *  the species' real answer: tamed (horses/wolves/cats/camels only breed once tamed) and in love.
+     *  {@code setTame(true, false)} / {@code setTamed(true)} set just the flag (skipping taming side
+     *  effects), and {@code setInLoveTime} is a plain field write — all safe on an entity never added to
+     *  the world. */
+    private static void makeBreedingReady(Animal a) {
+        if (a instanceof TamableAnimal t) {
+            t.setTame(true, false);
+        }
+        if (a instanceof AbstractHorse h) {
+            h.setTamed(true);
+        }
+        a.setInLoveTime(600);
     }
 
     // -- region from biome spawn data ---------------------------------------

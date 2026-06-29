@@ -3,7 +3,7 @@
     "game_id": "minecraft:allay",
     "category": "passive",
     "region": "Overworld",
-    "breedable": true,
+    "breedable": false,
     "tameable": false,
     "leashable": true
   },
@@ -29,7 +29,7 @@
     "region": "Overworld",
     "breedable": false,
     "tameable": false,
-    "leashable": true
+    "leashable": false
   },
   {
     "game_id": "minecraft:bee",
@@ -73,10 +73,10 @@
   },
   {
     "game_id": "minecraft:camel_husk",
-    "category": "passive",
+    "category": "hostile",
     "region": "Overworld",
     "breedable": false,
-    "tameable": false,
+    "tameable": true,
     "leashable": true
   },
   {
@@ -89,11 +89,11 @@
   },
   {
     "game_id": "minecraft:cave_spider",
-    "category": "neutral",
+    "category": "hostile",
     "region": "Overworld",
     "breedable": false,
     "tameable": false,
-    "leashable": true
+    "leashable": false
   },
   {
     "game_id": "minecraft:chicken",
@@ -109,7 +109,7 @@
     "region": "Overworld",
     "breedable": false,
     "tameable": false,
-    "leashable": true
+    "leashable": false
   },
   {
     "game_id": "minecraft:copper_golem",
@@ -145,7 +145,7 @@
   },
   {
     "game_id": "minecraft:dolphin",
-    "category": "neutral",
+    "category": "passive",
     "region": "Overworld",
     "breedable": false,
     "tameable": false,
@@ -161,11 +161,11 @@
   },
   {
     "game_id": "minecraft:drowned",
-    "category": "neutral",
+    "category": "hostile",
     "region": "Overworld",
     "breedable": false,
     "tameable": false,
-    "leashable": true
+    "leashable": false
   },
   {
     "game_id": "minecraft:elder_guardian",
@@ -189,12 +189,12 @@
     "region": "Overworld",
     "breedable": false,
     "tameable": false,
-    "leashable": true
+    "leashable": false
   },
   {
     "game_id": "minecraft:endermite",
     "category": "hostile",
-    "region": "The End",
+    "region": "Overworld",
     "breedable": false,
     "tameable": false,
     "leashable": false
@@ -209,7 +209,7 @@
   },
   {
     "game_id": "minecraft:fox",
-    "category": "neutral",
+    "category": "passive",
     "region": "Overworld",
     "breedable": true,
     "tameable": false,
@@ -241,7 +241,7 @@
   },
   {
     "game_id": "minecraft:goat",
-    "category": "neutral",
+    "category": "passive",
     "region": "Overworld",
     "breedable": true,
     "tameable": false,
@@ -258,7 +258,7 @@
   {
     "game_id": "minecraft:happy_ghast",
     "category": "passive",
-    "region": "Nether",
+    "region": "Overworld",
     "breedable": false,
     "tameable": false,
     "leashable": true
@@ -269,7 +269,7 @@
     "region": "Nether",
     "breedable": true,
     "tameable": false,
-    "leashable": false
+    "leashable": true
   },
   {
     "game_id": "minecraft:horse",
@@ -297,7 +297,7 @@
   },
   {
     "game_id": "minecraft:llama",
-    "category": "neutral",
+    "category": "passive",
     "region": "Overworld",
     "breedable": true,
     "tameable": true,
@@ -323,16 +323,16 @@
     "game_id": "minecraft:mule",
     "category": "passive",
     "region": "Overworld",
-    "breedable": true,
+    "breedable": false,
     "tameable": true,
     "leashable": true
   },
   {
     "game_id": "minecraft:nautilus",
-    "category": "neutral",
+    "category": "passive",
     "region": "Overworld",
-    "breedable": false,
-    "tameable": false,
+    "breedable": true,
+    "tameable": true,
     "leashable": true
   },
   {
@@ -345,11 +345,11 @@
   },
   {
     "game_id": "minecraft:panda",
-    "category": "neutral",
+    "category": "passive",
     "region": "Overworld",
     "breedable": true,
     "tameable": false,
-    "leashable": true
+    "leashable": false
   },
   {
     "game_id": "minecraft:parched",
@@ -385,11 +385,11 @@
   },
   {
     "game_id": "minecraft:piglin",
-    "category": "neutral",
+    "category": "hostile",
     "region": "Nether",
     "breedable": false,
     "tameable": false,
-    "leashable": true
+    "leashable": false
   },
   {
     "game_id": "minecraft:piglin_brute",
@@ -417,11 +417,11 @@
   },
   {
     "game_id": "minecraft:pufferfish",
-    "category": "neutral",
+    "category": "passive",
     "region": "Overworld",
     "breedable": false,
     "tameable": false,
-    "leashable": true
+    "leashable": false
   },
   {
     "game_id": "minecraft:rabbit",
@@ -445,7 +445,7 @@
     "region": "Overworld",
     "breedable": false,
     "tameable": false,
-    "leashable": true
+    "leashable": false
   },
   {
     "game_id": "minecraft:sheep",
@@ -513,11 +513,11 @@
   },
   {
     "game_id": "minecraft:spider",
-    "category": "neutral",
+    "category": "hostile",
     "region": "Overworld",
     "breedable": false,
     "tameable": false,
-    "leashable": true
+    "leashable": false
   },
   {
     "game_id": "minecraft:squid",
@@ -549,13 +549,13 @@
     "region": "Overworld",
     "breedable": false,
     "tameable": false,
-    "leashable": true
+    "leashable": false
   },
   {
     "game_id": "minecraft:trader_llama",
-    "category": "neutral",
+    "category": "passive",
     "region": "Overworld",
-    "breedable": false,
+    "breedable": true,
     "tameable": true,
     "leashable": true
   },
@@ -565,7 +565,7 @@
     "region": "Overworld",
     "breedable": false,
     "tameable": false,
-    "leashable": true
+    "leashable": false
   },
   {
     "game_id": "minecraft:turtle",
@@ -573,7 +573,7 @@
     "region": "Overworld",
     "breedable": true,
     "tameable": false,
-    "leashable": true
+    "leashable": false
   },
   {
     "game_id": "minecraft:vex",
@@ -589,7 +589,7 @@
     "region": "Overworld",
     "breedable": false,
     "tameable": false,
-    "leashable": true
+    "leashable": false
   },
   {
     "game_id": "minecraft:vindicator",
@@ -605,7 +605,7 @@
     "region": "Overworld",
     "breedable": false,
     "tameable": false,
-    "leashable": true
+    "leashable": false
   },
   {
     "game_id": "minecraft:warden",
@@ -626,7 +626,7 @@
   {
     "game_id": "minecraft:wither",
     "category": "boss",
-    "region": "Nether",
+    "region": "Overworld",
     "breedable": false,
     "tameable": false,
     "leashable": false
@@ -650,10 +650,10 @@
   {
     "game_id": "minecraft:zoglin",
     "category": "hostile",
-    "region": "Nether",
+    "region": "Overworld",
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": true
   },
   {
     "game_id": "minecraft:zombie",
@@ -665,17 +665,17 @@
   },
   {
     "game_id": "minecraft:zombie_horse",
-    "category": "passive",
+    "category": "hostile",
     "region": "Overworld",
     "breedable": false,
-    "tameable": true,
+    "tameable": false,
     "leashable": true
   },
   {
     "game_id": "minecraft:zombie_nautilus",
-    "category": "neutral",
+    "category": "hostile",
     "region": "Overworld",
-    "breedable": false,
+    "breedable": true,
     "tameable": true,
     "leashable": true
   },
@@ -693,6 +693,6 @@
     "region": "Nether",
     "breedable": false,
     "tameable": false,
-    "leashable": true
+    "leashable": false
   }
 ]
