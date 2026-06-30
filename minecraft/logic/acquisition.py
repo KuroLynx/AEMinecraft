@@ -1136,11 +1136,25 @@ class RuleHelper:
             knowledge_name, tier = TOOL_LOCKS[base]
             sources = self._acquire_from_sources(base, _stack)
             obtain = self._coarsen(sources) if sources is not None else self.material(tier)
-            return self.all_of(self.knowledge(knowledge_name), obtain)
+            # A tool granted as a reward still needs its Knowledge to be used, so the reward joins
+            # `obtain` (inside the Knowledge gate), not the whole node.
+            return self.all_of(self.knowledge(knowledge_name), self._with_reward(base, obtain))
 
         sources = self._acquire_from_sources(base, _stack)
         result = sources if sources is not None else self._acquire_fallback(base)
-        return self._coarsen(result)
+        return self._with_reward(base, self._coarsen(result))
+
+    def _with_reward(self, base: str, node):
+        """OR a BACAP advancement reward (its event item) into an item's obtainability, when
+        bacap_rewards is on. ADDITIVE only — it never replaces the item's real sources or fallback,
+        so e.g. powder_snow_bucket keeps its bucket path (and the advancement that grants it stays
+        reachable instead of deadlocking on its own circular reward). Cycle-free: the event is a
+        has() leaf resolved by AP's event sweep, not a recursive reached(). reward_events is empty
+        unless the option is on, so this is a no-op otherwise."""
+        if base not in self.reward_events:
+            return node
+        reward = self.has(f"{REWARD_EVENT_PREFIX}{base}")
+        return reward if node is None else self.any_of(node, reward)
 
     def _acquire_from_sources(self, base: str, _stack: frozenset):
         """OR over every modeled way to obtain ``base`` (recipe, drop, mining, silk-mining, trade,
@@ -1200,13 +1214,6 @@ class RuleHelper:
         for structure_name in record.get("structures", ()):
             if structure_name in STRUCTURES:
                 options.append(self.structure(structure_name))
-        # BACAP advancement reward (when bacap_rewards is on): a non-recursive has() leaf on the event
-        # item that the granting advancement's event location collects (see reward_events). A general
-        # source — it widens reachability wherever it applies — yet cycle-free, because the recursive
-        # reached() lives only on the event location (a sink: nothing reaches FOR it), so AP's monotone
-        # event sweep resolves it instead of recursing through acquire(X) -> reached(A) -> acquire(X).
-        if base in self.reward_events:
-            options.append(self.has(f"{REWARD_EVENT_PREFIX}{base}"))
         for table in record.get("gameplay", ()):
             node = self._gameplay_node(table, inner)
             if node is not None:
