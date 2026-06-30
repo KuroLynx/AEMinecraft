@@ -3,6 +3,7 @@ package fr.euclesia.mcarchipelago.client;
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.client.connect.APConnectController;
 import fr.euclesia.mcarchipelago.client.connect.WorldLoadResume;
+import fr.euclesia.mcarchipelago.client.dump.HeadlessEntitiesDump;
 import fr.euclesia.mcarchipelago.client.finder.StructureFinderBarHud;
 import fr.euclesia.mcarchipelago.client.gui.AEMScreenButtons;
 import fr.euclesia.mcarchipelago.client.gui.BiomeFinderScreen;
@@ -15,6 +16,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.minecraft.client.Minecraft;
@@ -34,8 +36,15 @@ public class AEMClient implements ClientModInitializer {
 		AEMScreenButtons.register();
 
 		// Resume a world load deferred by the pre-flight connect (see MinecraftWorldLoadMixin), run
-		// here so doWorldLoad executes outside any screen-tick bracket.
-		ClientTickEvents.END_CLIENT_TICK.register(client -> WorldLoadResume.runPending());
+		// here so doWorldLoad executes outside any screen-tick bracket. Also drive the headless
+		// entities-dump teardown (leave + delete the temp world once it has dumped).
+		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+			WorldLoadResume.runPending();
+			HeadlessEntitiesDump.clientTick(client);
+		});
+
+		// When the headless entities-dump temp world has started, write entities.json off it.
+		ServerLifecycleEvents.SERVER_STARTED.register(HeadlessEntitiesDump::onServerStarted);
 
 		// Top-left HUD sphere: green when connected to Archipelago, red when not.
 		HudElementRegistry.addLast(

@@ -22,8 +22,10 @@ import java.util.Set;
  * <p>Subcommands mirror {@link PackDump#FILES}: {@code pack} (default), {@code advancements},
  * {@code structures}, {@code acquisition}, {@code block_mining}, {@code tags}, {@code meta}; plus
  * {@code entities} (the data-driven mob registry, {@link EntitiesDump}), which is NOT part of
- * {@link PackDump} / the title-menu UI because it reads runtime entity behaviour and so needs a
- * loaded world. {@code brewing.json} stays curated (MC brewing is hard-coded), like {@code items.csv}.
+ * {@link PackDump} because it reads runtime entity behaviour and so needs a loaded world — this command
+ * reads the world it runs in; the title-menu UI dumps it too, off a disposable world
+ * ({@code HeadlessEntitiesDump}). {@code brewing.json} stays curated (MC brewing is hard-coded), like
+ * {@code items.csv}.
  */
 public final class DumpCommandModule implements AEMCommandModule {
 
@@ -55,15 +57,17 @@ public final class DumpCommandModule implements AEMCommandModule {
     }
 
     private static int runEntities(CommandSourceStack source) {
-        Path outDir = FabricLoader.getInstance().getGameDir().resolve("aem");
-        Path file = outDir.resolve("entities.json");
+        // entities.json is the whole-game mob registry: it lives in the base (vanilla) pack folder
+        // alongside the rest of vanilla's dumped files, not flat in aem/.
+        Path packDir = FabricLoader.getInstance().getGameDir().resolve("aem").resolve(PackDump.basePackFolder());
+        Path file = packDir.resolve("entities.json");
         try {
             var array = EntitiesDump.build(source.getServer());
-            Files.createDirectories(outDir);
+            Files.createDirectories(packDir);
             Files.writeString(file, GSON.toJson(array) + "\n");
             int count = array.size();
             source.sendSuccess(() -> Component.literal(
-                    "Dumped " + count + " entities to " + file + " (drop into the base content pack)."), true);
+                    "Dumped " + count + " entities to " + file + "."), true);
         } catch (Exception exception) {
             source.sendFailure(Component.literal("entities dump failed: " + exception));
             return 0;

@@ -192,6 +192,16 @@ public final class PackDump {
         return sanitizeVersion(rawMcVersion());
     }
 
+    /**
+     * The base (vanilla) pack's content-pack folder, e.g. {@code minecraft_26_1_2} — matching the
+     * {@code <namespace>_<version>} folder {@link #run} dumps vanilla into. Whole-game files that
+     * aren't dumped per-source-pack ({@code entities.json}, the mob registry) live here so they land
+     * in the same base pack as the rest of vanilla's files.
+     */
+    public static String basePackFolder() {
+        return "minecraft_" + mcVersionTag();
+    }
+
     private static String sanitizeVersion(String version) {
         return version.replaceAll("[^a-zA-Z0-9]+", "_").replaceAll("^_+|_+$", "");
     }
