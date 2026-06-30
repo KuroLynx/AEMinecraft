@@ -254,6 +254,20 @@ Minecraft [AEM]:
     'false': 50
     'true': 0
 
+  bacap_rewards:
+    # Let BlazeandCave's Advancements Pack hand out its own item and XP rewards.
+    #
+    # BACAP normally grants items and experience when you complete its advancements. In a randomizer
+    # those free rewards bypass the multiworld economy, so they are turned OFF by default: the mod runs
+    # BACAP's reward-disable functions the first time you load the world.
+    #
+    # - disabled (default): BACAP gives no item or XP rewards.
+    # - enabled: BACAP keeps its vanilla item and XP rewards.
+    #
+    # Either way, BACAP trophies are always disabled. Only has an effect when blazeandcave is enabled.
+    'false': 50
+    'true': 0
+
   # -------------------------------------------------------------------------
   # Standard item/location options
   # -------------------------------------------------------------------------
