@@ -5,7 +5,7 @@ from importlib.resources import files
 # AST primitives must be imported directly: `from .. import *` cannot supply them because the
 # package __init__ imports this module (via set_rules) before it defines Const/Has/and_/… .
 from .ast import Const, Has, ReachRegion, ReachLocation, and_, or_, at_least
-from ..content.registry import base_pack  # registry only imports constants → import-cycle-safe
+from ..content.registry import base_pack, overlay_packs  # registry only imports constants → cycle-safe
 from .. import *
 
 # Wood-family items (planks / logs / wood / stems / hyphae, stripped or not) have no knowledge or
@@ -68,10 +68,32 @@ _ENTITY_BY_GID: dict | None = None
 def _acquisition_table() -> dict:
     global _ACQUISITION
     if _ACQUISITION is None:
-        path = files(_MC_ROOT).joinpath("packs", base_pack(), "acquisition.json")
-        with path.open(encoding="utf-8") as handle:
-            _ACQUISITION = json.load(handle)
+        table = _load_pack_acquisition(base_pack())
+        # Overlay packs (BACAP) contribute ONLY their `advancements` reward source onto the base
+        # table (item -> advancement game_ids that grant it). Other overlay sources are intentionally
+        # not merged yet (see registry.overlay_packs / the items-merge TODO). The advancements source
+        # is gated per seed by the bacap_rewards option in _acquire_from_sources, so merging it into
+        # the once-cached, option-independent table is safe — an unused source for seeds with the
+        # rewards (or the pack) off.
+        for pack_dir in overlay_packs().values():
+            for item, record in _load_pack_acquisition(pack_dir).items():
+                advancements = record.get("advancements")
+                if not advancements:
+                    continue
+                base_record = table.setdefault(item, {})
+                base_record["advancements"] = sorted(
+                    set(base_record.get("advancements", ())) | set(advancements))
+        _ACQUISITION = table
     return _ACQUISITION
+
+
+def _load_pack_acquisition(pack_dir_name: str) -> dict:
+    """A pack's acquisition.json (``{}`` if it has none)."""
+    path = files(_MC_ROOT).joinpath("packs", pack_dir_name, "acquisition.json")
+    if not path.is_file():
+        return {}
+    with path.open(encoding="utf-8") as handle:
+        return json.load(handle)
 
 
 def _entity_by_gid() -> dict:
@@ -168,6 +190,17 @@ class RuleHelper:
         # Biome Finder enabled (start or in_pool); disabled == 0. Biome-specific advancements require
         # it when on, since that's how you locate the biome.
         self.biome_finder_enabled = bool(world.options.biome_finder.value)
+        # BACAP advancement rewards count as item sources only when the pack is on AND its rewards are
+        # kept: with bacap_rewards off (the default) the mod disables them on world load, so they are
+        # not a real way to obtain the item. See the `advancements` source in _acquire_from_sources.
+        self.bacap_rewards = bool(world.options.blazeandcave.value) and bool(world.options.bacap_rewards.value)
+        # game_id -> active location name, so an `advancements` source can resolve to the location
+        # whose completion grants the item. Built from active locations, so an advancement that isn't
+        # a check this seed (inactive tab / challenge_sanity off) is simply absent and contributes no
+        # source.
+        self._location_by_game_id = {
+            data.game_id: name for name, data in world._get_active_locations().items() if data.game_id
+        }
         # Memo for acquire(): the acquisition table + options are fixed for this helper, so
         # acquire(base, stack) is pure. Datapack-scale compilation calls it millions of times for the
         # same (base, stack) pairs (planks/sticks/ingots recur in every recipe); caching collapses
@@ -1147,6 +1180,14 @@ class RuleHelper:
         for structure_name in record.get("structures", ()):
             if structure_name in STRUCTURES:
                 options.append(self.structure(structure_name))
+        # BACAP advancement rewards (only when bacap_rewards is on): completing one of these
+        # advancements grants the item, so reaching that location is a source. Inactive advancements
+        # (not a check this seed) aren't in the map and are skipped.
+        if self.bacap_rewards:
+            for advancement_gid in record.get("advancements", ()):
+                location_name = self._location_by_game_id.get(advancement_gid)
+                if location_name is not None:
+                    options.append(self.reached(location_name))
         for table in record.get("gameplay", ()):
             node = self._gameplay_node(table, inner)
             if node is not None:

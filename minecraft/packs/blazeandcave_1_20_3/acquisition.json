@@ -1,7 +1,1849 @@
 {
+  "acacia_log": {
+    "advancements": [
+      "blazeandcave:bacap/getting_wood",
+      "blazeandcave:building/a_good_start",
+      "blazeandcave:building/the_acacia_king"
+    ]
+  },
+  "acacia_sapling": {
+    "advancements": [
+      "blazeandcave:farming/care_for_the_environment"
+    ]
+  },
+  "amethyst_block": {
+    "advancements": [
+      "blazeandcave:mining/amethyst_miner"
+    ]
+  },
+  "amethyst_shard": {
+    "advancements": [
+      "blazeandcave:adventure/and_make_it_double",
+      "blazeandcave:mining/gi_geode",
+      "blazeandcave:redstone/calibration_sensation",
+      "blazeandcave:weaponry/inspector_gadget"
+    ]
+  },
+  "ancient_debris": {
+    "advancements": [
+      "blazeandcave:nether/diamonds_are_not_forever",
+      "blazeandcave:nether/netherite_miner",
+      "blazeandcave:nether/spreading_corruption",
+      "blazeandcave:nether/the_struggle_nether_ends"
+    ]
+  },
+  "apple": {
+    "advancements": [
+      "blazeandcave:farming/an_apple_a_day",
+      "blazeandcave:farming/bapple"
+    ]
+  },
+  "armadillo_scute": {
+    "advancements": [
+      "blazeandcave:animal/paw_patrol",
+      "minecraft:adventure/brush_armadillo",
+      "minecraft:husbandry/repair_wolf_armor"
+    ]
+  },
+  "arrow": {
+    "advancements": [
+      "blazeandcave:enchanting/ill_be_back",
+      "blazeandcave:monsters/skeleton_smiter",
+      "blazeandcave:monsters/spooky_skeleton",
+      "blazeandcave:monsters/the_undead_cavalry",
+      "blazeandcave:weaponry/artillery",
+      "blazeandcave:weaponry/bow_spammer",
+      "blazeandcave:weaponry/point_blank",
+      "minecraft:adventure/bullseye",
+      "minecraft:adventure/ol_betsy",
+      "minecraft:adventure/shoot_arrow",
+      "minecraft:adventure/sniper_duel"
+    ]
+  },
+  "bamboo": {
+    "advancements": [
+      "blazeandcave:biomes/zoologist",
+      "blazeandcave:farming/care_for_the_environment"
+    ]
+  },
+  "bamboo_block": {
+    "advancements": [
+      "blazeandcave:building/bamboozled"
+    ]
+  },
+  "barrel": {
+    "advancements": [
+      "blazeandcave:building/barrel_rider"
+    ]
+  },
+  "beef": {
+    "advancements": [
+      "blazeandcave:animal/beef_moover",
+      "blazeandcave:animal/super_mooshroom",
+      "blazeandcave:animal/true_cow_tipper"
+    ]
+  },
+  "beetroot": {
+    "advancements": [
+      "blazeandcave:farming/souperman"
+    ]
+  },
+  "big_dripleaf": {
+    "advancements": [
+      "blazeandcave:mining/leaflet_drop",
+      "blazeandcave:weaponry/spleaf"
+    ]
+  },
+  "birch_log": {
+    "advancements": [
+      "blazeandcave:bacap/getting_wood",
+      "blazeandcave:building/a_good_start",
+      "blazeandcave:building/professor_birch"
+    ]
+  },
+  "birch_sapling": {
+    "advancements": [
+      "blazeandcave:farming/care_for_the_environment"
+    ]
+  },
+  "black_candle": {
+    "advancements": [
+      "blazeandcave:building/the_ritual_begins"
+    ]
+  },
+  "blackstone": {
+    "advancements": [
+      "blazeandcave:building/blackstonehenge",
+      "minecraft:story/mine_stone"
+    ]
+  },
+  "blaze_powder": {
+    "advancements": [
+      "blazeandcave:potion/super_strength"
+    ]
+  },
+  "blaze_rod": {
+    "advancements": [
+      "blazeandcave:nether/blaze_extinguisher",
+      "blazeandcave:nether/time_to_fire_back",
+      "blazeandcave:weaponry/a_snowballs_chance_in_hell",
+      "blazeandcave:weaponry/backfire",
+      "minecraft:nether/obtain_blaze_rod"
+    ]
+  },
+  "blue_egg": {
+    "advancements": [
+      "blazeandcave:animal/omelette",
+      "blazeandcave:redstone/splatfest",
+      "blazeandcave:weaponry/egging_dude",
+      "blazeandcave:weaponry/theres_yolk_on_my_head"
+    ]
+  },
+  "blue_ice": {
+    "advancements": [
+      "blazeandcave:biomes/thick_ice"
+    ]
+  },
+  "bone": {
+    "advancements": [
+      "blazeandcave:monsters/bogged_down",
+      "blazeandcave:monsters/bone_to_party",
+      "blazeandcave:monsters/frosty",
+      "blazeandcave:monsters/skeleton_smiter",
+      "blazeandcave:monsters/spider_skeleton",
+      "blazeandcave:monsters/spooky_skeleton",
+      "blazeandcave:nether/the_hunt_begins",
+      "minecraft:husbandry/tame_an_animal"
+    ]
+  },
+  "bone_block": {
+    "advancements": [
+      "blazeandcave:monsters/paleontologist"
+    ]
+  },
+  "bone_meal": {
+    "advancements": [
+      "blazeandcave:building/harry_potter",
+      "blazeandcave:farming/combine_harvester",
+      "blazeandcave:farming/mega_mushroom",
+      "blazeandcave:farming/natural_fertiliser",
+      "blazeandcave:farming/one_course_meal",
+      "blazeandcave:farming/whats_new_with_composting",
+      "blazeandcave:mining/moss_maker",
+      "blazeandcave:monsters/boned",
+      "blazeandcave:nether/what_a_fungi"
+    ]
+  },
+  "book": {
+    "advancements": [
+      "blazeandcave:building/shelf_expression"
+    ]
+  },
+  "bookshelf": {
+    "advancements": [
+      "blazeandcave:enchanting/librarian"
+    ]
+  },
+  "bow": {
+    "advancements": [
+      "blazeandcave:redstone/factorio"
+    ]
+  },
+  "bread": {
+    "advancements": [
+      "blazeandcave:farming/bake_bread"
+    ]
+  },
+  "breeze_rod": {
+    "advancements": [
+      "blazeandcave:adventure/break_wind",
+      "blazeandcave:adventure/breeze_suppressor",
+      "minecraft:adventure/blowback"
+    ]
+  },
+  "bricks": {
+    "advancements": [
+      "blazeandcave:building/bricks"
+    ]
+  },
+  "brown_bundle": {
+    "advancements": [
+      "blazeandcave:adventure/pottery_exhibition"
+    ]
+  },
+  "brown_egg": {
+    "advancements": [
+      "blazeandcave:animal/omelette",
+      "blazeandcave:redstone/splatfest",
+      "blazeandcave:weaponry/egging_dude",
+      "blazeandcave:weaponry/theres_yolk_on_my_head"
+    ]
+  },
+  "brown_mushroom": {
+    "advancements": [
+      "blazeandcave:farming/im_gonna_be_sick",
+      "blazeandcave:farming/mega_mushroom",
+      "blazeandcave:farming/mushroom_mushroom",
+      "blazeandcave:farming/shrooms"
+    ]
+  },
+  "brown_shulker_box": {
+    "advancements": [
+      "blazeandcave:redstone/monstrous_music"
+    ]
+  },
+  "cactus": {
+    "advancements": [
+      "blazeandcave:animal/hump_day",
+      "blazeandcave:farming/its_a_cactus"
+    ]
+  },
+  "cake": {
+    "advancements": [
+      "blazeandcave:biomes/pandamonium",
+      "blazeandcave:farming/must_be_your_birthday",
+      "minecraft:husbandry/allay_deliver_cake_to_note_block"
+    ]
+  },
+  "candle": {
+    "advancements": [
+      "blazeandcave:building/setting_up_the_mood"
+    ]
+  },
+  "carrot": {
+    "advancements": [
+      "blazeandcave:animal/swine_sailing",
+      "blazeandcave:animal/when_pigs_used_to_fly",
+      "blazeandcave:statistics/snout_500"
+    ]
+  },
+  "carved_pumpkin": {
+    "advancements": [
+      "blazeandcave:farming/olaf",
+      "blazeandcave:farming/pumpa_kungen",
+      "blazeandcave:mining/beep_bop",
+      "blazeandcave:monsters/trick_or_treat"
+    ]
+  },
+  "charcoal": {
+    "advancements": [
+      "blazeandcave:mining/renewable_energy"
+    ]
+  },
+  "cherry_log": {
+    "advancements": [
+      "blazeandcave:bacap/getting_wood",
+      "blazeandcave:building/a_good_start",
+      "blazeandcave:building/cherry_bomb"
+    ]
+  },
+  "cherry_sapling": {
+    "advancements": [
+      "blazeandcave:farming/care_for_the_environment"
+    ]
+  },
+  "chest": {
+    "advancements": [
+      "blazeandcave:building/stationary_storage"
+    ]
+  },
+  "chicken": {
+    "advancements": [
+      "blazeandcave:animal/chick_buffet",
+      "blazeandcave:animal/chicken_cooper",
+      "blazeandcave:animal/feeding_the_chickens",
+      "blazeandcave:monsters/poultry_boy"
+    ]
+  },
+  "chorus_flower": {
+    "advancements": [
+      "blazeandcave:end/extrabiologist",
+      "blazeandcave:end/getting_chorus"
+    ]
+  },
+  "chorus_fruit": {
+    "advancements": [
+      "blazeandcave:end/getting_chorus"
+    ]
+  },
+  "clay": {
+    "advancements": [
+      "blazeandcave:building/harry_potter"
+    ]
+  },
+  "coal": {
+    "advancements": [
+      "blazeandcave:mining/coal_miner",
+      "blazeandcave:mining/fossil_fuel",
+      "blazeandcave:nether/the_hunt_begins"
+    ]
+  },
+  "coal_block": {
+    "advancements": [
+      "blazeandcave:mining/master_coal_miner"
+    ]
+  },
+  "cobbled_deepslate": {
+    "advancements": [
+      "minecraft:story/mine_stone"
+    ]
+  },
+  "cobblestone": {
+    "advancements": [
+      "blazeandcave:building/rock_collection",
+      "blazeandcave:building/the_walls",
+      "blazeandcave:mining/moar_tools",
+      "minecraft:story/mine_stone"
+    ]
+  },
+  "cobweb": {
+    "advancements": [
+      "blazeandcave:mining/eeuuwww"
+    ]
+  },
+  "cocoa_beans": {
+    "advancements": [
+      "blazeandcave:farming/hot_chocolate",
+      "blazeandcave:farming/its_where_nutella_comes_from"
+    ]
+  },
+  "cod": {
+    "advancements": [
+      "blazeandcave:adventure/crazy_cat_lady",
+      "blazeandcave:adventure/if_only_cats_grew_into_kittens",
+      "blazeandcave:biomes/barbearian",
+      "blazeandcave:biomes/echolocation",
+      "blazeandcave:biomes/lion_hunter"
+    ]
+  },
+  "compass": {
+    "advancements": [
+      "minecraft:adventure/use_lodestone"
+    ]
+  },
+  "cooked_beef": {
+    "advancements": [
+      "blazeandcave:animal/high_steaks",
+      "blazeandcave:building/delicious_hot_schmoes"
+    ]
+  },
+  "cooked_chicken": {
+    "advancements": [
+      "blazeandcave:animal/so_good",
+      "blazeandcave:nether/legend_of_hell_chicken_riders"
+    ]
+  },
+  "cooked_cod": {
+    "advancements": [
+      "blazeandcave:animal/delicious_fish"
+    ]
+  },
+  "cooked_mutton": {
+    "advancements": [
+      "blazeandcave:animal/feeling_sheepish"
+    ]
+  },
+  "cooked_porkchop": {
+    "advancements": [
+      "blazeandcave:animal/pork_chop"
+    ]
+  },
+  "cooked_rabbit": {
+    "advancements": [
+      "blazeandcave:animal/going_down_the_rabbit_hole",
+      "blazeandcave:animal/just_keeps_going",
+      "blazeandcave:animal/rabbit_season"
+    ]
+  },
+  "cooked_salmon": {
+    "advancements": [
+      "blazeandcave:animal/delicious_fish",
+      "blazeandcave:animal/master_angler"
+    ]
+  },
+  "copper_block": {
+    "advancements": [
+      "blazeandcave:mining/beep_bop",
+      "blazeandcave:mining/chain_gang",
+      "blazeandcave:mining/conductive_conglomerate",
+      "blazeandcave:mining/copper_computer",
+      "blazeandcave:mining/copper_golem_overlord",
+      "blazeandcave:mining/d_b_copper",
+      "blazeandcave:mining/gratest_of_all_time",
+      "blazeandcave:mining/green_lanterns",
+      "blazeandcave:mining/life_sentence",
+      "blazeandcave:mining/master_copper_miner",
+      "blazeandcave:mining/school_of_hard_knocks",
+      "blazeandcave:mining/sly_copper_the_copper_heist",
+      "blazeandcave:mining/statue_of_limitations"
+    ]
+  },
+  "copper_bulb": {
+    "advancements": [
+      "blazeandcave:building/bulbous"
+    ]
+  },
+  "copper_ingot": {
+    "advancements": [
+      "blazeandcave:mining/budget_channeling",
+      "blazeandcave:mining/youll_never_take_me_alive_copper",
+      "blazeandcave:weaponry/inspector_gadget"
+    ]
+  },
+  "copper_nugget": {
+    "advancements": [
+      "blazeandcave:building/chartreuse"
+    ]
+  },
+  "crafter": {
+    "advancements": [
+      "blazeandcave:redstone/craftception",
+      "minecraft:adventure/crafters_crafting_crafters"
+    ]
+  },
+  "creaking_heart": {
+    "advancements": [
+      "minecraft:adventure/heart_transplanter"
+    ]
+  },
+  "crimson_fungus": {
+    "advancements": [
+      "blazeandcave:nether/hell_botanist",
+      "blazeandcave:nether/when_hoglins_breed"
+    ]
+  },
+  "crimson_stem": {
+    "advancements": [
+      "blazeandcave:building/a_good_start",
+      "blazeandcave:nether/stem_research",
+      "blazeandcave:nether/what_about_corruption_planks"
+    ]
+  },
+  "crossbow": {
+    "advancements": [
+      "blazeandcave:weaponry/artillery"
+    ]
+  },
+  "crying_obsidian": {
+    "advancements": [
+      "blazeandcave:end/unending_hell",
+      "blazeandcave:nether/anchorman"
+    ]
+  },
+  "dark_oak_log": {
+    "advancements": [
+      "blazeandcave:bacap/getting_wood",
+      "blazeandcave:building/a_good_start",
+      "blazeandcave:building/professor_dark_oak"
+    ]
+  },
+  "dark_oak_sapling": {
+    "advancements": [
+      "blazeandcave:farming/care_for_the_environment"
+    ]
+  },
+  "deepslate": {
+    "advancements": [
+      "blazeandcave:building/deepslate_conspiracy",
+      "minecraft:story/mine_stone"
+    ]
+  },
+  "diamond": {
+    "advancements": [
+      "blazeandcave:adventure/beethoven",
+      "blazeandcave:adventure/chromatic_armory",
+      "blazeandcave:adventure/coordinated_flair",
+      "blazeandcave:adventure/mold_maker",
+      "blazeandcave:challenges/i_am_loot",
+      "blazeandcave:enchanting/newtons_flaming_laser_sword",
+      "blazeandcave:enchanting/pick_like_silk",
+      "blazeandcave:enchanting/this_name_sounds_cooler",
+      "blazeandcave:end/ring_of_the_end",
+      "blazeandcave:mining/diamond_clad",
+      "blazeandcave:mining/diamond_miner",
+      "blazeandcave:mining/diamonds_to_you",
+      "blazeandcave:mining/even_moar_tools",
+      "blazeandcave:mining/iconic_merchandising_prop",
+      "blazeandcave:mining/moar_broken_tools",
+      "blazeandcave:mining/rest_in_pickaxes",
+      "blazeandcave:mining/stabcraft",
+      "blazeandcave:mining/where_are_all_your_clothes",
+      "blazeandcave:monsters/custom_boss_fight",
+      "blazeandcave:monsters/pupil_poppers",
+      "blazeandcave:nether/instant_mining",
+      "blazeandcave:weaponry/pyrotechnic",
+      "minecraft:story/mine_diamond",
+      "minecraft:story/shiny_gear"
+    ]
+  },
+  "diamond_block": {
+    "advancements": [
+      "blazeandcave:adventure/stacked_smither",
+      "blazeandcave:mining/master_diamond_miner"
+    ]
+  },
+  "disc_fragment_5": {
+    "advancements": [
+      "blazeandcave:mining/9_to_5"
+    ]
+  },
+  "dragon_breath": {
+    "advancements": [
+      "blazeandcave:potion/furious_ammunition",
+      "blazeandcave:potion/gas",
+      "blazeandcave:potion/imbued_projectiles",
+      "blazeandcave:potion/noxious_fumes",
+      "minecraft:end/dragon_breath"
+    ]
+  },
+  "dragon_head": {
+    "advancements": [
+      "blazeandcave:end/good_luck_getting_this_one",
+      "blazeandcave:end/ring_of_the_end"
+    ]
+  },
+  "dried_ghast": {
+    "advancements": [
+      "blazeandcave:nether/collateral_damage",
+      "blazeandcave:nether/pillow_fight",
+      "blazeandcave:statistics/big_blimp_enthusiast",
+      "blazeandcave:statistics/who_needs_elytra"
+    ]
+  },
+  "dried_kelp_block": {
+    "advancements": [
+      "blazeandcave:farming/aquatic_biofuel",
+      "blazeandcave:farming/castaway",
+      "blazeandcave:farming/undersea_gardener"
+    ]
+  },
+  "echo_shard": {
+    "advancements": [
+      "blazeandcave:adventure/diagon_allay",
+      "blazeandcave:adventure/the_sound_of_silence",
+      "blazeandcave:animal/loud_and_proud",
+      "blazeandcave:enchanting/like_a_ninja",
+      "blazeandcave:enchanting/silent_but_deadly",
+      "blazeandcave:mining/death_pointer",
+      "blazeandcave:mining/echonomy"
+    ]
+  },
+  "egg": {
+    "advancements": [
+      "blazeandcave:animal/feeding_the_chickens",
+      "blazeandcave:animal/omelette",
+      "blazeandcave:redstone/splatfest",
+      "blazeandcave:weaponry/egging_dude",
+      "blazeandcave:weaponry/theres_yolk_on_my_head"
+    ]
+  },
+  "elytra": {
+    "advancements": [
+      "blazeandcave:challenges/ad_astra",
+      "blazeandcave:end/dragon_vs_dragon",
+      "minecraft:end/elytra"
+    ]
+  },
+  "emerald": {
+    "advancements": [
+      "blazeandcave:adventure/all_around_the_world",
+      "blazeandcave:adventure/businessman",
+      "blazeandcave:adventure/buy_low_sell_high",
+      "blazeandcave:adventure/feeling_ill",
+      "blazeandcave:adventure/filthy_rich",
+      "blazeandcave:adventure/ghostbuster",
+      "blazeandcave:adventure/heres_johnny",
+      "blazeandcave:adventure/house_of_psychos",
+      "blazeandcave:adventure/its_so_beast_like",
+      "blazeandcave:adventure/justice",
+      "blazeandcave:adventure/lilypad_hatter",
+      "blazeandcave:adventure/master_trader",
+      "blazeandcave:adventure/professional",
+      "blazeandcave:adventure/rare_candy_shop",
+      "blazeandcave:adventure/rebuilding_the_oceans",
+      "blazeandcave:adventure/redemption_arc",
+      "blazeandcave:adventure/retro_future_knight",
+      "blazeandcave:adventure/superhero_of_the_village",
+      "blazeandcave:adventure/the_one_and_true_johnny",
+      "blazeandcave:adventure/the_shielding",
+      "blazeandcave:adventure/the_tribal_villagers",
+      "blazeandcave:adventure/town_planner",
+      "blazeandcave:adventure/traveller",
+      "blazeandcave:adventure/travelling_merchant",
+      "blazeandcave:adventure/undying_fandom",
+      "blazeandcave:adventure/veteran_of_the_village",
+      "blazeandcave:adventure/village_settler",
+      "blazeandcave:adventure/war_is_coming",
+      "blazeandcave:adventure/wololo",
+      "blazeandcave:adventure/workaholic",
+      "blazeandcave:adventure/you_are_the_pillager",
+      "blazeandcave:animal/battle_of_the_bands",
+      "blazeandcave:animal/blackberry_market",
+      "blazeandcave:challenges/stockbroker",
+      "blazeandcave:mining/emerald_miner",
+      "blazeandcave:nether/midport_village",
+      "blazeandcave:statistics/big_spender",
+      "blazeandcave:statistics/stonks",
+      "blazeandcave:statistics/the_haggler",
+      "minecraft:adventure/hero_of_the_village",
+      "minecraft:adventure/lightning_rod_with_villager_no_fire",
+      "minecraft:adventure/trade",
+      "minecraft:adventure/trade_at_world_height",
+      "minecraft:adventure/voluntary_exile",
+      "minecraft:adventure/whos_the_pillager_now"
+    ]
+  },
+  "emerald_block": {
+    "advancements": [
+      "blazeandcave:adventure/filthy_stinkin_rich"
+    ]
+  },
+  "enchanted_book": {
+    "advancements": [
+      "blazeandcave:animal/its_high_noon",
+      "blazeandcave:animal/mushroom_scientist",
+      "blazeandcave:biomes/free_diver",
+      "blazeandcave:biomes/sleep_with_the_fishes",
+      "blazeandcave:building/grass_type",
+      "blazeandcave:enchanting/handmade_blinding",
+      "blazeandcave:enchanting/ill_be_back",
+      "blazeandcave:enchanting/this_name_sounds_cooler",
+      "blazeandcave:end/dogfight",
+      "blazeandcave:end/sky_high",
+      "blazeandcave:end/uh_houston_we_have_a_problem",
+      "blazeandcave:mining/bottom_to_top",
+      "blazeandcave:mining/chestful_of_cobblestone",
+      "blazeandcave:mining/i_yearned_for_the_mines",
+      "blazeandcave:mining/lucky_break",
+      "blazeandcave:monsters/camouflage",
+      "blazeandcave:monsters/creeper_killer",
+      "blazeandcave:monsters/enderman_destroyer",
+      "blazeandcave:monsters/freezing",
+      "blazeandcave:monsters/melting",
+      "blazeandcave:monsters/skeleton_smiter",
+      "blazeandcave:monsters/spider_smasher",
+      "blazeandcave:monsters/the_undead_cavalry",
+      "blazeandcave:monsters/well_handle_this",
+      "blazeandcave:monsters/zombie_slayer",
+      "blazeandcave:nether/blaze_extinguisher",
+      "blazeandcave:nether/ghast_slayer",
+      "blazeandcave:nether/magma_cube_squisher",
+      "blazeandcave:statistics/bloodthirsty",
+      "blazeandcave:statistics/kill_or_be_killed",
+      "blazeandcave:statistics/mob_hunter",
+      "blazeandcave:weaponry/artillery",
+      "blazeandcave:weaponry/poseidon_vs_hades",
+      "blazeandcave:weaponry/the_aquatic_hunter",
+      "blazeandcave:weaponry/the_mighty_hunter",
+      "minecraft:adventure/bullseye",
+      "minecraft:adventure/fall_from_world_height",
+      "minecraft:adventure/sniper_duel",
+      "minecraft:nether/get_wither_skull"
+    ]
+  },
+  "enchanted_golden_apple": {
+    "advancements": [
+      "blazeandcave:building/fruit_of_the_looms"
+    ]
+  },
+  "end_crystal": {
+    "advancements": [
+      "blazeandcave:challenges/at_the_rim_of_the_sky",
+      "blazeandcave:end/the_start_of_something",
+      "minecraft:end/respawn_dragon"
+    ]
+  },
+  "end_rod": {
+    "advancements": [
+      "blazeandcave:building/fluorescent"
+    ]
+  },
+  "ender_eye": {
+    "advancements": [
+      "blazeandcave:nether/enders_chest",
+      "minecraft:story/follow_ender_eye"
+    ]
+  },
+  "ender_pearl": {
+    "advancements": [
+      "blazeandcave:adventure/genesis_of_the_end",
+      "blazeandcave:adventure/slenderman",
+      "blazeandcave:monsters/ender_worm",
+      "blazeandcave:monsters/enderman_destroyer",
+      "blazeandcave:monsters/impossible",
+      "blazeandcave:monsters/plane_walker",
+      "blazeandcave:monsters/tele_morph",
+      "blazeandcave:monsters/the_ender_of_ender",
+      "minecraft:end/enter_end_gateway"
+    ]
+  },
+  "feather": {
+    "advancements": [
+      "blazeandcave:animal/tickle_time",
+      "blazeandcave:monsters/poultry_boy"
+    ]
+  },
+  "fermented_spider_eye": {
+    "advancements": [
+      "blazeandcave:monsters/the_ghastly_eyes",
+      "blazeandcave:potion/mad_scientist"
+    ]
+  },
+  "firework_rocket": {
+    "advancements": [
+      "blazeandcave:end/divers_dozen",
+      "blazeandcave:end/event_horizon",
+      "blazeandcave:end/uh_houston_we_have_a_problem",
+      "blazeandcave:statistics/supersonic",
+      "blazeandcave:statistics/take_to_the_skies"
+    ]
+  },
+  "fishing_rod": {
+    "advancements": [
+      "blazeandcave:animal/totally_not_an_afk_fisher"
+    ]
+  },
+  "flint": {
+    "advancements": [
+      "blazeandcave:mining/bonfire_night",
+      "blazeandcave:mining/flint_miner",
+      "blazeandcave:mining/meet_the_flintstones",
+      "blazeandcave:mining/strike_a_light"
+    ]
+  },
+  "ghast_tear": {
+    "advancements": [
+      "blazeandcave:nether/bring_down_the_beast",
+      "blazeandcave:nether/collateral_damage",
+      "blazeandcave:nether/electrifying_alliance",
+      "blazeandcave:nether/fire_blast_shield",
+      "blazeandcave:nether/ghast_slayer",
+      "blazeandcave:nether/giant_floating_jellyfish",
+      "blazeandcave:nether/pillow_fight",
+      "blazeandcave:potion/hyper_healing",
+      "minecraft:adventure/spyglass_at_ghast",
+      "minecraft:nether/return_to_sender",
+      "minecraft:nether/uneasy_alliance"
+    ]
+  },
+  "gilded_blackstone": {
+    "advancements": [
+      "blazeandcave:nether/gilded_miner",
+      "blazeandcave:nether/gilty"
+    ]
+  },
+  "glass": {
+    "advancements": [
+      "blazeandcave:building/classy_glassy",
+      "blazeandcave:building/pane_in_the_glass",
+      "blazeandcave:building/translucence",
+      "blazeandcave:building/what_a_pane"
+    ]
+  },
+  "glistering_melon_slice": {
+    "advancements": [
+      "blazeandcave:potion/medic"
+    ]
+  },
+  "glow_berries": {
+    "advancements": [
+      "blazeandcave:mining/a_shiny_treat"
+    ]
+  },
+  "glow_ink_sac": {
+    "advancements": [
+      "blazeandcave:animal/cephalight",
+      "blazeandcave:animal/iceologer_shouldve_won"
+    ]
+  },
+  "glow_lichen": {
+    "advancements": [
+      "blazeandcave:mining/lichen_subscribe"
+    ]
+  },
+  "glowstone": {
+    "advancements": [
+      "blazeandcave:building/glowing",
+      "blazeandcave:nether/glowstone_miner",
+      "minecraft:nether/charge_respawn_anchor"
+    ]
+  },
+  "glowstone_dust": {
+    "advancements": [
+      "blazeandcave:nether/seeing_stars"
+    ]
+  },
+  "gold_block": {
+    "advancements": [
+      "blazeandcave:mining/master_gold_miner"
+    ]
+  },
+  "gold_ingot": {
+    "advancements": [
+      "blazeandcave:adventure/overpowered",
+      "blazeandcave:enchanting/gotta_go_fast",
+      "blazeandcave:mining/gold_rush",
+      "blazeandcave:mining/living_like_kings",
+      "blazeandcave:mining/whats_the_time_mr_wolf",
+      "blazeandcave:nether/a_piglins_best_friend",
+      "blazeandcave:nether/astrobrute",
+      "blazeandcave:nether/brute_force",
+      "blazeandcave:nether/giddy_up",
+      "blazeandcave:nether/hung_drawn_and_bartered",
+      "blazeandcave:nether/this_ones_mine",
+      "blazeandcave:nether/we_got_a_live_one",
+      "blazeandcave:nether/when_piglins_fly",
+      "blazeandcave:weaponry/its_time_consuming",
+      "minecraft:nether/distract_piglin",
+      "minecraft:nether/loot_bastion"
+    ]
+  },
+  "gold_nugget": {
+    "advancements": [
+      "blazeandcave:nether/nugget_in_a_biscuit",
+      "blazeandcave:nether/the_tribal_snouts"
+    ]
+  },
+  "golden_apple": {
+    "advancements": [
+      "blazeandcave:animal/so_hungry_i_could_eat_a_horse",
+      "blazeandcave:farming/ultra_hardcore",
+      "blazeandcave:potion/mad_scientist",
+      "blazeandcave:statistics/cupid",
+      "blazeandcave:statistics/two_by_two",
+      "minecraft:story/cure_zombie_villager"
+    ]
+  },
+  "golden_carrot": {
+    "advancements": [
+      "blazeandcave:adventure/shady_deals",
+      "blazeandcave:farming/24_carrot_gold",
+      "blazeandcave:monsters/the_ghastly_eyes",
+      "blazeandcave:potion/nocturnal"
+    ]
+  },
+  "golden_horse_armor": {
+    "advancements": [
+      "blazeandcave:animal/its_high_noon",
+      "blazeandcave:statistics/sheriff_firearm"
+    ]
+  },
+  "golden_sword": {
+    "advancements": [
+      "blazeandcave:adventure/nerds_never_die"
+    ]
+  },
+  "gravel": {
+    "advancements": [
+      "blazeandcave:building/the_rainbow_you_always_wanted"
+    ]
+  },
+  "gray_shulker_box": {
+    "advancements": [
+      "minecraft:adventure/trim_with_all_exclusive_armor_patterns"
+    ]
+  },
+  "gray_wool": {
+    "advancements": [
+      "blazeandcave:animal/silence_of_the_lambs"
+    ]
+  },
+  "gunpowder": {
+    "advancements": [
+      "blazeandcave:end/rocketman",
+      "blazeandcave:monsters/blast_shield",
+      "blazeandcave:monsters/controlled_detonation",
+      "blazeandcave:monsters/creeper_killer",
+      "blazeandcave:monsters/keep_your_distance",
+      "blazeandcave:monsters/what_a_creep",
+      "blazeandcave:nether/ghast_slayer",
+      "blazeandcave:potion/death_by_magic",
+      "blazeandcave:potion/stealth_takedown",
+      "blazeandcave:weaponry/explosive_fire",
+      "blazeandcave:weaponry/my_eyes",
+      "blazeandcave:weaponry/pyrotechnic",
+      "blazeandcave:weaponry/who_ya_gonna_call"
+    ]
+  },
+  "hay_block": {
+    "advancements": [
+      "blazeandcave:animal/heavy_duty_caravan",
+      "blazeandcave:animal/so_i_got_that_going_for_me",
+      "blazeandcave:farming/hay_there",
+      "blazeandcave:statistics/cupid",
+      "blazeandcave:statistics/two_by_two"
+    ]
+  },
+  "heavy_core": {
+    "advancements": [
+      "blazeandcave:weaponry/warden_extinction"
+    ]
+  },
+  "honey_block": {
+    "advancements": [
+      "blazeandcave:animal/wheres_the_honey_lebowski",
+      "minecraft:adventure/honey_block_slide"
+    ]
+  },
+  "honey_bottle": {
+    "advancements": [
+      "blazeandcave:animal/nest_quick",
+      "blazeandcave:animal/winnie_the_pooh"
+    ]
+  },
+  "honeycomb": {
+    "advancements": [
+      "blazeandcave:animal/hive_mind",
+      "blazeandcave:building/sign_off",
+      "blazeandcave:mining/wax_treatment",
+      "minecraft:husbandry/wax_on"
+    ]
+  },
+  "honeycomb_block": {
+    "advancements": [
+      "blazeandcave:animal/honey_im_home"
+    ]
+  },
+  "ice": {
+    "advancements": [
+      "blazeandcave:biomes/everybody_loves_ice",
+      "blazeandcave:biomes/thin_ice"
+    ]
+  },
+  "ink_sac": {
+    "advancements": [
+      "blazeandcave:farming/its_full_of_ink",
+      "blazeandcave:farming/squid_game"
+    ]
+  },
+  "iron_block": {
+    "advancements": [
+      "blazeandcave:enchanting/baron_of_blacksmiths",
+      "blazeandcave:enchanting/heavy_metal",
+      "blazeandcave:mining/master_iron_miner",
+      "blazeandcave:statistics/global_railway_network",
+      "minecraft:adventure/summon_iron_golem"
+    ]
+  },
+  "iron_chain": {
+    "advancements": [
+      "blazeandcave:building/no_chain_no_gain"
+    ]
+  },
+  "iron_horse_armor": {
+    "advancements": [
+      "blazeandcave:statistics/horse_training"
+    ]
+  },
+  "iron_ingot": {
+    "advancements": [
+      "blazeandcave:adventure/your_daily_fix",
+      "blazeandcave:building/and_open",
+      "blazeandcave:building/bubble_bubble_toil_and_trouble",
+      "blazeandcave:building/jailhouse_block",
+      "blazeandcave:mining/bonfire_night",
+      "blazeandcave:mining/iron_man",
+      "blazeandcave:mining/rock_bottom",
+      "blazeandcave:mining/steals_on_wheels",
+      "blazeandcave:mining/strike_a_light",
+      "blazeandcave:mining/the_way_to_spawn",
+      "blazeandcave:statistics/i_like_trains",
+      "blazeandcave:statistics/minecart_rider",
+      "minecraft:story/obtain_armor",
+      "minecraft:story/smelt_iron"
+    ]
+  },
+  "jack_o_lantern": {
+    "advancements": [
+      "blazeandcave:building/halloween",
+      "blazeandcave:monsters/handsome_jack"
+    ]
+  },
+  "jungle_log": {
+    "advancements": [
+      "blazeandcave:bacap/getting_wood",
+      "blazeandcave:building/a_good_start",
+      "blazeandcave:building/the_jungler"
+    ]
+  },
+  "jungle_sapling": {
+    "advancements": [
+      "blazeandcave:farming/care_for_the_environment"
+    ]
+  },
+  "kelp": {
+    "advancements": [
+      "blazeandcave:farming/kelp_me"
+    ]
+  },
+  "lantern": {
+    "advancements": [
+      "blazeandcave:building/festival_of_lights"
+    ]
+  },
+  "lapis_block": {
+    "advancements": [
+      "blazeandcave:mining/lapis_lazuli_miner",
+      "blazeandcave:statistics/elderly_enchanter",
+      "blazeandcave:statistics/xp_grinder"
+    ]
+  },
+  "lapis_lazuli": {
+    "advancements": [
+      "blazeandcave:challenges/ultimate_enchanter",
+      "blazeandcave:enchanting/armor_for_the_masses",
+      "blazeandcave:enchanting/bane_of_one_shotting_spiders",
+      "blazeandcave:enchanting/boomerang",
+      "blazeandcave:enchanting/bow_down_to_me",
+      "blazeandcave:enchanting/complete_enchanter",
+      "blazeandcave:enchanting/curses",
+      "blazeandcave:enchanting/do_a_barrel_roll",
+      "blazeandcave:enchanting/echidna",
+      "blazeandcave:enchanting/fiery",
+      "blazeandcave:enchanting/fortunate_son",
+      "blazeandcave:enchanting/knocking_your_socks_off",
+      "blazeandcave:enchanting/like_a_cat",
+      "blazeandcave:enchanting/machine_bow",
+      "blazeandcave:enchanting/master_enchanter",
+      "blazeandcave:enchanting/needle_sharp",
+      "blazeandcave:enchanting/shotbow",
+      "blazeandcave:enchanting/super_efficient",
+      "blazeandcave:enchanting/to_infinity_and_beyond",
+      "blazeandcave:enchanting/undead_slayer",
+      "blazeandcave:enchanting/zeus",
+      "blazeandcave:mining/diam_oh_wait_no",
+      "blazeandcave:statistics/journeyman_enchanter",
+      "blazeandcave:statistics/level_up",
+      "blazeandcave:statistics/novice_enchanter",
+      "blazeandcave:statistics/overlevelling",
+      "minecraft:story/enchant_item"
+    ]
+  },
+  "lava_bucket": {
+    "advancements": [
+      "blazeandcave:building/skyblock"
+    ]
+  },
+  "lead": {
+    "advancements": [
+      "blazeandcave:animal/beeloons",
+      "blazeandcave:animal/follow_the_leader",
+      "blazeandcave:animal/lead_the_way",
+      "blazeandcave:nether/lead_zeppelin"
+    ]
+  },
+  "leather": {
+    "advancements": [
+      "blazeandcave:animal/colorful_cavalry",
+      "blazeandcave:animal/cool_kids",
+      "blazeandcave:animal/cow_tipper",
+      "blazeandcave:animal/fashion_statement",
+      "blazeandcave:animal/flamboyant_range",
+      "blazeandcave:animal/fractal",
+      "blazeandcave:animal/horse_armorer",
+      "blazeandcave:animal/humble_bundle",
+      "blazeandcave:animal/shoe_shed",
+      "blazeandcave:animal/super_mooshroom",
+      "blazeandcave:animal/true_cow_tipper",
+      "blazeandcave:nether/hot_air_balloon",
+      "blazeandcave:statistics/horse_training",
+      "blazeandcave:statistics/scourge_of_the_west",
+      "blazeandcave:statistics/sheriff_firearm",
+      "minecraft:adventure/walk_on_powder_snow_with_leather_boots"
+    ]
+  },
+  "lodestone": {
+    "advancements": [
+      "blazeandcave:mining/lodes_of_applications"
+    ]
+  },
+  "magma_block": {
+    "advancements": [
+      "blazeandcave:nether/stepping_on_legos"
+    ]
+  },
+  "magma_cream": {
+    "advancements": [
+      "blazeandcave:nether/high_temperature_fluid_monster",
+      "blazeandcave:nether/im_in_lava_with_you",
+      "blazeandcave:nether/magma_cube_squisher",
+      "blazeandcave:potion/stayin_frosty"
+    ]
+  },
+  "mangrove_log": {
+    "advancements": [
+      "blazeandcave:bacap/getting_wood",
+      "blazeandcave:building/a_good_start",
+      "blazeandcave:building/mangrove_master"
+    ]
+  },
+  "mangrove_propagule": {
+    "advancements": [
+      "blazeandcave:farming/a_mangrove_grove",
+      "blazeandcave:farming/care_for_the_environment"
+    ]
+  },
+  "melon": {
+    "advancements": [
+      "blazeandcave:farming/the_meloncholy_dane"
+    ]
+  },
+  "melon_slice": {
+    "advancements": [
+      "blazeandcave:farming/the_melon_the_melon_the_melon"
+    ]
+  },
+  "milk_bucket": {
+    "advancements": [
+      "blazeandcave:animal/milk_does_your_body_good"
+    ]
+  },
+  "mud": {
+    "advancements": [
+      "blazeandcave:building/stuck_in_the_mud"
+    ]
+  },
+  "mutton": {
+    "advancements": [
+      "blazeandcave:animal/wooly"
+    ]
+  },
+  "name_tag": {
+    "advancements": [
+      "blazeandcave:adventure/i_just_want_to_make_toast",
+      "blazeandcave:adventure/nerds_never_die",
+      "blazeandcave:adventure/nyan_sheep",
+      "blazeandcave:adventure/slenderman",
+      "blazeandcave:adventure/the_one_and_true_johnny",
+      "blazeandcave:adventure/whats_up_doc"
+    ]
+  },
+  "nautilus_shell": {
+    "advancements": [
+      "blazeandcave:biomes/ahoy",
+      "blazeandcave:biomes/atlantis",
+      "blazeandcave:biomes/titanic",
+      "blazeandcave:biomes/x_marks_the_spot",
+      "blazeandcave:monsters/mollusc_man",
+      "blazeandcave:statistics/luxury_cruise",
+      "blazeandcave:statistics/pirate_captain",
+      "blazeandcave:statistics/sailor_of_the_seven_seas"
+    ]
+  },
+  "nether_bricks": {
+    "advancements": [
+      "blazeandcave:building/fake_fortress"
+    ]
+  },
   "nether_star": {
+    "advancements": [
+      "blazeandcave:nether/beacon_overlord"
+    ],
     "drops": [
       "wither"
+    ]
+  },
+  "nether_wart": {
+    "advancements": [
+      "blazeandcave:nether/basis_of_brewing"
+    ]
+  },
+  "netherite_block": {
+    "advancements": [
+      "blazeandcave:nether/netherite_mad_lad"
+    ]
+  },
+  "netherite_ingot": {
+    "advancements": [
+      "blazeandcave:mining/moar_broken_tools",
+      "blazeandcave:mining/where_are_all_your_clothes",
+      "blazeandcave:monsters/maximum_resistance",
+      "blazeandcave:nether/master_netherite_miner",
+      "blazeandcave:nether/moar_upgraded_tools",
+      "blazeandcave:nether/soul_runnings",
+      "minecraft:nether/netherite_armor"
+    ]
+  },
+  "netherite_upgrade_smithing_template": {
+    "advancements": [
+      "blazeandcave:nether/time_to_upgrade"
+    ]
+  },
+  "note_block": {
+    "advancements": [
+      "blazeandcave:redstone/take_notes",
+      "blazeandcave:redstone/travelling_bard"
+    ]
+  },
+  "oak_fence": {
+    "advancements": [
+      "blazeandcave:enchanting/a_rather_pointy_fence_post"
+    ]
+  },
+  "oak_log": {
+    "advancements": [
+      "blazeandcave:bacap/getting_wood",
+      "blazeandcave:building/a_good_start",
+      "blazeandcave:building/professor_oak"
+    ]
+  },
+  "oak_sapling": {
+    "advancements": [
+      "blazeandcave:building/skyblock",
+      "blazeandcave:farming/care_for_the_environment"
+    ]
+  },
+  "obsidian": {
+    "advancements": [
+      "blazeandcave:mining/obsidian_miner",
+      "blazeandcave:nether/ancient_restoration",
+      "minecraft:story/form_obsidian"
+    ]
+  },
+  "ochre_froglight": {
+    "advancements": [
+      "minecraft:husbandry/froglights"
+    ]
+  },
+  "ominous_trial_key": {
+    "advancements": [
+      "blazeandcave:adventure/vault_hunter",
+      "minecraft:adventure/revaulting"
+    ]
+  },
+  "packed_ice": {
+    "advancements": [
+      "blazeandcave:biomes/spike_ice"
+    ]
+  },
+  "packed_mud": {
+    "advancements": [
+      "blazeandcave:building/elmer_mudd"
+    ]
+  },
+  "pale_oak_log": {
+    "advancements": [
+      "blazeandcave:bacap/getting_wood",
+      "blazeandcave:building/a_good_start",
+      "blazeandcave:building/pale_gardener"
+    ]
+  },
+  "pale_oak_sapling": {
+    "advancements": [
+      "blazeandcave:farming/care_for_the_environment"
+    ]
+  },
+  "paper": {
+    "advancements": [
+      "blazeandcave:technical/riddle_ninth_line"
+    ]
+  },
+  "pearlescent_froglight": {
+    "advancements": [
+      "minecraft:husbandry/froglights"
+    ]
+  },
+  "phantom_membrane": {
+    "advancements": [
+      "blazeandcave:building/insomniac",
+      "blazeandcave:end/some_breakthrough",
+      "blazeandcave:monsters/anti_air",
+      "blazeandcave:monsters/phantom_slayer",
+      "blazeandcave:monsters/ricochet_swoop",
+      "blazeandcave:monsters/well_handle_this",
+      "blazeandcave:potion/true_feather_falling",
+      "minecraft:adventure/two_birds_one_arrow"
+    ]
+  },
+  "pink_bed": {
+    "advancements": [
+      "blazeandcave:building/insomniac"
+    ]
+  },
+  "pointed_dripstone": {
+    "advancements": [
+      "blazeandcave:mining/dripstone_drop",
+      "blazeandcave:mining/thats_the_point"
+    ]
+  },
+  "poisonous_potato": {
+    "advancements": [
+      "blazeandcave:farming/certified_spud_chomper"
+    ]
+  },
+  "porkchop": {
+    "advancements": [
+      "blazeandcave:animal/bacon",
+      "blazeandcave:animal/pig_slaughterer",
+      "blazeandcave:animal/the_three_little_pigs",
+      "blazeandcave:building/spawn_camping",
+      "blazeandcave:nether/roadhog",
+      "blazeandcave:statistics/lightning_mcpig",
+      "blazeandcave:statistics/pig_training",
+      "blazeandcave:statistics/snout_500",
+      "blazeandcave:weaponry/when_pigs_finally_fly"
+    ]
+  },
+  "powder_snow_bucket": {
+    "advancements": [
+      "blazeandcave:biomes/powder_full"
+    ]
+  },
+  "powered_rail": {
+    "advancements": [
+      "blazeandcave:redstone/electric_rails",
+      "blazeandcave:redstone/on_a_rail"
+    ]
+  },
+  "prismarine_crystals": {
+    "advancements": [
+      "blazeandcave:adventure/guardian_destroyer",
+      "blazeandcave:adventure/laser_sharks",
+      "blazeandcave:adventure/spear_fishing",
+      "blazeandcave:building/fake_monument"
+    ]
+  },
+  "prismarine_shard": {
+    "advancements": [
+      "blazeandcave:adventure/guardian_destroyer",
+      "blazeandcave:adventure/laser_sharks",
+      "blazeandcave:adventure/spear_fishing",
+      "blazeandcave:building/fake_monument"
+    ]
+  },
+  "pufferfish": {
+    "advancements": [
+      "blazeandcave:adventure/monumental",
+      "blazeandcave:statistics/laps_in_the_pool",
+      "blazeandcave:statistics/olympic_athlete",
+      "blazeandcave:statistics/olympic_gold_medallist"
+    ]
+  },
+  "pumpkin": {
+    "advancements": [
+      "blazeandcave:farming/naturally_carved"
+    ]
+  },
+  "pumpkin_pie": {
+    "advancements": [
+      "blazeandcave:farming/the_pie"
+    ]
+  },
+  "quartz": {
+    "advancements": [
+      "blazeandcave:redstone/quirky_quartz"
+    ]
+  },
+  "quartz_block": {
+    "advancements": [
+      "blazeandcave:building/greek_art_decor",
+      "blazeandcave:redstone/quartz_miner"
+    ]
+  },
+  "rabbit": {
+    "advancements": [
+      "blazeandcave:animal/in_a_hole_there_lived_a_rabbit",
+      "blazeandcave:animal/theyre_breeding_like_rabbits"
+    ]
+  },
+  "rabbit_foot": {
+    "advancements": [
+      "blazeandcave:adventure/i_just_want_to_make_toast",
+      "blazeandcave:animal/in_a_hole_there_lived_a_rabbit",
+      "blazeandcave:potion/hopping_mad"
+    ]
+  },
+  "rabbit_hide": {
+    "advancements": [
+      "blazeandcave:animal/going_down_the_rabbit_hole",
+      "blazeandcave:animal/in_a_hole_there_lived_a_rabbit"
+    ]
+  },
+  "rail": {
+    "advancements": [
+      "blazeandcave:redstone/all_aboard",
+      "blazeandcave:redstone/on_a_rail",
+      "blazeandcave:redstone/railwayman"
+    ]
+  },
+  "raw_copper": {
+    "advancements": [
+      "blazeandcave:mining/copper_miner"
+    ]
+  },
+  "raw_copper_block": {
+    "advancements": [
+      "blazeandcave:mining/mr_bean"
+    ]
+  },
+  "raw_gold": {
+    "advancements": [
+      "blazeandcave:mining/gold_mine",
+      "blazeandcave:mining/gold_miner"
+    ]
+  },
+  "raw_gold_block": {
+    "advancements": [
+      "blazeandcave:mining/mr_bean"
+    ]
+  },
+  "raw_iron": {
+    "advancements": [
+      "blazeandcave:building/blast_it",
+      "blazeandcave:mining/iron_miner"
+    ]
+  },
+  "raw_iron_block": {
+    "advancements": [
+      "blazeandcave:mining/mr_bean"
+    ]
+  },
+  "red_mushroom": {
+    "advancements": [
+      "blazeandcave:farming/im_gonna_be_sick",
+      "blazeandcave:farming/mega_mushroom",
+      "blazeandcave:farming/mushroom_mushroom",
+      "blazeandcave:farming/shrooms"
+    ]
+  },
+  "red_sand": {
+    "advancements": [
+      "blazeandcave:building/built_on_sand_set_in_stone",
+      "blazeandcave:building/i_dont_like_sand",
+      "blazeandcave:end/in_your_face_neil_armstrong"
+    ]
+  },
+  "red_shulker_box": {
+    "advancements": [
+      "blazeandcave:statistics/frequent_flyer"
+    ]
+  },
+  "redstone": {
+    "advancements": [
+      "blazeandcave:mining/seeing_red",
+      "blazeandcave:redstone/engineer"
+    ]
+  },
+  "redstone_block": {
+    "advancements": [
+      "blazeandcave:mining/redstone_miner",
+      "blazeandcave:redstone/master_engineer"
+    ]
+  },
+  "redstone_lamp": {
+    "advancements": [
+      "blazeandcave:building/electric"
+    ]
+  },
+  "redstone_torch": {
+    "advancements": [
+      "blazeandcave:redstone/powerful_light"
+    ]
+  },
+  "resin_block": {
+    "advancements": [
+      "blazeandcave:biomes/fake_copper"
+    ]
+  },
+  "resin_clump": {
+    "advancements": [
+      "blazeandcave:biomes/resinance"
+    ]
+  },
+  "rotten_flesh": {
+    "advancements": [
+      "blazeandcave:animal/puppies_yipe",
+      "blazeandcave:monsters/dead_dont_die",
+      "blazeandcave:monsters/family_reunion",
+      "blazeandcave:monsters/there_has_to_be_another_way",
+      "blazeandcave:monsters/zombie_slayer"
+    ]
+  },
+  "saddle": {
+    "advancements": [
+      "blazeandcave:statistics/lightning_mcpig",
+      "blazeandcave:statistics/scourge_of_the_west"
+    ]
+  },
+  "sand": {
+    "advancements": [
+      "blazeandcave:building/built_on_sand_set_in_stone",
+      "blazeandcave:building/i_dont_like_sand",
+      "blazeandcave:building/the_rainbow_you_always_wanted",
+      "blazeandcave:monsters/freezing"
+    ]
+  },
+  "scaffolding": {
+    "advancements": [
+      "blazeandcave:biomes/top_of_the_world"
+    ]
+  },
+  "sculk": {
+    "advancements": [
+      "blazeandcave:redstone/the_incredible_sculk"
+    ]
+  },
+  "sculk_catalyst": {
+    "advancements": [
+      "blazeandcave:monsters/not_afraid_of_heights",
+      "blazeandcave:redstone/cataclyst",
+      "blazeandcave:redstone/monstrous_sacrifices"
+    ]
+  },
+  "sculk_sensor": {
+    "advancements": [
+      "blazeandcave:redstone/vibe_check"
+    ]
+  },
+  "sculk_shrieker": {
+    "advancements": [
+      "blazeandcave:monsters/house_of_freaks"
+    ]
+  },
+  "sea_lantern": {
+    "advancements": [
+      "blazeandcave:building/expensive"
+    ]
+  },
+  "sea_pickle": {
+    "advancements": [
+      "blazeandcave:biomes/in_a_pickle",
+      "blazeandcave:building/one_pickle_two_pickle_sea_pickle_four"
+    ]
+  },
+  "shears": {
+    "advancements": [
+      "blazeandcave:animal/live_and_let_dye"
+    ]
+  },
+  "shroomlight": {
+    "advancements": [
+      "blazeandcave:building/shroom_lightyear"
+    ]
+  },
+  "shulker_shell": {
+    "advancements": [
+      "blazeandcave:end/a_wizards_breakfast",
+      "blazeandcave:end/anti_gravity_generator",
+      "blazeandcave:end/organizational_wizard",
+      "blazeandcave:end/portable_storage",
+      "blazeandcave:end/shouldnt_my_shield_levitate_too",
+      "blazeandcave:end/shulker_breaker",
+      "blazeandcave:end/somewhere_over_the_rainbow",
+      "blazeandcave:redstone/sculker_box",
+      "minecraft:end/find_end_city"
+    ]
+  },
+  "slime_ball": {
+    "advancements": [
+      "blazeandcave:animal/frog_family",
+      "blazeandcave:monsters/gelatinous_cube",
+      "blazeandcave:monsters/slime_squisher",
+      "blazeandcave:redstone/sticky_parts",
+      "minecraft:husbandry/leash_all_frog_variants"
+    ]
+  },
+  "slime_block": {
+    "advancements": [
+      "blazeandcave:monsters/oh_no_guys_im_oozing",
+      "blazeandcave:potion/secret_of_the_ooze"
+    ]
+  },
+  "snow_block": {
+    "advancements": [
+      "blazeandcave:farming/olaf"
+    ]
+  },
+  "snowball": {
+    "advancements": [
+      "blazeandcave:nether/snow_cone",
+      "blazeandcave:weaponry/snowball_fight"
+    ]
+  },
+  "soul_sand": {
+    "advancements": [
+      "blazeandcave:nether/quicksand"
+    ]
+  },
+  "soul_soil": {
+    "advancements": [
+      "blazeandcave:building/cerulean"
+    ]
+  },
+  "spectral_arrow": {
+    "advancements": [
+      "blazeandcave:nether/glows_in_the_dark"
+    ]
+  },
+  "spider_eye": {
+    "advancements": [
+      "blazeandcave:animal/farmadillo",
+      "blazeandcave:monsters/poisonous_ew",
+      "blazeandcave:monsters/spider_smasher"
+    ]
+  },
+  "sponge": {
+    "advancements": [
+      "blazeandcave:adventure/sponge_miner"
+    ]
+  },
+  "spruce_log": {
+    "advancements": [
+      "blazeandcave:bacap/getting_wood",
+      "blazeandcave:building/a_good_start",
+      "blazeandcave:building/spruce_lee"
+    ]
+  },
+  "spruce_sapling": {
+    "advancements": [
+      "blazeandcave:adventure/evelyn_evergreen",
+      "blazeandcave:farming/care_for_the_environment"
+    ]
+  },
+  "stone": {
+    "advancements": [
+      "minecraft:story/mine_stone"
+    ]
+  },
+  "stone_bricks": {
+    "advancements": [
+      "blazeandcave:building/fake_stronghold"
+    ]
+  },
+  "stone_shovel": {
+    "advancements": [
+      "blazeandcave:building/pathways"
+    ]
+  },
+  "string": {
+    "advancements": [
+      "blazeandcave:monsters/ew_ew_ew",
+      "blazeandcave:monsters/poisonous_ew",
+      "blazeandcave:monsters/spider_skeleton",
+      "blazeandcave:monsters/spider_smasher"
+    ]
+  },
+  "sugar": {
+    "advancements": [
+      "blazeandcave:potion/performance_enhancing_drugs"
+    ]
+  },
+  "sugar_cane": {
+    "advancements": [
+      "blazeandcave:farming/sugar_sugar"
+    ]
+  },
+  "sunflower": {
+    "advancements": [
+      "blazeandcave:biomes/theres_a_zombie_on_the_lawn"
+    ]
+  },
+  "sweet_berries": {
+    "advancements": [
+      "blazeandcave:farming/berry_nice"
+    ]
+  },
+  "terracotta": {
+    "advancements": [
+      "blazeandcave:building/the_glazed_terracotta_army",
+      "blazeandcave:building/the_terracotta_army"
+    ]
+  },
+  "tinted_glass": {
+    "advancements": [
+      "blazeandcave:mining/blackout"
+    ]
+  },
+  "tipped_arrow": {
+    "advancements": [
+      "blazeandcave:monsters/frosty",
+      "blazeandcave:monsters/melting",
+      "blazeandcave:monsters/poison_dart"
+    ]
+  },
+  "tnt": {
+    "advancements": [
+      "blazeandcave:redstone/we_have_liftoff",
+      "blazeandcave:weaponry/demolitions_expert",
+      "blazeandcave:weaponry/revenge"
+    ]
+  },
+  "torch": {
+    "advancements": [
+      "blazeandcave:building/torched",
+      "blazeandcave:mining/nananananananana"
+    ]
+  },
+  "torchflower_seeds": {
+    "advancements": [
+      "blazeandcave:adventure/jurassic_sniff"
+    ]
+  },
+  "totem_of_undying": {
+    "advancements": [
+      "blazeandcave:adventure/vexingly_hard_to_find",
+      "minecraft:adventure/totem_of_undying"
+    ]
+  },
+  "trial_key": {
+    "advancements": [
+      "blazeandcave:adventure/vault_hunter",
+      "minecraft:adventure/under_lock_and_key"
+    ]
+  },
+  "trident": {
+    "advancements": [
+      "blazeandcave:enchanting/god_of_thunder",
+      "blazeandcave:monsters/captain_etho",
+      "blazeandcave:weaponry/king_of_the_sea"
+    ]
+  },
+  "tropical_fish": {
+    "advancements": [
+      "blazeandcave:animal/axolittle",
+      "blazeandcave:animal/axolotl_of_them",
+      "blazeandcave:animal/grinding_nemo",
+      "blazeandcave:animal/thanks_a_lotl"
+    ]
+  },
+  "turtle_egg": {
+    "advancements": [
+      "blazeandcave:animal/save_the_turtles"
+    ]
+  },
+  "turtle_scute": {
+    "advancements": [
+      "blazeandcave:animal/save_the_turtles",
+      "blazeandcave:animal/scuttler",
+      "blazeandcave:animal/turtle_army",
+      "blazeandcave:animal/turtle_soldier",
+      "blazeandcave:potion/tank"
+    ]
+  },
+  "verdant_froglight": {
+    "advancements": [
+      "minecraft:husbandry/froglights"
+    ]
+  },
+  "warped_fungus": {
+    "advancements": [
+      "blazeandcave:nether/bobbleheads",
+      "blazeandcave:nether/hell_botanist",
+      "blazeandcave:nether/jenga",
+      "blazeandcave:nether/this_ones_mine",
+      "blazeandcave:statistics/taking_it_in_stride",
+      "blazeandcave:statistics/this_ride_is_lit_yo",
+      "blazeandcave:statistics/who_needs_boats",
+      "minecraft:nether/ride_strider",
+      "minecraft:nether/ride_strider_in_overworld_lava"
+    ]
+  },
+  "warped_stem": {
+    "advancements": [
+      "blazeandcave:building/a_good_start",
+      "blazeandcave:nether/stem_research",
+      "blazeandcave:nether/welcome_to_warp_zone"
+    ]
+  },
+  "water_bucket": {
+    "advancements": [
+      "blazeandcave:animal/aquarium",
+      "blazeandcave:biomes/boatception",
+      "blazeandcave:building/skyblock"
+    ]
+  },
+  "wet_sponge": {
+    "advancements": [
+      "blazeandcave:adventure/the_deep_end"
+    ]
+  },
+  "wheat": {
+    "advancements": [
+      "blazeandcave:animal/billy_the_kid",
+      "blazeandcave:animal/super_mooshroom",
+      "blazeandcave:statistics/the_parrots_and_the_bats",
+      "minecraft:husbandry/breed_an_animal"
+    ]
+  },
+  "wheat_seeds": {
+    "advancements": [
+      "blazeandcave:animal/feeding_the_chickens",
+      "minecraft:adventure/spyglass_at_parrot"
+    ]
+  },
+  "white_wool": {
+    "advancements": [
+      "blazeandcave:animal/fuzzy_feet",
+      "blazeandcave:animal/live_and_let_dye",
+      "blazeandcave:animal/sheariously",
+      "blazeandcave:animal/wooly",
+      "blazeandcave:building/no_banner_only_color",
+      "blazeandcave:building/rainbow_dreams",
+      "blazeandcave:weaponry/flying_colors"
+    ]
+  },
+  "wind_charge": {
+    "advancements": [
+      "blazeandcave:adventure/from_under_your_feet",
+      "blazeandcave:enchanting/mace_windu",
+      "blazeandcave:enchanting/whack_a_mole",
+      "minecraft:adventure/who_needs_rockets"
+    ]
+  },
+  "wither_rose": {
+    "advancements": [
+      "blazeandcave:nether/decaying_beauty"
+    ]
+  },
+  "wither_skeleton_skull": {
+    "advancements": [
+      "blazeandcave:end/the_beginning",
+      "minecraft:nether/summon_wither"
+    ]
+  },
+  "writable_book": {
+    "advancements": [
+      "blazeandcave:farming/an_amazing_story"
     ]
   }
 }
