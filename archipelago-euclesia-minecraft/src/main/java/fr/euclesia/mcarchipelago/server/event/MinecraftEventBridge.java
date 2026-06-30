@@ -5,6 +5,7 @@ import fr.euclesia.mcarchipelago.protocol.packet.outbound.SayPacket;
 import fr.euclesia.mcarchipelago.server.connect.APWorldConnection;
 import fr.euclesia.mcarchipelago.server.connect.APWorldConnector;
 import fr.euclesia.mcarchipelago.server.gameplay.AdvancementBridge;
+import fr.euclesia.mcarchipelago.server.gameplay.BacapConfigService;
 import fr.euclesia.mcarchipelago.server.gameplay.BiomeFinderService;
 import fr.euclesia.mcarchipelago.server.gameplay.FillerTrapService;
 import fr.euclesia.mcarchipelago.server.gameplay.MobKillBridge;
@@ -69,6 +70,8 @@ public final class MinecraftEventBridge {
             // Covers the connect-before-join path (e.g. main-menu connect): if the slot data is
             // already known, place the player in their start dimension before anything else.
             StartDimensionService.applyIfNeeded(player);
+            // Apply the one-time BACAP reward/trophy config (no-op if already done or BACAP is off).
+            BacapConfigService.applyIfNeeded(AEMServerRuntime.server());
             // Rebuild + resync the tab root for this player before scanning, so the connect-before-join
             // path still gets the goal-count root (the connect-time reload ran with no players online).
             RootAdvancementService.applyOnJoin(player);

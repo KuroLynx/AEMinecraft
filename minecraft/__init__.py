@@ -463,6 +463,10 @@ class MCWorld(World):
             # Whether the Structure Finder exists at all this seed (disabled = no item in the pool /
             # on start). The mod uses this to skip its proactive structure scan when the finder is off.
             "structure_finder"     : self.options.structure_finder.value != self.options.structure_finder.option_disabled,
+            # BACAP integration: whether the pack is in play, and whether to keep its item/XP rewards.
+            # The mod runs blazeandcave's reward-disable functions on first world load accordingly.
+            "blazeandcave"         : bool(self.options.blazeandcave.value),
+            "bacap_rewards"        : bool(self.options.bacap_rewards.value),
 
             # --- Mapping item ID → nom (le mod applique l'effet depuis le nom) ---
             # Inclut les items de base ET chaque Entity/Structure unlock, pour que le mod

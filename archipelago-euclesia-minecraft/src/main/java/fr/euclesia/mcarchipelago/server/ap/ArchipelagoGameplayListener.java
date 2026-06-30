@@ -10,6 +10,7 @@ import fr.euclesia.mcarchipelago.protocol.APJson;
 import fr.euclesia.mcarchipelago.protocol.APReceivedPacket;
 import fr.euclesia.mcarchipelago.protocol.packet.outbound.ConnectUpdatePacket;
 import fr.euclesia.mcarchipelago.server.gameplay.AdvancementBridge;
+import fr.euclesia.mcarchipelago.server.gameplay.BacapConfigService;
 import fr.euclesia.mcarchipelago.server.gameplay.RootAdvancementService;
 import fr.euclesia.mcarchipelago.server.gameplay.StartDimensionService;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
@@ -36,6 +37,9 @@ public final class ArchipelagoGameplayListener implements APEventListener {
         MinecraftServer server = AEMServerRuntime.server();
         if (server != null) {
             server.execute(() -> RootAdvancementService.rebuild(server, slotData));
+            // One-time BACAP reward/trophy config, now that the slot data is known (covers
+            // connect-after-join). Scheduled on the server thread; no-op if already applied.
+            server.execute(() -> BacapConfigService.applyIfNeeded(server));
         }
 
         // Re-evaluate advancement visibility now that the active-location set is known, so

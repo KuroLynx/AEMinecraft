@@ -236,6 +236,24 @@ class BlazeAndCave(Toggle):
     default = 0
 
 
+class BacapRewards(Toggle):
+    """Let BlazeandCave's Advancements Pack hand out its own item and XP rewards.
+
+    BACAP normally grants items and experience when you complete its advancements. In a randomizer
+    those free rewards bypass the multiworld economy, so they are turned OFF by default: the mod runs
+    BACAP's reward-disable functions the first time you load the world.
+
+    - disabled (default): BACAP gives no item or XP rewards.
+    - enabled: BACAP keeps its vanilla item and XP rewards.
+
+    Either way, BACAP trophies are always disabled. Only has an effect when blazeandcave is enabled.
+    """
+    display_name = "BlazeandCave Rewards"
+    option_true = 1
+    option_false = 0
+    default = 0
+
+
 @dataclass
 class MCOptions(PerGameCommonOptions):
     boss_list: BossList
@@ -251,3 +269,4 @@ class MCOptions(PerGameCommonOptions):
     structure_finder: StructureFinder
     biome_finder: BiomeFinder
     blazeandcave: BlazeAndCave
+    bacap_rewards: BacapRewards
