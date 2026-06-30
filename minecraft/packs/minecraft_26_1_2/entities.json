@@ -76,7 +76,7 @@
     "category": "hostile",
     "region": "Overworld",
     "breedable": false,
-    "tameable": true,
+    "tameable": false,
     "leashable": true
   },
   {
@@ -668,14 +668,14 @@
     "category": "hostile",
     "region": "Overworld",
     "breedable": false,
-    "tameable": false,
+    "tameable": true,
     "leashable": true
   },
   {
     "game_id": "minecraft:zombie_nautilus",
     "category": "hostile",
     "region": "Overworld",
-    "breedable": true,
+    "breedable": false,
     "tameable": true,
     "leashable": true
   },

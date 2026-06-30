@@ -18,10 +18,18 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.NeutralMob;
 import net.minecraft.world.entity.TamableAnimal;
+import net.minecraft.world.entity.ai.Brain;
+import net.minecraft.world.entity.ai.behavior.AnimalMakeLove;
+import net.minecraft.world.entity.ai.behavior.BehaviorControl;
+import net.minecraft.world.entity.ai.behavior.GateBehavior;
+import net.minecraft.world.entity.ai.goal.BreedGoal;
+import net.minecraft.world.entity.ai.goal.GoalSelector;
+import net.minecraft.world.entity.ai.goal.WrappedGoal;
 import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.entity.animal.equine.AbstractHorse;
 
 import java.io.BufferedReader;
+import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -58,11 +66,13 @@ public final class EntitiesDump {
     private static final Set<String> EXCLUDED =
             Set.of("minecraft:giant", "minecraft:illusioner");
 
-    /** {@link AbstractHorse}s the player can't actually tame, so they must NOT count as tameable: camels
-     *  are saddle-ridden (never tamed), skeleton/zombie horses can't be tamed in survival. Everything
-     *  else extending AbstractHorse is mount-tamed (horse/donkey/mule/llama/trader_llama). */
-    private static final Set<String> NON_TAMEABLE_EQUINES =
-            Set.of("minecraft:camel", "minecraft:skeleton_horse", "minecraft:zombie_horse");
+    /** {@link AbstractHorse}s the player can't tame even though the class supports it. Camel + its husk
+     *  variant are derived out at runtime instead (they report {@code isTamed() == true} on a fresh
+     *  sample — born ride-ready, never tamed), so the only one that needs listing is the skeleton horse:
+     *  it blocks taming in {@code mobInteract} (trap-spawned ones come pre-tamed), which isn't detectable
+     *  headless without a Player. Everything else extending AbstractHorse is mount-tamed
+     *  (horse/donkey/mule/llama/trader_llama/zombie_horse). */
+    private static final Set<String> NON_TAMEABLE_EQUINES = Set.of("minecraft:skeleton_horse");
 
     /** Region for mobs with no biome spawner (built / structure-only / End-ship): they can't be
      *  derived from biome spawn data, so a small game-knowledge fallback supplies it; anything not
@@ -102,10 +112,12 @@ public final class EntitiesDump {
                 continue;
             }
             String category = categoryOf(gameId, type, mob);
-            // TamableAnimal covers wolf/cat/parrot; the equines are mount-tamed (no TamableAnimal
-            // interface), minus the few AbstractHorses that can't actually be tamed.
+            // TamableAnimal covers wolf/cat/parrot/(zombie_)nautilus. Equines are mount-tamed (no
+            // TamableAnimal interface); a FRESH sample that already reports isTamed() is one that's
+            // never player-tamed (camel + its husk), and skeleton_horse is the lone non-derivable
+            // holdout. NB: read isTamed() here, before isBreedable() force-tames this same sample.
             boolean tameable = mob instanceof TamableAnimal
-                    || (mob instanceof AbstractHorse && !NON_TAMEABLE_EQUINES.contains(gameId));
+                    || (mob instanceof AbstractHorse h && !h.isTamed() && !NON_TAMEABLE_EQUINES.contains(gameId));
             boolean leashable = mob.canBeLeashed();
             boolean breedable = isBreedable(type, level, mob);
             mob.discard();
@@ -147,31 +159,34 @@ public final class EntitiesDump {
      *       excludes mobs that never enter love ({@code HappyGhast}); {@code isFood -> false} excludes
      *       mobs with no breeding food ({@code Parrot}/{@code PolarBear}). These stateless gates drop the
      *       old {@code instanceof Animal} flag's worst "breed any" leaks without touching mutable state.</li>
+     *   <li><b>{@link #hasBreedingAi}</b> — does the mob's AI actually carry a breeding behaviour? This is
+     *       the gate the forced-love {@code canMate} check below is blind to. {@code zombie_nautilus} shares
+     *       {@code AbstractNautilus}'s {@code isFood}/{@code canMate}/{@code getBreedOffspring} with the
+     *       breedable {@code Nautilus}, so it passes every other gate — but {@code ZombieNautilusAi} only
+     *       follows temptation and never makes love, so it isn't actually breedable. See {@link #hasBreedingAi}.</li>
      *   <li><b>{@link Animal#canMate}</b> in the maximal state — this is where sterility and breeding
-     *       rules live: {@code Mule}/{@code AbstractHorse.canMate} is a hard {@code false} (mule excluded),
-     *       horses/llamas/wolves/cats require {@code isTamed} (so we tame the samples), {@code Sniffer}
-     *       needs an idle state (the fresh default), pandas/foxes use the base love check.</li>
+     *       rules live: {@code Mule}/{@code AbstractHorse.canMate} is a hard {@code false} (mule excluded —
+     *       it's the horse×donkey offspring, not an active breeder), horses/llamas/wolves/cats require
+     *       {@code isTamed} (so we tame the samples), {@code Sniffer} needs an idle state (the fresh
+     *       default), pandas/foxes use the base love check.</li>
      * </ol>
      * Forcing love is faithful, not a cheat: the food gate already proved love is reachable. This is the
      * runtime counterpart of Mojang's hand-curated breedable list, and unlike {@code getBreedOffspring}
      * it correctly INCLUDES the egg-layers (frog/turtle/sniffer produce frogspawn/eggs via a custom
      * {@code spawnChildFromBreeding}, so their {@code getBreedOffspring} is {@code null}).
      *
-     * <p>Verified against Two by Two / {@code bred_all_animals} (26 pinned species): this test includes
-     * all 26 plus {@code trader_llama} and {@code zombie_nautilus}, and those two extras are CORRECT, not
-     * leaks — both genuinely tame+breed (trader_llama inherits Llama's breeding, its only addition being a
-     * despawn timer; zombie_nautilus is a hostile <em>variant</em> of the breedable {@code Nautilus} class
-     * and nothing in the breeding/taming code is variant-gated). They're merely absent from Two by Two,
-     * whose criteria pin the specific types {@code minecraft:llama}/{@code minecraft:nautilus}; breeding
-     * either variant still fires the generic "breed any" trigger, so flagging them breedable is right.
-     * Conversely {@code mule} reads NOT breedable, also correct: Two by Two pins it only as a {@code child}
-     * (bred FROM horse×donkey) and the mule itself is sterile ({@code AbstractHorse.canMate -> false}).
+     * <p>The conjunction lands exactly on the player-breedable set: the canMate gate drops
+     * {@code mule}/{@code skeleton_horse}/{@code zombie_horse} (all inherit a {@code BreedGoal} but
+     * {@code AbstractHorse.canMate} returns {@code false}), and the AI gate additionally drops
+     * {@code zombie_nautilus} (passes canMate via forced love, but has no make-love behaviour). Hostile
+     * breeders such as {@code hoglin} stay in — they carry {@code AnimalMakeLove}.
      */
     private static boolean isBreedable(EntityType<?> type, ServerLevel level, Mob mob) {
         // `a` is a FRESH sample (inLove == 0), so these read the species capability before we force state:
         //   canFallInLove() -> false  excludes mobs that can never enter love at all (happy_ghast);
-        //   hasBreedingFood  -> false  excludes mobs with no breeding food (parrot, polar_bear).
-        if (!(mob instanceof Animal a) || !a.canFallInLove() || !hasBreedingFood(a)) {
+        //   hasBreedingFood  -> false  excludes mobs with no breeding food (parrot, polar_bear);
+        //   hasBreedingAi    -> false  excludes mobs whose AI never makes love (zombie_nautilus).
+        if (!(mob instanceof Animal a) || !a.canFallInLove() || !hasBreedingFood(a) || !hasBreedingAi(mob)) {
             return false;
         }
         Entity partner = type.create(level, EntitySpawnReason.BREEDING);
@@ -216,6 +231,69 @@ public final class EntitiesDump {
             h.setTamed(true);
         }
         a.setInLoveTime(600);
+    }
+
+    /**
+     * True if the mob's AI actually contains a breeding behaviour — the gate the forced-love
+     * {@link Animal#canMate} check is blind to. Goal-driven animals carry a {@link BreedGoal} (incl. the
+     * one inherited by {@code AbstractCow}/{@code AbstractHorse} and the {@code BreedGoal} subclasses used
+     * by fox/panda/turtle); brain-driven animals (axolotl, frog, nautilus, hoglin, sniffer, …) carry an
+     * {@link AnimalMakeLove} behaviour, often nested inside a {@link GateBehavior}/{@code RunOne}.
+     * {@code zombie_nautilus} has neither — its brain only follows temptation — so this is what excludes it
+     * while every real breeder (including hostile ones like hoglin) passes.
+     *
+     * <p>Neither the goal list nor the brain's behaviour map is publicly enumerable, so this reads them
+     * reflectively (Mojang mappings: {@code Mob.goalSelector}, {@code Brain.availableBehaviorsByPriority},
+     * {@code GateBehavior.behaviors}). On any reflection failure it conservatively returns {@code true}
+     * (assume breedable) rather than silently dropping every brain-bred animal.
+     */
+    private static boolean hasBreedingAi(Mob mob) {
+        try {
+            Field goalField = Mob.class.getDeclaredField("goalSelector");
+            goalField.setAccessible(true);
+            GoalSelector goals = (GoalSelector) goalField.get(mob);
+            for (WrappedGoal wrapped : goals.getAvailableGoals()) {
+                if (wrapped.getGoal() instanceof BreedGoal) {
+                    return true;
+                }
+            }
+
+            Field brainField = Brain.class.getDeclaredField("availableBehaviorsByPriority");
+            brainField.setAccessible(true);
+            Map<?, ?> byPriority = (Map<?, ?>) brainField.get(mob.getBrain());
+            for (Object byActivity : byPriority.values()) {
+                for (Object behaviorSet : ((Map<?, ?>) byActivity).values()) {
+                    for (Object behavior : (Iterable<?>) behaviorSet) {
+                        if (behavior instanceof BehaviorControl<?> bc && containsMakeLove(bc)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        } catch (ReflectiveOperationException | ClassCastException exception) {
+            System.err.println("[AEM] entities dump: breeding-AI introspection failed for "
+                    + BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType()) + " (" + exception + "); assuming breedable");
+            return true;
+        }
+    }
+
+    /** Recurse through {@link GateBehavior}/{@code RunOne} wrappers looking for an {@link AnimalMakeLove}
+     *  leaf (brain breeders often wrap it a level or two deep). */
+    private static boolean containsMakeLove(BehaviorControl<?> behavior) throws ReflectiveOperationException {
+        if (behavior instanceof AnimalMakeLove) {
+            return true;
+        }
+        if (behavior instanceof GateBehavior<?> gate) {
+            Field behaviorsField = GateBehavior.class.getDeclaredField("behaviors");
+            behaviorsField.setAccessible(true);
+            for (Object child : (Iterable<?>) behaviorsField.get(gate)) {
+                if (child instanceof BehaviorControl<?> bc && containsMakeLove(bc)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     // -- region from biome spawn data ---------------------------------------
