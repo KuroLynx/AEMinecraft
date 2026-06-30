@@ -96,6 +96,32 @@ def _load_pack_acquisition(pack_dir_name: str) -> dict:
         return json.load(handle)
 
 
+def reward_events(world) -> dict[str, list[str]]:
+    """Item base -> the active location names whose completion grants it as a BACAP advancement
+    reward. Empty unless the pack AND its rewards are on (bacap_rewards), mirroring the mod disabling
+    BACAP rewards on world load — with them off a reward is not a real way to obtain the item.
+
+    Drives the reward *event* model (see REWARD_EVENT_PREFIX, create_regions, build_location_rules):
+    each entry becomes an internal event location (rule = OR of reaching those advancements) holding a
+    locked event item, and ``acquire`` sources the item through ``has(event)`` — a non-recursive leaf.
+    AP's monotone event sweep then resolves rewards to a fixed point, instead of the recursive
+    ``reached()`` source that forms ``acquire(X) -> reached(A) -> A's rule -> acquire(X)`` cycles.
+    Only advancements that are an active check this seed contribute (an inactive tab / challenge_sanity
+    drop is simply absent), so an event with no granting location is never created."""
+    if not (bool(world.options.blazeandcave.value) and bool(world.options.bacap_rewards.value)):
+        return {}
+    location_by_gid = {
+        data.game_id: name for name, data in world._get_active_locations().items() if data.game_id
+    }
+    events: dict[str, list[str]] = {}
+    for base, record in _acquisition_table().items():
+        names = sorted({location_by_gid[gid] for gid in record.get("advancements", ())
+                        if gid in location_by_gid})
+        if names:
+            events[base] = names
+    return events
+
+
 def _entity_by_gid() -> dict:
     global _ENTITY_BY_GID
     if _ENTITY_BY_GID is None:
@@ -190,17 +216,11 @@ class RuleHelper:
         # Biome Finder enabled (start or in_pool); disabled == 0. Biome-specific advancements require
         # it when on, since that's how you locate the biome.
         self.biome_finder_enabled = bool(world.options.biome_finder.value)
-        # BACAP advancement rewards count as item sources only when the pack is on AND its rewards are
-        # kept: with bacap_rewards off (the default) the mod disables them on world load, so they are
-        # not a real way to obtain the item. See the `advancements` source in _acquire_from_sources.
-        self.bacap_rewards = bool(world.options.blazeandcave.value) and bool(world.options.bacap_rewards.value)
-        # game_id -> active location name, so an `advancements` source can resolve to the location
-        # whose completion grants the item. Built from active locations, so an advancement that isn't
-        # a check this seed (inactive tab / challenge_sanity off) is simply absent and contributes no
-        # source.
-        self._location_by_game_id = {
-            data.game_id: name for name, data in world._get_active_locations().items() if data.game_id
-        }
+        # BACAP advancement rewards, modeled as event items: base item -> active location names that
+        # grant it (empty unless bacap_rewards is on). acquire() sources a rewarded item via
+        # has(REWARD_EVENT_PREFIX + base); the event location carrying the reached() OR is created in
+        # create_regions / build_location_rules. See reward_events for the cycle rationale.
+        self.reward_events = reward_events(world)
         # Memo for acquire(): the acquisition table + options are fixed for this helper, so
         # acquire(base, stack) is pure. Datapack-scale compilation calls it millions of times for the
         # same (base, stack) pairs (planks/sticks/ingots recur in every recipe); caching collapses
@@ -1180,14 +1200,13 @@ class RuleHelper:
         for structure_name in record.get("structures", ()):
             if structure_name in STRUCTURES:
                 options.append(self.structure(structure_name))
-        # BACAP advancement rewards (only when bacap_rewards is on): completing one of these
-        # advancements grants the item, so reaching that location is a source. Inactive advancements
-        # (not a check this seed) aren't in the map and are skipped.
-        if self.bacap_rewards:
-            for advancement_gid in record.get("advancements", ()):
-                location_name = self._location_by_game_id.get(advancement_gid)
-                if location_name is not None:
-                    options.append(self.reached(location_name))
+        # BACAP advancement reward (when bacap_rewards is on): a non-recursive has() leaf on the event
+        # item that the granting advancement's event location collects (see reward_events). A general
+        # source — it widens reachability wherever it applies — yet cycle-free, because the recursive
+        # reached() lives only on the event location (a sink: nothing reaches FOR it), so AP's monotone
+        # event sweep resolves it instead of recursing through acquire(X) -> reached(A) -> acquire(X).
+        if base in self.reward_events:
+            options.append(self.has(f"{REWARD_EVENT_PREFIX}{base}"))
         for table in record.get("gameplay", ()):
             node = self._gameplay_node(table, inner)
             if node is not None:
