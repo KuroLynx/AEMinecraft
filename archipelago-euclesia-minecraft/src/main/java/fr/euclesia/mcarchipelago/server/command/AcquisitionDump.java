@@ -8,6 +8,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 
+import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
@@ -28,10 +29,18 @@ import java.util.TreeSet;
  * processed id-sorted, so the output is deterministic.
  *
  * <p>Per-item record (only non-empty keys), {@code <ing> = {"item":x} | {"tag":x} | {"any_of":[...]}}:
- * {@code recipes / drops / mining / silk_mining / structures / trades / breeding / gameplay}.
+ * {@code advancements / recipes / drops / mining / silk_mining / structures / trades / breeding / gameplay}.
+ *
+ * <p>The {@code advancements} source (item -> advancement game_ids that grant it as a completion reward)
+ * is built ONLY for the BlazeandCave's Advancements Pack ({@link #BACAP_NAMESPACE}), whose advancements
+ * hand out items via reward functions ({@code rewards.function}). Vanilla advancement rewards are not
+ * modeled this way.
  */
 final class AcquisitionDump {
     private AcquisitionDump() {}
+
+    /** The datapack whose advancement rewards are mined into the {@code advancements} source. */
+    private static final String BACAP_NAMESPACE = "blazeandcave";
 
     private static final List<String> ENCHANT_FUNCS = List.of(
             "enchant_randomly", "enchant_with_levels", "set_enchantments");
@@ -72,9 +81,10 @@ final class AcquisitionDump {
     private final Map<String, TreeSet<String>> trades = new TreeMap<>();  // "proffile"
     private final Map<String, TreeSet<String>> breeding = new TreeMap<>();
     private final Map<String, TreeSet<String>> gameplay = new TreeMap<>();
+    private final Map<String, TreeSet<String>> advancements = new TreeMap<>();  // item -> adv game_ids
     private final Map<String, JsonArray> itemTags = new TreeMap<>();  // bare path -> raw values
 
-    static JsonObject build(ResourceManager rm) {
+    static JsonObject build(ResourceManager rm, String primaryNamespace) {
         AcquisitionDump dump = new AcquisitionDump();
         // Tags first so recipe ingredient expansion can resolve them, then recipes / loot / trades.
         dump.forEachJson(rm, "tags/item", dump::onItemTag);
@@ -84,6 +94,9 @@ final class AcquisitionDump {
         dump.forEachJson(rm, "loot_table", dump::onLoot);
         dump.forEachJson(rm, "loot_tables", dump::onLoot);
         dump.forEachJson(rm, "villager_trade", dump::onTrade);
+        if (BACAP_NAMESPACE.equals(primaryNamespace)) {
+            dump.collectAdvancementRewards(rm);
+        }
         return dump.table();
     }
 
@@ -434,6 +447,112 @@ final class AcquisitionDump {
         return ingredient;
     }
 
+    // -- advancement rewards (BACAP only) -----------------------------------
+
+    /**
+     * For every advancement in this pack that carries a {@code rewards.function}, read the granting
+     * reward function and record each item it gives as obtainable by completing that advancement
+     * ({@code advancements} source: item -> advancement game_id). BACAP advancements give items through
+     * {@code bacap_rewards:<tab>/<name>}, whose actual {@code give} commands live in the parallel
+     * {@code reward/<tab>/<name>} function; reading that subtree (not the dispatcher) keeps cosmetic
+     * trophy/XP grants out. Attribution is by the advancement's own game_id (namespace from its
+     * resource), so a reward attached to an overridden {@code minecraft:} advancement is credited to it.
+     */
+    private void collectAdvancementRewards(ResourceManager rm) {
+        Map<Identifier, Resource> advs = rm.listResources("advancement", id -> id.getPath().endsWith(".json"));
+        List<Map.Entry<Identifier, Resource>> sorted = new ArrayList<>(advs.entrySet());
+        sorted.sort(Map.Entry.comparingByKey(Comparator.comparing(Identifier::toString)));
+        for (Map.Entry<Identifier, Resource> entry : sorted) {
+            Identifier id = entry.getKey();
+            String path = id.getPath();  // "advancement/<rel>.json"
+            String rel = path.substring("advancement/".length(), path.length() - ".json".length());
+            String advGameId = id.getNamespace() + ":" + rel;
+            JsonObject json;
+            try (Reader reader = new InputStreamReader(entry.getValue().open(), StandardCharsets.UTF_8)) {
+                JsonElement parsed = JsonParser.parseReader(reader);
+                json = parsed.isJsonObject() ? parsed.getAsJsonObject() : null;
+            } catch (Exception ignored) {
+                continue;
+            }
+            if (json == null) {
+                continue;
+            }
+            String rewardFn = string(obj(json.get("rewards")).get("function"), null);
+            if (rewardFn == null || rewardFn.isEmpty()) {
+                continue;
+            }
+            for (String item : rewardItems(rm, rewardFn)) {
+                advancements.computeIfAbsent(item, k -> new TreeSet<>()).add(advGameId);
+            }
+        }
+    }
+
+    /** Items given by a {@code rewards.function}: read the parallel {@code reward/...} give-function
+     *  (falling back to the named function itself), and collect each {@code give}'s minecraft item id. */
+    private Set<String> rewardItems(ResourceManager rm, String rewardFn) {
+        int colon = rewardFn.indexOf(':');
+        String ns = colon >= 0 ? rewardFn.substring(0, colon) : "minecraft";
+        String fnPath = colon >= 0 ? rewardFn.substring(colon + 1) : rewardFn;
+        Set<String> items = new TreeSet<>();
+        // Prefer the give-only reward/ subtree; fall back to the named function for non-BACAP layouts.
+        if (!parseGives(rm, Identifier.fromNamespaceAndPath(ns, "function/reward/" + fnPath + ".mcfunction"), items)) {
+            parseGives(rm, Identifier.fromNamespaceAndPath(ns, "function/" + fnPath + ".mcfunction"), items);
+        }
+        return items;
+    }
+
+    /** Parse {@code give} commands from a function resource into {@code items}; returns whether it
+     *  existed. Each {@code give <selector> [minecraft:]<id>[components] [count]} contributes {@code id}
+     *  (vanilla items only; nested container contents are not unpacked). */
+    private static boolean parseGives(ResourceManager rm, Identifier funcId, Set<String> items) {
+        Resource resource = rm.getResource(funcId).orElse(null);
+        if (resource == null) {
+            return false;
+        }
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(resource.open(), StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String item = giveItem(line);
+                if (item != null) {
+                    items.add(item);
+                }
+            }
+        } catch (Exception ignored) {
+            // unreadable function — treat as no items
+        }
+        return true;
+    }
+
+    /** The minecraft item id a {@code give} command line grants, or {@code null} if the line isn't a
+     *  give of a vanilla item. Tokens carry no spaces in BACAP reward functions (single-line, no spaces
+     *  inside selectors/components), so whitespace splitting is safe. */
+    private static String giveItem(String line) {
+        int give = line.indexOf("give @");
+        if (give < 0) {
+            return null;
+        }
+        String after = line.substring(give + "give ".length()).trim();  // "<selector> <item> [count]"
+        int afterSelector = after.indexOf(' ');
+        if (afterSelector < 0) {
+            return null;
+        }
+        String rest = after.substring(afterSelector + 1).trim();
+        int end = rest.indexOf(' ');
+        String token = end < 0 ? rest : rest.substring(0, end);          // "[minecraft:]<id>[components]"
+        int bracket = token.indexOf('[');
+        if (bracket >= 0) {
+            token = token.substring(0, bracket);                        // drop item components
+        }
+        int colon = token.indexOf(':');
+        if (colon >= 0) {
+            if (!token.substring(0, colon).equals("minecraft")) {
+                return null;                                            // a modded/custom item — skip
+            }
+            token = token.substring(colon + 1);
+        }
+        return token.isEmpty() ? null : token;
+    }
+
     // -- emit ---------------------------------------------------------------
 
     private JsonObject table() {
@@ -444,6 +563,7 @@ final class AcquisitionDump {
             }
         }
         TreeSet<String> items = new TreeSet<>();
+        items.addAll(advancements.keySet());
         items.addAll(recipes.keySet());
         items.addAll(drops.keySet());
         items.addAll(mining.keySet());
@@ -456,6 +576,9 @@ final class AcquisitionDump {
         JsonObject out = new JsonObject();
         for (String item : items) {
             JsonObject record = new JsonObject();  // keys inserted alphabetically (sort_keys parity)
+            if (advancements.containsKey(item)) {
+                record.add("advancements", stringArray(advancements.get(item)));
+            }
             if (breeding.containsKey(item)) {
                 record.add("breeding", stringArray(breeding.get(item)));
             }

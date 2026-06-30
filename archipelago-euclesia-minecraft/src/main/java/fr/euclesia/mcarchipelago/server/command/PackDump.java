@@ -115,7 +115,7 @@ public final class PackDump {
             done.add("structures " + write(packDir, "structures.json", structures(rm)).size());
         }
         if (selected.contains("acquisition")) {
-            done.add("acquisition " + writeCount(packDir, "acquisition.json", AcquisitionDump.build(rm)));
+            done.add("acquisition " + writeCount(packDir, "acquisition.json", AcquisitionDump.build(rm, ns)));
         }
         if (selected.contains("block_mining")) {
             done.add("block_mining " + writeCount(packDir, "block_mining.json", blockMining(rm)));
