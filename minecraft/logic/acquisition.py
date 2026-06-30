@@ -254,6 +254,7 @@ class RuleHelper:
             E_TADPOLE        : lambda: self.can_breed(E_FROG),                # Frog spawn
             E_TRADER_LLAMA   : lambda: self.entity(E_WANDERING_TRADER),       # spawns leashed to a Wandering Trader
             E_ZOMBIE_NAUTILUS: lambda: self.entity(E_DROWNED),                # drowned-converted variant
+            E_ZOGLIN         : lambda: self.entity(E_HOGLIN),                 # a Hoglin that left the Nether
         }
         # Player-constructed mobs: gated by their build materials (snow / copper / iron blocks) +
         # a carved pumpkin, on top of reaching their region (see entity). The material helpers are

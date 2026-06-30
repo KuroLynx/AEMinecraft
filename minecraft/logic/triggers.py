@@ -25,6 +25,7 @@ from ..data import (
     ADVANCEMENT_LOCATIONS,
     MOBS_ALL,
     MOBS_BREEDABLE,
+    MOBS_LEASHABLE,
     MOBS_TAMEABLE,
     STRUCTURES,
 )
@@ -258,13 +259,17 @@ class TriggerCompiler:
         if trigger == "minecraft:player_interacted_with_entity":
             # Right-click an entity with an item (lead a mob, feed it, …): need the item AND a valid
             # target entity. A concrete type pins it; an inverted predicate ("any entity except the
-            # listed vehicles/non-mobs", e.g. Lead the Way!) means "any mob", so require at least one
-            # mob from the registry minus whatever the criterion excludes — both fully data-driven.
+            # listed vehicles/non-mobs", e.g. Lead the Way!) is the "lead a mob" shape, so the real
+            # gate is any LEASHABLE mob not excluded — leashability is game-derived (MOBS_LEASHABLE
+            # from entities.json), more precise than the old "any mob". Fall back to the registry minus
+            # the excluded set if (unexpectedly) no leashable mob survives — both fully data-driven.
             item = self._item_predicate(cond.get("item"))
             entity = self._entity_node(cond)
             if entity is None and cond.get("entity"):
                 excluded = set(self._excluded_entity_names(cond))
-                entity = self._any_mob([n for n in MOBS_ALL if n not in excluded], self.h.entity)
+                candidates = [n for n in MOBS_LEASHABLE if n not in excluded] \
+                    or [n for n in MOBS_ALL if n not in excluded]
+                entity = self._any_mob(candidates, self.h.entity)
             parts = [n for n in (item, entity) if n is not None]
             return and_(*parts) if parts else None
         if trigger == "minecraft:tame_animal":

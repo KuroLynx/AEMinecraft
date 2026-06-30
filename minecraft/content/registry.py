@@ -1,10 +1,12 @@
 """Content registry: parses a *content pack* into typed records with stable Archipelago IDs.
 
-A pack is a directory under ``minecraft/packs/<name>/`` holding ``items.csv``, ``mobs.csv`` and
+A pack is a directory under ``minecraft/packs/<name>/`` holding ``entities.json`` and
 ``structures.json`` plus a ``manifest.json`` (and ``meta.json``), describing one content source —
-vanilla today, mods / datapacks / other MC versions later. ``structures.json`` is generated from the
-jar (tools/build_structures.py); advancement *locations* come from the manifest (the data-driven
-source the trigger compiler also reads), so vanilla, mods and datapacks are handled uniformly.
+vanilla today, mods / datapacks / other MC versions later. ``entities.json`` (the mob registry) and
+``structures.json`` are dumped from the running game (``/aem dump entities`` / ``structures``);
+advancement *locations* come from the manifest (the data-driven source the trigger compiler also
+reads), so vanilla, mods and datapacks are handled uniformly. (Item AP classifications/counts are the
+one apworld-design table that is not a pack file — ``minecraft/content/items.csv``.)
 
 ``load_pack(name)`` returns a :class:`ContentRegistry` bundling the parsed records; ``data.py``
 re-exports them as the module-level globals the rest of the apworld already imports.
@@ -64,10 +66,13 @@ class MCMobData:
     id: int
     category: str
     region: str
-    unlock_classification: ItemClassification
     breedable: bool
     tameable: bool
+    leashable: bool
     game_id: str
+    # No unlock_classification: an Entity Unlock is always a logic gate, and whether it rises from
+    # progression_skip_balancing to full progression depends on the seed (does it gate a goal boss?),
+    # so it is computed at item creation — see MCWorld._mob_classification — exactly like structures.
 
 
 @dataclass
@@ -159,17 +164,28 @@ def _load_items() -> dict[str, MCItemData]:
     return items
 
 
-def _load_mobs(pack_dir) -> dict[str, MCMobData]:
+def _load_entities(pack_dir) -> dict[str, MCMobData]:
+    """Read a pack's entities.json (dumped from the running game by ``/aem dump entities``), keyed by
+    the display name derived from the game_id via ``_prettify`` ("minecraft:wither_skeleton" ->
+    "Wither Skeleton") — the name every consumer uses (boss_list, mob_spawn_lock, kill locations,
+    Entity Unlock labels). The list order is the stable Entity Unlock item id (id = index).
+
+    Each record carries only game-derived facts (category / region / breedable / tameable / leashable);
+    the unlock's AP classification is NOT here — it is derived per-seed from the goal (see
+    ``MCWorld._mob_classification``), the same way structure unlock classifications are."""
     mobs = {}
-    for index, row in enumerate(_read_csv(pack_dir, "mobs.csv")):
-        mobs[row["name"]] = MCMobData(
+    with pack_dir.joinpath("entities.json").open(encoding="utf-8") as f:
+        rows = json.load(f)
+    for index, row in enumerate(rows):
+        game_id = row["game_id"]
+        mobs[_prettify(game_id)] = MCMobData(
             id=index,
             category=row["category"],
             region=row["region"],
-            unlock_classification=_CLASS_MAP.get(row["unlock_classification"], ItemClassification.filler),
-            breedable=row["breedable"].lower() == "true",
-            tameable=row["tameable"].lower() == "true",
-            game_id=f"minecraft:{row['name'].lower().replace(' ', '_')}",
+            breedable=bool(row["breedable"]),
+            tameable=bool(row["tameable"]),
+            leashable=bool(row["leashable"]),
+            game_id=game_id if ":" in game_id else f"minecraft:{game_id}",
         )
     return mobs
 
@@ -332,7 +348,7 @@ class ContentRegistry:
 def load_pack(name: str) -> ContentRegistry:
     pack_dir = _pack_dir(name)
     items = _load_items()
-    mobs = _load_mobs(pack_dir)
+    mobs = _load_entities(pack_dir)
     structures = _load_structures(pack_dir)
     return ContentRegistry(
         items=items,

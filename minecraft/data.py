@@ -151,6 +151,7 @@ MOBS_HOSTILE  = {k: v for k, v in MOBS_ALL.items() if v.category == MCEntityCate
 MOBS_BOSS     = {k: v for k, v in MOBS_ALL.items() if v.category == MCEntityCategory.BOSS}
 MOBS_BREEDABLE = {k: v for k, v in MOBS_ALL.items() if v.breedable}
 MOBS_TAMEABLE  = {k: v for k, v in MOBS_ALL.items() if v.tameable}
+MOBS_LEASHABLE = {k: v for k, v in MOBS_ALL.items() if v.leashable}
 
 LOCATIONS_ADVANCEMENT: dict[str, MCLocationData] = _REGISTRY.advancements
 LOCATIONS_MOB_KILL: dict[str, MCLocationData] = _REGISTRY.mob_kill_locations
