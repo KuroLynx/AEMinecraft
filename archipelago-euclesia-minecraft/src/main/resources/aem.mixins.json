@@ -19,6 +19,7 @@
     "ServerLevelMixin",
     "ServerPlayerMixin",
     "SlotMixin",
+    "StructureManagerMixin",
     "StructureStartMixin",
     "WorldGenRegionMixin"
   ],
