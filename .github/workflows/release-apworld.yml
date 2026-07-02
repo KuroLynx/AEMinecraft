@@ -1,0 +1,75 @@
+name: Release apworld
+
+# Releases the Archipelago apworld only. minecraft_aem/archipelago.json is the source of truth
+# for the version (world_version); the tag must mirror it. To cut a release: bump world_version in
+# minecraft_aem/archipelago.json, commit, then push a tag `apworld-v<world_version>` (e.g.
+# apworld-v1.1.0). `workflow_dispatch` packages without releasing.
+on:
+  push:
+    tags:
+      - "apworld-v*"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve & check version
+        id: ver
+        run: |
+          world_version=$(python -c "import json;print(json.load(open('minecraft_aem/archipelago.json'))['world_version'])")
+          echo "version=${world_version}" >> "$GITHUB_OUTPUT"
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            tag_version="${GITHUB_REF_NAME#apworld-v}"
+            if [ "${tag_version}" != "${world_version}" ]; then
+              echo "::error::Tag ${GITHUB_REF_NAME} does not match archipelago.json world_version (expected apworld-v${world_version}). Bump world_version or fix the tag."
+              exit 1
+            fi
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "Apworld release version: ${world_version}"
+
+      - name: Package apworld
+        run: |
+          python - <<'PY'
+          import os, zipfile
+          with zipfile.ZipFile("minecraft_aem.apworld", "w", zipfile.ZIP_DEFLATED) as z:
+              for root, dirs, files in os.walk("minecraft_aem"):
+                  dirs[:] = [d for d in dirs if d != "__pycache__"]
+                  for f in files:
+                      if f.endswith(".pyc"):
+                          continue
+                      p = os.path.join(root, f)
+                      z.write(p, p.replace(os.sep, "/"))
+          print("packaged minecraft_aem.apworld")
+          PY
+          mkdir -p dist
+          cp minecraft_aem.apworld "dist/minecraft_aem-${{ steps.ver.outputs.version }}.apworld"
+          ls -l dist
+
+      - name: Upload build artifact (always)
+        uses: actions/upload-artifact@v4
+        with:
+          name: minecraft_aem-${{ steps.ver.outputs.version }}
+          path: dist/*
+
+      - name: Publish GitHub Release
+        if: steps.ver.outputs.release == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: dist/minecraft_aem-${{ steps.ver.outputs.version }}.apworld

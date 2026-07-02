@@ -3,7 +3,10 @@ plugins {
 	id 'maven-publish'
 }
 
-version = project.mod_version
+// Fabric convention: pair the mod's feature version with the target Minecraft version, so a
+// Minecraft-only bump produces a distinct build (e.g. 1.0.0+26.1.2 -> 1.0.0+26.1.3) without
+// touching mod_version. gradle.properties is the source of truth; the release tag mirrors this.
+version = "${project.mod_version}+${project.minecraft_version}"
 group = project.maven_group
 
 repositories {
