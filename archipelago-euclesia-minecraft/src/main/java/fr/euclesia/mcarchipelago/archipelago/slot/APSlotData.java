@@ -35,7 +35,8 @@ public record APSlotData(
         Map<String, String> stationKnowledgeLocks,
         Map<String, String> dimensionLocks,
         Map<Long, FillerGrant> fillerItems,
-        Map<Long, String> trapItems
+        Map<Long, String> trapItems,
+        int slotDataVersion
 ) {
     /** A tool/armor pickup gate: the player needs {@code knowledge} AND {@code material} tiers. */
     public record ToolLock(String knowledge, int material) {}
@@ -76,7 +77,8 @@ public record APSlotData(
                 Map.of(),
                 Map.of(),
                 Map.of(),
-                Map.of()
+                Map.of(),
+                0
         );
     }
 
@@ -108,7 +110,10 @@ public record APSlotData(
                 APJson.stringStringMap(json, "station_knowledge_locks"),
                 APJson.stringStringMap(json, "dimension_locks"),
                 parseFillerItems(json),
-                parseTrapItems(json)
+                parseTrapItems(json),
+                // Absent (0) in pre-versioning slot data -> treated as legacy/unversioned by
+                // CompatibilityService (allowed with a warning, not blocked).
+                APJson.getInt(json, "slot_data_version", 0)
         );
     }
 

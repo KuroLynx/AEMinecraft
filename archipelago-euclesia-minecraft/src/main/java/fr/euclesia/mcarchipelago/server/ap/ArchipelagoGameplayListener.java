@@ -3,7 +3,9 @@ package fr.euclesia.mcarchipelago.server.ap;
 import com.google.gson.JsonObject;
 import fr.euclesia.mcarchipelago.archipelago.APEventListener;
 import fr.euclesia.mcarchipelago.archipelago.ArchipelagoClient;
+import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.archipelago.slot.APSlotData;
+import fr.euclesia.mcarchipelago.archipelago.slot.CompatibilityService;
 import fr.euclesia.mcarchipelago.protocol.APBounceType;
 import fr.euclesia.mcarchipelago.protocol.APItemsHandling;
 import fr.euclesia.mcarchipelago.protocol.APJson;
@@ -23,6 +25,17 @@ public final class ArchipelagoGameplayListener implements APEventListener {
     @Override
     public void onConnected(ArchipelagoClient client, APReceivedPacket packet) {
         APSlotData slotData = client.state().parsedSlotData();
+
+        // Compatibility guard. In singleplayer the client pre-flight (ArchipelagoConnectingScreen)
+        // already refuses to enter an incompatible world; this covers the paths without that screen
+        // (dedicated server, connect-after-join) with a clear server-log error.
+        CompatibilityService.Result compat = CompatibilityService.check(slotData.slotDataVersion());
+        if (compat.blocking()) {
+            AEM.LOGGER.error("[AEM] Incompatible apworld/mod: {} (slot_data_version={}; this mod supports {}..{}).",
+                    compat.message().getString(), slotData.slotDataVersion(),
+                    CompatibilityService.MIN_SUPPORTED, CompatibilityService.MAX_SUPPORTED);
+        }
+
         if (slotData.deathLink()) {
             client.send(new ConnectUpdatePacket(APBounceType.tags(APBounceType.DEATH_LINK), APItemsHandling.ALL));
         }

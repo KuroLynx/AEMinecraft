@@ -13,6 +13,13 @@ from .options import MCOptions, StartDimension, StructureFinder
 from .regions import MCRegion
 from .trackers import build_trackers_export
 
+# Slot-data schema version, advertised to the mod in fill_slot_data(). Bump ONLY on a change to
+# fill_slot_data() that an existing mod can't read safely (a renamed/removed field, or a new field
+# the mod must have). The mod knows the range of schema versions it understands and refuses to enter
+# a world outside that range (see CompatibilityService, mod side, and docs/versioning.md). Additive,
+# tolerated-if-absent fields do NOT require a bump.
+SLOT_DATA_VERSION = 1
+
 # ---------------------------------------------------------------------------
 # Classes Item et Location
 # ---------------------------------------------------------------------------
@@ -485,6 +492,10 @@ class MCWorld(World):
 
     def fill_slot_data(self) -> dict:
         return {
+            # Slot-data schema version; the mod refuses to enter a world it can't read (see
+            # SLOT_DATA_VERSION and the mod's CompatibilityService).
+            "slot_data_version"    : SLOT_DATA_VERSION,
+
             # --- Options ---
             "boss_list"            : [MOBS_BOSS[name].game_id for name in self.selected_bosses],
             "start_dimension"      : self.options.start_dimension.current_key,  # "overworld" | "nether"

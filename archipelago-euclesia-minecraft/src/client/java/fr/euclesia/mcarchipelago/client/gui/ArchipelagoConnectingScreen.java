@@ -1,5 +1,7 @@
 package fr.euclesia.mcarchipelago.client.gui;
 
+import fr.euclesia.mcarchipelago.AEM;
+import fr.euclesia.mcarchipelago.archipelago.slot.CompatibilityService;
 import fr.euclesia.mcarchipelago.client.connect.APConnectController;
 import fr.euclesia.mcarchipelago.server.connect.APWorldConnection;
 import net.minecraft.client.Minecraft;
@@ -21,6 +23,8 @@ public final class ArchipelagoConnectingScreen extends Screen {
     private final Runnable onAbort;
     private boolean started;
     private boolean resumed;
+    private boolean compatChecked;
+    private Component compatError;
     private Button actionButton;
 
     public ArchipelagoConnectingScreen(APWorldConnection connection, Runnable onConnected, Runnable onAbort) {
@@ -56,9 +60,25 @@ public final class ArchipelagoConnectingScreen extends Screen {
         }
         APConnectController.Status status = APConnectController.INSTANCE.status();
         if (status == APConnectController.Status.CONNECTED) {
-            resumed = true;
-            // Resume the world load; openWorldDoLoad replaces this screen with the loading screens.
-            onConnected.run();
+            // Gate on slot-data compatibility before entering the world: a world whose schema this
+            // mod can't read is refused here (like a failed connect) rather than loaded broken.
+            if (!compatChecked) {
+                compatChecked = true;
+                CompatibilityService.Result compat = CompatibilityService.check(
+                        AEM.ARCHIPELAGO.client().state().parsedSlotData().slotDataVersion());
+                if (compat.blocking()) {
+                    compatError = compat.message();
+                    AEM.ARCHIPELAGO.client().close();
+                    if (actionButton != null) {
+                        actionButton.setMessage(Component.translatable("gui.aem.connect.back"));
+                    }
+                }
+            }
+            if (compatError == null) {
+                resumed = true;
+                // Resume the world load; openWorldDoLoad replaces this screen with the loading screens.
+                onConnected.run();
+            }
         } else if (status == APConnectController.Status.FAILED && actionButton != null) {
             actionButton.setMessage(Component.translatable("gui.aem.connect.back"));
         }
@@ -68,21 +88,26 @@ public final class ArchipelagoConnectingScreen extends Screen {
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
 
-        boolean failed = APConnectController.INSTANCE.status() == APConnectController.Status.FAILED;
+        // A compatibility block presents like a connection failure, but with its own header/detail.
+        boolean incompatible = compatError != null;
+        boolean failed = incompatible
+                || APConnectController.INSTANCE.status() == APConnectController.Status.FAILED;
         int centerX = this.width / 2;
         int top = this.height / 2 - 30;
 
-        String header = (failed
-                ? Component.translatable("gui.aem.connect.failed_header")
-                : Component.translatable("gui.aem.connect.connecting")).getString();
-        graphics.centeredText(this.font, header, centerX, top, failed ? 0xFFFF5555 : 0xFFFFFFFF);
+        Component headerComponent = failed
+                ? (incompatible
+                        ? Component.translatable("gui.aem.connect.incompatible_header")
+                        : Component.translatable("gui.aem.connect.failed_header"))
+                : Component.translatable("gui.aem.connect.connecting");
+        graphics.centeredText(this.font, headerComponent.getString(), centerX, top, failed ? 0xFFFF5555 : 0xFFFFFFFF);
 
         String target = Component.translatable("gui.aem.connect.connecting.target",
                 connection.address + ":" + connection.port, connection.slot).getString();
         graphics.centeredText(this.font, target, centerX, top + 14, 0xFFA0A0A0);
 
         if (failed) {
-            String detail = APConnectController.INSTANCE.message();
+            String detail = incompatible ? compatError.getString() : APConnectController.INSTANCE.message();
             if (!detail.isEmpty()) {
                 graphics.centeredText(this.font, detail, centerX, top + 28, 0xFFFF5555);
             }
