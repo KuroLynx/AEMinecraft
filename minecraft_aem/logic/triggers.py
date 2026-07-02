@@ -73,7 +73,7 @@ _BREWING: dict | None = None
 
 def _pack_json(filename: str, pack: str | None = None) -> dict:
     pack = pack or base_pack()  # default to the discovered vanilla base pack
-    root = __package__.rsplit(".", 1)[0]  # e.g. "worlds.minecraft"
+    root = __package__.rsplit(".", 1)[0]  # e.g. "worlds.minecraft_aem"
     with files(root).joinpath("packs", pack, filename).open(encoding="utf-8") as f:
         return json.load(f)
 

@@ -14,7 +14,7 @@ from .triggers import TriggerCompiler
 
 def _manifest(pack_name: str) -> dict:
     """A pack's advancement manifest (tools/extract_manifest.py), keyed by advancement game_id."""
-    root = __package__.rsplit(".", 1)[0]  # e.g. "worlds.minecraft"
+    root = __package__.rsplit(".", 1)[0]  # e.g. "worlds.minecraft_aem"
     with files(root).joinpath("packs", pack_name, "manifest.json").open(encoding="utf-8") as f:
         return json.load(f)
 

@@ -17,7 +17,7 @@ logging.disable(logging.WARNING)
 from BaseClasses import CollectionState  # noqa: E402
 from worlds.AutoWorld import AutoWorldRegister  # noqa: E402
 from test.general import setup_multiworld  # noqa: E402
-from worlds.minecraft.logic.ast import (  # noqa: E402
+from worlds.minecraft_aem.logic.ast import (  # noqa: E402
     And, AtLeast, Const, Has, Or, ReachLocation, ReachRegion,
 )
 

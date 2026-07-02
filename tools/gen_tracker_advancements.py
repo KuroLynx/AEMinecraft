@@ -36,8 +36,8 @@ DEFAULT_JAR = os.path.expanduser(
 sys.path.insert(0, AP_ROOT)
 os.chdir(AP_ROOT)
 
-from worlds.minecraft.data import MCEntityCategory, MOBS_ALL, STRUCTURES  # noqa: E402
-from worlds.minecraft.trackers import (  # noqa: E402
+from worlds.minecraft_aem.data import MCEntityCategory, MOBS_ALL, STRUCTURES  # noqa: E402
+from worlds.minecraft_aem.trackers import (  # noqa: E402
     CATEGORY_ENTITY_UNLOCKS,
     CATEGORY_KILLS,
     CATEGORY_KNOWLEDGE,

@@ -60,7 +60,7 @@ _GAMEPLAY_HARVEST: dict[str, tuple] = {
 
 # Lazily-loaded acquisition table (tools/build_acquisition.py) + reverse id lookups. Cached because
 # they are read once per generation but queried thousands of times by the trigger compiler.
-_MC_ROOT = __package__.rsplit(".", 1)[0]  # e.g. "worlds.minecraft"
+_MC_ROOT = __package__.rsplit(".", 1)[0]  # e.g. "worlds.minecraft_aem"
 _ACQUISITION: dict | None = None
 _ENTITY_BY_GID: dict | None = None
 

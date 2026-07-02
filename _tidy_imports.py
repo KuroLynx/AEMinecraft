@@ -3,7 +3,7 @@ single ``from .. import *`` (which resolves to the re-export hub in rules/vanill
 import pathlib
 import re
 
-ROOT = pathlib.Path("minecraft/rules/vanilla")
+ROOT = pathlib.Path("minecraft_aem/rules/vanilla")
 # matches: from ...constants import *  /  from ....helpers import RuleHelper  /  from ....data import X
 DEEP = re.compile(r"^from \.{3,4}(constants|helpers|data) import .*$")
 

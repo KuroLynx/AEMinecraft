@@ -1,6 +1,6 @@
 """Content registry: parses a *content pack* into typed records with stable Archipelago IDs.
 
-A pack is a directory under ``minecraft/packs/<name>/`` holding ``entities.json`` and
+A pack is a directory under ``minecraft_aem/packs/<name>/`` holding ``entities.json`` and
 ``structures.json`` plus a ``manifest.json`` (and ``meta.json``), describing one content source —
 vanilla today, mods / datapacks / other MC versions later. ``entities.json`` (the mob registry) and
 ``structures.json`` are dumped from the running game (``/aem dump entities`` / ``structures``);
@@ -95,7 +95,7 @@ _CLASS_MAP = {
     "trap": ItemClassification.trap,
 }
 
-# The minecraft package root (e.g. "worlds.minecraft"); pack dirs live under it in packs/<name>.
+# The minecraft package root (e.g. "worlds.minecraft_aem"); pack dirs live under it in packs/<name>.
 _MC_ROOT = __package__.rsplit(".", 1)[0]
 
 

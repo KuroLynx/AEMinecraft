@@ -22,7 +22,7 @@ os.chdir(AP_ROOT)  # AP expects to run from its root (data files, etc.)
 from BaseClasses import CollectionState  # noqa: E402
 from worlds.AutoWorld import AutoWorldRegister  # noqa: E402
 from test.general import setup_solo_multiworld  # noqa: E402
-from worlds.minecraft.logic_export import build_logic_export  # noqa: E402
+from worlds.minecraft_aem.logic_export import build_logic_export  # noqa: E402
 
 
 # ---------------------------------------------------------------------------

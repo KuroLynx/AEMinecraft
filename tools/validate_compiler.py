@@ -19,10 +19,10 @@ os.chdir(AP_ROOT)
 
 from test.general import setup_multiworld  # noqa: E402
 from worlds.AutoWorld import AutoWorldRegister  # noqa: E402
-from worlds.minecraft.data import LOCATIONS_ADVANCEMENT  # noqa: E402
-from worlds.minecraft.logic.acquisition import RuleHelper  # noqa: E402
-from worlds.minecraft.logic.engine import collect_advancement_rules  # noqa: E402
-from worlds.minecraft.logic.triggers import TriggerCompiler  # noqa: E402
+from worlds.minecraft_aem.data import LOCATIONS_ADVANCEMENT  # noqa: E402
+from worlds.minecraft_aem.logic.acquisition import RuleHelper  # noqa: E402
+from worlds.minecraft_aem.logic.engine import collect_advancement_rules  # noqa: E402
+from worlds.minecraft_aem.logic.triggers import TriggerCompiler  # noqa: E402
 
 WORLD = AutoWorldRegister.world_types["Minecraft [AEM]"]
 MANIFEST = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
