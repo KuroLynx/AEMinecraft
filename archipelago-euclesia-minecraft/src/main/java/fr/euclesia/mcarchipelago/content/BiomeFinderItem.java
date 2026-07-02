@@ -2,65 +2,53 @@ package fr.euclesia.mcarchipelago.content;
 
 import fr.euclesia.mcarchipelago.AEM;
 import net.minecraft.core.Registry;
-import net.minecraft.core.component.DataComponentType;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.network.chat.Component;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
-import net.minecraft.util.Unit;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 
 /**
- * The Biome Finder is a vanilla {@link Items#COMPASS} marked with the custom {@link #MARKER}
- * data component, so the vanilla lodestone-compass needle renders it for free (the needle is driven
- * by {@link DataComponents#LODESTONE_TRACKER}, which {@code BiomeFinderService} sets on a pick). The
- * marker is what distinguishes our finder from an ordinary compass for right-click detection and for
- * the keep-on-death (soulbound) handling.
+ * The Biome Finder is a dedicated custom item ({@code aem:biome_finder}), not a repurposed vanilla
+ * compass. Its client model ({@code assets/aem/items/biome_finder.json}) mirrors the vanilla compass
+ * range-dispatch on the {@code minecraft:compass} model property, so the lodestone needle still points
+ * at the tracked biome — the needle is driven by the {@code LODESTONE_TRACKER} component that
+ * {@code BiomeFinderService} sets on a pick, independent of the item class.
  *
  * <p>Ownership of the finder is derived from the received Archipelago item count, not from the
- * physical stack, so the compass can be regranted freely (on join, respawn, or receipt).
+ * physical stack, so it can be regranted freely (on join, respawn, or receipt).
  */
 public final class BiomeFinderItem {
     /** Archipelago item whose receipt grants the finder. */
     public static final String AP_ITEM = "Biome Finder";
 
-    /** Marker component identifying a stack as the Biome Finder compass. */
-    public static final DataComponentType<Unit> MARKER = Registry.register(
-            BuiltInRegistries.DATA_COMPONENT_TYPE,
-            Identifier.fromNamespaceAndPath(AEM.MOD_ID, "biome_finder"),
-            DataComponentType.<Unit>builder()
-                    .persistent(Unit.CODEC)
-                    .networkSynchronized(Unit.STREAM_CODEC)
-                    .build());
+    /** Registry id / item key for the custom finder item. */
+    public static final Identifier ID = Identifier.fromNamespaceAndPath(AEM.MOD_ID, "biome_finder");
+    private static final ResourceKey<Item> KEY = ResourceKey.create(Registries.ITEM, ID);
+
+    /** The custom finder item, registered on class load (see {@link #register()}). */
+    public static final Item BIOME_FINDER = Registry.register(
+            BuiltInRegistries.ITEM, KEY,
+            new Item(new Item.Properties().setId(KEY).stacksTo(1)));
 
     private BiomeFinderItem() {}
 
-    /** Loads this class so its static registration runs. Call once during mod init. */
+    /** Loads this class so its static registration runs. Call once during mod init (before freeze). */
     public static void register() {
-        // Touching MARKER above triggers registration on class load; nothing else to do.
+        // Touching BIOME_FINDER above triggers registration on class load; nothing else to do.
     }
 
-    /** The finder's display name. Also forced in {@code CompassItemMixin} (a lodestone-tracked
-     * compass would otherwise render as "Lodestone Compass", ignoring ITEM_NAME). */
-    public static Component displayName() {
-        return Component.translatable("item.aem.biome_finder");
-    }
-
-    /** A fresh Biome Finder compass: a marked compass with a fixed, non-italic display name. */
+    /** A fresh Biome Finder. Its name comes from the {@code item.aem.biome_finder} lang key. */
     public static ItemStack createStack() {
-        ItemStack stack = new ItemStack(Items.COMPASS);
-        stack.set(MARKER, Unit.INSTANCE);
-        // ITEM_NAME (not CUSTOM_NAME) gives a default, non-italic name with no anvil/rename semantics.
-        stack.set(DataComponents.ITEM_NAME, displayName());
-        return stack;
+        return new ItemStack(BIOME_FINDER);
     }
 
-    /** Whether {@code stack} is a Biome Finder compass. */
+    /** Whether {@code stack} is a Biome Finder. */
     public static boolean isFinder(ItemStack stack) {
-        return !stack.isEmpty() && stack.has(MARKER);
+        return !stack.isEmpty() && stack.is(BIOME_FINDER);
     }
 
     /** Whether {@code player} already carries a Biome Finder. */
