@@ -188,6 +188,26 @@ class MCWorld(World):
                     locked.add(gid)
         return locked
 
+    def _get_locked_mobs(self) -> set[str]:
+        """Mobs locked behind an 'Entity Unlock' item, per the mob_spawn_lock option.
+
+        The option accepts category presets ("passive"/"neutral"/"hostile"/"boss"), "All", and/or
+        individual mob names; this resolves them to a concrete set of mob names (MOBS_ALL keys) — the
+        mob-side mirror of _get_locked_structures.
+        """
+        selected = self.options.mob_spawn_lock.value
+        if "All" in selected:
+            return set(MOBS_ALL)
+
+        categories = {"passive", "neutral", "hostile", "boss"}
+        locked: set[str] = set()
+        for entry in selected:
+            if entry in categories:
+                locked |= {name for name, data in MOBS_ALL.items() if data.category == entry}
+            elif entry in MOBS_ALL:  # the option also lists individual mob names
+                locked.add(entry)
+        return locked
+
     def _get_active_locations(self) -> dict[str, MCLocationData]:
         """Retourne les locations actives selon les options du joueur."""
         locations: dict[str, MCLocationData] = {
@@ -357,10 +377,9 @@ class MCWorld(World):
                 for _ in range(count):
                     self.multiworld.push_precollected(self.create_item(finder_name))
 
-        if self.options.mob_spawn_lock_category:
-            for mob_name, mob_data in MOBS_ALL.items():
-                if mob_data.category in self.options.mob_spawn_lock_category.value:
-                    pool.append(self.create_item(f"{ENTITY_UNLOCK_PREFIX}{mob_name}"))
+        # Mob spawn unlocks: only the mobs locked by the mob_spawn_lock option are added.
+        for mob_name in self._get_locked_mobs():
+            pool.append(self.create_item(f"{ENTITY_UNLOCK_PREFIX}{mob_name}"))
 
         # Structure unlocks: only the structures locked by the structure_unlock option are added.
         # Unlocked structures are gated by their dimension instead (see RuleHelper.structure).
@@ -373,7 +392,7 @@ class MCWorld(World):
             raise Exception(
                 f"Minecraft [AEM]: required item pool ({len(pool)}) exceeds active locations "
                 f"({active_location_count}). Enable kill_sanity / challenge_sanity, or reduce "
-                f"mob_spawn_lock_category."
+                f"mob_spawn_lock."
             )
 
         filler_items = [item_name for item_name, item_data in ITEMS.items()
@@ -473,7 +492,7 @@ class MCWorld(World):
             "villager_trust"       : bool(self.options.villager_trust.value),
             "kill_sanity"          : bool(self.options.kill_sanity.value),
             "advancements_required": self.options.advancements_required.value,
-            "mob_spawn_lock"       : list(self.options.mob_spawn_lock_category.value),
+            "mob_spawn_lock"       : list(self.options.mob_spawn_lock.value),
             # Whether the Structure Finder exists at all this seed (disabled = no item in the pool /
             # on start). The mod uses this to skip its proactive structure scan when the finder is off.
             "structure_finder"     : self.options.structure_finder.value != self.options.structure_finder.option_disabled,
@@ -511,9 +530,8 @@ class MCWorld(World):
 
             # --- Mob spawn lock : game_id des mobs à bloquer au spawn ---
             "mob_spawn_lock_mobs"  : {
-                mob_data.game_id: BASE_ID_ENTITY_UNLOCK + mob_data.id
-                for mob_name, mob_data in MOBS_ALL.items()
-                if mob_data.category in self.options.mob_spawn_lock_category.value
+                MOBS_ALL[mob_name].game_id: BASE_ID_ENTITY_UNLOCK + MOBS_ALL[mob_name].id
+                for mob_name in self._get_locked_mobs()
             },
 
             # --- Structure lock : game_id de la structure → item ID de son unlock ---

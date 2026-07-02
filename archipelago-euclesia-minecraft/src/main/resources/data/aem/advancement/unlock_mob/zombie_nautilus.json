@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_mob/wolf",
+  "parent": "aem:unlock_mob/zombie_horse",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

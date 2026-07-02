@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_structure/ocean_ruin_cold",
+  "parent": "aem:category/structure_unlocks",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"
@@ -14,8 +14,8 @@
     "icon": {
       "id": "minecraft:trident"
     },
-    "title": "Ocean Ruin (Warm)",
-    "description": "Unlock Ocean Ruin (Warm)",
+    "title": "Ocean Ruin Warm",
+    "description": "Unlock Ocean Ruin Warm",
     "frame": "task",
     "show_toast": false,
     "announce_to_chat": false,

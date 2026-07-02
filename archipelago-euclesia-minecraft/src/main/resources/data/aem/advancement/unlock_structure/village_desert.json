@@ -14,8 +14,8 @@
     "icon": {
       "id": "minecraft:emerald"
     },
-    "title": "Village (Desert)",
-    "description": "Unlock Village (Desert)",
+    "title": "Village Desert",
+    "description": "Unlock Village Desert",
     "frame": "task",
     "show_toast": false,
     "announce_to_chat": false,

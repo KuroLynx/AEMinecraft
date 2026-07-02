@@ -1,5 +1,5 @@
 {
-  "parent": "aem:kill/pufferfish",
+  "parent": "aem:kill/slime",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

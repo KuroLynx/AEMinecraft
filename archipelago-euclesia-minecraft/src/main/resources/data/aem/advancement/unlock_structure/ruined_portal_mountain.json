@@ -14,8 +14,8 @@
     "icon": {
       "id": "minecraft:obsidian"
     },
-    "title": "Ruined Portal (Mountain)",
-    "description": "Unlock Ruined Portal (Mountain)",
+    "title": "Ruined Portal Mountain",
+    "description": "Unlock Ruined Portal Mountain",
     "frame": "task",
     "show_toast": false,
     "announce_to_chat": false,

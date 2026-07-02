@@ -1,5 +1,5 @@
 {
-  "parent": "aem:kill/tadpole",
+  "parent": "aem:kill/trader_llama",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

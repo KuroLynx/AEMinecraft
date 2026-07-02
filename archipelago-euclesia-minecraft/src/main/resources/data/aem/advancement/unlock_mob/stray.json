@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_mob/slime",
+  "parent": "aem:unlock_mob/spider",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

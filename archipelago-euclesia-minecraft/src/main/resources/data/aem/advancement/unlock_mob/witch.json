@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_mob/warden",
+  "parent": "aem:unlock_mob/vindicator",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

@@ -1,5 +1,5 @@
 {
-  "parent": "aem:category/structure_unlocks",
+  "parent": "aem:unlock_structure/pillager_outpost",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

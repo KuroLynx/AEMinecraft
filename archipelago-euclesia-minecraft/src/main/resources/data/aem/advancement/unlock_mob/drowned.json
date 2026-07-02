@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_mob/dolphin",
+  "parent": "aem:unlock_mob/creeper",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

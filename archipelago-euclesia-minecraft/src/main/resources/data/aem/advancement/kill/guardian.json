@@ -1,5 +1,5 @@
 {
-  "parent": "aem:category/kills",
+  "parent": "aem:kill/ghast",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

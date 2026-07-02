@@ -14,8 +14,8 @@
     "icon": {
       "id": "minecraft:powered_rail"
     },
-    "title": "Mineshaft (Mesa)",
-    "description": "Unlock Mineshaft (Mesa)",
+    "title": "Mineshaft Mesa",
+    "description": "Unlock Mineshaft Mesa",
     "frame": "task",
     "show_toast": false,
     "announce_to_chat": false,

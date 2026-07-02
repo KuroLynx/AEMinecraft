@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_mob/phantom",
+  "parent": "aem:unlock_mob/piglin",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

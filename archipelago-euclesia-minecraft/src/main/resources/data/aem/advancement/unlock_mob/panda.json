@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_mob/nautilus",
+  "parent": "aem:unlock_mob/ocelot",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

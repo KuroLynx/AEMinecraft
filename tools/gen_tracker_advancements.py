@@ -67,6 +67,17 @@ ROOT_ICON = "minecraft:nether_star"  # tab icon is overridden by the logo mixin;
 # and a hidden parent draws none).
 ROW_WIDTH = 8
 
+# Mob tabs (Kills, Entity Unlocks) group tiles into contiguous per-category blocks, in this order,
+# so a category is always laid out as its own grid among itself (passive, then hostile, neutral,
+# bosses). Each block roots its own rows at the tab root, so categories never chain into one another
+# — a hidden tile in one can't orphan another's (and bosses render even with kill_sanity off).
+MOB_CATEGORY_ORDER = (
+    MCEntityCategory.PASSIVE,
+    MCEntityCategory.HOSTILE,
+    MCEntityCategory.NEUTRAL,
+    MCEntityCategory.BOSS,
+)
+
 # Mobs whose game_id has no matching <slug>_spawn_egg (variants, not their own entity type).
 MOB_ICON_OVERRIDES = {
     "baby_zombie": "minecraft:zombie_spawn_egg",
@@ -267,6 +278,17 @@ def write_rows(category_id: str, rows: list[list[dict]]) -> None:
                                     entry["description"], entry.get("frame", "task")))
 
 
+def rows_by_category(tiles_by_cat: dict[str, list[dict]]) -> list[list[dict]]:
+    """Rows grouped into contiguous per-category blocks (MOB_CATEGORY_ORDER), each block chunked into
+    rows of ROW_WIDTH. Since each row roots at the category root (see write_rows), the categories are
+    laid out one grid-block per category and never chain into each other."""
+    rows: list[list[dict]] = []
+    for cat in MOB_CATEGORY_ORDER:
+        tiles = tiles_by_cat.get(cat, [])
+        rows += [tiles[i:i + ROW_WIDTH] for i in range(0, len(tiles), ROW_WIDTH)]
+    return rows
+
+
 def write(advancement_id: str, data: dict) -> None:
     # aem:kill/zombie -> <OUT_DIR>/kill/zombie.json
     rel = advancement_id.split(":", 1)[1]
@@ -309,9 +331,13 @@ def main() -> int:
     write(CATEGORY_KNOWLEDGE, tab_root("minecraft:book", "Knowledge & Utilities", "Knowledge & utility items to unlock"))
     count += 4
 
-    # Collect each category's tiles, then lay them out as grids (rows of ROW_WIDTH).
-    kills: list[dict] = []
-    entity_unlocks: list[dict] = []
+    # Bucket tiles by mob category so each category lays out as its own contiguous grid block (see
+    # MOB_CATEGORY_ORDER). Bosses land in their own block too, so they never parent a mob-kill tile:
+    # mob kills are hidden when kill_sanity is off (or simply absent this seed), and an advancement
+    # whose parent is hidden doesn't render — which used to leave the Kills tab showing only the one
+    # boss that happened to land on a row boundary. Bosses always exist as checks, so they stand alone.
+    kills_by_cat: dict[str, list[dict]] = {cat: [] for cat in MOB_CATEGORY_ORDER}
+    unlocks_by_cat: dict[str, list[dict]] = {cat: [] for cat in MOB_CATEGORY_ORDER}
     # Per-boss tiles for the main-tab Bosses goal: one per possible boss, beneath the aggregate
     # goal/bosses tile. Emitted for every boss; the runtime export lists only the goal's bosses, so
     # the visibility gate shows just those (coloured by kill status like the Kills-tab boss tiles).
@@ -319,20 +345,22 @@ def main() -> int:
     for name, mob in MOBS_ALL.items():
         icon = mob_icon(mob.game_id, spawn_eggs)
         if mob.category == MCEntityCategory.BOSS:
-            kills.append({"id": tracker_id(KIND_BOSS, mob.game_id), "icon": icon,
-                          "title": name, "description": f"Defeat the {name}", "frame": "goal"})
+            kills_by_cat[MCEntityCategory.BOSS].append({"id": tracker_id(KIND_BOSS, mob.game_id),
+                          "icon": icon, "title": name, "description": f"Defeat the {name}", "frame": "goal"})
             boss_goals.append({"id": goal_boss_tracker_id(mob.game_id), "icon": icon,
                                "title": name, "description": f"Defeat the {name}", "frame": "goal"})
         else:
-            kills.append({"id": tracker_id(KIND_KILL, mob.game_id), "icon": icon,
+            kills_by_cat[mob.category].append({"id": tracker_id(KIND_KILL, mob.game_id), "icon": icon,
                           "title": name, "description": f"Kill a {name}"})
-        entity_unlocks.append({"id": tracker_id(KIND_UNLOCK_MOB, mob.game_id), "icon": icon,
+        unlocks_by_cat[mob.category].append({"id": tracker_id(KIND_UNLOCK_MOB, mob.game_id), "icon": icon,
                                "title": name, "description": f"Unlock {name} spawns"})
 
+    # STRUCTURES is keyed by game_id (slug); the pretty display name is struct.label.
     structure_unlocks = [
         {"id": tracker_id(KIND_UNLOCK_STRUCTURE, struct.game_id),
-         "icon": structure_icon(struct.game_id), "title": name, "description": f"Unlock {name}"}
-        for name, struct in STRUCTURES.items()
+         "icon": structure_icon(struct.game_id), "title": struct.label,
+         "description": f"Unlock {struct.label}"}
+        for struct in STRUCTURES.values()
     ]
 
     # Knowledge tab layout: each progressive item (Material Handling, Villager Trust, Structure
@@ -356,12 +384,18 @@ def main() -> int:
         single_tiles[i:i + ROW_WIDTH] for i in range(0, len(single_tiles), ROW_WIDTH)
     ]
 
-    write_grid(CATEGORY_KILLS, kills)
-    write_grid(CATEGORY_ENTITY_UNLOCKS, entity_unlocks)
+    # Kills & Entity Unlocks tabs: one grid block per mob category (passive, hostile, neutral, bosses).
+    write_rows(CATEGORY_KILLS, rows_by_category(kills_by_cat))
+    write_rows(CATEGORY_ENTITY_UNLOCKS, rows_by_category(unlocks_by_cat))
     write_grid(CATEGORY_STRUCTURE_UNLOCKS, structure_unlocks)
     write_rows(CATEGORY_KNOWLEDGE, knowledge_rows)
-    write_grid(GOAL_BOSSES, boss_goals)  # per-boss tiles chained beneath the Bosses goal (main tab)
-    count += (len(kills) + len(entity_unlocks) + len(structure_unlocks)
+    # Per-boss goal tiles each parent the Bosses goal DIRECTLY (one tile per row) rather than chaining
+    # through each other: the runtime export activates only the goal's required bosses, and a chained
+    # tile whose predecessor is hidden wouldn't render. Stacking them keeps every required boss visible.
+    write_rows(GOAL_BOSSES, [[entry] for entry in boss_goals])
+    count += (sum(len(t) for t in kills_by_cat.values())
+              + sum(len(t) for t in unlocks_by_cat.values())
+              + len(structure_unlocks)
               + sum(len(row) for row in knowledge_rows) + len(boss_goals))
 
     print(f"wrote {count} advancements to {OUT_DIR}")

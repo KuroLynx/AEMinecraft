@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_mob/wandering_trader",
+  "parent": "aem:unlock_mob/zombie",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

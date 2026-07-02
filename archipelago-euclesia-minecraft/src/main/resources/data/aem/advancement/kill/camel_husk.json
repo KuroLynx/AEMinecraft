@@ -1,5 +1,5 @@
 {
-  "parent": "aem:kill/camel",
+  "parent": "aem:kill/breeze",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

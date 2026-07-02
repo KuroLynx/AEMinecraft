@@ -40,7 +40,7 @@ COMBOS: dict[str, dict] = {
     "mob_and_structure_locks": {
         # Locking every mob category + all structures adds many unlock items, so the location
         # pool must be widened (kill + challenge sanity) or create_items rejects the combo.
-        "mob_spawn_lock_category": ["passive", "neutral", "hostile", "boss"],
+        "mob_spawn_lock": ["passive", "neutral", "hostile", "boss"],
         "structure_unlock": ["All"],
         "kill_sanity": True,
         "challenge_sanity": True,
@@ -53,7 +53,7 @@ COMBOS: dict[str, dict] = {
         "challenge_sanity": True,
         "villager_trust": True,
         "advancements_required": 30,
-        "mob_spawn_lock_category": ["hostile", "boss"],
+        "mob_spawn_lock": ["hostile", "boss"],
         "structure_unlock": ["Nether", "Ancient City"],
         "biome_finder": "start",
     },

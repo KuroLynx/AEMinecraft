@@ -4,7 +4,7 @@ from importlib.resources import files
 
 # AST primitives must be imported directly: `from .. import *` cannot supply them because the
 # package __init__ imports this module (via set_rules) before it defines Const/Has/and_/… .
-from .ast import Const, Has, ReachRegion, ReachLocation, and_, or_, at_least
+from .ast import And, Const, Has, ReachRegion, ReachLocation, and_, or_, at_least
 from ..content.registry import base_pack, overlay_packs  # registry only imports constants → cycle-safe
 from .. import *
 
@@ -212,7 +212,9 @@ class RuleHelper:
         self.active_structures = world._get_active_structures()
         # Options resolved once, up front, so rule nodes never carry option logic.
         self.villager_trust = bool(world.options.villager_trust.value)
-        self.locked_categories = set(world.options.mob_spawn_lock_category.value)
+        # Mobs locked behind an 'Entity Unlock' item (mob_spawn_lock option), resolved to concrete
+        # mob names (categories/All/individual names all collapse to this set).
+        self.locked_mobs = world._get_locked_mobs()
         # Biome Finder enabled (start or in_pool); disabled == 0. Biome-specific advancements require
         # it when on, since that's how you locate the biome.
         self.biome_finder_enabled = bool(world.options.biome_finder.value)
@@ -920,8 +922,8 @@ class RuleHelper:
         parent_node = parent_thunk() if parent_thunk is not None else Const(True)
         biome_thunk = self.biome_bound_mobs.get(entity_name)
         biome_node = biome_thunk() if biome_thunk is not None else Const(True)
-        category_locked = (entity_data.category in self.locked_categories)
-        unlock_node = self.has(f"{ENTITY_UNLOCK_PREFIX}{entity_name}") if category_locked else Const(True)
+        mob_locked = (entity_name in self.locked_mobs)
+        unlock_node = self.has(f"{ENTITY_UNLOCK_PREFIX}{entity_name}") if mob_locked else Const(True)
 
         return self.all_of(
             self.access_region(entity_data.region),
@@ -942,8 +944,8 @@ class RuleHelper:
         if recipe is None:
             return self.entity(entity_name)
         entity_data = MOBS_ALL[entity_name]
-        category_locked = (entity_data.category in self.locked_categories)
-        unlock_node = self.has(f"{ENTITY_UNLOCK_PREFIX}{entity_name}") if category_locked else Const(True)
+        mob_locked = (entity_name in self.locked_mobs)
+        unlock_node = self.has(f"{ENTITY_UNLOCK_PREFIX}{entity_name}") if mob_locked else Const(True)
         return self.all_of(
             self.access_region(entity_data.region),
             recipe(),
@@ -1141,8 +1143,21 @@ class RuleHelper:
             return self.all_of(self.knowledge(knowledge_name), self._with_reward(base, obtain))
 
         sources = self._acquire_from_sources(base, _stack)
-        result = sources if sources is not None else self._acquire_fallback(base)
-        return self._with_reward(base, self._coarsen(result))
+        result = self._coarsen(sources if sources is not None else self._acquire_fallback(base))
+        # Universal Material Handling pickup lock: obtaining a tier-gated raw material by ANY in-world
+        # route — mining, chest loot, mob drop, villager trade, crafting — is blocked until enough
+        # Progressive Material Handling is received (MaterialLockService, enforced on floor pickup by
+        # ItemEntityMixin AND on container/crafting takes by SlotMixin). Only the mining path carried
+        # this gate, so _unique_or absorption could drop the gated branch and leave the material
+        # reachable via a bare chest/region path (e.g. diamond looted from a structure). Gate the whole
+        # obtain-it node on the tier count — no region floor, since each source carries its own region.
+        tier = _MATERIAL_TIER_BY_ITEM.get(base)
+        if tier is not None and result is not None:
+            result = self.all_of(self.has(ITEM_MATERIAL_HANDLING, tier), result)
+        # The BACAP reward grants the item via a /give, which adds straight to the inventory and so
+        # bypasses both pickup mixins — a real, lock-free way to get it — so it joins OUTSIDE the
+        # material gate.
+        return self._with_reward(base, result)
 
     def _with_reward(self, base: str, node):
         """OR a BACAP advancement reward (its event item) into an item's obtainability, when
@@ -1227,22 +1242,9 @@ class RuleHelper:
         A tree that carries a real gate — a ``Has`` (structure/entity unlock, knowledge, material)
         or a reached-location — is left intact even when large, so a structure/mob lock or
         progression gate is never silently dropped (else a locked source would look reachable)."""
-        if node is None or len(json.dumps(node.to_dict())) <= self._SIZE_CAP:
+        if node is None or len(node.canonical_json()) <= self._SIZE_CAP:
             return node
-        regions = set()
-        gated = False
-
-        def collect(node_dict):
-            nonlocal gated
-            kind = node_dict.get("k")
-            if kind == "region":
-                regions.add(node_dict["r"])
-            elif kind in ("has", "loc"):
-                gated = True
-            for child in node_dict.get("c", ()):
-                collect(child)
-
-        collect(node.to_dict())
+        gated, regions = node.gate_summary()
         if gated or not regions:
             return node
         return or_(*[self.access_region(region) for region in sorted(regions)])
@@ -1254,21 +1256,19 @@ class RuleHelper:
         simpler source as one of its conjuncts is redundant and removed. That collapses the common
         explosion where an item is obtainable trivially (e.g. ``region(Overworld)`` from a cow) and
         also via a far heavier path that still needs that same trivial step (a bred-mob drop)."""
-        dicts, keys, unique = [], [], []
         seen = set()
+        unique = []
         for node in nodes:
-            key = json.dumps(node.to_dict(), sort_keys=True)
+            key = node.key()
             if key not in seen:
                 seen.add(key)
-                dicts.append(node.to_dict())
-                keys.append(key)
                 unique.append(node)
 
         keep = []
-        for node, node_dict, key in zip(unique, dicts, keys):
-            if node_dict.get("k") == "and":
-                conjuncts = {json.dumps(child, sort_keys=True) for child in node_dict.get("c", [])}
-                if conjuncts & (seen - {key}):  # a simpler sibling is one of this AND's conjuncts
+        for node in unique:
+            if isinstance(node, And):
+                conjunct_keys = {child.key() for child in node.children}
+                if conjunct_keys & (seen - {node.key()}):  # a simpler sibling is one of this AND's conjuncts
                     continue
             keep.append(node)
         return or_(*keep)

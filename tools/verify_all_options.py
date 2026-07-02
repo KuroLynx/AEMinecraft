@@ -27,7 +27,7 @@ MAX_OPTIONS = {
     "villager_trust": 1,
     "kill_sanity": 1,
     "challenge_sanity": 1,
-    "mob_spawn_lock_category": {"passive", "neutral", "hostile", "boss"},
+    "mob_spawn_lock": {"passive", "neutral", "hostile", "boss"},
     "structure_unlock": {"All"},
     "boss_list": {"All"},
     "advancements_required": 125,

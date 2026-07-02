@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_structure/ruined_portal_ocean",
+  "parent": "aem:category/structure_unlocks",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"
@@ -14,8 +14,8 @@
     "icon": {
       "id": "minecraft:obsidian"
     },
-    "title": "Ruined Portal (Swamp)",
-    "description": "Unlock Ruined Portal (Swamp)",
+    "title": "Ruined Portal Swamp",
+    "description": "Unlock Ruined Portal Swamp",
     "frame": "task",
     "show_toast": false,
     "announce_to_chat": false,

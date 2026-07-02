@@ -136,11 +136,15 @@ def build_trackers_export(world) -> dict:
                 "location_id": loc.id,
             }
         elif loc.category == MCLocationCategory.BOSS_KILL:
-            trackers[tracker_id(KIND_BOSS, loc.game_id)] = {
-                "kind": KIND_BOSS,
-                "location_name": loc_name,
-                "location_id": loc.id,
-            }
+            # The Kills-tab boss tile only when kill_sanity is on: with killsanity off the Kills tab
+            # is the killsanity tab, so bosses belong solely to the main tab's Bosses goal (below).
+            # With no kill/boss trackers active the Kills category has none, so its tab stays hidden.
+            if world.options.kill_sanity:
+                trackers[tracker_id(KIND_BOSS, loc.game_id)] = {
+                    "kind": KIND_BOSS,
+                    "location_name": loc_name,
+                    "location_id": loc.id,
+                }
             if loc_name in goal_boss_loc_names:
                 trackers[goal_boss_tracker_id(loc.game_id)] = {
                     "kind": KIND_BOSS,
@@ -148,14 +152,15 @@ def build_trackers_export(world) -> dict:
                     "location_id": loc.id,
                 }
 
-    # Mob spawn unlocks (items the slot receives) — only the locked categories.
-    locked_categories = set(world.options.mob_spawn_lock_category.value)
-    for mob_data in MOBS_ALL.values():
-        if mob_data.category in locked_categories:
-            trackers[tracker_id(KIND_UNLOCK_MOB, mob_data.game_id)] = {
-                "kind": "unlock",
-                "item_id": BASE_ID_ENTITY_UNLOCK + mob_data.id,
-            }
+    # Mob spawn unlocks (items the slot receives) — only the mobs locked by mob_spawn_lock. The
+    # static datapack has an unlock_mob tile per possible mob (grouped by category); activating just
+    # the locked ones lights up exactly those tiles in their category blocks, like structure unlocks.
+    for mob_name in world._get_locked_mobs():
+        mob_data = MOBS_ALL[mob_name]
+        trackers[tracker_id(KIND_UNLOCK_MOB, mob_data.game_id)] = {
+            "kind": "unlock",
+            "item_id": BASE_ID_ENTITY_UNLOCK + mob_data.id,
+        }
 
     # Structure unlocks (items) — only structures locked by the structure_unlock option.
     for struct_name in world._get_locked_structures():

@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from Options import Choice, OptionSet, PerGameCommonOptions, Range, Toggle
 
-from .data import ADVANCEMENT_LOCATIONS, MOBS_BOSS, STRUCTURES
+from .data import ADVANCEMENT_LOCATIONS, MOBS_ALL, MOBS_BOSS, STRUCTURES
 
 
 class BossList(OptionSet):
@@ -78,32 +78,34 @@ class KillSanity(Toggle):
     default = 0
 
 
-class MobSpawnLockCategory(OptionSet):
-    """Stop chosen kinds of mob from spawning until you unlock them.
+class MobSpawnLock(OptionSet):
+    """Lock chosen mobs from spawning until you unlock them.
 
-    For every category you list here, mobs of that kind will not spawn anywhere until you receive the
-    matching 'Entity Unlock: <mob>' item from the multiworld. Leave the list empty to let everything
-    spawn normally.
+    A locked mob will not spawn anywhere until you receive its matching 'Entity Unlock: <mob>' item
+    from the multiworld. Mobs you do not list spawn normally. Leave the list empty to let everything
+    spawn.
 
-    Locking "boss" also holds back the bosses (Ender Dragon, Elder Guardian, Warden, Wither) until
-    their unlock item arrives, so they cannot be killed before then. Mobs that would have appeared in
-    a structure while locked (for example an Ocean Monument's elder guardians) are not lost: they are
-    placed once you receive their unlock item.
+    Accepts category presets, the special value "All", and/or individual mob names (you can mix them
+    freely):
+        - Category presets: "passive", "neutral", "hostile", "boss" — lock every mob of that kind.
+        - "All" — lock every mob.
+        - Any mob name (e.g. "Creeper", "Zombie", "Warden").
 
-    Valid values: passive, neutral, hostile, boss
+    Locking a boss holds it back (Ender Dragon, Elder Guardian, Warden, Wither) until its unlock item
+    arrives, so it cannot be killed before then. Mobs that would have appeared in a structure while
+    locked (for example an Ocean Monument's elder guardians) are not lost: they are placed once you
+    receive their unlock item.
 
     Examples:
-        Lock only hostiles:
+        Lock all hostiles plus the Ender Dragon:
             - hostile
+            - Ender Dragon
 
-        Lock everything including bosses:
-            - passive
-            - neutral
-            - hostile
-            - boss
+        Lock only creepers:
+            - Creeper
     """
-    display_name = "Mob Spawn Lock Category"
-    valid_keys = {"passive", "neutral", "hostile", "boss"}
+    display_name = "Mob Spawn Lock"
+    valid_keys = {"All", "passive", "neutral", "hostile", "boss"} | set(MOBS_ALL.keys())
     default = frozenset({"boss"})
 
 
@@ -262,7 +264,7 @@ class MCOptions(PerGameCommonOptions):
     death_link: DeathLink
     villager_trust: VillagerTrust
     kill_sanity: KillSanity
-    mob_spawn_lock_category: MobSpawnLockCategory
+    mob_spawn_lock: MobSpawnLock
     structure_unlock: StructureUnlock
     trap_chance: TrapChance
     challenge_sanity: ChallengeSanity

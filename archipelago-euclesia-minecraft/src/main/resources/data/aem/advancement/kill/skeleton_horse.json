@@ -1,5 +1,5 @@
 {
-  "parent": "aem:category/kills",
+  "parent": "aem:kill/sheep",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

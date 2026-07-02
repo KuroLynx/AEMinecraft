@@ -1,5 +1,5 @@
 {
-  "parent": "aem:kill/zombified_piglin",
+  "parent": "aem:category/kills",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

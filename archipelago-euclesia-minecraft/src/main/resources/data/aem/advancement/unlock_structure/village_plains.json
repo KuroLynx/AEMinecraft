@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_structure/village_desert",
+  "parent": "aem:category/structure_unlocks",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"
@@ -14,8 +14,8 @@
     "icon": {
       "id": "minecraft:emerald"
     },
-    "title": "Village (Plains)",
-    "description": "Unlock Village (Plains)",
+    "title": "Village Plains",
+    "description": "Unlock Village Plains",
     "frame": "task",
     "show_toast": false,
     "announce_to_chat": false,

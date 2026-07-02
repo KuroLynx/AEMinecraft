@@ -1,5 +1,5 @@
 {
-  "parent": "aem:kill/zombie_horse",
+  "parent": "aem:category/kills",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

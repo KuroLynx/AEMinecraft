@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_structure/village_taiga",
+  "parent": "aem:unlock_structure/mineshaft_mesa",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"
@@ -14,8 +14,8 @@
     "icon": {
       "id": "minecraft:spawner"
     },
-    "title": "Dungeon",
-    "description": "Unlock Dungeon",
+    "title": "Monster Room",
+    "description": "Unlock Monster Room",
     "frame": "task",
     "show_toast": false,
     "announce_to_chat": false,

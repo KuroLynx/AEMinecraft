@@ -1,5 +1,5 @@
 {
-  "parent": "aem:kill/goat",
+  "parent": "aem:kill/enderman",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

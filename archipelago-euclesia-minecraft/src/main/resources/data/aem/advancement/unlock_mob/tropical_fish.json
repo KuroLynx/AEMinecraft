@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_mob/tadpole",
+  "parent": "aem:unlock_mob/trader_llama",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

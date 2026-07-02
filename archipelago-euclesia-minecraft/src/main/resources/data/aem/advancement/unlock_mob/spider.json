@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_mob/pufferfish",
+  "parent": "aem:unlock_mob/slime",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

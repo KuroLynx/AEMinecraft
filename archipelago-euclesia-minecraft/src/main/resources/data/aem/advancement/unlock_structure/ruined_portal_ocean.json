@@ -14,8 +14,8 @@
     "icon": {
       "id": "minecraft:obsidian"
     },
-    "title": "Ruined Portal (Ocean)",
-    "description": "Unlock Ruined Portal (Ocean)",
+    "title": "Ruined Portal Ocean",
+    "description": "Unlock Ruined Portal Ocean",
     "frame": "task",
     "show_toast": false,
     "announce_to_chat": false,

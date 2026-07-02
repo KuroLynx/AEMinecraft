@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_mob/camel_husk",
+  "parent": "aem:unlock_mob/camel",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

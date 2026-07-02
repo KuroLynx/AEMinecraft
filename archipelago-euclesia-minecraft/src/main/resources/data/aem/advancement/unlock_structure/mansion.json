@@ -1,5 +1,5 @@
 {
-  "parent": "aem:category/structure_unlocks",
+  "parent": "aem:unlock_structure/jungle_pyramid",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

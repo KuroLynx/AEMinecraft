@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_mob/goat",
+  "parent": "aem:unlock_mob/enderman",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

@@ -39,6 +39,14 @@ from .regions import MCRegion
 AP_TAB_ROOT_GAME_ID = "aem:archipelago"
 
 
+def _region_name(region) -> str:
+    """Plain region name for the export. An MCRegion is a (str, Enum) member whose str() is
+    "MCRegion.OVERWORLD"; `region + ""` returns the raw underlying value ("Overworld") instead, so
+    the shipped location regions match the origin / region-graph edges (which use MCRegion.value).
+    Mirrors ast.ReachRegion's normalisation."""
+    return region + "" if isinstance(region, str) else str(region)
+
+
 def build_logic_export(world) -> dict:
     # Locations created this seed, keyed name -> MCLocationData. Uses the world's own active set
     # (not the vanilla-only ALL_LOCATIONS) so optional packs like BACAP — whose advancements also
@@ -46,8 +54,13 @@ def build_logic_export(world) -> dict:
     loc_lookup = world._get_active_locations()
 
     # Actual region each location was placed in (create_regions derives it from the rule, so it is not
-    # the data-declared default) — the mod gates region reachability on this.
-    placed_region = {loc.name: loc.parent_region.name
+    # the data-declared default) — the mod gates region reachability on this. Normalise to the plain
+    # region value: parent_region.name is an MCRegion (str, Enum) member, and AP's slot_data encoder
+    # (NetUtils.convert_to_base_types) stringifies it via Enum.__str__ to "MCRegion.OVERWORLD" — which
+    # would never match the ".value" names ("Overworld") the origin and region-graph edges ship with,
+    # so the mod could not reach any location's region and every tile rendered out-of-logic (red).
+    # (`region + ""` yields the raw str buffer, like ast.ReachRegion; plain json.dumps hides the bug.)
+    placed_region = {loc.name: _region_name(loc.parent_region.name)
                      for loc in world.multiworld.get_locations(world.player)}
 
     # Per-location rules captured during set_rules (only locations created this seed). BACAP reward
@@ -65,7 +78,7 @@ def build_logic_export(world) -> dict:
         loc_data = loc_lookup[name]
         locations[name] = {
             "game_id": loc_data.game_id,
-            "region": placed_region.get(name, loc_data.region),
+            "region": placed_region.get(name, _region_name(loc_data.region)),
             "rule": rule.to_dict(),
         }
 

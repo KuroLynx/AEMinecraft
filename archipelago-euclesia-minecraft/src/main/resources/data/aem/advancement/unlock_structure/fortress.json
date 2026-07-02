@@ -14,8 +14,8 @@
     "icon": {
       "id": "minecraft:nether_bricks"
     },
-    "title": "Nether Fortress",
-    "description": "Unlock Nether Fortress",
+    "title": "Fortress",
+    "description": "Unlock Fortress",
     "frame": "task",
     "show_toast": false,
     "announce_to_chat": false,

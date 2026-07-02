@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_mob/cave_spider",
+  "parent": "aem:unlock_mob/cow",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

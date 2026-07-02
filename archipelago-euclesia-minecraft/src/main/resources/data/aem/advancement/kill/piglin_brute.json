@@ -1,5 +1,5 @@
 {
-  "parent": "aem:kill/phantom",
+  "parent": "aem:kill/piglin",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

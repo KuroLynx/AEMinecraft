@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_mob/piglin",
+  "parent": "aem:unlock_mob/iron_golem",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

@@ -1,5 +1,5 @@
 {
-  "parent": "aem:kill/nautilus",
+  "parent": "aem:kill/ocelot",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

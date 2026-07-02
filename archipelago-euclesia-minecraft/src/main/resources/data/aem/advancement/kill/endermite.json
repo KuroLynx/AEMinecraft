@@ -1,5 +1,5 @@
 {
-  "parent": "aem:boss/ender_dragon",
+  "parent": "aem:category/kills",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"
