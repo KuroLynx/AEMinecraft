@@ -1,5 +1,5 @@
 {
-  "parent": "aem:kill/trader_llama",
+  "parent": "aem:kill/polar_bear",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

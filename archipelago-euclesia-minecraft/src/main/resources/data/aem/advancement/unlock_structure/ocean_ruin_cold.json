@@ -14,8 +14,8 @@
     "icon": {
       "id": "minecraft:trident"
     },
-    "title": "Ocean Ruin (Cold)",
-    "description": "Unlock Ocean Ruin (Cold)",
+    "title": "Ocean Ruin Cold",
+    "description": "Unlock Ocean Ruin Cold",
     "frame": "task",
     "show_toast": false,
     "announce_to_chat": false,

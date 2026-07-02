@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_mob/llama",
+  "parent": "aem:unlock_mob/mule",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

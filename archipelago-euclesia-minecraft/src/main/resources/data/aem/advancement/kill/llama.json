@@ -1,5 +1,5 @@
 {
-  "parent": "aem:kill/iron_golem",
+  "parent": "aem:kill/horse",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

@@ -16,7 +16,7 @@ Minecraft [AEM]:
     125: 100
   kill_sanity: 'true'
   villager_trust: 'true'
-  mob_spawn_lock_category:
+  mob_spawn_lock:
     - passive
     - neutral
     - hostile

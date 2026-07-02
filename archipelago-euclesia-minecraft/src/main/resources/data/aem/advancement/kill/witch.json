@@ -1,5 +1,5 @@
 {
-  "parent": "aem:boss/warden",
+  "parent": "aem:kill/vindicator",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

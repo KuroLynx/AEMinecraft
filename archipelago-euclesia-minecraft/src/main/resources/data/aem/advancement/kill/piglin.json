@@ -1,5 +1,5 @@
 {
-  "parent": "aem:kill/panda",
+  "parent": "aem:kill/phantom",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

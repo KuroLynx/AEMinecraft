@@ -14,8 +14,8 @@
     "icon": {
       "id": "minecraft:obsidian"
     },
-    "title": "Ruined Portal (Nether)",
-    "description": "Unlock Ruined Portal (Nether)",
+    "title": "Ruined Portal Nether",
+    "description": "Unlock Ruined Portal Nether",
     "frame": "task",
     "show_toast": false,
     "announce_to_chat": false,

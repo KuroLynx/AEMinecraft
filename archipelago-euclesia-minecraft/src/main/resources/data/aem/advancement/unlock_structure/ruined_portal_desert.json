@@ -14,8 +14,8 @@
     "icon": {
       "id": "minecraft:obsidian"
     },
-    "title": "Ruined Portal (Desert)",
-    "description": "Unlock Ruined Portal (Desert)",
+    "title": "Ruined Portal Desert",
+    "description": "Unlock Ruined Portal Desert",
     "frame": "task",
     "show_toast": false,
     "announce_to_chat": false,

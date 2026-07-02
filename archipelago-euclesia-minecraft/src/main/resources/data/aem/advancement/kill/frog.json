@@ -1,5 +1,5 @@
 {
-  "parent": "aem:kill/donkey",
+  "parent": "aem:kill/fox",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

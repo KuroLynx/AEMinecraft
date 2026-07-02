@@ -1,5 +1,5 @@
 {
-  "parent": "aem:kill/fox",
+  "parent": "aem:kill/glow_squid",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_structure/monster_room",
+  "parent": "aem:unlock_structure/desert_pyramid",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

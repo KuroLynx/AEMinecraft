@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_mob/breeze",
+  "parent": "aem:unlock_mob/cave_spider",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

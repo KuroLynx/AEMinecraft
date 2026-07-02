@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_mob/zoglin",
+  "parent": "aem:category/entity_unlocks",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

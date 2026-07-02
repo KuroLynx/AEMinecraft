@@ -1,5 +1,5 @@
 {
-  "parent": "aem:boss/wither",
+  "parent": "aem:kill/witch",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

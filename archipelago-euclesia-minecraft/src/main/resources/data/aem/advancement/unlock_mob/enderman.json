@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_mob/drowned",
+  "parent": "aem:unlock_mob/bee",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_mob/donkey",
+  "parent": "aem:unlock_mob/fox",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

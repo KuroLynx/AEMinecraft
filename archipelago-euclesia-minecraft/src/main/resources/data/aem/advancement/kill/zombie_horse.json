@@ -1,5 +1,5 @@
 {
-  "parent": "aem:kill/wandering_trader",
+  "parent": "aem:kill/zombie",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

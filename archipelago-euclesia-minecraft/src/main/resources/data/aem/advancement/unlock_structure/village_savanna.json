@@ -14,8 +14,8 @@
     "icon": {
       "id": "minecraft:emerald"
     },
-    "title": "Village (Savanna)",
-    "description": "Unlock Village (Savanna)",
+    "title": "Village Savanna",
+    "description": "Unlock Village Savanna",
     "frame": "task",
     "show_toast": false,
     "announce_to_chat": false,

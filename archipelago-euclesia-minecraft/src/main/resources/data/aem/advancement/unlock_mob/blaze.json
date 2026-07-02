@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_mob/zombified_piglin",
+  "parent": "aem:category/entity_unlocks",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

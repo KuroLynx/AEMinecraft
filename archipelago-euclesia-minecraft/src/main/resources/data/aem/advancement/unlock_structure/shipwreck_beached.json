@@ -1,5 +1,5 @@
 {
-  "parent": "aem:category/structure_unlocks",
+  "parent": "aem:unlock_structure/shipwreck",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"
@@ -14,8 +14,8 @@
     "icon": {
       "id": "minecraft:oak_boat"
     },
-    "title": "Shipwreck (Beached)",
-    "description": "Unlock Shipwreck (Beached)",
+    "title": "Shipwreck Beached",
+    "description": "Unlock Shipwreck Beached",
     "frame": "task",
     "show_toast": false,
     "announce_to_chat": false,

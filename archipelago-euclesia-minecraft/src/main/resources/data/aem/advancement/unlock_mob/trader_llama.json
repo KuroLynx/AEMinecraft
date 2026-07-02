@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_mob/spider",
+  "parent": "aem:unlock_mob/tadpole",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

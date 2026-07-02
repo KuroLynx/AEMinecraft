@@ -1,5 +1,5 @@
 {
-  "parent": "aem:kill/zombie",
+  "parent": "aem:kill/zombie_nautilus",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

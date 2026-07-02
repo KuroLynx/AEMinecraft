@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_structure/mineshaft_mesa",
+  "parent": "aem:unlock_structure/monster_room",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"
@@ -14,8 +14,8 @@
     "icon": {
       "id": "minecraft:prismarine"
     },
-    "title": "Ocean Monument",
-    "description": "Unlock Ocean Monument",
+    "title": "Monument",
+    "description": "Unlock Monument",
     "frame": "task",
     "show_toast": false,
     "announce_to_chat": false,

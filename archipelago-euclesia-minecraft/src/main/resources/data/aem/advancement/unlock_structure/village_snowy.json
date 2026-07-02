@@ -1,5 +1,5 @@
 {
-  "parent": "aem:category/structure_unlocks",
+  "parent": "aem:unlock_structure/village_savanna",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"
@@ -14,8 +14,8 @@
     "icon": {
       "id": "minecraft:emerald"
     },
-    "title": "Village (Snowy)",
-    "description": "Unlock Village (Snowy)",
+    "title": "Village Snowy",
+    "description": "Unlock Village Snowy",
     "frame": "task",
     "show_toast": false,
     "announce_to_chat": false,

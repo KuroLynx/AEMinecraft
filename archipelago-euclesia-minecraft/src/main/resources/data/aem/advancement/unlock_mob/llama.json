@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_mob/iron_golem",
+  "parent": "aem:unlock_mob/horse",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

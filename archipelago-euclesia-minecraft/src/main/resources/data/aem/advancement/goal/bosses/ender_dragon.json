@@ -1,5 +1,5 @@
 {
-  "parent": "aem:goal/bosses/elder_guardian",
+  "parent": "aem:goal/bosses",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

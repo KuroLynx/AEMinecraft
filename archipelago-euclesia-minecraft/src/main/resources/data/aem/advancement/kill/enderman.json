@@ -1,5 +1,5 @@
 {
-  "parent": "aem:kill/drowned",
+  "parent": "aem:kill/bee",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

@@ -25,17 +25,84 @@ Serialized form (compact, mirrored by the Java parser):
 """
 from __future__ import annotations
 
+import json
 from typing import Iterable
 
 
 class Rule:
-    """Base class: a node is callable against an AP state and serializable to a dict."""
+    """Base class: a node is callable against an AP state and serializable to a dict.
+
+    Nodes are immutable once built and shared read-only across rules (the acquire() cache hands the
+    same subtree to many rules). ``to_dict`` / ``canonical_json`` are therefore memoized: datapack-
+    scale compilation serializes the same shared subtrees millions of times, and caching collapses
+    that to once per node. Every consumer treats the serialized form as read-only (the mod export
+    copies before rewriting), so returning a shared cached dict is safe."""
+
+    _dict_cache = None
+    _json_cache = None
+    _key_cache = None
+    _gate_cache = None
 
     def __call__(self, state) -> bool:  # pragma: no cover - overridden
         raise NotImplementedError
 
-    def to_dict(self) -> dict:  # pragma: no cover - overridden
+    def to_dict(self) -> dict:
+        cached = self._dict_cache
+        if cached is None:
+            cached = self._dict_cache = self._to_dict()
+        return cached
+
+    def _to_dict(self) -> dict:  # pragma: no cover - overridden
         raise NotImplementedError
+
+    def canonical_json(self) -> str:
+        """Stable ``sort_keys`` JSON of this subtree, memoized. Composites build it by joining their
+        children's cached strings (see ``_canonical_json``) instead of re-encoding the whole object
+        graph, so a shared subtree is serialized once and reused everywhere it occurs — the byte-exact
+        equivalent of ``json.dumps(self.to_dict(), sort_keys=True)`` used for the _coarsen size cap."""
+        cached = self._json_cache
+        if cached is None:
+            cached = self._json_cache = self._canonical_json()
+        return cached
+
+    def _canonical_json(self) -> str:
+        # Leaves have no children to reuse — encode directly (also handles string escaping).
+        return json.dumps(self._to_dict(), sort_keys=True)
+
+    def key(self):
+        """Hashable structural key, memoized. Two subtrees share a key iff their canonical_json is
+        equal (same kind/fields and same child keys, order-sensitive) — the cheap dedup key used by
+        _unique_or in place of serializing every OR operand."""
+        cached = self._key_cache
+        if cached is None:
+            cached = self._key_cache = self._key()
+        return cached
+
+    def _key(self):  # pragma: no cover - overridden
+        raise NotImplementedError
+
+    def gate_summary(self) -> tuple:
+        """``(gated, regions)`` for this subtree, memoized bottom-up: ``gated`` is True if any leaf is
+        a real gate (``has``/``loc``), ``regions`` is the set of every ``region`` leaf. Lets _coarsen
+        decide "region-only, collapse to its region floor" without walking the serialized dict."""
+        cached = self._gate_cache
+        if cached is None:
+            cached = self._gate_cache = self._gate_summary()
+        return cached
+
+    def _gate_summary(self) -> tuple:  # pragma: no cover - overridden
+        raise NotImplementedError
+
+    @staticmethod
+    def _merge_gate(children) -> tuple:
+        """Combine children summaries: gated if any child gates; regions is the union across all."""
+        gated = False
+        regions: set = set()
+        for child in children:
+            c_gated, c_regions = child.gate_summary()
+            gated = gated or c_gated
+            regions |= c_regions
+        return gated, frozenset(regions)
 
 
 class Const(Rule):
@@ -45,8 +112,14 @@ class Const(Rule):
     def __call__(self, state) -> bool:
         return self.value
 
-    def to_dict(self) -> dict:
+    def _to_dict(self) -> dict:
         return {"k": "const", "v": self.value}
+
+    def _key(self):
+        return ("const", self.value)
+
+    def _gate_summary(self) -> tuple:
+        return (False, frozenset())
 
 
 class Has(Rule):
@@ -58,8 +131,14 @@ class Has(Rule):
     def __call__(self, state) -> bool:
         return state.has(self.item, self.player, self.count)
 
-    def to_dict(self) -> dict:
+    def _to_dict(self) -> dict:
         return {"k": "has", "i": self.item, "n": self.count}
+
+    def _key(self):
+        return ("has", self.item, self.count)
+
+    def _gate_summary(self) -> tuple:
+        return (True, frozenset())
 
 
 class ReachRegion(Rule):
@@ -72,8 +151,14 @@ class ReachRegion(Rule):
     def __call__(self, state) -> bool:
         return state.can_reach_region(self.region, self.player)
 
-    def to_dict(self) -> dict:
+    def _to_dict(self) -> dict:
         return {"k": "region", "r": self.region}
+
+    def _key(self):
+        return ("region", self.region)
+
+    def _gate_summary(self) -> tuple:
+        return (False, frozenset((self.region,)))
 
 
 class ReachLocation(Rule):
@@ -84,8 +169,14 @@ class ReachLocation(Rule):
     def __call__(self, state) -> bool:
         return state.can_reach_location(self.location, self.player)
 
-    def to_dict(self) -> dict:
+    def _to_dict(self) -> dict:
         return {"k": "loc", "l": self.location}
+
+    def _key(self):
+        return ("loc", self.location)
+
+    def _gate_summary(self) -> tuple:
+        return (True, frozenset())
 
 
 class AtLeast(Rule):
@@ -105,8 +196,18 @@ class AtLeast(Rule):
                     return True
         return False
 
-    def to_dict(self) -> dict:
+    def _to_dict(self) -> dict:
         return {"k": "atleast", "n": self.n, "c": [child.to_dict() for child in self.children]}
+
+    def _canonical_json(self) -> str:
+        return ('{"c": [' + ", ".join(c.canonical_json() for c in self.children)
+                + '], "k": "atleast", "n": ' + str(self.n) + "}")
+
+    def _key(self):
+        return ("atleast", self.n, tuple(c.key() for c in self.children))
+
+    def _gate_summary(self) -> tuple:
+        return self._merge_gate(self.children)
 
 
 class And(Rule):
@@ -116,8 +217,17 @@ class And(Rule):
     def __call__(self, state) -> bool:
         return all(child(state) for child in self.children)
 
-    def to_dict(self) -> dict:
+    def _to_dict(self) -> dict:
         return {"k": "and", "c": [child.to_dict() for child in self.children]}
+
+    def _canonical_json(self) -> str:
+        return '{"c": [' + ", ".join(c.canonical_json() for c in self.children) + '], "k": "and"}'
+
+    def _key(self):
+        return ("and", tuple(c.key() for c in self.children))
+
+    def _gate_summary(self) -> tuple:
+        return self._merge_gate(self.children)
 
 
 class Or(Rule):
@@ -127,8 +237,17 @@ class Or(Rule):
     def __call__(self, state) -> bool:
         return any(child(state) for child in self.children)
 
-    def to_dict(self) -> dict:
+    def _to_dict(self) -> dict:
         return {"k": "or", "c": [child.to_dict() for child in self.children]}
+
+    def _canonical_json(self) -> str:
+        return '{"c": [' + ", ".join(c.canonical_json() for c in self.children) + '], "k": "or"}'
+
+    def _key(self):
+        return ("or", tuple(c.key() for c in self.children))
+
+    def _gate_summary(self) -> tuple:
+        return self._merge_gate(self.children)
 
 
 # ---------------------------------------------------------------------------

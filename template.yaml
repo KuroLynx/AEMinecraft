@@ -110,29 +110,30 @@ Minecraft [AEM]:
   # Mob Spawn Lock
   # -------------------------------------------------------------------------
 
-  mob_spawn_lock_category:
-    # Stop chosen kinds of mob from spawning until you unlock them.
+  mob_spawn_lock:
+    # Lock chosen mobs from spawning until you unlock them.
     #
-    # For every category you list here, mobs of that kind will not spawn anywhere until you receive the
-    # matching 'Entity Unlock: <mob>' item from the multiworld. Leave the list empty to let everything
-    # spawn normally.
+    # A locked mob will not spawn anywhere until you receive its matching 'Entity Unlock: <mob>' item
+    # from the multiworld. Mobs you do not list spawn normally. Leave the list empty to let everything
+    # spawn.
     #
-    # Locking "boss" also holds back the bosses (Ender Dragon, Elder Guardian, Warden, Wither) until
-    # their unlock item arrives, so they cannot be killed before then. Mobs that would have appeared in
-    # a structure while locked (for example an Ocean Monument's elder guardians) are not lost: they are
-    # placed once you receive their unlock item.
+    # Accepts category presets, the special value "All", and/or individual mob names (mix freely):
+    #     - Category presets: passive, neutral, hostile, boss — lock every mob of that kind.
+    #     - "All" — lock every mob.
+    #     - Any mob name (e.g. Creeper, Zombie, Warden).
     #
-    # Valid values: passive, neutral, hostile, boss
+    # Locking a boss holds it back (Ender Dragon, Elder Guardian, Warden, Wither) until its unlock item
+    # arrives, so it cannot be killed before then. Mobs that would have appeared in a structure while
+    # locked (for example an Ocean Monument's elder guardians) are not lost: they are placed once you
+    # receive their unlock item.
     #
     # Examples:
-    #     Lock only hostiles:
+    #     Lock all hostiles plus the Ender Dragon:
     #         - hostile
+    #         - Ender Dragon
     #
-    #     Lock everything including bosses:
-    #         - passive
-    #         - neutral
-    #         - hostile
-    #         - boss
+    #     Lock only creepers:
+    #         - Creeper
     ["boss"]
 
   # -------------------------------------------------------------------------
@@ -251,6 +252,20 @@ Minecraft [AEM]:
     #
     # You must have the BlazeandCave's Advancements Pack datapack installed in your world for these
     # checks to work. Leave this disabled if you are not playing with that datapack.
+    'false': 50
+    'true': 0
+
+  bacap_rewards:
+    # Let BlazeandCave's Advancements Pack hand out its own item and XP rewards.
+    #
+    # BACAP normally grants items and experience when you complete its advancements. In a randomizer
+    # those free rewards bypass the multiworld economy, so they are turned OFF by default: the mod runs
+    # BACAP's reward-disable functions the first time you load the world.
+    #
+    # - disabled (default): BACAP gives no item or XP rewards.
+    # - enabled: BACAP keeps its vanilla item and XP rewards.
+    #
+    # Either way, BACAP trophies are always disabled. Only has an effect when blazeandcave is enabled.
     'false': 50
     'true': 0
 

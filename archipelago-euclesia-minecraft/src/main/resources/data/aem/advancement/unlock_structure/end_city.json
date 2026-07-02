@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_structure/desert_pyramid",
+  "parent": "aem:unlock_structure/desert_well",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

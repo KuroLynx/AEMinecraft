@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_mob/zombie",
+  "parent": "aem:unlock_mob/zombie_nautilus",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

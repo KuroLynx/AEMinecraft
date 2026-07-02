@@ -1,5 +1,5 @@
 {
-  "parent": "aem:kill/bee",
+  "parent": "aem:kill/camel_husk",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

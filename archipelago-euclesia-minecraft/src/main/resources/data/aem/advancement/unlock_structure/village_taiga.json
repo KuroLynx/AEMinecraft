@@ -14,8 +14,8 @@
     "icon": {
       "id": "minecraft:emerald"
     },
-    "title": "Village (Taiga)",
-    "description": "Unlock Village (Taiga)",
+    "title": "Village Taiga",
+    "description": "Unlock Village Taiga",
     "frame": "task",
     "show_toast": false,
     "announce_to_chat": false,

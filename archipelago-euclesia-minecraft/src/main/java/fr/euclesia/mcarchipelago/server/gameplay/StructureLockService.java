@@ -3,6 +3,7 @@ package fr.euclesia.mcarchipelago.server.gameplay;
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.registry.APStructureRegistry;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.WorldGenLevel;
@@ -47,6 +48,22 @@ public final class StructureLockService {
         }
         Identifier id = level.registryAccess().lookupOrThrow(Registries.PLACED_FEATURE).getKey(feature);
         return id != null && registry.isLocked(id.toString()) ? id.toString() : null;
+    }
+
+    /**
+     * Whether a structure is currently locked, resolved against a live {@link RegistryAccess} (the
+     * worldgen-time {@link #lockedStructureId} variant needs a {@code WorldGenLevel}). Used to hide a
+     * locked structure from "inside structure" queries on the live world ({@code StructureManagerMixin})
+     * so advancements like Trial Chambers / BACAP structure goals don't fire off a captured (unplaced)
+     * structure. Reflects the live unlock state, so it flips to {@code false} once the unlock arrives.
+     */
+    public static boolean isStructureLocked(RegistryAccess registryAccess, Structure structure) {
+        APStructureRegistry registry = lockRegistry();
+        if (registry == null) {
+            return false;
+        }
+        Identifier id = registryAccess.lookupOrThrow(Registries.STRUCTURE).getKey(structure);
+        return id != null && registry.isLocked(id.toString());
     }
 
     /** The lock registry only when Archipelago is connected and something is actually locked. */

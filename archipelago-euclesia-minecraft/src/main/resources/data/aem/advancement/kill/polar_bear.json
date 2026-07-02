@@ -1,5 +1,5 @@
 {
-  "parent": "aem:kill/piglin",
+  "parent": "aem:kill/iron_golem",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

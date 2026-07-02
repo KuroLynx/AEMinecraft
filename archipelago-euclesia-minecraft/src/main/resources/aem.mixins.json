@@ -3,10 +3,10 @@
   "package": "fr.euclesia.mcarchipelago.mixin",
   "compatibilityLevel": "JAVA_25",
   "mixins": [
+    "AdvancementRewardsMixin",
     "AdvancementVisibilityEvaluatorMixin",
     "BeehiveBlockEntityMixin",
     "BrewingStandBlockMixin",
-    "CompassItemMixin",
     "EnchantingTableBlockMixin",
     "EnderDragonFightMixin",
     "EntityMixin",
@@ -19,6 +19,7 @@
     "ServerLevelMixin",
     "ServerPlayerMixin",
     "SlotMixin",
+    "StructureManagerMixin",
     "StructureStartMixin",
     "WorldGenRegionMixin"
   ],

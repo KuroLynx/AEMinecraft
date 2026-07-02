@@ -222,6 +222,11 @@ ENTITY_UNLOCK_PREFIX = "Entity Unlock: "
 STRUCT_UNLOCK_PREFIX = "Structure Unlock: "
 ENTITY_KILL_PREFIX = "Kill Entity: "
 BOSS_KILL_PREFIX = "Kill Boss: "
+# Internal (non-networked) event location/item per item granted by a BACAP advancement reward. The
+# event location's rule is the OR of reaching a granting advancement; acquire() then sources the item
+# via has(<this>) — a non-recursive leaf, so AP's event sweep resolves rewards monotonically instead
+# of the recursive reached() that forms acquire(X) -> reached(A) -> A's rule -> acquire(X) cycles.
+REWARD_EVENT_PREFIX = "Reward: "
 
 # -----------------------------------------------------------------------
 # Mobs — Passive

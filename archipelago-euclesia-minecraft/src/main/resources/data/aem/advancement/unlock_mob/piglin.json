@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_mob/panda",
+  "parent": "aem:unlock_mob/phantom",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

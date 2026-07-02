@@ -1,5 +1,5 @@
 {
-  "parent": "aem:goal/bosses/ender_dragon",
+  "parent": "aem:goal/bosses",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

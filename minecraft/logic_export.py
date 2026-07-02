@@ -27,14 +27,24 @@ its definition (``RuleNode.Ref`` / ``LogicGraph``); the apworld's own reachabili
 """
 from __future__ import annotations
 
+import copy
 from collections import Counter
 
 from .data import MCLocationCategory
 from .logic.ast import ReachLocation, at_least
+from .logic.constants import REWARD_EVENT_PREFIX
 from .regions import MCRegion
 
 # game_id of the Archipelago advancement-tab root tile (mirrors APTrackerRegistry.TAB_ROOT_ID).
 AP_TAB_ROOT_GAME_ID = "aem:archipelago"
+
+
+def _region_name(region) -> str:
+    """Plain region name for the export. An MCRegion is a (str, Enum) member whose str() is
+    "MCRegion.OVERWORLD"; `region + ""` returns the raw underlying value ("Overworld") instead, so
+    the shipped location regions match the origin / region-graph edges (which use MCRegion.value).
+    Mirrors ast.ReachRegion's normalisation."""
+    return region + "" if isinstance(region, str) else str(region)
 
 
 def build_logic_export(world) -> dict:
@@ -44,17 +54,31 @@ def build_logic_export(world) -> dict:
     loc_lookup = world._get_active_locations()
 
     # Actual region each location was placed in (create_regions derives it from the rule, so it is not
-    # the data-declared default) — the mod gates region reachability on this.
-    placed_region = {loc.name: loc.parent_region.name
+    # the data-declared default) — the mod gates region reachability on this. Normalise to the plain
+    # region value: parent_region.name is an MCRegion (str, Enum) member, and AP's slot_data encoder
+    # (NetUtils.convert_to_base_types) stringifies it via Enum.__str__ to "MCRegion.OVERWORLD" — which
+    # would never match the ".value" names ("Overworld") the origin and region-graph edges ship with,
+    # so the mod could not reach any location's region and every tile rendered out-of-logic (red).
+    # (`region + ""` yields the raw str buffer, like ast.ReachRegion; plain json.dumps hides the bug.)
+    placed_region = {loc.name: _region_name(loc.parent_region.name)
                      for loc in world.multiworld.get_locations(world.player)}
 
-    # Per-location rules captured during set_rules (only locations created this seed).
+    # Per-location rules captured during set_rules (only locations created this seed). BACAP reward
+    # events (REWARD_EVENT_PREFIX) are internal generation-only locations holding a non-networked
+    # event item that the Java client never receives — so a has(<event>) leaf would read 0 in-game.
+    # They're held out here and inlined below: each event's rule (OR of reaching a granting
+    # advancement) replaces every has(<event>) leaf, so the mod's monotone sweep evaluates rewards
+    # through plain loc nodes (it resolves cycles by fixed point, unlike AP's recursive reached()).
     locations: dict[str, dict] = {}
+    reward_event_rules: dict[str, dict] = {}
     for name, rule in getattr(world, "logic_rules", {}).items():
+        if name.startswith(REWARD_EVENT_PREFIX):
+            reward_event_rules[name] = rule.to_dict()
+            continue
         loc_data = loc_lookup[name]
         locations[name] = {
             "game_id": loc_data.game_id,
-            "region": placed_region.get(name, loc_data.region),
+            "region": placed_region.get(name, _region_name(loc_data.region)),
             "rule": rule.to_dict(),
         }
 
@@ -65,6 +89,15 @@ def build_logic_export(world) -> dict:
             {"to": entrance["to"], "rule": entrance["rule"].to_dict()}
             for entrance in entrances
         ]
+
+    # Inline reward-event leaves in every exported rule (location + region edge) before the tab root
+    # and dedup pass, so the CSE in _dedup_rules can hoist the shared event subtrees.
+    if reward_event_rules:
+        for entry in locations.values():
+            entry["rule"] = _inline_reward_events(entry["rule"], reward_event_rules)
+        for edges in regions.values():
+            for edge in edges:
+                edge["rule"] = _inline_reward_events(edge["rule"], reward_event_rules)
 
     origin = MCRegion.MENU.value
 
@@ -92,6 +125,19 @@ def build_logic_export(world) -> dict:
     }
     _dedup_rules(export)
     return export
+
+
+def _inline_reward_events(node: dict, reward_event_rules: dict[str, dict]) -> dict:
+    """Replace every ``has(<reward event>)`` leaf with that event's rule (the OR of reaching a granting
+    advancement), recursively. Returns a new tree; a leaf with no matching event (shouldn't occur)
+    collapses to ``const False`` so a stray reference never reads as obtainable in-game."""
+    if node.get("k") == "has" and node.get("i", "").startswith(REWARD_EVENT_PREFIX):
+        replacement = reward_event_rules.get(node["i"])
+        return copy.deepcopy(replacement) if replacement is not None else {"k": "const", "v": False}
+    children = node.get("c")
+    if children is not None:
+        return {**node, "c": [_inline_reward_events(child, reward_event_rules) for child in children]}
+    return node
 
 
 def _dedup_rules(export: dict) -> None:

@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_mob/witch",
+  "parent": "aem:unlock_mob/warden",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

@@ -4,8 +4,8 @@ from importlib.resources import files
 
 # AST primitives must be imported directly: `from .. import *` cannot supply them because the
 # package __init__ imports this module (via set_rules) before it defines Const/Has/and_/… .
-from .ast import Const, Has, ReachRegion, ReachLocation, and_, or_, at_least
-from ..content.registry import base_pack  # registry only imports constants → import-cycle-safe
+from .ast import And, Const, Has, ReachRegion, ReachLocation, and_, or_, at_least
+from ..content.registry import base_pack, overlay_packs  # registry only imports constants → cycle-safe
 from .. import *
 
 # Wood-family items (planks / logs / wood / stems / hyphae, stripped or not) have no knowledge or
@@ -68,10 +68,58 @@ _ENTITY_BY_GID: dict | None = None
 def _acquisition_table() -> dict:
     global _ACQUISITION
     if _ACQUISITION is None:
-        path = files(_MC_ROOT).joinpath("packs", base_pack(), "acquisition.json")
-        with path.open(encoding="utf-8") as handle:
-            _ACQUISITION = json.load(handle)
+        table = _load_pack_acquisition(base_pack())
+        # Overlay packs (BACAP) contribute ONLY their `advancements` reward source onto the base
+        # table (item -> advancement game_ids that grant it). Other overlay sources are intentionally
+        # not merged yet (see registry.overlay_packs / the items-merge TODO). The advancements source
+        # is gated per seed by the bacap_rewards option in _acquire_from_sources, so merging it into
+        # the once-cached, option-independent table is safe — an unused source for seeds with the
+        # rewards (or the pack) off.
+        for pack_dir in overlay_packs().values():
+            for item, record in _load_pack_acquisition(pack_dir).items():
+                advancements = record.get("advancements")
+                if not advancements:
+                    continue
+                base_record = table.setdefault(item, {})
+                base_record["advancements"] = sorted(
+                    set(base_record.get("advancements", ())) | set(advancements))
+        _ACQUISITION = table
     return _ACQUISITION
+
+
+def _load_pack_acquisition(pack_dir_name: str) -> dict:
+    """A pack's acquisition.json (``{}`` if it has none)."""
+    path = files(_MC_ROOT).joinpath("packs", pack_dir_name, "acquisition.json")
+    if not path.is_file():
+        return {}
+    with path.open(encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def reward_events(world) -> dict[str, list[str]]:
+    """Item base -> the active location names whose completion grants it as a BACAP advancement
+    reward. Empty unless the pack AND its rewards are on (bacap_rewards), mirroring the mod disabling
+    BACAP rewards on world load — with them off a reward is not a real way to obtain the item.
+
+    Drives the reward *event* model (see REWARD_EVENT_PREFIX, create_regions, build_location_rules):
+    each entry becomes an internal event location (rule = OR of reaching those advancements) holding a
+    locked event item, and ``acquire`` sources the item through ``has(event)`` — a non-recursive leaf.
+    AP's monotone event sweep then resolves rewards to a fixed point, instead of the recursive
+    ``reached()`` source that forms ``acquire(X) -> reached(A) -> A's rule -> acquire(X)`` cycles.
+    Only advancements that are an active check this seed contribute (an inactive tab / challenge_sanity
+    drop is simply absent), so an event with no granting location is never created."""
+    if not (bool(world.options.blazeandcave.value) and bool(world.options.bacap_rewards.value)):
+        return {}
+    location_by_gid = {
+        data.game_id: name for name, data in world._get_active_locations().items() if data.game_id
+    }
+    events: dict[str, list[str]] = {}
+    for base, record in _acquisition_table().items():
+        names = sorted({location_by_gid[gid] for gid in record.get("advancements", ())
+                        if gid in location_by_gid})
+        if names:
+            events[base] = names
+    return events
 
 
 def _entity_by_gid() -> dict:
@@ -164,10 +212,17 @@ class RuleHelper:
         self.active_structures = world._get_active_structures()
         # Options resolved once, up front, so rule nodes never carry option logic.
         self.villager_trust = bool(world.options.villager_trust.value)
-        self.locked_categories = set(world.options.mob_spawn_lock_category.value)
+        # Mobs locked behind an 'Entity Unlock' item (mob_spawn_lock option), resolved to concrete
+        # mob names (categories/All/individual names all collapse to this set).
+        self.locked_mobs = world._get_locked_mobs()
         # Biome Finder enabled (start or in_pool); disabled == 0. Biome-specific advancements require
         # it when on, since that's how you locate the biome.
         self.biome_finder_enabled = bool(world.options.biome_finder.value)
+        # BACAP advancement rewards, modeled as event items: base item -> active location names that
+        # grant it (empty unless bacap_rewards is on). acquire() sources a rewarded item via
+        # has(REWARD_EVENT_PREFIX + base); the event location carrying the reached() OR is created in
+        # create_regions / build_location_rules. See reward_events for the cycle rationale.
+        self.reward_events = reward_events(world)
         # Memo for acquire(): the acquisition table + options are fixed for this helper, so
         # acquire(base, stack) is pure. Datapack-scale compilation calls it millions of times for the
         # same (base, stack) pairs (planks/sticks/ingots recur in every recipe); caching collapses
@@ -867,8 +922,8 @@ class RuleHelper:
         parent_node = parent_thunk() if parent_thunk is not None else Const(True)
         biome_thunk = self.biome_bound_mobs.get(entity_name)
         biome_node = biome_thunk() if biome_thunk is not None else Const(True)
-        category_locked = (entity_data.category in self.locked_categories)
-        unlock_node = self.has(f"{ENTITY_UNLOCK_PREFIX}{entity_name}") if category_locked else Const(True)
+        mob_locked = (entity_name in self.locked_mobs)
+        unlock_node = self.has(f"{ENTITY_UNLOCK_PREFIX}{entity_name}") if mob_locked else Const(True)
 
         return self.all_of(
             self.access_region(entity_data.region),
@@ -889,8 +944,8 @@ class RuleHelper:
         if recipe is None:
             return self.entity(entity_name)
         entity_data = MOBS_ALL[entity_name]
-        category_locked = (entity_data.category in self.locked_categories)
-        unlock_node = self.has(f"{ENTITY_UNLOCK_PREFIX}{entity_name}") if category_locked else Const(True)
+        mob_locked = (entity_name in self.locked_mobs)
+        unlock_node = self.has(f"{ENTITY_UNLOCK_PREFIX}{entity_name}") if mob_locked else Const(True)
         return self.all_of(
             self.access_region(entity_data.region),
             recipe(),
@@ -1083,11 +1138,38 @@ class RuleHelper:
             knowledge_name, tier = TOOL_LOCKS[base]
             sources = self._acquire_from_sources(base, _stack)
             obtain = self._coarsen(sources) if sources is not None else self.material(tier)
-            return self.all_of(self.knowledge(knowledge_name), obtain)
+            # A tool granted as a reward still needs its Knowledge to be used, so the reward joins
+            # `obtain` (inside the Knowledge gate), not the whole node.
+            return self.all_of(self.knowledge(knowledge_name), self._with_reward(base, obtain))
 
         sources = self._acquire_from_sources(base, _stack)
-        result = sources if sources is not None else self._acquire_fallback(base)
-        return self._coarsen(result)
+        result = self._coarsen(sources if sources is not None else self._acquire_fallback(base))
+        # Universal Material Handling pickup lock: obtaining a tier-gated raw material by ANY in-world
+        # route — mining, chest loot, mob drop, villager trade, crafting — is blocked until enough
+        # Progressive Material Handling is received (MaterialLockService, enforced on floor pickup by
+        # ItemEntityMixin AND on container/crafting takes by SlotMixin). Only the mining path carried
+        # this gate, so _unique_or absorption could drop the gated branch and leave the material
+        # reachable via a bare chest/region path (e.g. diamond looted from a structure). Gate the whole
+        # obtain-it node on the tier count — no region floor, since each source carries its own region.
+        tier = _MATERIAL_TIER_BY_ITEM.get(base)
+        if tier is not None and result is not None:
+            result = self.all_of(self.has(ITEM_MATERIAL_HANDLING, tier), result)
+        # The BACAP reward grants the item via a /give, which adds straight to the inventory and so
+        # bypasses both pickup mixins — a real, lock-free way to get it — so it joins OUTSIDE the
+        # material gate.
+        return self._with_reward(base, result)
+
+    def _with_reward(self, base: str, node):
+        """OR a BACAP advancement reward (its event item) into an item's obtainability, when
+        bacap_rewards is on. ADDITIVE only — it never replaces the item's real sources or fallback,
+        so e.g. powder_snow_bucket keeps its bucket path (and the advancement that grants it stays
+        reachable instead of deadlocking on its own circular reward). Cycle-free: the event is a
+        has() leaf resolved by AP's event sweep, not a recursive reached(). reward_events is empty
+        unless the option is on, so this is a no-op otherwise."""
+        if base not in self.reward_events:
+            return node
+        reward = self.has(f"{REWARD_EVENT_PREFIX}{base}")
+        return reward if node is None else self.any_of(node, reward)
 
     def _acquire_from_sources(self, base: str, _stack: frozenset):
         """OR over every modeled way to obtain ``base`` (recipe, drop, mining, silk-mining, trade,
@@ -1160,22 +1242,9 @@ class RuleHelper:
         A tree that carries a real gate — a ``Has`` (structure/entity unlock, knowledge, material)
         or a reached-location — is left intact even when large, so a structure/mob lock or
         progression gate is never silently dropped (else a locked source would look reachable)."""
-        if node is None or len(json.dumps(node.to_dict())) <= self._SIZE_CAP:
+        if node is None or len(node.canonical_json()) <= self._SIZE_CAP:
             return node
-        regions = set()
-        gated = False
-
-        def collect(node_dict):
-            nonlocal gated
-            kind = node_dict.get("k")
-            if kind == "region":
-                regions.add(node_dict["r"])
-            elif kind in ("has", "loc"):
-                gated = True
-            for child in node_dict.get("c", ()):
-                collect(child)
-
-        collect(node.to_dict())
+        gated, regions = node.gate_summary()
         if gated or not regions:
             return node
         return or_(*[self.access_region(region) for region in sorted(regions)])
@@ -1187,21 +1256,19 @@ class RuleHelper:
         simpler source as one of its conjuncts is redundant and removed. That collapses the common
         explosion where an item is obtainable trivially (e.g. ``region(Overworld)`` from a cow) and
         also via a far heavier path that still needs that same trivial step (a bred-mob drop)."""
-        dicts, keys, unique = [], [], []
         seen = set()
+        unique = []
         for node in nodes:
-            key = json.dumps(node.to_dict(), sort_keys=True)
+            key = node.key()
             if key not in seen:
                 seen.add(key)
-                dicts.append(node.to_dict())
-                keys.append(key)
                 unique.append(node)
 
         keep = []
-        for node, node_dict, key in zip(unique, dicts, keys):
-            if node_dict.get("k") == "and":
-                conjuncts = {json.dumps(child, sort_keys=True) for child in node_dict.get("c", [])}
-                if conjuncts & (seen - {key}):  # a simpler sibling is one of this AND's conjuncts
+        for node in unique:
+            if isinstance(node, And):
+                conjunct_keys = {child.key() for child in node.children}
+                if conjunct_keys & (seen - {node.key()}):  # a simpler sibling is one of this AND's conjuncts
                     continue
             keep.append(node)
         return or_(*keep)

@@ -1,5 +1,5 @@
 {
-  "parent": "aem:category/entity_unlocks",
+  "parent": "aem:unlock_mob/turtle",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

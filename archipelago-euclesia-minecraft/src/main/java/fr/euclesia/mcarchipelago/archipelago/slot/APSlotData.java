@@ -17,6 +17,8 @@ public record APSlotData(
         boolean villagerTrust,
         boolean killSanity,
         boolean structureFinderActive,
+        boolean blazeandcave,
+        boolean bacapRewards,
         boolean deathList,
         int deathListCount,
         int advancementsRequired,
@@ -57,6 +59,8 @@ public record APSlotData(
                 false,
                 false,
                 false,
+                false,
+                false,
                 0,
                 0,
                 "overworld",
@@ -85,6 +89,9 @@ public record APSlotData(
                 APJson.getBoolean(json, "kill_sanity", false),
                 // Absent in older slot data -> default enabled so existing seeds keep the finder.
                 APJson.getBoolean(json, "structure_finder", true),
+                // BACAP: pack active + whether its item/XP rewards stay on (see BacapConfigService).
+                APJson.getBoolean(json, "blazeandcave", false),
+                APJson.getBoolean(json, "bacap_rewards", false),
                 APJson.getBoolean(json, "death_list", false),
                 APJson.getInt(json, "death_list_count", 0),
                 APJson.getInt(json, "advancements_required", 0),

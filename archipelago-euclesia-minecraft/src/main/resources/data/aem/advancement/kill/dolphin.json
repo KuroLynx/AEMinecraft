@@ -1,5 +1,5 @@
 {
-  "parent": "aem:kill/cave_spider",
+  "parent": "aem:kill/cow",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

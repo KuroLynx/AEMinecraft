@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_mob/fox",
+  "parent": "aem:unlock_mob/glow_squid",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"
