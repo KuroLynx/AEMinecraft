@@ -1,0 +1,138 @@
+name: Release
+
+# Global lockstep versioning. VERSION (repo root) is the single source of truth: it is stamped into
+# both the mod (mod_version) and the apworld (world_version) and they are released together as one
+# GitHub Release, vX.Y.Z, carrying both assets. The release fires only when a PR merged into master
+# changed VERSION — direct pushes to master never release. Run the workflow manually
+# (workflow_dispatch) to build both artifacts without publishing.
+on:
+  pull_request:
+    types: [closed]
+    branches: [master]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  release:
+    # Only on a real PR merge into master (not a close-without-merge), or a manual dry run.
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # The merged state on master (the merge commit), or the branch HEAD for a manual run.
+          ref: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
+          fetch-depth: 0 # need history to diff the merge commit against its parent
+
+      - name: Resolve version
+        id: resolve
+        run: |
+          version=$(tr -d '[:space:]' < VERSION)
+          mc=$(grep -E '^minecraft_version=' archipelago-euclesia-minecraft/gradle.properties | cut -d= -f2 | tr -d '[:space:]')
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "mc=${mc}" >> "$GITHUB_OUTPUT"
+
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            echo "Dry run: building v${version} without publishing."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Release only when the merge actually changed VERSION — so ordinary PRs never publish.
+          merge="${{ github.event.pull_request.merge_commit_sha }}"
+          if [ -n "$(git diff --name-only "${merge}^1" "${merge}" -- VERSION)" ]; then
+            changed=true
+          else
+            changed=false
+          fi
+
+          if [ "${changed}" != "true" ]; then
+            echo "VERSION unchanged by this merge; no release."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          elif gh release view "v${version}" >/dev/null 2>&1; then
+            echo "v${version} is already released; nothing to do."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "VERSION changed to ${version}; releasing v${version}."
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up JDK 25
+        if: steps.resolve.outputs.skip != 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Set up Gradle
+        if: steps.resolve.outputs.skip != 'true'
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build mod
+        if: steps.resolve.outputs.skip != 'true'
+        working-directory: archipelago-euclesia-minecraft
+        run: ./gradlew --no-daemon build -Pmod_version=${{ steps.resolve.outputs.version }}
+
+      - name: Package apworld
+        if: steps.resolve.outputs.skip != 'true'
+        run: |
+          python - "${{ steps.resolve.outputs.version }}" <<'PY'
+          import json, sys
+          path = "minecraft_aem/archipelago.json"
+          data = json.load(open(path))
+          data["world_version"] = sys.argv[1]  # numeric X.Y.Z; AP requires major.minor.build
+          json.dump(data, open(path, "w"), indent=2)
+          print("stamped world_version =", sys.argv[1])
+          PY
+          python - <<'PY'
+          import os, zipfile
+          with zipfile.ZipFile("minecraft_aem.apworld", "w", zipfile.ZIP_DEFLATED) as z:
+              for root, dirs, files in os.walk("minecraft_aem"):
+                  dirs[:] = [d for d in dirs if d != "__pycache__"]
+                  for f in files:
+                      if f.endswith(".pyc"):
+                          continue
+                      full = os.path.join(root, f)
+                      z.write(full, full.replace(os.sep, "/"))
+          print("packaged minecraft_aem.apworld")
+          PY
+
+      - name: Stage assets
+        if: steps.resolve.outputs.skip != 'true'
+        run: |
+          version="${{ steps.resolve.outputs.version }}"
+          mc="${{ steps.resolve.outputs.mc }}"
+          mkdir -p dist
+          cp "archipelago-euclesia-minecraft/build/libs/aem-${version}+${mc}.jar" "dist/aem-${version}+${mc}.jar"
+          cp minecraft_aem.apworld "dist/minecraft_aem-${version}.apworld"
+          ls -l dist
+
+      - name: Upload build artifacts (always)
+        if: steps.resolve.outputs.skip != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: aem-${{ steps.resolve.outputs.version }}
+          path: dist/*
+
+      - name: Publish release
+        if: steps.resolve.outputs.publish == 'true'
+        run: |
+          version="${{ steps.resolve.outputs.version }}"
+          # Tag the actual merge commit on master (github.sha is a temporary ref on PR events).
+          gh release create "v${version}" dist/* \
+            --target "${{ github.event.pull_request.merge_commit_sha }}" \
+            --title "v${version}" \
+            --latest \
+            --generate-notes
