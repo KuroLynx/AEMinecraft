@@ -8,6 +8,7 @@ import fr.euclesia.mcarchipelago.server.command.AEMCommandRegistry;
 import fr.euclesia.mcarchipelago.server.command.ArchipelagoCommandModule;
 import fr.euclesia.mcarchipelago.server.command.DumpCommandModule;
 import fr.euclesia.mcarchipelago.server.event.MinecraftEventBridge;
+import fr.euclesia.mcarchipelago.server.gameplay.FillerBuffService;
 import fr.euclesia.mcarchipelago.server.gameplay.TrapMobService;
 import fr.euclesia.mcarchipelago.server.gameplay.TrapPlatformService;
 
@@ -31,6 +32,8 @@ public final class AEMServerBridge {
         // Despawn trap-conjured mobs and tear down MLG-trap platforms after their lifetime.
         TrapMobService.register();
         TrapPlatformService.register();
+        // Tick down the temporary buffs granted by filler items.
+        FillerBuffService.register();
 
         MinecraftEventBridge.register();
         AEM.ARCHIPELAGO.client().addListener(new ArchipelagoGameplayListener());

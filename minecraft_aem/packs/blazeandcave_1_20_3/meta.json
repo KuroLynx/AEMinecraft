@@ -3,5 +3,8 @@
   "source": "datapack",
   "namespace": "blazeandcave",
   "mc_version": "26.1.2",
-  "description": "blazeandcave_1_20_3 — dumped from the running game (MC 26.1.2)."
+  "description": "blazeandcave_1_20_3 — dumped from the running game (MC 26.1.2).",
+  "content_version": "1.20.3",
+  "display_name": "BlazeandCave's Advancements Pack",
+  "match": "blazeandcave"
 }

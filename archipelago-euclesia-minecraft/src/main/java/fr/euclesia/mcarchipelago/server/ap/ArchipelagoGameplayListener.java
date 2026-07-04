@@ -6,6 +6,7 @@ import fr.euclesia.mcarchipelago.archipelago.ArchipelagoClient;
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.archipelago.slot.APSlotData;
 import fr.euclesia.mcarchipelago.archipelago.slot.CompatibilityService;
+import fr.euclesia.mcarchipelago.archipelago.slot.ContentVerification;
 import fr.euclesia.mcarchipelago.protocol.APBounceType;
 import fr.euclesia.mcarchipelago.protocol.APItemsHandling;
 import fr.euclesia.mcarchipelago.protocol.APJson;
@@ -49,6 +50,15 @@ public final class ArchipelagoGameplayListener implements APEventListener {
         // before the scan so already-completed advancements award their criteria.
         MinecraftServer server = AEMServerRuntime.server();
         if (server != null) {
+            // Content guard for the paths without the client pre-flight (dedicated server,
+            // connect-after-join): a required datapack/mod that's missing or the wrong version can't be
+            // blocked from a running world, but log a clear error so the desync is diagnosable.
+            ContentVerification.Result content =
+                    ContentVerification.verify(slotData.requiredContent(), server.getPackRepository());
+            if (!content.ok()) {
+                AEM.LOGGER.error("[AEM] Missing/incompatible required content: {}", content.message().getString());
+            }
+
             server.execute(() -> RootAdvancementService.rebuild(server, slotData));
             // One-time BACAP reward/trophy config, now that the slot data is known (covers
             // connect-after-join). Scheduled on the server thread; no-op if already applied.

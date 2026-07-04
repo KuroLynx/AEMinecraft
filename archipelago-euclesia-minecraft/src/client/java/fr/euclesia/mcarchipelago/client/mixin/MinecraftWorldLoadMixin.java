@@ -64,6 +64,7 @@ public abstract class MinecraftWorldLoadMixin {
         APWorldConnection target = connection;
         self.setScreen(new ArchipelagoConnectingScreen(
                 target,
+                packs,
                 () -> WorldLoadResume.schedule(() -> {
                     // Resume on END_CLIENT_TICK, outside the screen-tick bracket: doWorldLoad swaps
                     // Minecraft.screen and brackets the loading screen with Fabric's shared ticking-screen

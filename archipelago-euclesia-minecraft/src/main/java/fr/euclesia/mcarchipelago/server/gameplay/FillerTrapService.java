@@ -5,19 +5,9 @@ import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.archipelago.slot.APSlotData;
 import fr.euclesia.mcarchipelago.archipelago.slot.APSlotData.FillerGrant;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.Identifier;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.storage.LevelResource;
-import net.minecraft.world.level.storage.loot.LootParams;
-import net.minecraft.world.level.storage.loot.LootTable;
-import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -25,9 +15,9 @@ import java.nio.file.Path;
 import java.util.List;
 
 /**
- * Applies the one-shot effects of received filler and trap items (filler grants its Minecraft items;
- * traps fire a {@link TrapEffects} effect). Definitions come from {@code slot_data} (see
- * {@code minecraft/filler.py}) so the apworld stays the source of truth.
+ * Applies the one-shot effects of received filler and trap items (filler grants a temporary buff via
+ * {@link FillerBuffService}; traps fire a {@link TrapEffects} effect). Definitions come from
+ * {@code slot_data} (see {@code minecraft_aem/filler.py}) so the apworld stays the source of truth.
  *
  * <p>Archipelago replays the whole item history on every reconnect (the index-0 resync), so a naive
  * "apply on receipt" would duplicate filler each time. Instead we keep a persisted high-water mark in
@@ -39,9 +29,6 @@ import java.util.List;
 public final class FillerTrapService {
     private static final String FILE_NAME = "archipelago_received.json";
     private static final Gson GSON = new Gson();
-    /** Curated junk pool for "Random Bullshit" — a datapack loot table shipped with the mod. */
-    private static final ResourceKey<LootTable> RANDOM_BULLSHIT_TABLE = ResourceKey.create(
-            Registries.LOOT_TABLE, Identifier.fromNamespaceAndPath(AEM.MOD_ID, "random_bullshit"));
 
     /** On-disk persistence shape: how many received items have already had their effect applied. */
     private static final class Progress {
@@ -79,49 +66,12 @@ public final class FillerTrapService {
     private static void applyOne(ServerPlayer player, APSlotData slot, long itemId) {
         FillerGrant grant = slot.fillerItems().get(itemId);
         if (grant != null) {
-            if (grant.isRandom()) {
-                giveRandom(player, grant.randomStacks());
-            } else {
-                giveItem(player, grant.item(), grant.count());
-            }
+            FillerBuffService.applyBuff(player, grant.buff(), grant.seconds());
             return;
         }
         String trap = slot.trapItems().get(itemId);
         if (trap != null) {
             TrapEffects.run(trap, player);
-        }
-    }
-
-    private static void giveItem(ServerPlayer player, String itemId, int count) {
-        Item item = BuiltInRegistries.ITEM.getValue(Identifier.parse(itemId));
-        if (item != null) {
-            give(player, new ItemStack(item, count));
-        }
-    }
-
-    /**
-     * "Random Bullshit": rolls the {@link #RANDOM_BULLSHIT_TABLE} loot table {@code rolls} times and
-     * hands the player whatever drops. The pool is a curated set of non-useful items (kept in the mod's
-     * datapack), so a roll can never hand out something that would complete an out-of-logic advancement.
-     */
-    private static void giveRandom(ServerPlayer player, int rolls) {
-        MinecraftServer server = AEMServerRuntime.server();
-        if (server == null || !(player.level() instanceof ServerLevel level)) {
-            return;
-        }
-        LootTable table = server.reloadableRegistries().getLootTable(RANDOM_BULLSHIT_TABLE);
-        LootParams params = new LootParams.Builder(level).create(LootContextParamSets.EMPTY);
-        for (int i = 0; i < rolls; i++) {
-            for (ItemStack stack : table.getRandomItems(params)) {
-                give(player, stack);
-            }
-        }
-    }
-
-    /** Adds a stack to the inventory (it distributes large counts across slots); drops the overflow. */
-    private static void give(ServerPlayer player, ItemStack stack) {
-        if (!player.getInventory().add(stack) && !stack.isEmpty()) {
-            player.drop(stack, false);
         }
     }
 
