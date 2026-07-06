@@ -1,11 +1,13 @@
 # IDE
 .idea/
 
+# Claude Code
+.claude/
+
 # Python
 __pycache__/
 *.py[cod]
 *$py.class
-/minecraft/logic/.claude/
 
 # Refactor equivalence-gate fixtures (large, regenerable via `python tools/snapshot_slotdata.py write`)
 /tools/_slotdata_baseline/
