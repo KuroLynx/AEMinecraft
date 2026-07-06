@@ -43,10 +43,19 @@ public record APSlotData(
     public record ToolLock(String knowledge, int material) {}
 
     /**
-     * What a filler item grants on receipt: a temporary {@code buff} the mod reproduces mechanically
-     * (see {@code FillerBuffService}), lasting {@code seconds} per received copy (duration stacks).
+     * What a filler item grants on receipt — exactly one of two shapes:
+     * <ul>
+     *   <li>a temporary {@code buff} the mod reproduces mechanically (see {@code FillerBuffService}),
+     *       lasting {@code seconds} per received copy (duration stacks); or</li>
+     *   <li>a Minecraft {@code item} stack ({@code "minecraft:dirt"}) of {@code count} handed straight
+     *       into the inventory (see {@code FillerItemService}).</li>
+     * </ul>
+     * The unused half is empty/zero; {@link #isBuff()} / {@link #isItem()} pick the branch.
      */
-    public record FillerGrant(String buff, int seconds) {}
+    public record FillerGrant(String buff, int seconds, String item, int count) {
+        public boolean isBuff() { return buff != null && !buff.isEmpty(); }
+        public boolean isItem() { return item != null && !item.isEmpty(); }
+    }
 
     /**
      * A datapack/mod this seed requires (see {@code required_content}). {@code kind} is
@@ -128,7 +137,10 @@ public record APSlotData(
         );
     }
 
-    /** Parses {@code filler_items}: item id -> {"buff": key, "seconds": n}. */
+    /**
+     * Parses {@code filler_items}: item id -> a buff grant {@code {"buff": key, "seconds": n}} or an
+     * item grant {@code {"item": "minecraft:dirt", "count": n}} (see {@code minecraft_aem/filler.py}).
+     */
     private static Map<Long, FillerGrant> parseFillerItems(JsonObject json) {
         JsonElement element = json.get("filler_items");
         if (element == null || !element.isJsonObject()) {
@@ -146,7 +158,12 @@ public record APSlotData(
             JsonObject grant = entry.getValue().getAsJsonObject();
             String buff = APJson.getString(grant, "buff", "");
             if (!buff.isEmpty()) {
-                filler.put(id, new FillerGrant(buff, Math.max(1, APJson.getInt(grant, "seconds", 30))));
+                filler.put(id, new FillerGrant(buff, Math.max(1, APJson.getInt(grant, "seconds", 30)), "", 0));
+                continue;
+            }
+            String item = APJson.getString(grant, "item", "");
+            if (!item.isEmpty()) {
+                filler.put(id, new FillerGrant("", 0, item, Math.max(1, APJson.getInt(grant, "count", 1))));
             }
         }
         return Map.copyOf(filler);

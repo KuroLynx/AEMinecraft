@@ -21,28 +21,6 @@ Knowledge: Brewing,progression,1
 Knowledge: Enchanting,progression,1
 Knowledge: Sharpshooter,progression,1
 Knowledge: Flying,progression,1
-Buff: Speed Boost,filler,3
-Buff: Mining Haste,filler,3
-Buff: Strength,filler,3
-Buff: Jump Boost,filler,2
-Buff: Regeneration,filler,3
-Buff: Absorption,filler,2
-Buff: Vitality,filler,2
-Buff: Lucky,filler,2
-Buff: Toughness,filler,2
-Buff: Long Reach,filler,2
-Buff: Sure-Footed,filler,2
-Buff: Moon Boots,filler,2
-Buff: Full Belly,filler,2
-Buff: Miniaturize,filler,2
-Buff: Embiggen,filler,2
-Trap: Primed TNT,trap,5
-Trap: Aww Man !,trap,10
-Trap: Inventory Shuffle,trap,5
-Trap: Slippery Fingers,trap,8
-"Trap: ""Dé à Coudre""",trap,2
-"Trap: ""POV: Paris Games Week""",trap,4
-Trap: Item Fear,trap,5
 Dimension Unlock: Overworld,progression,1
 Progressive Structure Finder,progression_skip_balancing,5
 Biome Finder,progression_skip_balancing,1

@@ -66,7 +66,11 @@ public final class FillerTrapService {
     private static void applyOne(ServerPlayer player, APSlotData slot, long itemId) {
         FillerGrant grant = slot.fillerItems().get(itemId);
         if (grant != null) {
-            FillerBuffService.applyBuff(player, grant.buff(), grant.seconds());
+            if (grant.isItem()) {
+                FillerItemService.give(player, grant.item(), grant.count());
+            } else if (grant.isBuff()) {
+                FillerBuffService.applyBuff(player, grant.buff(), grant.seconds());
+            }
             return;
         }
         String trap = slot.trapItems().get(itemId);

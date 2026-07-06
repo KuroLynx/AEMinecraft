@@ -2,6 +2,7 @@ package fr.euclesia.mcarchipelago;
 
 import fr.euclesia.mcarchipelago.content.AEMEffects;
 import fr.euclesia.mcarchipelago.content.BiomeFinderItem;
+import fr.euclesia.mcarchipelago.content.FillerBuffEffects;
 import fr.euclesia.mcarchipelago.engine.ap.ArchipelagoService;
 import fr.euclesia.mcarchipelago.server.AEMServerBridge;
 import net.fabricmc.api.ModInitializer;
@@ -24,6 +25,7 @@ public class AEM implements ModInitializer {
 		// items) before registries freeze.
 		BiomeFinderItem.register();
 		AEMEffects.register();
+		FillerBuffEffects.register();
 		AEMServerBridge.register();
 		LOGGER.info("Archipelago Euclesia Minecraft initialized");
 	}

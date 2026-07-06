@@ -1,0 +1,91 @@
+kind,name,key,item,quantities,weights
+buff,Buff: Speed Boost,speed,,,3
+buff,Buff: Mining Haste,haste,,,3
+buff,Buff: Strength,strength,,,3
+buff,Buff: Jump Boost,jump_boost,,,2
+buff,Buff: Regeneration,regeneration,,,3
+buff,Buff: Absorption,absorption,,,2
+buff,Buff: Vitality,health_boost,,,2
+buff,Buff: Lucky,luck,,,2
+buff,Buff: Toughness,resistance,,,2
+buff,Buff: Long Reach,reach,,,2
+buff,Buff: Sure-Footed,step_assist,,,2
+buff,Buff: Moon Boots,low_gravity,,,2
+buff,Buff: Full Belly,saturation,,,2
+buff,Buff: Miniaturize,mini,,,2
+buff,Buff: Embiggen,giant,,,2
+trap,Trap: Primed TNT,primed_tnt,,,5
+trap,Trap: Aww Man !,aww_man,,,10
+trap,Trap: Inventory Shuffle,inventory_shuffle,,,5
+trap,Trap: Slippery Fingers,slippery_fingers,,,8
+trap,"Trap: ""Dé à Coudre""",thimble,,,2
+trap,"Trap: ""POV: Paris Games Week""",paris_games_week,,,4
+trap,Trap: Item Fear,item_fear,,,5
+item,,,dirt,16 32 64,6 3 1
+item,,,coarse_dirt,16 32 64,6 3 1
+item,,,terracotta,16 32 64,6 3 1
+item,,,snow,16 32 64,6 3 1
+item,,,snow_block,16 32 64,6 3 1
+item,,,stick,16 32 64,6 3 1
+item,,,apple,16 32 64,6 3 1
+item,,,barrel,16 32 64,6 3 1
+item,,,chest,16 32 64,6 3 1
+item,,,mossy_cobblestone,16 32 64,6 3 1
+item,,,mossy_cobblestone_stairs,16 32 64,6 3 1
+item,,,mossy_cobblestone_slab,16 32 64,6 3 1
+item,,,mossy_cobblestone_wall,16 32 64,6 3 1
+item,,,mossy_stone_bricks,16 32 64,6 3 1
+item,,,mossy_stone_brick_stairs,16 32 64,6 3 1
+item,,,mossy_stone_brick_slab,16 32 64,6 3 1
+item,,,mossy_stone_brick_wall,16 32 64,6 3 1
+item,,,tuff,16 32 64,6 3 1
+item,,,tuff_slab,16 32 64,6 3 1
+item,,,tuff_stairs,16 32 64,6 3 1
+item,,,tuff_wall,16 32 64,6 3 1
+item,,,polished_tuff,16 32 64,6 3 1
+item,,,polished_tuff_slab,16 32 64,6 3 1
+item,,,polished_tuff_stairs,16 32 64,6 3 1
+item,,,polished_tuff_wall,16 32 64,6 3 1
+item,,,tuff_bricks,16 32 64,6 3 1
+item,,,tuff_brick_slab,16 32 64,6 3 1
+item,,,tuff_brick_stairs,16 32 64,6 3 1
+item,,,tuff_brick_wall,16 32 64,6 3 1
+item,,,chiseled_tuff,16 32 64,6 3 1
+item,,,chiseled_tuff_bricks,16 32 64,6 3 1
+item,,,moss_block,16 32 64,6 3 1
+item,,,moss_carpet,16 32 64,6 3 1
+item,,,pale_moss_block,16 32 64,6 3 1
+item,,,pale_moss_carpet,16 32 64,6 3 1
+item,,,oak_sign,4 8 16,6 3 1
+item,,,spruce_sign,4 8 16,6 3 1
+item,,,birch_sign,4 8 16,6 3 1
+item,,,jungle_sign,4 8 16,6 3 1
+item,,,acacia_sign,4 8 16,6 3 1
+item,,,dark_oak_sign,4 8 16,6 3 1
+item,,,mangrove_sign,4 8 16,6 3 1
+item,,,cherry_sign,4 8 16,6 3 1
+item,,,bamboo_sign,4 8 16,6 3 1
+item,,,crimson_sign,4 8 16,6 3 1
+item,,,warped_sign,4 8 16,6 3 1
+item,,,pale_oak_sign,4 8 16,6 3 1
+item,,,oak_boat,1 2 4,6 3 1
+item,,,spruce_boat,1 2 4,6 3 1
+item,,,birch_boat,1 2 4,6 3 1
+item,,,jungle_boat,1 2 4,6 3 1
+item,,,acacia_boat,1 2 4,6 3 1
+item,,,dark_oak_boat,1 2 4,6 3 1
+item,,,mangrove_boat,1 2 4,6 3 1
+item,,,cherry_boat,1 2 4,6 3 1
+item,,,pale_oak_boat,1 2 4,6 3 1
+item,,,bamboo_raft,1 2 4,6 3 1
+item,,,oak_chest_boat,1 2 4,6 3 1
+item,,,spruce_chest_boat,1 2 4,6 3 1
+item,,,birch_chest_boat,1 2 4,6 3 1
+item,,,jungle_chest_boat,1 2 4,6 3 1
+item,,,acacia_chest_boat,1 2 4,6 3 1
+item,,,dark_oak_chest_boat,1 2 4,6 3 1
+item,,,mangrove_chest_boat,1 2 4,6 3 1
+item,,,cherry_chest_boat,1 2 4,6 3 1
+item,,,pale_oak_chest_boat,1 2 4,6 3 1
+item,,,bamboo_chest_raft,1 2 4,6 3 1
+item,,,suspicious_stew,1,4

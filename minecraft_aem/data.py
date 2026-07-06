@@ -42,7 +42,13 @@ from .logic.constants import *
 # are *created* this seed — see MCWorld._get_active_locations).
 _REGISTRY: ContentRegistry = load_pack(base_pack())
 
-ITEMS: dict[str, MCItemData] = _REGISTRY.items
+# The curated CSV items (progression/useful + trap filler) plus every generated **filler** — the buffs
+# and the safe item stacks (dirt, tuff, boats, …), all declared in filler.py under their own id block
+# (filler.BASE_ID_FILLER_ITEM). Merging them here means the world registers, creates and filler-weights
+# them with no CSV upkeep; the buffs live ONLY in filler.py now (no rows in items.csv). See filler.py.
+from .filler import FILLER_ITEMS  # noqa: E402  (import here to avoid a top-level cycle via content)
+
+ITEMS: dict[str, MCItemData] = {**_REGISTRY.items, **FILLER_ITEMS}
 MOBS_ALL: dict[str, MCMobData] = _REGISTRY.mobs
 
 # Overlay packs: mod/datapack content (dumped in-game via /aem dump, then dropped into packs/)

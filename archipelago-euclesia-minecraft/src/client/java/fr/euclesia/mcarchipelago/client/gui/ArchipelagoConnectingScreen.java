@@ -11,6 +11,8 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.FormattedText;
+import net.minecraft.network.chat.Style;
 import net.minecraft.server.packs.repository.PackRepository;
 
 /**
@@ -128,9 +130,16 @@ public final class ArchipelagoConnectingScreen extends Screen {
         graphics.centeredText(this.font, target, centerX, top + 14, 0xFFA0A0A0);
 
         if (failed) {
-            String detail = blocked ? blockError.getString() : APConnectController.INSTANCE.message();
-            if (!detail.isEmpty()) {
-                graphics.centeredText(this.font, detail, centerX, top + 28, 0xFFFF5555);
+            Component detail = blocked ? blockError : Component.literal(APConnectController.INSTANCE.message());
+            if (!detail.getString().isEmpty()) {
+                // Wrap the reason across multiple centered lines so a long "missing datapack/mod" message
+                // doesn't run off the edges of the screen.
+                int maxWidth = Math.min(this.width - 40, 320);
+                int lineY = top + 28;
+                for (FormattedText line : this.font.getSplitter().splitLines(detail, maxWidth, Style.EMPTY)) {
+                    graphics.centeredText(this.font, line.getString(), centerX, lineY, 0xFFFF5555);
+                    lineY += this.font.lineHeight;
+                }
             }
         }
     }
