@@ -1,101 +1,96 @@
 name: Release
 
-# Global lockstep versioning. VERSION (repo root) is the single source of truth: it is stamped into
-# both the mod (mod_version) and the apworld (world_version) and they are released together as one
-# GitHub Release, vX.Y.Z, carrying both assets. The release fires only when a PR merged into master
-# changed VERSION — direct pushes to master never release. Run the workflow manually
-# (workflow_dispatch) to build both artifacts without publishing.
+# The apworld dictates the version. minecraft_aem/archipelago.json's "world_version" is the single
+# source of truth: it is built into the mod as mod_version and is already carried by the apworld, and
+# the two ship together as one GitHub Release vX.Y.Z. Every push to master reads that version and
+# publishes it ONLY if a release for it does not already exist — so bumping world_version is the whole
+# release signal, and re-pushing after a failed build simply retries (the release still doesn't
+# exist). Run the workflow manually (workflow_dispatch) to build both artifacts without publishing.
 on:
-  pull_request:
-    types: [closed]
+  push:
     branches: [master]
   workflow_dispatch: {}
 
+# Least privilege: the job only needs to create the GitHub Release.
 permissions:
   contents: write
+
+# Serialize release runs so two quick pushes can't race to create the same tag; let an in-flight
+# publish finish rather than cancelling it.
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 defaults:
   run:
     shell: bash
 
-env:
-  GH_TOKEN: ${{ github.token }}
-
 jobs:
   release:
-    # Only on a real PR merge into master (not a close-without-merge), or a manual dry run.
-    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }} # consumed by the gh CLI in the resolve and publish steps
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          # The merged state on master (the merge commit), or the branch HEAD for a manual run.
-          ref: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
-          fetch-depth: 0 # need history to diff the merge commit against its parent
 
-      - name: Resolve version
+      - name: Resolve version and decide whether to release
         id: resolve
         run: |
-          version=$(tr -d '[:space:]' < VERSION)
-          mc=$(grep -E '^minecraft_version=' archipelago-euclesia-minecraft/gradle.properties | cut -d= -f2 | tr -d '[:space:]')
-          echo "version=${version}" >> "$GITHUB_OUTPUT"
-          echo "mc=${mc}" >> "$GITHUB_OUTPUT"
+          set -euo pipefail
 
-          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+          # world_version is authoritative; jq -e fails the step if it is missing or null.
+          version="$(jq -er '.world_version' minecraft_aem/archipelago.json)"
+          mc="$(grep -E '^minecraft_version=' archipelago-euclesia-minecraft/gradle.properties | cut -d= -f2 | tr -d '[:space:]')"
+
+          {
+            echo "version=${version}"
+            echo "mc=${mc}"
+          } >> "$GITHUB_OUTPUT"
+
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
             echo "Dry run: building v${version} without publishing."
-            echo "publish=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          # Release only when the merge actually changed VERSION — so ordinary PRs never publish.
-          merge="${{ github.event.pull_request.merge_commit_sha }}"
-          if [ -n "$(git diff --name-only "${merge}^1" "${merge}" -- VERSION)" ]; then
-            changed=true
-          else
-            changed=false
-          fi
-
-          if [ "${changed}" != "true" ]; then
-            echo "VERSION unchanged by this merge; no release."
-            echo "publish=false" >> "$GITHUB_OUTPUT"
-            echo "skip=true" >> "$GITHUB_OUTPUT"
+            build=true
+            publish=false
           elif gh release view "v${version}" >/dev/null 2>&1; then
             echo "v${version} is already released; nothing to do."
-            echo "publish=false" >> "$GITHUB_OUTPUT"
-            echo "skip=true" >> "$GITHUB_OUTPUT"
+            build=false
+            publish=false
           else
-            echo "VERSION changed to ${version}; releasing v${version}."
-            echo "publish=true" >> "$GITHUB_OUTPUT"
+            echo "v${version} not yet released; building and publishing."
+            build=true
+            publish=true
           fi
 
+          {
+            echo "build=${build}"
+            echo "publish=${publish}"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Set up JDK 25
-        if: steps.resolve.outputs.skip != 'true'
+        if: steps.resolve.outputs.build == 'true'
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "25"
 
       - name: Set up Gradle
-        if: steps.resolve.outputs.skip != 'true'
+        if: steps.resolve.outputs.build == 'true'
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build mod
-        if: steps.resolve.outputs.skip != 'true'
+        if: steps.resolve.outputs.build == 'true'
         working-directory: archipelago-euclesia-minecraft
-        run: ./gradlew --no-daemon build -Pmod_version=${{ steps.resolve.outputs.version }}
+        env:
+          VERSION: ${{ steps.resolve.outputs.version }} # via env to keep it out of the shell command line
+        run: ./gradlew --no-daemon build -Pmod_version="${VERSION}"
 
       - name: Package apworld
-        if: steps.resolve.outputs.skip != 'true'
+        if: steps.resolve.outputs.build == 'true'
         run: |
-          python - "${{ steps.resolve.outputs.version }}" <<'PY'
-          import json, sys
-          path = "minecraft_aem/archipelago.json"
-          data = json.load(open(path))
-          data["world_version"] = sys.argv[1]  # numeric X.Y.Z; AP requires major.minor.build
-          json.dump(data, open(path, "w"), indent=2)
-          print("stamped world_version =", sys.argv[1])
-          PY
+          set -euo pipefail
+          # world_version already lives in archipelago.json (the source of truth), so the apworld is
+          # packaged as-is — no stamping. __pycache__ and *.pyc are excluded.
           python - <<'PY'
           import os, zipfile
           with zipfile.ZipFile("minecraft_aem.apworld", "w", zipfile.ZIP_DEFLATED) as z:
@@ -110,19 +105,21 @@ jobs:
           PY
 
       - name: Stage assets
-        if: steps.resolve.outputs.skip != 'true'
+        if: steps.resolve.outputs.build == 'true'
+        env:
+          VERSION: ${{ steps.resolve.outputs.version }}
+          MC: ${{ steps.resolve.outputs.mc }}
         run: |
-          version="${{ steps.resolve.outputs.version }}"
-          mc="${{ steps.resolve.outputs.mc }}"
+          set -euo pipefail
           mkdir -p dist
-          cp "archipelago-euclesia-minecraft/build/libs/aem-${version}+${mc}.jar" "dist/aem-${version}+${mc}.jar"
-          cp minecraft_aem.apworld "dist/minecraft_aem-${version}.apworld"
+          cp "archipelago-euclesia-minecraft/build/libs/aem-${VERSION}+${MC}.jar" "dist/aem-${VERSION}+${MC}.jar"
+          cp minecraft_aem.apworld "dist/minecraft_aem-${VERSION}.apworld"
           # The player YAML template lives in the repo and is kept current; ship it alongside the build.
-          cp template.yaml "dist/minecraft_aem-${version}.yaml"
+          cp template.yaml "dist/minecraft_aem-${VERSION}.yaml"
           ls -l dist
 
-      - name: Upload build artifacts (always)
-        if: steps.resolve.outputs.skip != 'true'
+      - name: Upload build artifacts
+        if: steps.resolve.outputs.build == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: aem-${{ steps.resolve.outputs.version }}
@@ -130,11 +127,13 @@ jobs:
 
       - name: Publish release
         if: steps.resolve.outputs.publish == 'true'
+        env:
+          VERSION: ${{ steps.resolve.outputs.version }}
+          TARGET_SHA: ${{ github.sha }} # the pushed commit on master; tag points here
         run: |
-          version="${{ steps.resolve.outputs.version }}"
-          # Tag the actual merge commit on master (github.sha is a temporary ref on PR events).
-          gh release create "v${version}" dist/* \
-            --target "${{ github.event.pull_request.merge_commit_sha }}" \
-            --title "v${version}" \
+          set -euo pipefail
+          gh release create "v${VERSION}" dist/* \
+            --target "${TARGET_SHA}" \
+            --title "v${VERSION}" \
             --latest \
             --generate-notes
