@@ -36,18 +36,36 @@ public record APSlotData(
         Map<String, String> dimensionLocks,
         Map<Long, FillerGrant> fillerItems,
         Map<Long, String> trapItems,
+        List<ContentRequirement> requiredContent,
         int slotDataVersion
 ) {
     /** A tool/armor pickup gate: the player needs {@code knowledge} AND {@code material} tiers. */
     public record ToolLock(String knowledge, int material) {}
 
     /**
-     * What a filler item grants on receipt: either a fixed {@code count} of the Minecraft {@code item},
-     * or — when {@code randomStacks > 0} — that many random vanilla item stacks ({@code item} unused).
+     * What a filler item grants on receipt — exactly one of two shapes:
+     * <ul>
+     *   <li>a temporary {@code buff} the mod reproduces mechanically (see {@code FillerBuffService}),
+     *       lasting {@code seconds} per received copy (duration stacks); or</li>
+     *   <li>a Minecraft {@code item} stack ({@code "minecraft:dirt"}) of {@code count} handed straight
+     *       into the inventory (see {@code FillerItemService}).</li>
+     * </ul>
+     * The unused half is empty/zero; {@link #isBuff()} / {@link #isItem()} pick the branch.
      */
-    public record FillerGrant(String item, int count, int randomStacks) {
-        public boolean isRandom() {
-            return randomStacks > 0;
+    public record FillerGrant(String buff, int seconds, String item, int count) {
+        public boolean isBuff() { return buff != null && !buff.isEmpty(); }
+        public boolean isItem() { return item != null && !item.isEmpty(); }
+    }
+
+    /**
+     * A datapack/mod this seed requires (see {@code required_content}). {@code kind} is
+     * {@code "datapack"} or {@code "mod"}; {@code id} is the pack namespace / Fabric mod id;
+     * {@code name} is the human display name; {@code version} is the required version; {@code match}
+     * is a lowercase substring identifying the datapack among the installed ones.
+     */
+    public record ContentRequirement(String kind, String id, String name, String version, String match) {
+        public boolean isMod() {
+            return "mod".equals(kind);
         }
     }
 
@@ -78,6 +96,7 @@ public record APSlotData(
                 Map.of(),
                 Map.of(),
                 Map.of(),
+                List.of(),
                 0
         );
     }
@@ -111,13 +130,17 @@ public record APSlotData(
                 APJson.stringStringMap(json, "dimension_locks"),
                 parseFillerItems(json),
                 parseTrapItems(json),
+                parseRequiredContent(json),
                 // Absent (0) in pre-versioning slot data -> treated as legacy/unversioned by
                 // CompatibilityService (allowed with a warning, not blocked).
                 APJson.getInt(json, "slot_data_version", 0)
         );
     }
 
-    /** Parses {@code filler_items}: item id -> {"item": mc_id, "count": n} or {"random": n}. */
+    /**
+     * Parses {@code filler_items}: item id -> a buff grant {@code {"buff": key, "seconds": n}} or an
+     * item grant {@code {"item": "minecraft:dirt", "count": n}} (see {@code minecraft_aem/filler.py}).
+     */
     private static Map<Long, FillerGrant> parseFillerItems(JsonObject json) {
         JsonElement element = json.get("filler_items");
         if (element == null || !element.isJsonObject()) {
@@ -133,17 +156,43 @@ public record APSlotData(
                 continue;
             }
             JsonObject grant = entry.getValue().getAsJsonObject();
-            int random = APJson.getInt(grant, "random", 0);
-            if (random > 0) {
-                filler.put(id, new FillerGrant(null, 0, random));
-            } else {
-                String item = APJson.getString(grant, "item", "");
-                if (!item.isEmpty()) {
-                    filler.put(id, new FillerGrant(item, Math.max(1, APJson.getInt(grant, "count", 1)), 0));
-                }
+            String buff = APJson.getString(grant, "buff", "");
+            if (!buff.isEmpty()) {
+                filler.put(id, new FillerGrant(buff, Math.max(1, APJson.getInt(grant, "seconds", 30)), "", 0));
+                continue;
+            }
+            String item = APJson.getString(grant, "item", "");
+            if (!item.isEmpty()) {
+                filler.put(id, new FillerGrant("", 0, item, Math.max(1, APJson.getInt(grant, "count", 1))));
             }
         }
         return Map.copyOf(filler);
+    }
+
+    /** Parses {@code required_content}: list of {kind, id, name, version, match}. */
+    private static List<ContentRequirement> parseRequiredContent(JsonObject json) {
+        JsonElement element = json.get("required_content");
+        if (element == null || !element.isJsonArray()) {
+            return List.of();
+        }
+        List<ContentRequirement> requirements = new java.util.ArrayList<>();
+        for (JsonElement entry : element.getAsJsonArray()) {
+            if (!entry.isJsonObject()) {
+                continue;
+            }
+            JsonObject req = entry.getAsJsonObject();
+            String id = APJson.getString(req, "id", "");
+            if (id.isEmpty()) {
+                continue;
+            }
+            requirements.add(new ContentRequirement(
+                    APJson.getString(req, "kind", "datapack"),
+                    id,
+                    APJson.getString(req, "name", id),
+                    APJson.getString(req, "version", ""),
+                    APJson.getString(req, "match", id).toLowerCase(java.util.Locale.ROOT)));
+        }
+        return List.copyOf(requirements);
     }
 
     /** Parses {@code trap_items}: item id -> effect key. */

@@ -143,6 +143,15 @@ def overlay_packs() -> dict[str, str]:
     return {ns: name for ns, (name, source) in _discover().items() if source != "vanilla"}
 
 
+def pack_meta(dir_name: str) -> dict:
+    """The raw meta.json of the pack directory ``dir_name`` (empty dict if it has none)."""
+    meta = files(_MC_ROOT).joinpath("packs", dir_name, "meta.json")
+    if not meta.is_file():
+        return {}
+    with meta.open(encoding="utf-8") as f:
+        return json.load(f)
+
+
 def _read_csv(pack_dir, filename: str):
     with pack_dir.joinpath(filename).open(mode="r", encoding="utf-8-sig") as f:
         import csv

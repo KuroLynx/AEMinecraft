@@ -117,6 +117,8 @@ jobs:
           mkdir -p dist
           cp "archipelago-euclesia-minecraft/build/libs/aem-${version}+${mc}.jar" "dist/aem-${version}+${mc}.jar"
           cp minecraft_aem.apworld "dist/minecraft_aem-${version}.apworld"
+          # The player YAML template lives in the repo and is kept current; ship it alongside the build.
+          cp template.yaml "dist/minecraft_aem-${version}.yaml"
           ls -l dist
 
       - name: Upload build artifacts (always)

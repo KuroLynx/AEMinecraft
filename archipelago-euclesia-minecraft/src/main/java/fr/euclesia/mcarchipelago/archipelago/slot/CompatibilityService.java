@@ -16,7 +16,7 @@ public final class CompatibilityService {
     /** Oldest slot-data schema this mod still reads. */
     public static final int MIN_SUPPORTED = 1;
     /** Newest slot-data schema this mod knows about. */
-    public static final int MAX_SUPPORTED = 1;
+    public static final int MAX_SUPPORTED = 2;
 
     private CompatibilityService() {}
 

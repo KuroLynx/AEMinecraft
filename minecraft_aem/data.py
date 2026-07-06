@@ -32,6 +32,7 @@ from .content.registry import (  # noqa: F401
     load_pack,
     load_structures,
     overlay_packs,
+    pack_meta,
 )
 from .logic.constants import *
 
@@ -41,7 +42,13 @@ from .logic.constants import *
 # are *created* this seed — see MCWorld._get_active_locations).
 _REGISTRY: ContentRegistry = load_pack(base_pack())
 
-ITEMS: dict[str, MCItemData] = _REGISTRY.items
+# The curated CSV items (progression/useful + trap filler) plus every generated **filler** — the buffs
+# and the safe item stacks (dirt, tuff, boats, …), all declared in filler.py under their own id block
+# (filler.BASE_ID_FILLER_ITEM). Merging them here means the world registers, creates and filler-weights
+# them with no CSV upkeep; the buffs live ONLY in filler.py now (no rows in items.csv). See filler.py.
+from .filler import FILLER_ITEMS  # noqa: E402  (import here to avoid a top-level cycle via content)
+
+ITEMS: dict[str, MCItemData] = {**_REGISTRY.items, **FILLER_ITEMS}
 MOBS_ALL: dict[str, MCMobData] = _REGISTRY.mobs
 
 # Overlay packs: mod/datapack content (dumped in-game via /aem dump, then dropped into packs/)
@@ -60,6 +67,29 @@ OVERLAY_PACKS: list[tuple[str, str]] = [
 
 # The discovered BACAP pack for this version (None if none is installed for CONTENT_VERSION).
 BACAP_PACK: str | None = overlay_packs().get("blazeandcave")
+
+# Per-overlay content REQUIREMENTS the mod must verify on world load. When an overlay's option is on,
+# the seed depends on that datapack/mod being installed at the matching version, so the mod refuses to
+# load a world missing it (see the mod's ContentVerification / ArchipelagoConnectingScreen). Each entry
+# is (enabling option, requirement dict); fill_slot_data emits the dicts whose option is on this seed.
+#   kind    : "datapack" | "mod" — how the mod locates it (pack repository vs Fabric loader).
+#   id      : stable identifier (the pack namespace / the Fabric mod id).
+#   name    : human display name for the "please install X" message.
+#   version : the version this apworld was generated against (must match what's installed).
+#   match   : lowercase substring identifying the pack among installed datapacks (datapack kind only;
+#             BACAP ships its version only in its datapack filename, so the mod matches on that).
+OVERLAY_REQUIREMENTS: list[tuple[str, dict]] = []
+for _namespace, _pack_name in overlay_packs().items():
+    if _namespace not in OVERLAY_OPTIONS:
+        continue
+    _meta = pack_meta(_pack_name)
+    OVERLAY_REQUIREMENTS.append((OVERLAY_OPTIONS[_namespace], {
+        "kind"   : "mod" if _meta.get("source") == "mod" else "datapack",
+        "id"     : _namespace,
+        "name"   : _meta.get("display_name", _namespace),
+        "version": str(_meta.get("content_version", "")),
+        "match"  : str(_meta.get("match", _namespace)).lower(),
+    }))
 
 # STRUCTURES is the vanilla base plus every overlay pack's worldgen structures (e.g. a datapack/mod
 # that generates new structures), so each becomes a Structure Unlock item and its palette feeds the

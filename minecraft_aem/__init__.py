@@ -18,7 +18,7 @@ from .trackers import build_trackers_export
 # the mod must have). The mod knows the range of schema versions it understands and refuses to enter
 # a world outside that range (see CompatibilityService, mod side, and docs/versioning.md). Additive,
 # tolerated-if-absent fields do NOT require a bump.
-SLOT_DATA_VERSION = 1
+SLOT_DATA_VERSION = 2
 
 # ---------------------------------------------------------------------------
 # Classes Item et Location
@@ -511,6 +511,16 @@ class MCWorld(World):
             # The mod runs blazeandcave's reward-disable functions on first world load accordingly.
             "blazeandcave"         : bool(self.options.blazeandcave.value),
             "bacap_rewards"        : bool(self.options.bacap_rewards.value),
+
+            # Datapacks/mods this seed REQUIRES to be installed at a matching version. The mod verifies
+            # each against the loaded datapacks (pack repository) / Fabric mods on world load and refuses
+            # to enter the world if one is missing or the wrong version (see ContentVerification). Only
+            # the overlays enabled this seed are listed (e.g. BACAP when blazeandcave is on).
+            "required_content"     : [
+                requirement
+                for option, requirement in OVERLAY_REQUIREMENTS
+                if getattr(self.options, option).value
+            ],
 
             # --- Mapping item ID → nom (le mod applique l'effet depuis le nom) ---
             # Inclut les items de base ET chaque Entity/Structure unlock, pour que le mod
