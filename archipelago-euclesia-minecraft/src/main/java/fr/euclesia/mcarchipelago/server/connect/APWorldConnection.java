@@ -10,9 +10,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * Per-world Archipelago connection details, stored as {@code archipelago_connection.json} inside the
- * world's save folder. Entered on the Archipelago tab of the create-world screen and used to connect
- * when the world is joined (see the connect-on-join gate). One world == one Archipelago slot.
+ * Per-world Archipelago connection details, stored as {@code archipelago/archipelago_connection.json}
+ * inside the world's save folder (see {@link APWorldPaths}). Entered on the Archipelago tab of the
+ * create-world screen and used to connect when the world is joined (see the connect-on-join gate).
+ * One world == one Archipelago slot.
  *
  * <p>The password is kept in plain text, matching how the standard Archipelago text clients behave.
  */
@@ -50,7 +51,7 @@ public final class APWorldConnection {
 
     /** Reads the connection saved in a world folder, or {@code null} if none/unreadable. */
     public static APWorldConnection read(Path worldDir) {
-        Path file = worldDir.resolve(FILE_NAME);
+        Path file = APWorldPaths.readPath(worldDir, FILE_NAME);
         if (!Files.exists(file)) {
             return null;
         }
@@ -62,11 +63,10 @@ public final class APWorldConnection {
         }
     }
 
-    /** Writes this connection into a world folder. */
+    /** Writes this connection into a world folder's {@code archipelago/} subfolder. */
     public void write(Path worldDir) {
         try {
-            Files.createDirectories(worldDir);
-            Files.writeString(worldDir.resolve(FILE_NAME), GSON.toJson(this));
+            Files.writeString(APWorldPaths.writePath(worldDir, FILE_NAME), GSON.toJson(this));
         } catch (IOException exception) {
             AEM.LOGGER.warn("Failed to write {} for this world", FILE_NAME, exception);
         }

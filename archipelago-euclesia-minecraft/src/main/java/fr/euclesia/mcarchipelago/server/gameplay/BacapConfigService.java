@@ -2,13 +2,12 @@ package fr.euclesia.mcarchipelago.server.gameplay;
 
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.archipelago.slot.APSlotData;
+import fr.euclesia.mcarchipelago.server.connect.APWorldPaths;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.level.storage.LevelResource;
 
 import java.nio.file.Files;
-import java.nio.file.Path;
 
 /**
  * Applies the Archipelago BlazeandCave's Advancements Pack (BACAP) configuration once per world, the
@@ -50,13 +49,12 @@ public final class BacapConfigService {
             return; // BACAP not in play -> its config functions don't exist.
         }
 
-        Path marker = server.getWorldPath(LevelResource.ROOT).resolve(APPLIED_FILE);
-        if (Files.exists(marker)) {
+        if (Files.exists(APWorldPaths.readPath(server, APPLIED_FILE))) {
             return; // Already applied for this world.
         }
 
         // Mark up front so a second call this session (JOIN then the connect handler) can't re-run.
-        if (!writeMarker(marker)) {
+        if (!writeMarker(server)) {
             return; // Couldn't persist the marker; skip rather than risk re-running every load.
         }
 
@@ -73,9 +71,9 @@ public final class BacapConfigService {
         server.getCommands().performPrefixedCommand(source, command);
     }
 
-    private static boolean writeMarker(Path marker) {
+    private static boolean writeMarker(MinecraftServer server) {
         try {
-            Files.writeString(marker, "");
+            Files.writeString(APWorldPaths.writePath(server, APPLIED_FILE), "");
             return true;
         } catch (Exception exception) {
             AEM.LOGGER.warn("Failed to write {}", APPLIED_FILE, exception);

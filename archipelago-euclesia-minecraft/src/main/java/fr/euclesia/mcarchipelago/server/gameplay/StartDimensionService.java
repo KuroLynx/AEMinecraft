@@ -3,6 +3,7 @@ package fr.euclesia.mcarchipelago.server.gameplay;
 import com.google.gson.Gson;
 import com.mojang.datafixers.util.Pair;
 import fr.euclesia.mcarchipelago.AEM;
+import fr.euclesia.mcarchipelago.server.connect.APWorldPaths;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -15,7 +16,6 @@ import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.LevelData;
-import net.minecraft.world.level.storage.LevelResource;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -120,7 +120,7 @@ public final class StartDimensionService {
     }
 
     private static Set<String> readStarted(MinecraftServer server) {
-        Path file = server.getWorldPath(LevelResource.ROOT).resolve(STARTED_FILE);
+        Path file = APWorldPaths.readPath(server, STARTED_FILE);
         if (!Files.exists(file)) {
             return new HashSet<>();
         }
@@ -135,7 +135,7 @@ public final class StartDimensionService {
 
     private static void writeStarted(MinecraftServer server, Set<String> started) {
         try {
-            Files.writeString(server.getWorldPath(LevelResource.ROOT).resolve(STARTED_FILE), GSON.toJson(started));
+            Files.writeString(APWorldPaths.writePath(server, STARTED_FILE), GSON.toJson(started));
         } catch (IOException exception) {
             AEM.LOGGER.warn("Failed to write {}", STARTED_FILE, exception);
         }

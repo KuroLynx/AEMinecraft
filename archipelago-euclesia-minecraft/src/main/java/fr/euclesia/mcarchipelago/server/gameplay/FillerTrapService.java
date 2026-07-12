@@ -4,10 +4,10 @@ import com.google.gson.Gson;
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.archipelago.slot.APSlotData;
 import fr.euclesia.mcarchipelago.archipelago.slot.APSlotData.FillerGrant;
+import fr.euclesia.mcarchipelago.server.connect.APWorldPaths;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.storage.LevelResource;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -80,7 +80,7 @@ public final class FillerTrapService {
     }
 
     private static int readApplied(MinecraftServer server) {
-        Path file = progressFile(server);
+        Path file = APWorldPaths.readPath(server, FILE_NAME);
         if (!Files.exists(file)) {
             return 0;
         }
@@ -97,13 +97,9 @@ public final class FillerTrapService {
         Progress progress = new Progress();
         progress.appliedItemCount = count;
         try {
-            Files.writeString(progressFile(server), GSON.toJson(progress));
+            Files.writeString(APWorldPaths.writePath(server, FILE_NAME), GSON.toJson(progress));
         } catch (IOException exception) {
             AEM.LOGGER.warn("Failed to write {}", FILE_NAME, exception);
         }
-    }
-
-    private static Path progressFile(MinecraftServer server) {
-        return server.getWorldPath(LevelResource.ROOT).resolve(FILE_NAME);
     }
 }
