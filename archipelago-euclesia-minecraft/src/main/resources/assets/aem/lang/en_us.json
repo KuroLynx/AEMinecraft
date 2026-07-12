@@ -66,6 +66,10 @@
 
   "gui.aem.create.title": "Archipelago",
   "gui.aem.create.subtitle": "Connect this world to Archipelago",
+  "gui.aem.create.slot_required": "Enter an Archipelago slot name to create this world.",
+
+  "gui.aem.world.incompatible": "Not compatible with Archipelago",
+  "gui.aem.world.blocked": "This world has no Archipelago slot and cannot be joined.",
 
   "gui.aem.field.address": "Address",
   "gui.aem.field.port": "Port",

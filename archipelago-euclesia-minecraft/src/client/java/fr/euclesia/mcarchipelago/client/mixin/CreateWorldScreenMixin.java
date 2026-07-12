@@ -5,7 +5,9 @@ import fr.euclesia.mcarchipelago.client.gui.ArchipelagoCreateTab;
 import fr.euclesia.mcarchipelago.server.connect.APWorldConnection;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.tabs.Tab;
+import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.client.gui.screens.worldselection.CreateWorldScreen;
+import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -38,9 +40,19 @@ public abstract class CreateWorldScreenMixin {
         return extended;
     }
 
-    @Inject(method = "onCreate", at = @At("HEAD"))
+    @Inject(method = "onCreate", at = @At("HEAD"), cancellable = true)
     private void archipelago_euclesia$stageConnection(CallbackInfo ci) {
         if (archipelago_euclesia$tab == null) {
+            return;
+        }
+        if (archipelago_euclesia$tab.slot().isBlank()) {
+            // Every world in this pack must be bound to an Archipelago slot; refuse to create one
+            // without a slot name and point the player at the Archipelago tab to fix it.
+            Minecraft minecraft = Minecraft.getInstance();
+            SystemToast.addOrUpdate(minecraft.getToastManager(), SystemToast.SystemToastId.WORLD_ACCESS_FAILURE,
+                    Component.translatable("gui.aem.connect.status.slot_required"),
+                    Component.translatable("gui.aem.create.slot_required"));
+            ci.cancel();
             return;
         }
         APWorldConnection connection = new APWorldConnection();

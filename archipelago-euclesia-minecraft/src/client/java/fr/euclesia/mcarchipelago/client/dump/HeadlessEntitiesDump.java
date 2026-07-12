@@ -81,6 +81,14 @@ public final class HeadlessEntitiesDump {
     }
 
     /**
+     * Whether {@code levelId} is the throwaway world this dump spins up. It is never bound to an
+     * Archipelago slot, so the connect-on-join gate must let it through rather than block it.
+     */
+    public static boolean isDumpWorld(String levelId) {
+        return SAVE_NAME.equals(levelId);
+    }
+
+    /**
      * Kick off a headless entities dump. Must run on the client thread (it swaps screens).
      *
      * @param returnTo    the screen the rebuilt {@link DumpScreen} returns to on Back
