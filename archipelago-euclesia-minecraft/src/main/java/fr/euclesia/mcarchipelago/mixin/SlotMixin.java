@@ -40,7 +40,7 @@ public abstract class SlotMixin {
         if (this.container == player.getInventory()) {
             return;
         }
-        Component reason = MaterialLockService.blockReason(getItem());
+        Component reason = MaterialLockService.blockReason(getItem(), MaterialLockService.Channel.CRAFTING);
         if (reason != null) {
             cir.setReturnValue(false);
             if (player instanceof ServerPlayer serverPlayer) {

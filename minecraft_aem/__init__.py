@@ -9,7 +9,7 @@ from .logic.ast import Const
 from .logic.constants import *
 from .logic.root import set_rules
 from .logic_export import build_logic_export
-from .options import MCOptions, StartDimension, StructureFinder
+from .options import ItemGateBehavior, MCOptions, StartDimension, StructureFinder
 from .regions import MCRegion
 from .trackers import build_trackers_export
 
@@ -511,6 +511,14 @@ class MCWorld(World):
             # The mod runs blazeandcave's reward-disable functions on first world load accordingly.
             "blazeandcave"         : bool(self.options.blazeandcave.value),
             "bacap_rewards"        : bool(self.options.bacap_rewards.value),
+
+            # Per-route handling of still-locked items (see ItemGateBehavior / the mod's
+            # MaterialLockService + Give/Slot/ItemEntity mixins). Each route is emitted as a bool (true =
+            # gated) so an omitted YAML key falls back to the historical default here, not in the mod.
+            "item_gate_behavior"   : {
+                route: ItemGateBehavior.as_bool(self.options.item_gate_behavior.value.get(route, fallback))
+                for route, fallback in (("crafting", True), ("pickup", True), ("given", False))
+            },
 
             # Datapacks/mods this seed REQUIRES to be installed at a matching version. The mod verifies
             # each against the loaded datapacks (pack repository) / Fabric mods on world load and refuses

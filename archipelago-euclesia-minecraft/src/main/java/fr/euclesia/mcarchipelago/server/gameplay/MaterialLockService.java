@@ -1,6 +1,8 @@
 package fr.euclesia.mcarchipelago.server.gameplay;
 
 import fr.euclesia.mcarchipelago.AEM;
+import fr.euclesia.mcarchipelago.archipelago.slot.APSlotData;
+import fr.euclesia.mcarchipelago.archipelago.slot.APSlotData.ItemGateBehavior;
 import fr.euclesia.mcarchipelago.archipelago.slot.APSlotData.ToolLock;
 import fr.euclesia.mcarchipelago.registry.APItemRegistry;
 import fr.euclesia.mcarchipelago.registry.APMaterialRegistry;
@@ -24,8 +26,39 @@ import net.minecraft.world.item.ItemStack;
 public final class MaterialLockService {
     private MaterialLockService() {}
 
+    /**
+     * An acquisition route a locked item can travel, matched to an {@code item_gate_behavior} flag. The
+     * {@code ItemGateBehavior} option can leave any route open, in which case the lock is not enforced
+     * there even for an otherwise-gated item.
+     */
+    public enum Channel { CRAFTING, PICKUP, GIVEN }
+
     public static boolean isPickupBlocked(ItemStack stack) {
         return blockReason(stack) != null;
+    }
+
+    /**
+     * Like {@link #blockReason(ItemStack)}, but only reports a block if {@code channel} is gated for
+     * this seed (per the {@code ItemGateBehavior} option). Returns {@code null} when the item is
+     * unlocked <em>or</em> when the player has chosen to leave this route open.
+     */
+    public static Component blockReason(ItemStack stack, Channel channel) {
+        Component reason = blockReason(stack);
+        if (reason == null || !isChannelGated(channel)) {
+            return null;
+        }
+        return reason;
+    }
+
+    /** Whether {@code channel} enforces the lock this seed; defaults to gated if slot data is missing. */
+    private static boolean isChannelGated(Channel channel) {
+        APSlotData slotData = AEM.ARCHIPELAGO.client().state().parsedSlotData();
+        ItemGateBehavior behavior = slotData == null ? ItemGateBehavior.DEFAULT : slotData.itemGateBehavior();
+        return switch (channel) {
+            case CRAFTING -> behavior.crafting();
+            case PICKUP -> behavior.pickup();
+            case GIVEN -> behavior.given();
+        };
     }
 
     /**

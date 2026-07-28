@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from Options import Choice, OptionSet, PerGameCommonOptions, Range, Toggle
+from Options import Choice, OptionDict, OptionError, OptionSet, PerGameCommonOptions, Range, Toggle
 
 from .data import ADVANCEMENT_LOCATIONS, MOBS_ALL, MOBS_BOSS, STRUCTURES
 
@@ -256,6 +256,62 @@ class BacapRewards(Toggle):
     default = 0
 
 
+class ItemGateBehavior(OptionDict):
+    """Decide, per acquisition route, whether a still-locked item is blocked.
+
+    A "locked" item is one the material/tool gates aren't satisfied for yet: a raw material you don't
+    have enough Progressive Material Handling for, or a tool/armor piece missing its Knowledge item or
+    material tier. This option chooses, for each route by which such an item could reach your
+    inventory, whether that route is gated (blocked) or left open.
+
+    Three routes are configurable, each set to true (gated) or false (allowed):
+        - crafting: taking a locked item out of a crafting result, furnace output, or any container GUI.
+        - pickup: picking a locked item up off the ground.
+        - given: the /give command handing you a locked item.
+
+    Meaning of each value:
+        - true: the route is gated until the item unlocks (you get a red "requires ..." message).
+        - false: the route always lets the item through, even while it is still locked.
+
+    Any route you omit keeps its default (crafting and pickup gated, given allowed), so you only need
+    to list the routes you want to change.
+
+    Example (block crafting, but let pickups and /give through):
+        item_gate_behavior:
+            crafting: true
+            pickup: false
+            given: false
+    """
+    display_name = "Item Gate Behavior"
+    valid_keys = {"crafting", "pickup", "given"}
+    # Preserves the historical behavior: crafting/container takes and floor pickups are gated, while
+    # /give (a new route) is left open. Omitted keys fall back to these in fill_slot_data().
+    default = {"crafting": True, "pickup": True, "given": False}
+
+    # Accepted spellings of each truth value, so a YAML "yes"/"no"/1/0 works as well as true/false.
+    _TRUE = {True, 1, "true", "yes", "gated", "1"}
+    _FALSE = {False, 0, "false", "no", "allowed", "0"}
+
+    @classmethod
+    def as_bool(cls, value) -> bool:
+        key = value.lower() if isinstance(value, str) else value
+        if key in cls._TRUE:
+            return True
+        if key in cls._FALSE:
+            return False
+        raise OptionError(
+            f"item_gate_behavior values must be true (gated) or false (allowed), got '{value}'."
+        )
+
+    def verify(self, world, player_name: str, plando_options) -> None:
+        super().verify(world, player_name, plando_options)
+        for route, behavior in self.value.items():
+            try:
+                self.as_bool(behavior)
+            except OptionError as error:
+                raise OptionError(f"Player {player_name}: route '{route}' — {error}")
+
+
 @dataclass
 class MCOptions(PerGameCommonOptions):
     boss_list: BossList
@@ -272,3 +328,4 @@ class MCOptions(PerGameCommonOptions):
     biome_finder: BiomeFinder
     blazeandcave: BlazeAndCave
     bacap_rewards: BacapRewards
+    item_gate_behavior: ItemGateBehavior

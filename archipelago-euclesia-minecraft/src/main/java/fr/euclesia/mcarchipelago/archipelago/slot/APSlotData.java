@@ -37,10 +37,27 @@ public record APSlotData(
         Map<Long, FillerGrant> fillerItems,
         Map<Long, String> trapItems,
         List<ContentRequirement> requiredContent,
+        ItemGateBehavior itemGateBehavior,
         int slotDataVersion
 ) {
     /** A tool/armor pickup gate: the player needs {@code knowledge} AND {@code material} tiers. */
     public record ToolLock(String knowledge, int material) {}
+
+    /**
+     * Per-route handling of a still-locked item (see {@code item_gate_behavior} / the Python
+     * {@code ItemGateBehavior} option). Each flag is {@code true} when that route is gated (the item is
+     * blocked until it unlocks) and {@code false} when the route is left open:
+     * <ul>
+     *   <li>{@code crafting} — taking it from a crafting result / furnace output / container GUI
+     *       ({@code SlotMixin});</li>
+     *   <li>{@code pickup} — picking it up off the ground ({@code ItemEntityMixin});</li>
+     *   <li>{@code given} — the {@code /give} command handing it over ({@code GiveCommandMixin}).</li>
+     * </ul>
+     * {@link #DEFAULT} matches the historical behavior for slot data that predates this field.
+     */
+    public record ItemGateBehavior(boolean crafting, boolean pickup, boolean given) {
+        public static final ItemGateBehavior DEFAULT = new ItemGateBehavior(true, true, false);
+    }
 
     /**
      * What a filler item grants on receipt — exactly one of two shapes:
@@ -97,6 +114,7 @@ public record APSlotData(
                 Map.of(),
                 Map.of(),
                 List.of(),
+                ItemGateBehavior.DEFAULT,
                 0
         );
     }
@@ -131,6 +149,7 @@ public record APSlotData(
                 parseFillerItems(json),
                 parseTrapItems(json),
                 parseRequiredContent(json),
+                parseItemGateBehavior(json),
                 // Absent (0) in pre-versioning slot data -> treated as legacy/unversioned by
                 // CompatibilityService (allowed with a warning, not blocked).
                 APJson.getInt(json, "slot_data_version", 0)
@@ -193,6 +212,24 @@ public record APSlotData(
                     APJson.getString(req, "match", id).toLowerCase(java.util.Locale.ROOT)));
         }
         return List.copyOf(requirements);
+    }
+
+    /**
+     * Parses {@code item_gate_behavior}: {@code {crafting|pickup|given: true|false}} (true = gated). A
+     * missing object or key falls back to {@link ItemGateBehavior#DEFAULT} (crafting/pickup gated, /give
+     * open) so slot data written before this field keeps the old behavior.
+     */
+    private static ItemGateBehavior parseItemGateBehavior(JsonObject json) {
+        JsonElement element = json.get("item_gate_behavior");
+        if (element == null || !element.isJsonObject()) {
+            return ItemGateBehavior.DEFAULT;
+        }
+        JsonObject routes = element.getAsJsonObject();
+        ItemGateBehavior fallback = ItemGateBehavior.DEFAULT;
+        return new ItemGateBehavior(
+                APJson.getBoolean(routes, "crafting", fallback.crafting()),
+                APJson.getBoolean(routes, "pickup", fallback.pickup()),
+                APJson.getBoolean(routes, "given", fallback.given()));
     }
 
     /** Parses {@code trap_items}: item id -> effect key. */
