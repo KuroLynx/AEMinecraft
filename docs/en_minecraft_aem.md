@@ -46,11 +46,13 @@ include:
   is preserved and placed when the unlock arrives.
 - **Entity Unlocks** — locked mobs will not spawn anywhere until unlocked. Bosses can be held back
   this way too.
-- **Progressive Material Handling** — you cannot pick up gated materials (diamond, etc.) off the
-  ground until you have received enough copies.
+- **Progressive Material Handling** — you cannot obtain gated materials (diamond, etc.) until you have
+  received enough copies. The `item_gate_behavior` option decides which routes that blocks: taking it
+  from a crafting grid, from a workstation (furnace, anvil, trade, …), from storage (chest, barrel, …),
+  picking it off the ground, and `/give`. By default every route is blocked except `/give`.
 - **Knowledge** and **Tool/Armor** gates — some crafting stations (enchanting table, brewing stand)
   and some tools/armor require a Knowledge item, and better tools also require enough Material
-  Handling.
+  Handling. These obey the same `item_gate_behavior` routes.
 - **Progressive Villager Trust** — villagers refuse to trade until you unlock each of the five trade
   levels (optional).
 

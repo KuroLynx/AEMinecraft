@@ -270,6 +270,42 @@ Minecraft [AEM]:
     'true': 0
 
   # -------------------------------------------------------------------------
+  # Item Gate Behavior
+  # -------------------------------------------------------------------------
+
+  item_gate_behavior:
+    # Decide, per acquisition route, whether a still-locked item is blocked.
+    #
+    # A "locked" item is one the material/tool gates aren't satisfied for yet: a raw material you don't
+    # have enough Progressive Material Handling for, or a tool/armor piece missing its Knowledge item or
+    # material tier. This option chooses, for each route by which such an item could reach your
+    # inventory, whether that route is gated (blocked) or left open.
+    #
+    # Five routes are configurable, each set to true (gated) or false (allowed):
+    #     - crafting: taking a locked item out of a crafting grid — the crafting table or your own 2x2
+    #       inventory grid.
+    #     - station: taking a locked item out of a workstation that makes or transforms items — furnace,
+    #       blast furnace, smoker, anvil, smithing table, grindstone, stonecutter, loom, cartography
+    #       table, brewing stand, enchanting table, villager trade, crafter.
+    #     - container: taking a locked item out of plain storage — chest, barrel, shulker box, hopper,
+    #       dispenser, ender chest, minecart and mount inventories.
+    #     - pickup: picking a locked item up off the ground.
+    #     - given: the /give command handing you a locked item.
+    #
+    # Meaning of each value:
+    #     - true: the route is gated until the item unlocks (you get a red "requires ..." message).
+    #     - false: the route always lets the item through, even while it is still locked.
+    #
+    # Any route you omit keeps its default (everything gated except given), so you only need to list the
+    # routes you want to change. As a convenience for configs written before the GUI routes were split,
+    # an explicit 'crafting' value also becomes the default for 'station' and 'container'.
+    crafting: true
+    station: true
+    container: true
+    pickup: true
+    given: false
+
+  # -------------------------------------------------------------------------
   # Standard item/location options
   # -------------------------------------------------------------------------
 

@@ -10,6 +10,7 @@
     "EnchantingTableBlockMixin",
     "EnderDragonFightMixin",
     "EntityMixin",
+    "GiveCommandMixin",
     "ItemEntityMixin",
     "KilledTriggerMixin",
     "LivingEntityMixin",
