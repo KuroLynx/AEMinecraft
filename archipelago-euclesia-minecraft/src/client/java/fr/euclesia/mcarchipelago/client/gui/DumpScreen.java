@@ -3,7 +3,7 @@ package fr.euclesia.mcarchipelago.client.gui;
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.client.dump.DumpDataSource;
 import fr.euclesia.mcarchipelago.client.dump.DumpDataSource.DatapackInfo;
-import fr.euclesia.mcarchipelago.client.dump.HeadlessEntitiesDump;
+import fr.euclesia.mcarchipelago.client.dump.HeadlessWorldDump;
 import fr.euclesia.mcarchipelago.server.command.PackDump;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
@@ -47,11 +47,13 @@ public final class DumpScreen extends Screen {
     private static final int GRID_COLS = 2;
     private static final int TITLE_SPACE = 16;
 
-    /** Mob registry: not a {@link PackDump} file (it needs a live world), dumped via a throwaway one. */
-    private static final String ENTITIES = "entities";
+    /** The registries that are not {@link PackDump} files: they need a live world, so they are dumped
+     *  via a throwaway one ({@link HeadlessWorldDump}). Ticking both only creates that world once. */
+    private static final List<String> WORLD_FILES =
+            List.of(HeadlessWorldDump.ENTITIES, HeadlessWorldDump.CONTAINERS);
 
-    /** Set by {@link HeadlessEntitiesDump} just before it rebuilds this screen, so the entities-dump
-     *  result shows once we return from the temp world; consumed (cleared) on the next {@link #init}. */
+    /** Set by {@link HeadlessWorldDump} just before it rebuilds this screen, so the world-dump result
+     *  shows once we return from the temp world; consumed (cleared) on the next {@link #init}. */
     public static volatile String pendingStatus;
 
     // colours (ARGB) — tuned to read like the vanilla pack-selection list
@@ -104,7 +106,7 @@ public final class DumpScreen extends Screen {
         int left = this.width / 2 - PANEL_WIDTH / 2;
 
         List<String> files = new ArrayList<>(PackDump.FILES);
-        files.add(ENTITIES);
+        files.addAll(WORLD_FILES);
         files.add(PackDump.RAW_DATAPACK);
         int gridRows = (files.size() + GRID_COLS - 1) / GRID_COLS;
 
@@ -121,13 +123,13 @@ public final class DumpScreen extends Screen {
         y += listInnerH + 2 + GAP;
 
         // file-type checkboxes in a grid. The heavy/opt-in targets default off: the raw datapack copy,
-        // and entities (spins up a throwaway world).
+        // and the world-dependent registries (they spin up a throwaway world).
         checkboxes.clear();
         int colW = PANEL_WIDTH / GRID_COLS;
         for (int i = 0; i < files.size(); i++) {
             int rowY = y + (i / GRID_COLS) * ROW_GRID;
             String file = files.get(i);
-            boolean defaultOn = !file.equals(PackDump.RAW_DATAPACK) && !file.equals(ENTITIES);
+            boolean defaultOn = !file.equals(PackDump.RAW_DATAPACK) && !WORLD_FILES.contains(file);
             addCheckbox(file, left + (i % GRID_COLS) * colW, rowY, defaultOn);
         }
         y += gridRows * ROW_GRID + GAP;
@@ -233,16 +235,19 @@ public final class DumpScreen extends Screen {
             return;
         }
 
-        // Entities need a live world: hand them to the headless dump, which leaves this screen for a
-        // throwaway world and returns once done. The other (world-free) files dump here in parallel.
-        boolean entities = selected.remove(ENTITIES);
+        // entities/containers need a live world: hand them to the headless dump, which leaves this
+        // screen for a throwaway world (one for both) and returns once done. The other (world-free)
+        // files dump here in parallel.
+        Set<String> worldFiles = new LinkedHashSet<>(WORLD_FILES);
+        worldFiles.retainAll(selected);
+        selected.removeAll(worldFiles);
 
         if (!selected.isEmpty()) {
             runPackDump(selected);
         }
-        if (entities && !HeadlessEntitiesDump.isRunning()) {
+        if (!worldFiles.isEmpty() && !HeadlessWorldDump.isRunning()) {
             status = Component.translatable("gui.aem.dump.running").getString();
-            HeadlessEntitiesDump.request(parent, sourceDir);
+            HeadlessWorldDump.request(parent, sourceDir, worldFiles);
         }
     }
 
