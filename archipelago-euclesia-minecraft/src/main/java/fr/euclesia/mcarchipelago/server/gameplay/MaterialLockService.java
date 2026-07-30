@@ -21,7 +21,8 @@ import net.minecraft.world.item.ItemStack;
  *   <li>tools/armor (e.g. a diamond sword) need BOTH the relevant Knowledge item AND that material
  *       tier.</li>
  * </ul>
- * Queried from {@code ItemEntityMixin} (floor pickup) and {@code SlotMixin} (container/crafting takes).
+ * Queried from {@code ItemEntityMixin} (floor pickup), {@code SlotMixin} (crafting/station/container GUI
+ * takes) and {@code GiveCommandMixin} ({@code /give}).
  */
 public final class MaterialLockService {
     private MaterialLockService() {}
@@ -31,7 +32,7 @@ public final class MaterialLockService {
      * {@code ItemGateBehavior} option can leave any route open, in which case the lock is not enforced
      * there even for an otherwise-gated item.
      */
-    public enum Channel { CRAFTING, PICKUP, GIVEN }
+    public enum Channel { CRAFTING, STATION, CONTAINER, PICKUP, GIVEN }
 
     public static boolean isPickupBlocked(ItemStack stack) {
         return blockReason(stack) != null;
@@ -56,6 +57,8 @@ public final class MaterialLockService {
         ItemGateBehavior behavior = slotData == null ? ItemGateBehavior.DEFAULT : slotData.itemGateBehavior();
         return switch (channel) {
             case CRAFTING -> behavior.crafting();
+            case STATION -> behavior.station();
+            case CONTAINER -> behavior.container();
             case PICKUP -> behavior.pickup();
             case GIVEN -> behavior.given();
         };

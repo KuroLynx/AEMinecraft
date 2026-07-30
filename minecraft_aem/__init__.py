@@ -490,6 +490,27 @@ class MCWorld(World):
     # Slot data (envoyé au mod Fabric)
     # -----------------------------------------------------------------------
 
+    def _item_gate_routes(self) -> dict:
+        """Every item_gate_behavior route as a plain bool (true = the route is gated).
+
+        Emitting all five keys keeps the fallback logic on this side: the mod only has to read them. The
+        'crafting' route predates 'station'/'container' (it used to cover every GUI take), so an explicit
+        'crafting' value carries over to those two when they are omitted — a config written before the
+        split still opens or gates every GUI the way it used to.
+        """
+        chosen = self.options.item_gate_behavior.value
+        crafting = ItemGateBehavior.as_bool(chosen.get("crafting", True))
+        return {
+            route: ItemGateBehavior.as_bool(chosen.get(route, fallback))
+            for route, fallback in (
+                ("crafting", crafting),
+                ("station", crafting),
+                ("container", crafting),
+                ("pickup", True),
+                ("given", False),
+            )
+        }
+
     def fill_slot_data(self) -> dict:
         return {
             # Slot-data schema version; the mod refuses to enter a world it can't read (see
@@ -515,10 +536,9 @@ class MCWorld(World):
             # Per-route handling of still-locked items (see ItemGateBehavior / the mod's
             # MaterialLockService + Give/Slot/ItemEntity mixins). Each route is emitted as a bool (true =
             # gated) so an omitted YAML key falls back to the historical default here, not in the mod.
-            "item_gate_behavior"   : {
-                route: ItemGateBehavior.as_bool(self.options.item_gate_behavior.value.get(route, fallback))
-                for route, fallback in (("crafting", True), ("pickup", True), ("given", False))
-            },
+            # The two workstation/storage routes inherit an explicit 'crafting' when they are absent, so a
+            # config written before the GUI routes were split keeps meaning the same thing.
+            "item_gate_behavior"   : self._item_gate_routes(),
 
             # Datapacks/mods this seed REQUIRES to be installed at a matching version. The mod verifies
             # each against the loaded datapacks (pack repository) / Fabric mods on world load and refuses
