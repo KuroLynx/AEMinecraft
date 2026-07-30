@@ -2,7 +2,15 @@ from dataclasses import dataclass
 
 from Options import Choice, OptionDict, OptionError, OptionSet, PerGameCommonOptions, Range, Toggle
 
-from .data import ADVANCEMENT_LOCATIONS, MOBS_ALL, MOBS_BOSS, STRUCTURES
+from .data import (
+    ADVANCEMENT_LOCATIONS,
+    KNOWLEDGES,
+    KNOWLEDGES_BY_CATEGORY,
+    MCKnowledgeCategory,
+    MOBS_ALL,
+    MOBS_BOSS,
+    STRUCTURES,
+)
 
 
 class BossList(OptionSet):
@@ -134,6 +142,50 @@ class StructureUnlock(OptionSet):
     display_name = "Structure Unlock"
     valid_keys = {"All", "Overworld", "Nether", "The End"} | {data.label for data in STRUCTURES.values()}
     default = frozenset({"Stronghold"})
+
+
+class KnowledgeGates(OptionSet):
+    """Choose which Knowledge gates your run uses.
+
+    A Knowledge gate holds something back until its 'Knowledge: <name>' item arrives from the
+    multiworld. Gates you do not list are OFF: that knowledge is not in the item pool at all and the
+    thing it would have gated is free from the start. Leave the list empty for a run with no Knowledge
+    gates whatsoever.
+
+    Each gate blocks BOTH ways of getting at what it covers:
+        - tool / armor / misc gate an ITEM — you can neither craft nor pick up the tool, armor piece or
+          gear until the Knowledge arrives (a diamond sword also still needs its material tier).
+        - station / container gate a BLOCK — you can neither craft/pick it up NOR use it, so a locked
+          furnace can't be made and a furnace found in a village won't open either.
+
+    Accepts category presets, the special value "All", and/or individual knowledge names (mix freely):
+        - Category presets: "tool", "armor", "misc", "station", "container".
+        - "All" — every gate this content version knows about.
+        - Any knowledge name, WITHOUT the "Knowledge: " prefix (e.g. "Pickaxe Handling", "Brewing").
+
+    The default is the classic set: every tool, armor and misc gate, plus the brewing stand and
+    enchanting table. The other station and container gates are opt-in, since gating something like the
+    crafting table or the chest reshapes the whole run.
+
+    Examples:
+        The classic set plus every workstation:
+            - tool
+            - armor
+            - misc
+            - station
+
+        Only mining and smelting matter:
+            - Pickaxe Handling
+            - Furnace
+    """
+    display_name = "Knowledge Gates"
+    valid_keys = {"All"} | {category for category in KNOWLEDGES_BY_CATEGORY} | set(KNOWLEDGES.keys())
+    # The gates that existed before this option: every tool/armor/misc knowledge, plus the two stations
+    # that were already gated (brewing stand, enchanting table). Named individually rather than via the
+    # "station" preset so that dumping a new pack — which appends station/container rows — never
+    # silently turns new gates on for a player who never asked for them.
+    default = frozenset({MCKnowledgeCategory.TOOL, MCKnowledgeCategory.ARMOR, MCKnowledgeCategory.MISC,
+                         "Brewing", "Enchanting"})
 
 
 class TrapChance(Range):
@@ -329,6 +381,7 @@ class MCOptions(PerGameCommonOptions):
     death_link: DeathLink
     villager_trust: VillagerTrust
     kill_sanity: KillSanity
+    knowledge_gates: KnowledgeGates
     mob_spawn_lock: MobSpawnLock
     structure_unlock: StructureUnlock
     trap_chance: TrapChance

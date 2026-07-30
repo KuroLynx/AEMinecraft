@@ -52,7 +52,11 @@ include:
   picking it off the ground, and `/give`. By default every route is blocked except `/give`.
 - **Knowledge** and **Tool/Armor** gates — some crafting stations (enchanting table, brewing stand)
   and some tools/armor require a Knowledge item, and better tools also require enough Material
-  Handling. These obey the same `item_gate_behavior` routes.
+  Handling. These obey the same `item_gate_behavior` routes. The `knowledge_gates` option picks which
+  Knowledge gates your run uses at all — by category (`tool`, `armor`, `misc`, `station`, `container`)
+  or one by one — so you can drop them entirely or extend them to workstations and storage blocks. A
+  station/container gate blocks both crafting the block and using it, including ones you find in the
+  world.
 - **Progressive Villager Trust** — villagers refuse to trade until you unlock each of the five trade
   levels (optional).
 

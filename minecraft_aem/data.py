@@ -20,8 +20,11 @@ from .content.registry import (  # noqa: F401
     BASE_ID_LOC_STRUCTURE,
     BASE_ID_STRUCT_UNLOCK,
     ContentRegistry,
+    BASE_ID_KNOWLEDGE,
     MCEntityCategory,
     MCItemData,
+    MCKnowledgeCategory,
+    MCKnowledgeData,
     MCLocationCategory,
     MCLocationData,
     MCMobData,
@@ -48,7 +51,23 @@ _REGISTRY: ContentRegistry = load_pack(base_pack())
 # them with no CSV upkeep; the buffs live ONLY in filler.py now (no rows in items.csv). See filler.py.
 from .filler import FILLER_ITEMS  # noqa: E402  (import here to avoid a top-level cycle via content)
 
-ITEMS: dict[str, MCItemData] = {**_REGISTRY.items, **FILLER_ITEMS}
+# Knowledge gates (content/knowledges.csv), keyed by their BARE name ("Sword Handling") — the form the
+# K_* constants and TOOL_LOCKS/STATION_KNOWLEDGE_LOCKS use. KNOWLEDGES_BY_CATEGORY backs the
+# knowledge_gates option's category presets (tools / armor / misc / stations / containers).
+KNOWLEDGES: dict[str, MCKnowledgeData] = _REGISTRY.knowledges
+KNOWLEDGES_BY_CATEGORY: dict[str, list[str]] = {}
+for _knowledge in KNOWLEDGES.values():
+    KNOWLEDGES_BY_CATEGORY.setdefault(_knowledge.category, []).append(_knowledge.name)
+
+# Every Knowledge is an AP item under its prefixed name; they carry their own id block, so items.csv
+# and knowledges.csv can each grow without renumbering the other.
+KNOWLEDGE_ITEMS: dict[str, MCItemData] = {
+    knowledge.item_name: MCItemData(id=knowledge.id, classification=knowledge.classification,
+                                   count=knowledge.count)
+    for knowledge in KNOWLEDGES.values()
+}
+
+ITEMS: dict[str, MCItemData] = {**_REGISTRY.items, **KNOWLEDGE_ITEMS, **FILLER_ITEMS}
 MOBS_ALL: dict[str, MCMobData] = _REGISTRY.mobs
 
 # Overlay packs: mod/datapack content (dumped in-game via /aem dump, then dropped into packs/)

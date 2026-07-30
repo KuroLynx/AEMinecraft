@@ -215,6 +215,33 @@ class MCWorld(World):
                 locked.add(entry)
         return locked
 
+    def _active_knowledges(self) -> set[str]:
+        """Knowledge gates switched on this seed, per the knowledge_gates option.
+
+        The option accepts category presets ("tool"/"armor"/"misc"/"station"/"container"), "All", and/or
+        individual knowledge names; this resolves them to concrete BARE names (KNOWLEDGES keys) — the
+        knowledge-side mirror of _get_locked_mobs. A gate that is off has no item in the pool, emits no
+        lock in slot_data, and is dropped from the rules (see RuleHelper.knowledge).
+        """
+        # Memoized: the option can't change once generation starts, and the lock maps in
+        # fill_slot_data ask per row (one call per tool/station, ~80 a seed).
+        cached = getattr(self, "_active_knowledge_cache", None)
+        if cached is not None:
+            return cached
+
+        selected = self.options.knowledge_gates.value
+        if "All" in selected:
+            active = set(KNOWLEDGES)
+        else:
+            active = set()
+            for entry in selected:
+                if entry in KNOWLEDGES_BY_CATEGORY:
+                    active |= set(KNOWLEDGES_BY_CATEGORY[entry])
+                elif entry in KNOWLEDGES:  # the option also lists individual knowledge names
+                    active.add(entry)
+        self._active_knowledge_cache = active
+        return active
+
     def _get_active_locations(self) -> dict[str, MCLocationData]:
         """Retourne les locations actives selon les options du joueur."""
         locations: dict[str, MCLocationData] = {
@@ -360,11 +387,17 @@ class MCWorld(World):
             ITEM_BIOME_FINDER: self.options.biome_finder,
         }
 
+        # Knowledge items exist only for the gates this seed switched on (knowledge_gates); the rest are
+        # not in the pool at all, and their rules were dropped to match (see RuleHelper.knowledge).
+        active_knowledge_items = {KNOWLEDGES[name].item_name for name in self._active_knowledges()}
+
         # Progression + useful only — fillers and traps are derived later
         for name, item_data in ITEMS.items():
             if item_data.classification in (ItemClassification.filler, ItemClassification.trap):
                 continue
             if not self.options.villager_trust and name == ITEM_VILLAGER_TRUST:
+                continue
+            if name in KNOWLEDGE_ITEMS and name not in active_knowledge_items:
                 continue
             if name == start_dimension_item:
                 continue
@@ -601,17 +634,21 @@ class MCWorld(World):
             # --- Tool/armor locks : item MC → {knowledge AP requise, palier de matériau requis} ---
             # Le mod bloque le ramassage/craft tant que le joueur n'a pas reçu la Knowledge ET assez
             # de "Progressive Material Handling" (ex. épée diamant = Sword Handling + 5).
+            # Only the gates this seed switched on are emitted: a knowledge that is off has no item in
+            # the pool, so leaving its lock in would block the item forever.
             "tool_locks"           : {
-                f"minecraft:{path}": {"knowledge": f"Knowledge: {knowledge}", "material": tier}
+                f"minecraft:{path}": {"knowledge": f"{KNOWLEDGE_PREFIX}{knowledge}", "material": tier}
                 for path, (knowledge, tier) in TOOL_LOCKS.items()
+                if knowledge in self._active_knowledges()
             },
 
             # --- Station locks : block MC → Knowledge AP requise pour l'utiliser (ouvrir le GUI) ---
             # Le mod bloque le clic-droit sur la table d'enchantement / l'alambic tant que la
             # Knowledge n'est pas reçue (même ceux trouvés dans les structures).
             "station_knowledge_locks": {
-                f"minecraft:{block}": f"Knowledge: {knowledge}"
+                f"minecraft:{block}": f"{KNOWLEDGE_PREFIX}{knowledge}"
                 for block, knowledge in STATION_KNOWLEDGE_LOCKS.items()
+                if knowledge in self._active_knowledges()
             },
 
             # --- Dimension gating : dimension MC → item AP requis pour y entrer (portail) ---

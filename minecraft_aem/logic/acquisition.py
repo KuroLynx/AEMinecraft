@@ -212,6 +212,9 @@ class RuleHelper:
         self.active_structures = world._get_active_structures()
         # Options resolved once, up front, so rule nodes never carry option logic.
         self.villager_trust = bool(world.options.villager_trust.value)
+        # Knowledge gates active this seed (knowledge_gates option), as BARE names — the form K_* and
+        # TOOL_LOCKS use. self.knowledge() drops the requirement for anything not in here.
+        self.active_knowledges = world._active_knowledges()
         # Mobs locked behind an 'Entity Unlock' item (mob_spawn_lock option), resolved to concrete
         # mob names (categories/All/individual names all collapse to this set).
         self.locked_mobs = world._get_locked_mobs()
@@ -1060,7 +1063,12 @@ class RuleHelper:
         return node
 
     def knowledge(self, item: str):
-        return Has(self.player, f"Knowledge: {item}")
+        # A gate the seed switched off (knowledge_gates) has no item in the pool, so requiring it would
+        # be unsatisfiable — and the thing it guards is free from the start. Const(True) folds away in
+        # and_/or_, so those rules come out as if the gate had never been written.
+        if item not in self.active_knowledges:
+            return Const(True)
+        return Has(self.player, f"{KNOWLEDGE_PREFIX}{item}")
 
     # -----------------------------------------------------------------------
     # Item acquisition (used by the trigger compiler to resolve item criteria)

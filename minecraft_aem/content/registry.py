@@ -6,7 +6,8 @@ vanilla today, mods / datapacks / other MC versions later. ``entities.json`` (th
 ``structures.json`` are dumped from the running game (``/aem dump entities`` / ``structures``);
 advancement *locations* come from the manifest (the data-driven source the trigger compiler also
 reads), so vanilla, mods and datapacks are handled uniformly. (Item AP classifications/counts are the
-one apworld-design table that is not a pack file — ``minecraft/content/items.csv``.)
+one apworld-design table that is not a pack file — ``minecraft/content/items.csv``, plus its Knowledge
+sibling ``knowledges.csv``.)
 
 ``load_pack(name)`` returns a :class:`ContentRegistry` bundling the parsed records; ``data.py``
 re-exports them as the module-level globals the rest of the apworld already imports.
@@ -19,7 +20,13 @@ from BaseClasses import ItemClassification
 
 # Location-name prefixes live with the other rule constants; the loaders build AP location names
 # from them. logic.constants is import-cycle-safe (it imports nothing from this package).
-from ..logic.constants import ADVANCEMENT_PREFIX, BOSS_KILL_PREFIX, CONTENT_VERSION, ENTITY_KILL_PREFIX
+from ..logic.constants import (
+    ADVANCEMENT_PREFIX,
+    BOSS_KILL_PREFIX,
+    CONTENT_VERSION,
+    ENTITY_KILL_PREFIX,
+    KNOWLEDGE_PREFIX,
+)
 
 # Base IDs (unchanged from data.py — moving them here keeps every AP id identical).
 BASE_ID_ITEMS           = 0xEC0000
@@ -30,6 +37,10 @@ BASE_ID_LOC_BOSS_KILL   = 0xEC1100
 BASE_ID_LOC_MOB_KILL    = 0xEC1200
 BASE_ID_LOC_STRUCTURE   = 0xEC1300
 BASE_ID_LOC_BACAP       = 0xEC2000  # datapack advancement locations (manifest-only packs)
+# Knowledge items live in their own block (knowledges.csv), not in items.csv's: there is one row per
+# gate and the station/container rows are appended as packs are dumped, so a shared block would shift
+# every later item's id each time one is added. 0xEC3000 is filler.py's.
+BASE_ID_KNOWLEDGE       = 0xEC4000
 
 
 class MCLocationCategory:
@@ -45,11 +56,44 @@ class MCEntityCategory:
     BOSS    = "boss"
 
 
+class MCKnowledgeCategory:
+    """What a Knowledge gates, and the preset the ``knowledge_gates`` option groups it under.
+
+    TOOL/ARMOR/MISC gate an *item* (its craft/pickup, via ``TOOL_LOCKS``): a sword needs Sword
+    Handling, an elytra needs Flying. STATION/CONTAINER gate a *block* — both its craft/pickup and its
+    use, so a locked furnace can neither be made nor opened, including ones found in a village.
+    """
+    TOOL      = "tool"
+    ARMOR     = "armor"
+    MISC      = "misc"
+    STATION   = "station"
+    CONTAINER = "container"
+
+
 @dataclass
 class MCItemData:
     id: int
     classification: ItemClassification
     count: int
+
+
+@dataclass
+class MCKnowledgeData:
+    """One row of ``knowledges.csv``: a gate the player can switch on or off per seed.
+
+    ``name`` is the bare knowledge ("Sword Handling"); the AP item is ``KNOWLEDGE_PREFIX + name``.
+    ``category`` is an :class:`MCKnowledgeCategory` value, which is both what the knowledge gates and
+    the preset ``knowledge_gates`` groups it under.
+    """
+    id: int
+    name: str
+    category: str
+    classification: ItemClassification
+    count: int
+
+    @property
+    def item_name(self) -> str:
+        return f"{KNOWLEDGE_PREFIX}{self.name}"
 
 
 @dataclass
@@ -171,6 +215,30 @@ def _load_items() -> dict[str, MCItemData]:
             count=int(row["count"]),
         )
     return items
+
+
+def _load_knowledges() -> dict[str, MCKnowledgeData]:
+    """Read content/knowledges.csv — one row per Knowledge gate, keyed by the BARE name.
+
+    Like items.csv this is apworld design data, not pack data: the AP classification/count of a gate is
+    version-independent. What the station/container rows gate *is* pack data, and it comes from the
+    dumped containers.json (``/aem dump containers``) — the rows here only say the gate exists, what
+    category it belongs to, and how it is shuffled.
+
+    Row ORDER is the AP item id (id = index), so rows are only ever appended: inserting one in the
+    middle renumbers every gate after it.
+    """
+    knowledges = {}
+    for index, row in enumerate(_read_csv(files(__package__), "knowledges.csv")):
+        name = row["name"].strip()
+        knowledges[name] = MCKnowledgeData(
+            id=BASE_ID_KNOWLEDGE + index,
+            name=name,
+            category=row["category"].strip(),
+            classification=_CLASS_MAP.get(row["classification"], ItemClassification.filler),
+            count=int(row["count"]),
+        )
+    return knowledges
 
 
 def _load_entities(pack_dir) -> dict[str, MCMobData]:
@@ -347,6 +415,7 @@ def _load_boss_kill_locations(mobs: dict[str, MCMobData]) -> dict[str, MCLocatio
 class ContentRegistry:
     """Parsed records of one content pack (multi-pack merging arrives with the manifest work)."""
     items: dict[str, MCItemData]
+    knowledges: dict[str, MCKnowledgeData]
     mobs: dict[str, MCMobData]
     structures: dict[str, MCStructureData]
     advancements: dict[str, MCLocationData]
@@ -361,6 +430,7 @@ def load_pack(name: str) -> ContentRegistry:
     structures = _load_structures(pack_dir)
     return ContentRegistry(
         items=items,
+        knowledges=_load_knowledges(),
         mobs=mobs,
         structures=structures,
         # Advancements are loaded from the pack's manifest.json (the same data-driven source the
