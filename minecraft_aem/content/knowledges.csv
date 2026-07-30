@@ -17,3 +17,29 @@ Shield Handling,armor,progression,1
 Armor Handling,armor,progression,1
 Brewing,station,progression,1
 Enchanting,station,progression,1
+Barrel,container,progression,1
+Chest,container,progression,1
+Chiseled Bookshelf,container,progression,1
+Dispenser,container,progression,1
+Dropper,container,progression,1
+Ender Chest,container,progression,1
+Hopper,container,progression,1
+Lectern,container,progression,1
+Shelf,container,progression,1
+Shulker Box,container,progression,1
+Trapped Chest,container,progression,1
+Anvil,station,progression,1
+Beacon,station,progression,1
+Blast Furnace,station,progression,1
+Brewing Stand,station,progression,1
+Campfire,station,progression,1
+Cartography Table,station,progression,1
+Crafter,station,progression,1
+Crafting Table,station,progression,1
+Enchanting Table,station,progression,1
+Furnace,station,progression,1
+Grindstone,station,progression,1
+Loom,station,progression,1
+Smithing Table,station,progression,1
+Smoker,station,progression,1
+Stonecutter,station,progression,1

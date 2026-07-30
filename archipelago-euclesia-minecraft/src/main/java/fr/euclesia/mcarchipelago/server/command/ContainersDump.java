@@ -3,6 +3,8 @@ package fr.euclesia.mcarchipelago.server.command;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+import fr.euclesia.mcarchipelago.AEM;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
@@ -33,8 +35,8 @@ import java.util.TreeMap;
  * <ul>
  *   <li>its block entity implements {@link RecipeCraftingHolder} (furnace family) or
  *       {@link CraftingContainer} (crafter) — it runs recipes, so: station;</li>
- *   <li>it has no block entity but its state offers a {@link MenuProvider} (crafting table, enchanting
- *       table, anvil, smithing table, grindstone, stonecutter, loom, cartography table), or its block
+ *   <li>its state offers a {@link MenuProvider} (crafting table, anvil, smithing table, grindstone,
+ *       stonecutter, loom, cartography table — and, once placed, the enchanting table), or its block
  *       entity is a {@link MenuProvider} that is not a {@link Container} (beacon) — a GUI with no
  *       storage, so: station;</li>
  *   <li>its block entity is a {@link Container} (chest, barrel, shulker box, hopper, dispenser,
@@ -51,8 +53,13 @@ import java.util.TreeMap;
 public final class ContainersDump {
     private ContainersDump() {}
 
-    /** Anchor position for the state/block-entity probes; only the menu title would ever read it. */
+    /** Anchor position for the block-entity probe (never placed in the world, so any pos will do). */
     private static final BlockPos PROBE = BlockPos.ZERO;
+
+    /** Flags for the place-and-probe below: no neighbour/client updates, no drops, no on-place hooks —
+     *  the block exists for one method call and is put back before anything can observe it. */
+    private static final int PROBE_FLAGS = Block.UPDATE_INVISIBLE | Block.UPDATE_KNOWN_SHAPE
+            | Block.UPDATE_SUPPRESS_DROPS | Block.UPDATE_SKIP_ON_PLACE;
 
     /** Stations whose block entity looks exactly like a storage one (a {@code BaseContainerBlockEntity}
      *  with no recipe interface), so nothing in the class tells us it brews. */
@@ -85,13 +92,23 @@ public final class ContainersDump {
      */
     public static JsonArray build(MinecraftServer server) {
         ServerLevel level = server.overworld();
+        BlockPos scratch = scratchPos(level);
         Map<String, JsonObject> records = new TreeMap<>();
 
         for (Block block : BuiltInRegistries.BLOCK) {
             String blockId = BuiltInRegistries.BLOCK.getKey(block).toString();
             BlockState state = block.defaultBlockState();
             BlockEntity blockEntity = probeBlockEntity(block, state);
-            MenuProvider stateMenu = probeStateMenu(state, level);
+            boolean stateMenu = probeStateMenu(state, level, PROBE);
+
+            // A block whose menu provider reads the block entity AT the position (the enchanting table,
+            // and any mod block shaped like it) answers null above, because we probed empty air — it
+            // would drop out of the dump entirely. Only those need the expensive path: place the block
+            // in the world for the length of one call, then put back what was there.
+            if (!stateMenu && blockEntity != null && !(blockEntity instanceof MenuProvider)
+                    && !(blockEntity instanceof Container) && scratch != null) {
+                stateMenu = probePlacedMenu(level, scratch, state);
+            }
 
             String kind = classify(blockId, blockEntity, stateMenu);
             if (kind == null) {
@@ -102,7 +119,7 @@ public final class ContainersDump {
             record.addProperty("block", blockId);
             record.addProperty("kind", kind);
             record.addProperty("knowledge_group", knowledgeGroup(blockId));
-            record.addProperty("menu", stateMenu != null || blockEntity instanceof MenuProvider);
+            record.addProperty("menu", stateMenu || blockEntity instanceof MenuProvider);
             record.addProperty("container", blockEntity instanceof Container);
             if (blockEntity != null) {
                 record.addProperty("block_entity", blockEntity.getClass().getSimpleName());
@@ -136,7 +153,7 @@ public final class ContainersDump {
     }
 
     /** {@code station} / {@code container} / {@code null} when the block is neither. */
-    private static String classify(String blockId, BlockEntity blockEntity, MenuProvider stateMenu) {
+    private static String classify(String blockId, BlockEntity blockEntity, boolean stateMenu) {
         if (STATION_HOLDOUTS.contains(blockId)) {
             return "station";
         }
@@ -149,7 +166,7 @@ public final class ContainersDump {
         if (blockEntity instanceof Container) {
             return "container";  // stores items
         }
-        if (stateMenu != null || blockEntity instanceof MenuProvider) {
+        if (stateMenu || blockEntity instanceof MenuProvider) {
             return "station";  // a GUI with no storage behind it
         }
         return null;
@@ -195,11 +212,52 @@ public final class ContainersDump {
         }
     }
 
-    /** The state's own menu provider (non-block-entity workstations), or null if it offers none. */
-    private static MenuProvider probeStateMenu(BlockState state, ServerLevel level) {
+    /** Whether the state offers a menu at {@code pos} (true for the non-block-entity workstations). */
+    private static boolean probeStateMenu(BlockState state, ServerLevel level, BlockPos pos) {
         try {
-            return state.getMenuProvider(level, PROBE);
+            return state.getMenuProvider(level, pos) != null;
         } catch (Exception exception) {
+            return false;
+        }
+    }
+
+    /**
+     * Places {@code state} at {@code pos} just long enough to ask it for a menu, then restores what was
+     * there. Needed for blocks whose menu provider resolves the block entity at the position — against
+     * empty air they answer null, and the enchanting table (one of the two gates that already existed)
+     * silently dropped out of the dump because of it.
+     */
+    private static boolean probePlacedMenu(ServerLevel level, BlockPos pos, BlockState state) {
+        BlockState previous = level.getBlockState(pos);
+        try {
+            level.setBlock(pos, state, PROBE_FLAGS);
+            return probeStateMenu(state, level, pos);
+        } catch (Exception exception) {
+            return false;
+        } finally {
+            try {
+                level.setBlock(pos, previous, PROBE_FLAGS);
+            } catch (Exception exception) {
+                AEM.LOGGER.warn("Containers dump: could not restore {} at {}", previous, pos, exception);
+            }
+        }
+    }
+
+    /**
+     * A spot to place the probe blocks: just under the build ceiling at the origin, which is empty air
+     * in any normal world. The chunk is loaded up front so the placement can't silently no-op. Returns
+     * null if that isn't possible, which just means the placed probe is skipped.
+     */
+    private static BlockPos scratchPos(ServerLevel level) {
+        BlockPos pos = new BlockPos(0, level.getMaxY() - 10, 0);
+        if (!level.isInsideBuildHeight(pos)) {
+            return null;
+        }
+        try {
+            level.getChunk(pos);
+            return pos;
+        } catch (Exception exception) {
+            AEM.LOGGER.warn("Containers dump: no scratch chunk, block-entity menu probe skipped", exception);
             return null;
         }
     }
