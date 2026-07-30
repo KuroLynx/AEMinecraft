@@ -1150,6 +1150,17 @@ class RuleHelper:
             # `obtain` (inside the Knowledge gate), not the whole node.
             return self.all_of(self.knowledge(knowledge_name), self._with_reward(base, obtain))
 
+        # A gated station/container block is the same shape as a tool: its Knowledge blocks crafting and
+        # picking it up (tool_locks), so obtaining the BLOCK ITEM needs the Knowledge on top of its
+        # ordinary sources. Its own recipe is additionally gated on the station that makes it, which
+        # _recipe_node already applies.
+        block_knowledge = BLOCK_KNOWLEDGE.get(f"minecraft:{base}")
+        if block_knowledge is not None:
+            sources = self._acquire_from_sources(base, _stack)
+            if sources is not None:
+                return self.all_of(self.knowledge(block_knowledge),
+                                   self._with_reward(base, self._coarsen(sources)))
+
         sources = self._acquire_from_sources(base, _stack)
         result = self._coarsen(sources if sources is not None else self._acquire_fallback(base))
         # Universal Material Handling pickup lock: obtaining a tier-gated raw material by ANY in-world
@@ -1236,7 +1247,12 @@ class RuleHelper:
             options.append(self.can_trade_villager())
         for structure_name in record.get("structures", ()):
             if structure_name in STRUCTURES:
-                options.append(self.structure(structure_name))
+                # Structure loot lives in containers, so reaching the structure isn't enough when the
+                # Chest gate is on — you also have to be able to open one. Chest stands in for the whole
+                # family here: a few tables put their loot in barrels or pots instead, and demanding the
+                # chest Knowledge for those is stricter than reality rather than looser, which is the
+                # safe direction for logic. Folds away entirely when the gate is off.
+                options.append(self.all_of(self.structure(structure_name), self._loot_container_node()))
         for table in record.get("gameplay", ()):
             node = self._gameplay_node(table, inner)
             if node is not None:
@@ -1282,14 +1298,43 @@ class RuleHelper:
         return or_(*keep)
 
     def _recipe_node(self, recipe: dict, stack: frozenset):
-        """A recipe is satisfied when every distinct ingredient is obtainable (AND)."""
+        """A recipe is satisfied when every distinct ingredient is obtainable (AND), and the station it
+        runs on is usable."""
         parts = []
+        station = self._station_node(recipe.get("station"))
+        if station is not None:
+            parts.append(station)
         for ingredient in recipe.get("ingredients", ()):
             node = self._ingredient_node(ingredient, stack)
             if node is None:
                 return None  # an unobtainable ingredient disqualifies the whole recipe
             parts.append(node)
         return and_(*parts) if parts else None
+
+    def _loot_container_node(self):
+        """The Knowledge needed to open structure loot (the chest gate), or a free node when it's off."""
+        return self.knowledge(BLOCK_KNOWLEDGE.get("minecraft:chest", ""))
+
+    def _station_node(self, station: str | None):
+        """The Knowledge a recipe's station demands, or None when nothing gates it.
+
+        ``station`` is the recipe type the pack dumped (``smelting``, ``stonecutting``,
+        ``crafting_shaped``, …); RECIPE_STATION_KNOWLEDGE maps it to the block(s) that run it, ORed
+        because either a Crafting Table or a Crafter does crafting. Gates the seed switched off fold
+        away in self.knowledge, so this costs nothing when they are.
+
+        Every ``crafting_*`` type is treated as needing the crafting station. That is deliberately
+        strict: the acquisition dump doesn't record a shaped recipe's grid size, so a 2x2 recipe you
+        could do in your own inventory is indistinguishable from a 3x3 one. Over-requiring only makes
+        logic more conservative, while under-requiring would hand out seeds that can't be finished.
+        """
+        if not station:
+            return None
+        key = "crafting" if station.startswith("crafting") else station
+        names = RECIPE_STATION_KNOWLEDGE.get(key)
+        if not names:
+            return None
+        return self.any_of(*(self.knowledge(name) for name in names))
 
     def _ingredient_node(self, ingredient: dict, stack: frozenset):
         if "any_of" in ingredient:

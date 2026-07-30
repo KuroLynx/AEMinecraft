@@ -241,6 +241,111 @@ def _load_knowledges() -> dict[str, MCKnowledgeData]:
     return knowledges
 
 
+def load_containers(pack_name: str) -> list[dict]:
+    """Read a pack's containers.json (``/aem dump containers``): every block that opens a GUI or holds
+    items, with the facts the gates are built from — ``kind`` (station/container), ``block_entity`` and
+    ``recipe_station``. Missing file -> no station/container gates from this pack.
+
+    Returned raw: which blocks share a Knowledge is a design decision made by
+    ``tools/build_knowledges.py`` (offline, into knowledges.csv) and by ``data.py`` (at load), not a
+    pack fact.
+    """
+    path = _pack_dir(pack_name).joinpath("containers.json")
+    if not path.is_file():
+        return []
+    with path.open(encoding="utf-8") as f:
+        return json.load(f)
+
+
+# Blocks that hold an item without being anything you would call storage. They are dumped (their block
+# entity really is a Container) but a gate on them is noise, so they mint no Knowledge.
+SKIP_GATE_BLOCKS = frozenset({"minecraft:jukebox", "minecraft:decorated_pot"})
+
+
+def _gate_signature(record: dict) -> tuple:
+    """What makes two blocks 'the same thing' for gating: same block entity, same recipe station."""
+    return (record.get("block_entity"), record.get("recipe_station"))
+
+
+def knowledge_groups(records: list[dict]) -> dict[str, list[str]]:
+    """Group dumped blocks into gates: group name -> the block ids sharing one Knowledge.
+
+    Grouping is derived from the dump's own facts, so a new MC version or a mod needs no hand-editing:
+
+    1. **Variant prefix** — strip a leading ``word_`` and adopt the remainder when that is itself a
+       dumped block with the same signature: ``chipped_anvil`` -> ``anvil``,
+       ``waxed_exposed_copper_chest`` -> ``exposed_copper_chest`` -> ``copper_chest``,
+       ``soul_campfire`` -> ``campfire``, the 16 dyed shulker boxes -> ``shulker_box``. Comparing the
+       signature is what stops ``blast_furnace`` collapsing into ``furnace``: they run different
+       recipes, and the logic has to tell them apart.
+    2. **Same block entity** — what is left groups by signature when one covers several bases, i.e. the
+       same block in several woods (the 12 shelves), named by the id segments they share (``shelf``).
+
+    Shared by ``tools/build_knowledges.py`` (which writes the rows) and ``data.py`` (which maps blocks
+    and recipe stations onto them), so the two can never drift.
+    """
+    by_id = {record["block"]: record for record in records if record["block"] not in SKIP_GATE_BLOCKS}
+
+    def reduce_once(block_id: str) -> str | None:
+        namespace, _, path = block_id.partition(":")
+        if "_" not in path:
+            return None
+        candidate = f"{namespace}:{path.split('_', 1)[1]}"
+        if candidate not in by_id or _gate_signature(by_id[candidate]) != _gate_signature(by_id[block_id]):
+            return None
+        return candidate
+
+    canonical: dict[str, str] = {}
+    for block_id in by_id:
+        seen, current = {block_id}, block_id
+        while (nxt := reduce_once(current)) is not None and nxt not in seen:
+            seen.add(nxt)
+            current = nxt
+        canonical[block_id] = current
+
+    by_signature: dict[tuple, set[str]] = {}
+    for block_id, base in canonical.items():
+        if by_id[block_id].get("block_entity") is None:
+            continue  # nothing to key on; rule 1 is all we have
+        by_signature.setdefault(_gate_signature(by_id[block_id]), set()).add(base)
+
+    groups: dict[str, list[str]] = {}
+    for block_id, base in canonical.items():
+        bases = by_signature.get(_gate_signature(by_id[block_id]), {base})
+        name = _common_suffix(sorted(bases)) if len(bases) > 1 else base
+        groups.setdefault(name, []).append(block_id)
+    return {name: sorted(blocks) for name, blocks in sorted(groups.items())}
+
+
+def _common_suffix(block_ids: list[str]) -> str:
+    """The trailing ``_``-separated segments every id shares (``*_shelf`` -> ``minecraft:shelf``)."""
+    namespace = block_ids[0].split(":", 1)[0]
+    parts = [block_id.split(":", 1)[1].split("_") for block_id in block_ids]
+    shared: list[str] = []
+    for index in range(1, min(len(p) for p in parts) + 1):
+        segment = {p[-index] for p in parts}
+        if len(segment) != 1:
+            break
+        shared.insert(0, segment.pop())
+    return f"{namespace}:{'_'.join(shared)}" if shared else block_ids[0]
+
+
+# Blocks whose gate predates the containers dump and is named after the ACTIVITY rather than the block.
+# Without this the generated rows would mint "Brewing Stand"/"Enchanting Table" beside the "Brewing"/
+# "Enchanting" gates that already cover those blocks — two Knowledges for one block, and the classic
+# ones silently stop gating the block's use.
+GATE_NAME_ALIASES = {
+    "minecraft:brewing_stand": "Brewing",
+    "minecraft:enchanting_table": "Enchanting",
+}
+
+
+def gate_knowledge_name(group: str) -> str:
+    """``minecraft:blast_furnace`` -> ``Blast Furnace`` (the bare name knowledges.csv stores)."""
+    alias = GATE_NAME_ALIASES.get(group)
+    return alias if alias else group.split(":", 1)[-1].replace("_", " ").title()
+
+
 def _load_entities(pack_dir) -> dict[str, MCMobData]:
     """Read a pack's entities.json (dumped from the running game by ``/aem dump entities``), keyed by
     the display name derived from the game_id via ``_prettify`` ("minecraft:wither_skeleton" ->

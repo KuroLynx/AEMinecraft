@@ -30,6 +30,9 @@ from .content.registry import (  # noqa: F401
     MCMobData,
     MCStructureData,
     base_pack,
+    gate_knowledge_name,
+    knowledge_groups,
+    load_containers,
     load_manifest_advancements,
     load_manifest_challenge,
     load_pack,
@@ -186,13 +189,35 @@ TOOL_LOCKS.update({
     "brewing_stand"   : (K_BREWING, MAT_STONE),    # blaze rod + 3 cobblestone
 })
 
-# Crafting stations whose *use* (right-click to open the GUI) is gated behind a Knowledge item: the
-# mod blocks interacting with a placed block until the Knowledge is received, so tables/stands found
-# in villages/strongholds are inert too. Value is the bare knowledge name (rules.constants K_*).
-STATION_KNOWLEDGE_LOCKS: dict[str, str] = {
-    "enchanting_table": K_ENCHANT,
-    "brewing_stand"   : K_BREWING,
-}
+# Every station/container block that has a Knowledge gate: full block id -> bare knowledge name. Built
+# from the dumped containers.json (see registry.knowledge_groups), so a block only appears here if the
+# running game actually has it. Both halves of a station/container gate read this: the mod blocks
+# right-clicking the block (station_knowledge_locks -> KnowledgeUseGate) and blocks crafting/picking it
+# up (tool_locks), and the logic requires the knowledge to acquire the block item.
+#
+# Whether a gate is ON is a per-seed option (knowledge_gates), resolved in MCWorld._active_knowledges;
+# this map is the full catalogue, unfiltered.
+BLOCK_KNOWLEDGE: dict[str, str] = {}
+for _group, _blocks in knowledge_groups(load_containers(base_pack())).items():
+    for _block_id in _blocks:
+        BLOCK_KNOWLEDGE[_block_id] = gate_knowledge_name(_group)
+# Only gates that actually exist as rows in knowledges.csv can be required (a dump can run ahead of the
+# CSV; tools/build_knowledges.py is what adds the rows).
+BLOCK_KNOWLEDGE = {block: name for block, name in BLOCK_KNOWLEDGE.items() if name in KNOWLEDGES}
+
+# Recipe station key (as it appears in acquisition.json's ``station``) -> the knowledges that can run
+# it, ORed: "crafting" is satisfied by a Crafting Table OR a Crafter. Derived from the dump's
+# recipe_station field, which is how a smelting recipe learns it needs the Furnace gate.
+RECIPE_STATION_KNOWLEDGE: dict[str, list[str]] = {}
+for _record in load_containers(base_pack()):
+    _station = _record.get("recipe_station")
+    _knowledge = BLOCK_KNOWLEDGE.get(_record["block"])
+    if _station and _knowledge and _knowledge not in RECIPE_STATION_KNOWLEDGE.setdefault(_station, []):
+        RECIPE_STATION_KNOWLEDGE[_station].append(_knowledge)
+
+# Legacy alias: the two stations gated before the option existed. STATION_KNOWLEDGE_LOCKS is now the
+# whole BLOCK_KNOWLEDGE catalogue (keyed by full id), kept under its old name for fill_slot_data.
+STATION_KNOWLEDGE_LOCKS: dict[str, str] = dict(BLOCK_KNOWLEDGE)
 
 MOBS_PASSIVE  = {k: v for k, v in MOBS_ALL.items() if v.category == MCEntityCategory.PASSIVE}
 MOBS_NEUTRAL  = {k: v for k, v in MOBS_ALL.items() if v.category == MCEntityCategory.NEUTRAL}

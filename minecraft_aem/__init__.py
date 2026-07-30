@@ -637,16 +637,28 @@ class MCWorld(World):
             # Only the gates this seed switched on are emitted: a knowledge that is off has no item in
             # the pool, so leaving its lock in would block the item forever.
             "tool_locks"           : {
-                f"minecraft:{path}": {"knowledge": f"{KNOWLEDGE_PREFIX}{knowledge}", "material": tier}
-                for path, (knowledge, tier) in TOOL_LOCKS.items()
-                if knowledge in self._active_knowledges()
+                # The craft/pickup half of a station/container gate: a gated block can't be made or
+                # picked up either, the same way the enchanting table and brewing stand always worked.
+                # No material tier of their own — the recipe's ingredients carry that. Listed FIRST so
+                # the curated TOOL_LOCKS below win: the two blocks in both (enchanting table, brewing
+                # stand) have a hand-set tier that a blanket 0 would throw away.
+                **{
+                    block: {"knowledge": f"{KNOWLEDGE_PREFIX}{knowledge}", "material": 0}
+                    for block, knowledge in BLOCK_KNOWLEDGE.items()
+                    if knowledge in self._active_knowledges()
+                },
+                **{
+                    f"minecraft:{path}": {"knowledge": f"{KNOWLEDGE_PREFIX}{knowledge}", "material": tier}
+                    for path, (knowledge, tier) in TOOL_LOCKS.items()
+                    if knowledge in self._active_knowledges()
+                },
             },
 
             # --- Station locks : block MC → Knowledge AP requise pour l'utiliser (ouvrir le GUI) ---
             # Le mod bloque le clic-droit sur la table d'enchantement / l'alambic tant que la
             # Knowledge n'est pas reçue (même ceux trouvés dans les structures).
             "station_knowledge_locks": {
-                f"minecraft:{block}": f"{KNOWLEDGE_PREFIX}{knowledge}"
+                block: f"{KNOWLEDGE_PREFIX}{knowledge}"
                 for block, knowledge in STATION_KNOWLEDGE_LOCKS.items()
                 if knowledge in self._active_knowledges()
             },

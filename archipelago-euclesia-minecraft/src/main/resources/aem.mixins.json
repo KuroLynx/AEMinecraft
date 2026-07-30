@@ -6,8 +6,6 @@
     "AdvancementRewardsMixin",
     "AdvancementVisibilityEvaluatorMixin",
     "BeehiveBlockEntityMixin",
-    "BrewingStandBlockMixin",
-    "EnchantingTableBlockMixin",
     "EnderDragonFightMixin",
     "EntityMixin",
     "GiveCommandMixin",
