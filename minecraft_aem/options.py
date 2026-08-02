@@ -6,7 +6,6 @@ from .data import (
     ADVANCEMENT_LOCATIONS,
     KNOWLEDGES,
     KNOWLEDGES_BY_CATEGORY,
-    MCKnowledgeCategory,
     MOBS_ALL,
     MOBS_BOSS,
     STRUCTURES,
@@ -144,6 +143,11 @@ class StructureUnlock(OptionSet):
     default = frozenset({"Stronghold"})
 
 
+# What knowledge_gates accepts, plus the same entries negated with a leading "-". Only presets and
+# knowledge names are negatable: "-All" would just mean the empty list, which the player can write.
+_KNOWLEDGE_GATES = {category for category in KNOWLEDGES_BY_CATEGORY} | set(KNOWLEDGES.keys())
+
+
 class KnowledgeGates(OptionSet):
     """Choose which Knowledge gates your run uses.
 
@@ -163,29 +167,32 @@ class KnowledgeGates(OptionSet):
         - "All" — every gate this content version knows about.
         - Any knowledge name, WITHOUT the "Knowledge: " prefix (e.g. "Pickaxe Handling", "Brewing").
 
-    The default is the classic set: every tool, armor and misc gate, plus the brewing stand and
-    enchanting table. The other station and container gates are opt-in, since gating something like the
-    crafting table or the chest reshapes the whole run.
+    Any preset or name can also be written with a leading "-" to switch that gate back OFF, which is
+    how you take a few gates out of a big preset. Order does not matter: everything listed is switched
+    on first, then every "-" entry is removed from the result.
+
+    The default is every gate this content version knows about except the three that reshape the whole
+    run: the chest, the crafting table and the furnace.
 
     Examples:
-        The classic set plus every workstation:
-            - tool
-            - armor
-            - misc
-            - station
+        Everything except the chest:
+            - All
+            - -Chest
+
+        Every gate, but no containers at all:
+            - All
+            - -container
 
         Only mining and smelting matter:
             - Pickaxe Handling
             - Furnace
     """
     display_name = "Knowledge Gates"
-    valid_keys = {"All"} | {category for category in KNOWLEDGES_BY_CATEGORY} | set(KNOWLEDGES.keys())
-    # The gates that existed before this option: every tool/armor/misc knowledge, plus the two stations
-    # that were already gated (brewing stand, enchanting table). Named individually rather than via the
-    # "station" preset so that dumping a new pack — which appends station/container rows — never
-    # silently turns new gates on for a player who never asked for them.
-    default = frozenset({MCKnowledgeCategory.TOOL, MCKnowledgeCategory.ARMOR, MCKnowledgeCategory.MISC,
-                         "Brewing", "Enchanting"})
+    valid_keys = {"All"} | _KNOWLEDGE_GATES | {f"-{gate}" for gate in _KNOWLEDGE_GATES}
+    # Everything, minus the three whose gate changes how the whole run is played. Note that this is
+    # deliberately "All": dumping a new pack appends station/container rows, and those new gates DO
+    # turn on for a player on the default — the run stays as gated as this default promises.
+    default = frozenset({"All", "-Chest", "-Crafting Table", "-Furnace"})
 
 
 class TrapChance(Range):

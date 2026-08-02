@@ -53,10 +53,11 @@ include:
 - **Knowledge** and **Tool/Armor** gates — some crafting stations (enchanting table, brewing stand)
   and some tools/armor require a Knowledge item, and better tools also require enough Material
   Handling. These obey the same `item_gate_behavior` routes. The `knowledge_gates` option picks which
-  Knowledge gates your run uses at all — by category (`tool`, `armor`, `misc`, `station`, `container`)
-  or one by one — so you can drop them entirely or extend them to workstations and storage blocks. A
-  station/container gate blocks both crafting the block and using it, including ones you find in the
-  world.
+  Knowledge gates your run uses at all — by category (`tool`, `armor`, `misc`, `station`, `container`),
+  one by one, or `All` — and any entry written with a leading `-` (e.g. `-Chest`) switches that gate
+  back off, so you can take a few out of a preset. A station/container gate blocks both crafting the
+  block and using it, including ones you find in the world. The default is everything except the
+  chest, crafting table and furnace.
 - **Progressive Villager Trust** — villagers refuse to trade until you unlock each of the five trade
   levels (optional).
 

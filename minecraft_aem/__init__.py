@@ -219,9 +219,13 @@ class MCWorld(World):
         """Knowledge gates switched on this seed, per the knowledge_gates option.
 
         The option accepts category presets ("tool"/"armor"/"misc"/"station"/"container"), "All", and/or
-        individual knowledge names; this resolves them to concrete BARE names (KNOWLEDGES keys) — the
-        knowledge-side mirror of _get_locked_mobs. A gate that is off has no item in the pool, emits no
-        lock in slot_data, and is dropped from the rules (see RuleHelper.knowledge).
+        individual knowledge names, any of them negated with a leading "-"; this resolves them to
+        concrete BARE names (KNOWLEDGES keys) — the knowledge-side mirror of _get_locked_mobs. A gate
+        that is off has no item in the pool, emits no lock in slot_data, and is dropped from the rules
+        (see RuleHelper.knowledge).
+
+        Negation is resolved in one pass at the end rather than in list order: a YAML list reads as a
+        set, so "All" then "-Chest" and "-Chest" then "All" both mean everything but the chest.
         """
         # Memoized: the option can't change once generation starts, and the lock maps in
         # fill_slot_data ask per row (one call per tool/station, ~80 a seed).
@@ -230,17 +234,23 @@ class MCWorld(World):
             return cached
 
         selected = self.options.knowledge_gates.value
-        if "All" in selected:
-            active = set(KNOWLEDGES)
-        else:
-            active = set()
-            for entry in selected:
-                if entry in KNOWLEDGES_BY_CATEGORY:
-                    active |= set(KNOWLEDGES_BY_CATEGORY[entry])
-                elif entry in KNOWLEDGES:  # the option also lists individual knowledge names
-                    active.add(entry)
+        active = self._resolve_knowledges({entry for entry in selected if not entry.startswith("-")})
+        active -= self._resolve_knowledges({entry[1:] for entry in selected if entry.startswith("-")})
         self._active_knowledge_cache = active
         return active
+
+    @staticmethod
+    def _resolve_knowledges(entries: set[str]) -> set[str]:
+        """Expand knowledge_gates entries ("All", a category preset, a name) to bare knowledge names."""
+        names: set[str] = set()
+        for entry in entries:
+            if entry == "All":
+                names |= set(KNOWLEDGES)
+            elif entry in KNOWLEDGES_BY_CATEGORY:
+                names |= set(KNOWLEDGES_BY_CATEGORY[entry])
+            elif entry in KNOWLEDGES:  # the option also lists individual knowledge names
+                names.add(entry)
+        return names
 
     def _get_active_locations(self) -> dict[str, MCLocationData]:
         """Retourne les locations actives selon les options du joueur."""

@@ -129,21 +129,26 @@ Minecraft [AEM]:
     #     - "All" — every gate this content version knows about.
     #     - Any knowledge name, WITHOUT the "Knowledge: " prefix (e.g. "Pickaxe Handling", "Brewing").
     #
-    # The default is the classic set: every tool, armor and misc gate, plus the brewing stand and
-    # enchanting table. The other station and container gates are opt-in, since gating something like
-    # the crafting table or the chest reshapes the whole run.
+    # Any preset or name can also be written with a leading "-" to switch that gate back OFF, which is
+    # how you take a few gates out of a big preset. Order does not matter: everything listed is
+    # switched on first, then every "-" entry is removed from the result.
+    #
+    # The default is every gate this content version knows about except the three that reshape the
+    # whole run: the chest, the crafting table and the furnace.
     #
     # Examples:
-    #     The classic set plus every workstation:
-    #         - tool
-    #         - armor
-    #         - misc
-    #         - station
+    #     Everything except the chest:
+    #         - All
+    #         - -Chest
+    #
+    #     Every gate, but no containers at all:
+    #         - All
+    #         - -container
     #
     #     Only mining and smelting matter:
     #         - Pickaxe Handling
     #         - Furnace
-    ["tool", "armor", "misc", "Brewing", "Enchanting"]
+    ["All", "-Chest", "-Crafting Table", "-Furnace"]
 
   # -------------------------------------------------------------------------
   # Mob Spawn Lock
