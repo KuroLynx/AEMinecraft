@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_knowledge/brush_handling/1",
+  "parent": "aem:unlock_knowledge/shelf/1",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"
@@ -12,10 +12,10 @@
   ],
   "display": {
     "icon": {
-      "id": "minecraft:bow"
+      "id": "minecraft:shulker_box"
     },
-    "title": "Knowledge: Sharpshooter",
-    "description": "Unlock Knowledge: Sharpshooter",
+    "title": "Knowledge: Shulker Box",
+    "description": "Unlock Knowledge: Shulker Box",
     "frame": "task",
     "show_toast": false,
     "announce_to_chat": false,

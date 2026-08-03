@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_knowledge/brush_handling/1",
+  "parent": "aem:unlock_knowledge/crafter/1",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"
@@ -12,10 +12,10 @@
   ],
   "display": {
     "icon": {
-      "id": "minecraft:bow"
+      "id": "minecraft:crafting_table"
     },
-    "title": "Knowledge: Sharpshooter",
-    "description": "Unlock Knowledge: Sharpshooter",
+    "title": "Knowledge: Crafting Table",
+    "description": "Unlock Knowledge: Crafting Table",
     "frame": "task",
     "show_toast": false,
     "announce_to_chat": false,
