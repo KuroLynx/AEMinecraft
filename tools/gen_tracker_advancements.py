@@ -36,7 +36,13 @@ DEFAULT_JAR = os.path.expanduser(
 sys.path.insert(0, AP_ROOT)
 os.chdir(AP_ROOT)
 
-from worlds.minecraft_aem.data import MCEntityCategory, MOBS_ALL, STRUCTURES  # noqa: E402
+from worlds.minecraft_aem.data import (  # noqa: E402
+    BLOCK_KNOWLEDGE,
+    KNOWLEDGE_PREFIX,
+    MCEntityCategory,
+    MOBS_ALL,
+    STRUCTURES,
+)
 from worlds.minecraft_aem.trackers import (  # noqa: E402
     CATEGORY_ENTITY_UNLOCKS,
     CATEGORY_KILLS,
@@ -125,6 +131,8 @@ STRUCTURE_ICONS = {
 STRUCTURE_ICON_FALLBACK = "minecraft:chest"
 
 # Representative item per knowledge/utility item name (the Knowledge tab tiles). Falls back to a book.
+# Only the gates that DON'T name a block live here: the station/container gates are generated off the
+# in-game block dump, so their icons are derived from the block they gate instead (see GATE_ICONS).
 KNOWLEDGE_ICONS = {
     "Knowledge: Sword Handling": "minecraft:iron_sword",
     "Knowledge: Spear Handling": "minecraft:iron_spear",
@@ -140,8 +148,6 @@ KNOWLEDGE_ICONS = {
     "Knowledge: Pyromaniac": "minecraft:flint_and_steel",
     "Knowledge: Shield Handling": "minecraft:shield",
     "Knowledge: Armor Handling": "minecraft:iron_chestplate",
-    "Knowledge: Brewing": "minecraft:brewing_stand",
-    "Knowledge: Enchanting": "minecraft:enchanting_table",
     "Knowledge: Sharpshooter": "minecraft:bow",
     "Knowledge: Flying": "minecraft:elytra",
     "Progressive Material Handling": "minecraft:raw_iron",
@@ -153,6 +159,9 @@ KNOWLEDGE_ICONS = {
     "Dimension Unlock: The End": "minecraft:end_stone",
 }
 KNOWLEDGE_ICON_FALLBACK = "minecraft:book"
+
+# Station/container gate icons, derived from the block dump in main(); see derive_gate_icons.
+GATE_ICONS: dict[str, str] = {}
 
 # Progressive Material Handling level -> (icon, material name). Each received copy raises the material
 # tier the player can pick up (see minecraft/data.py MATERIAL_HANDLING_ITEMS), so each level's tile
@@ -168,10 +177,40 @@ MATERIAL_HANDLING_TIERS = {
 }
 
 
+def derive_gate_icons(item_slugs: set[str]) -> dict[str, str]:
+    """Icons for the station/container Knowledge gates, taken from the blocks those gates cover.
+
+    These gates come from the in-game block dump (``data.BLOCK_KNOWLEDGE``), so hand-listing them in
+    KNOWLEDGE_ICONS would mean editing this file every time a pack is re-dumped. The block IS the icon:
+    the gate named "Blast Furnace" shows a blast furnace.
+
+    A gate covering several blocks (the 12 shelves, the 17 shulker boxes, the 3 anvil damage states)
+    shows its plainest member — the shortest id that exists as an item — so "Shulker Box" gets the
+    undyed one and "Shelf" an oak shelf. The group name itself can't be used: it is derived from the
+    shared id segments, and ``minecraft:shelf`` is not a real item.
+    """
+    blocks_by_name: dict[str, list[str]] = {}
+    for block_id, name in BLOCK_KNOWLEDGE.items():
+        blocks_by_name.setdefault(name, []).append(block_id)
+
+    icons: dict[str, str] = {}
+    for name, blocks in sorted(blocks_by_name.items()):
+        # Shortest-then-alphabetical: the plain variant is the one without a prefix.
+        candidates = sorted((b for b in blocks if _slug(b) in item_slugs), key=lambda b: (len(b), b))
+        if not candidates:
+            print(f"  WARN: knowledge gate '{name}' covers no block with an item form "
+                  f"({sorted(blocks)[:3]}), using {KNOWLEDGE_ICON_FALLBACK}")
+            continue
+        icons[f"{KNOWLEDGE_PREFIX}{name}"] = candidates[0]
+    return icons
+
+
 def knowledge_icon(item_name: str) -> str:
-    if item_name not in KNOWLEDGE_ICONS:
+    icon = KNOWLEDGE_ICONS.get(item_name) or GATE_ICONS.get(item_name)
+    if icon is None:
         print(f"  WARN: no icon mapping for knowledge item '{item_name}', using {KNOWLEDGE_ICON_FALLBACK}")
-    return KNOWLEDGE_ICONS.get(item_name, KNOWLEDGE_ICON_FALLBACK)
+        return KNOWLEDGE_ICON_FALLBACK
+    return icon
 
 
 def knowledge_level_tile(item_name: str, level: int, count: int) -> dict:
@@ -196,6 +235,18 @@ def load_spawn_egg_slugs(jar_path: str) -> set[str]:
     with zipfile.ZipFile(jar_path) as jar:
         lang = jar.read("assets/minecraft/lang/en_us.json").decode("utf-8")
     return set(re.findall(r"item\.minecraft\.([a-z0-9_]+)_spawn_egg", lang))
+
+
+def load_item_slugs(jar_path: str) -> set[str]:
+    """Every ``<x>`` nameable as ``minecraft:<x>`` in an icon, from the jar lang file.
+
+    Both key spaces count: a block that has an item form is still translated under
+    ``block.minecraft.<x>`` (there is no second ``item.`` key for it), so checking only ``item.``
+    would reject every block icon.
+    """
+    with zipfile.ZipFile(jar_path) as jar:
+        lang = jar.read("assets/minecraft/lang/en_us.json").decode("utf-8")
+    return set(re.findall(r'"(?:item|block)\.minecraft\.([a-z0-9_]+)"', lang))
 
 
 def _slug(game_id: str) -> str:
@@ -306,6 +357,8 @@ def main() -> int:
         return 1
     spawn_eggs = load_spawn_egg_slugs(jar)
     print(f"loaded {len(spawn_eggs)} spawn eggs from {jar}")
+    GATE_ICONS.update(derive_gate_icons(load_item_slugs(jar)))
+    print(f"derived {len(GATE_ICONS)} station/container gate icons from the block dump")
 
     # Fresh output (drop stale tiles) but keep the dir.
     if os.path.isdir(OUT_DIR):

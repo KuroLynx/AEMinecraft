@@ -107,6 +107,50 @@ Minecraft [AEM]:
     'true': 50
 
   # -------------------------------------------------------------------------
+  # Knowledge Gates
+  # -------------------------------------------------------------------------
+
+  knowledge_gates:
+    # Choose which Knowledge gates your run uses.
+    #
+    # A Knowledge gate holds something back until its 'Knowledge: <name>' item arrives from the
+    # multiworld. Gates you do not list are OFF: that knowledge is not in the item pool at all and the
+    # thing it would have gated is free from the start. Leave the list empty for a run with no Knowledge
+    # gates whatsoever.
+    #
+    # Each gate blocks BOTH ways of getting at what it covers:
+    #     - tool / armor / misc gate an ITEM — you can neither craft nor pick up the tool, armor piece
+    #       or gear until the Knowledge arrives (a diamond sword also still needs its material tier).
+    #     - station / container gate a BLOCK — you can neither craft/pick it up NOR use it, so a locked
+    #       furnace can't be made and a furnace found in a village won't open either.
+    #
+    # Accepts category presets, the special value "All", and/or individual knowledge names (mix freely):
+    #     - Category presets: "tool", "armor", "misc", "station", "container".
+    #     - "All" — every gate this content version knows about.
+    #     - Any knowledge name, WITHOUT the "Knowledge: " prefix (e.g. "Pickaxe Handling", "Brewing").
+    #
+    # Any preset or name can also be written with a leading "-" to switch that gate back OFF, which is
+    # how you take a few gates out of a big preset. Order does not matter: everything listed is
+    # switched on first, then every "-" entry is removed from the result.
+    #
+    # The default is every gate this content version knows about except the three that reshape the
+    # whole run: the chest, the crafting table and the furnace.
+    #
+    # Examples:
+    #     Everything except the chest:
+    #         - All
+    #         - -Chest
+    #
+    #     Every gate, but no containers at all:
+    #         - All
+    #         - -container
+    #
+    #     Only mining and smelting matter:
+    #         - Pickaxe Handling
+    #         - Furnace
+    ["All", "-Chest", "-Crafting Table", "-Furnace"]
+
+  # -------------------------------------------------------------------------
   # Mob Spawn Lock
   # -------------------------------------------------------------------------
 

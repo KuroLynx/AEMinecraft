@@ -2,7 +2,14 @@ from dataclasses import dataclass
 
 from Options import Choice, OptionDict, OptionError, OptionSet, PerGameCommonOptions, Range, Toggle
 
-from .data import ADVANCEMENT_LOCATIONS, MOBS_ALL, MOBS_BOSS, STRUCTURES
+from .data import (
+    ADVANCEMENT_LOCATIONS,
+    KNOWLEDGES,
+    KNOWLEDGES_BY_CATEGORY,
+    MOBS_ALL,
+    MOBS_BOSS,
+    STRUCTURES,
+)
 
 
 class BossList(OptionSet):
@@ -134,6 +141,58 @@ class StructureUnlock(OptionSet):
     display_name = "Structure Unlock"
     valid_keys = {"All", "Overworld", "Nether", "The End"} | {data.label for data in STRUCTURES.values()}
     default = frozenset({"Stronghold"})
+
+
+# What knowledge_gates accepts, plus the same entries negated with a leading "-". Only presets and
+# knowledge names are negatable: "-All" would just mean the empty list, which the player can write.
+_KNOWLEDGE_GATES = {category for category in KNOWLEDGES_BY_CATEGORY} | set(KNOWLEDGES.keys())
+
+
+class KnowledgeGates(OptionSet):
+    """Choose which Knowledge gates your run uses.
+
+    A Knowledge gate holds something back until its 'Knowledge: <name>' item arrives from the
+    multiworld. Gates you do not list are OFF: that knowledge is not in the item pool at all and the
+    thing it would have gated is free from the start. Leave the list empty for a run with no Knowledge
+    gates whatsoever.
+
+    Each gate blocks BOTH ways of getting at what it covers:
+        - tool / armor / misc gate an ITEM — you can neither craft nor pick up the tool, armor piece or
+          gear until the Knowledge arrives (a diamond sword also still needs its material tier).
+        - station / container gate a BLOCK — you can neither craft/pick it up NOR use it, so a locked
+          furnace can't be made and a furnace found in a village won't open either.
+
+    Accepts category presets, the special value "All", and/or individual knowledge names (mix freely):
+        - Category presets: "tool", "armor", "misc", "station", "container".
+        - "All" — every gate this content version knows about.
+        - Any knowledge name, WITHOUT the "Knowledge: " prefix (e.g. "Pickaxe Handling", "Brewing").
+
+    Any preset or name can also be written with a leading "-" to switch that gate back OFF, which is
+    how you take a few gates out of a big preset. Order does not matter: everything listed is switched
+    on first, then every "-" entry is removed from the result.
+
+    The default is every gate this content version knows about except the three that reshape the whole
+    run: the chest, the crafting table and the furnace.
+
+    Examples:
+        Everything except the chest:
+            - All
+            - -Chest
+
+        Every gate, but no containers at all:
+            - All
+            - -container
+
+        Only mining and smelting matter:
+            - Pickaxe Handling
+            - Furnace
+    """
+    display_name = "Knowledge Gates"
+    valid_keys = {"All"} | _KNOWLEDGE_GATES | {f"-{gate}" for gate in _KNOWLEDGE_GATES}
+    # Everything, minus the three whose gate changes how the whole run is played. Note that this is
+    # deliberately "All": dumping a new pack appends station/container rows, and those new gates DO
+    # turn on for a player on the default — the run stays as gated as this default promises.
+    default = frozenset({"All", "-Chest", "-Crafting Table", "-Furnace"})
 
 
 class TrapChance(Range):
@@ -329,6 +388,7 @@ class MCOptions(PerGameCommonOptions):
     death_link: DeathLink
     villager_trust: VillagerTrust
     kill_sanity: KillSanity
+    knowledge_gates: KnowledgeGates
     mob_spawn_lock: MobSpawnLock
     structure_unlock: StructureUnlock
     trap_chance: TrapChance

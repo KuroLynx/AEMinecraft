@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.client.gui.DumpScreen;
+import fr.euclesia.mcarchipelago.server.command.ContainersDump;
 import fr.euclesia.mcarchipelago.server.command.EntitiesDump;
 import fr.euclesia.mcarchipelago.server.command.PackDump;
 import net.fabricmc.loader.api.FabricLoader;
@@ -28,14 +29,18 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * Dumps {@code entities.json} from the title menu without an existing world. {@link EntitiesDump}
- * needs a live {@link MinecraftServer} (it instantiates a throwaway entity per type to read runtime
- * class behaviour — tameable/leashable/breedable — which {@link DumpDataSource}'s world-free resource
- * manager can't provide), so this spins up a disposable singleplayer world, dumps on
- * {@code SERVER_STARTED}, leaves it, and deletes the save.
+ * Dumps the world-dependent registry files ({@code entities.json}, {@code containers.json}) from the
+ * title menu without an existing world. Both need a live {@link MinecraftServer} that
+ * {@link DumpDataSource}'s world-free resource manager can't provide — {@link EntitiesDump}
+ * instantiates a throwaway entity per type to read runtime class behaviour
+ * (tameable/leashable/breedable), and {@link ContainersDump} probes each block's menu provider against
+ * a real {@link net.minecraft.server.level.ServerLevel} — so this spins up a disposable singleplayer
+ * world, dumps on {@code SERVER_STARTED}, leaves it, and deletes the save. Requesting both dumps them
+ * in the same temp world, so the world is only created once.
  *
  * <p>Why a real world rather than a faked {@code Level}: mob entity <em>types</em> come from mod code
  * ({@code BuiltInRegistries.ENTITY_TYPE}, populated at mod-init) so any fresh world already contains
@@ -49,18 +54,22 @@ import java.util.stream.Stream;
  * <p>Lifecycle (one in-flight dump at a time, guarded by {@link #isRunning()}):
  * <ol>
  *   <li>{@link #request} (client thread): seed {@code <save>/datapacks/}, create + start the world.</li>
- *   <li>{@link #onServerStarted} (server thread): write {@code <gameDir>/aem/entities.json}.</li>
+ *   <li>{@link #onServerStarted} (server thread): write each requested file into the base pack folder.</li>
  *   <li>{@link #clientTick}: once fully joined, disconnect back to a fresh {@link DumpScreen} showing
  *       the result, then delete the temp save when teardown finishes.</li>
  * </ol>
  */
-public final class HeadlessEntitiesDump {
+public final class HeadlessWorldDump {
 
-    private HeadlessEntitiesDump() {}
+    private HeadlessWorldDump() {}
 
     /** Output matches the offline tools and {@code /aem dump entities} (pretty + serializeNulls). */
     private static final Gson GSON =
             new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().serializeNulls().create();
+
+    /** Dump targets, matching the {@code /aem dump <what>} subcommands and the DumpScreen checkboxes. */
+    public static final String ENTITIES = "entities";
+    public static final String CONTAINERS = "containers";
 
     private static final String SAVE_NAME = "aem_entities_dump";
     /** Safety net: if the world never reaches SERVER_STARTED (e.g. datapack load failed), give up. */
@@ -75,6 +84,7 @@ public final class HeadlessEntitiesDump {
     private static volatile Path saveDir;
     private static volatile Screen returnParent;
     private static volatile String result = "";
+    private static volatile Set<String> targets = Set.of();
 
     public static boolean isRunning() {
         return armed;
@@ -89,30 +99,33 @@ public final class HeadlessEntitiesDump {
     }
 
     /**
-     * Kick off a headless entities dump. Must run on the client thread (it swaps screens).
+     * Kick off a headless dump. Must run on the client thread (it swaps screens).
      *
      * @param returnTo    the screen the rebuilt {@link DumpScreen} returns to on Back
      * @param datapackDir {@code aem-datapacks/}: dropped world-datapacks folded into the temp world
+     * @param what        which files to write ({@link #ENTITIES} / {@link #CONTAINERS}); both share the
+     *                    one temp world
      */
-    public static synchronized void request(Screen returnTo, Path datapackDir) {
-        if (armed) {
+    public static synchronized void request(Screen returnTo, Path datapackDir, Set<String> what) {
+        if (armed || what.isEmpty()) {
             return;
         }
+        targets = Set.copyOf(what);
         armed = true;
         dumped = false;
         leaving = false;
         armedAt = System.currentTimeMillis();
         returnParent = returnTo;
         result = "";
-        AEM.LOGGER.info("Headless entities dump: requested, creating temp world '{}'", SAVE_NAME);
+        AEM.LOGGER.info("Headless dump: requested {}, creating temp world '{}'", targets, SAVE_NAME);
         try {
             createTempWorld(datapackDir);
-            AEM.LOGGER.info("Headless entities dump: temp world creation kicked off, awaiting server start");
+            AEM.LOGGER.info("Headless dump: temp world creation kicked off, awaiting server start");
         } catch (Exception exception) {
-            AEM.LOGGER.warn("Headless entities dump: could not start temp world", exception);
+            AEM.LOGGER.warn("Headless dump: could not start temp world", exception);
             // Nothing started — clean up synchronously and report on a fresh dump screen.
             deleteSaveQuietly();
-            finishWith("entities dump failed: " + exception);
+            finishWith("dump failed: " + exception);
         }
     }
 
@@ -160,7 +173,7 @@ public final class HeadlessEntitiesDump {
         // LevelResource.ROOT has id "." so getWorldPath(ROOT) ends in "/." — normalize() collapses that
         // back to the actual save folder (without it, getFileName() is "." and the guard never matches).
         String worldName = server.getWorldPath(LevelResource.ROOT).normalize().getFileName().toString();
-        AEM.LOGGER.info("Headless entities dump: SERVER_STARTED world='{}' armed={} dumped={}",
+        AEM.LOGGER.info("Headless dump: SERVER_STARTED world='{}' armed={} dumped={}",
                 worldName, armed, dumped);
         if (!armed || dumped) {
             return;
@@ -169,26 +182,39 @@ public final class HeadlessEntitiesDump {
         // set when the user loads a real world; without this guard we'd dump off it and then disconnect
         // them. The teardown (clientTick) only triggers once `dumped` is set here, so this gate protects it.
         if (!SAVE_NAME.equals(worldName)) {
-            AEM.LOGGER.warn("Headless entities dump: world name '{}' != '{}', not our temp world; skipping",
+            AEM.LOGGER.warn("Headless dump: world name '{}' != '{}', not our temp world; skipping",
                     worldName, SAVE_NAME);
             return;
         }
-        // entities.json is the whole-game mob registry: write it into the base (vanilla) pack folder
-        // (e.g. aem/minecraft_26_1_2/) alongside the rest of vanilla's files, per the per-pack layout.
-        Path file = FabricLoader.getInstance().getGameDir().resolve("aem")
-                .resolve(PackDump.basePackFolder()).resolve("entities.json");
+        // These are whole-game registries: they go in the base (vanilla) pack folder (e.g.
+        // aem/minecraft_26_1_2/) alongside the rest of vanilla's files, per the per-pack layout.
+        Path packDir = FabricLoader.getInstance().getGameDir().resolve("aem")
+                .resolve(PackDump.basePackFolder());
+        List<String> summary = new ArrayList<>();
         try {
-            JsonArray array = EntitiesDump.build(server);
-            Files.createDirectories(file.getParent());
-            Files.writeString(file, GSON.toJson(array) + "\n");
-            result = "Dumped " + array.size() + " entities to " + file;
-            AEM.LOGGER.info("Headless entities dump: wrote {} entities to {}", array.size(), file);
+            if (targets.contains(ENTITIES)) {
+                summary.add(write(packDir, "entities.json", EntitiesDump.build(server), "entities"));
+            }
+            if (targets.contains(CONTAINERS)) {
+                summary.add(write(packDir, "containers.json", ContainersDump.build(server), "containers"));
+            }
+            result = String.join(", ", summary) + " -> " + packDir;
         } catch (Exception exception) {
-            AEM.LOGGER.warn("Headless entities dump: build failed", exception);
-            result = "entities dump failed: " + exception;
+            AEM.LOGGER.warn("Headless dump: build failed", exception);
+            result = "dump failed: " + exception;
         } finally {
             dumped = true; // proceed to teardown either way
         }
+    }
+
+    /** Writes one registry array and returns a "<n> <label>" fragment for the status line. */
+    private static String write(Path packDir, String fileName, JsonArray array, String label)
+            throws Exception {
+        Path file = packDir.resolve(fileName);
+        Files.createDirectories(packDir);
+        Files.writeString(file, GSON.toJson(array) + "\n");
+        AEM.LOGGER.info("Headless dump: wrote {} {} to {}", array.size(), label, file);
+        return array.size() + " " + label;
     }
 
     /** Client thread: leave the temp world once joined, then delete it once teardown completes. */
@@ -202,7 +228,7 @@ public final class HeadlessEntitiesDump {
         if (dumped && !leaving && mc.level != null) {
             leaving = true;
             DumpScreen.pendingStatus = result;
-            AEM.LOGGER.info("Headless entities dump: dumped, leaving temp world");
+            AEM.LOGGER.info("Headless dump: dumped, leaving temp world");
             mc.disconnect(new DumpScreen(returnParent), false);
             return;
         }
@@ -218,9 +244,9 @@ public final class HeadlessEntitiesDump {
         // mistaken for this dump. Only safe to clean up once no integrated server is running.
         if (!dumped && !leaving && System.currentTimeMillis() - armedAt > TIMEOUT_MS
                 && mc.getSingleplayerServer() == null) {
-            AEM.LOGGER.warn("Headless entities dump: timed out before the temp world started");
+            AEM.LOGGER.warn("Headless dump: timed out before the temp world started");
             deleteSaveQuietly();
-            finishWith("entities dump failed: temp world did not start");
+            finishWith("dump failed: temp world did not start");
         }
     }
 
@@ -239,6 +265,7 @@ public final class HeadlessEntitiesDump {
         leaving = false;
         saveDir = null;
         returnParent = null;
+        targets = Set.of();
     }
 
     // -- datapacks ----------------------------------------------------------
@@ -283,7 +310,7 @@ public final class HeadlessEntitiesDump {
                 }
             });
         } catch (Exception exception) {
-            AEM.LOGGER.warn("Headless entities dump: could not delete temp save {}", dir, exception);
+            AEM.LOGGER.warn("Headless dump: could not delete temp save {}", dir, exception);
         }
     }
 }

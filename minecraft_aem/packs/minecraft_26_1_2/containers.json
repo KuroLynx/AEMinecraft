@@ -1,0 +1,528 @@
+[
+  {
+    "block": "minecraft:acacia_shelf",
+    "kind": "container",
+    "knowledge_group": "minecraft:acacia_shelf",
+    "menu": false,
+    "container": true,
+    "block_entity": "ShelfBlockEntity"
+  },
+  {
+    "block": "minecraft:anvil",
+    "kind": "station",
+    "knowledge_group": "minecraft:anvil",
+    "menu": true,
+    "container": false
+  },
+  {
+    "block": "minecraft:bamboo_shelf",
+    "kind": "container",
+    "knowledge_group": "minecraft:bamboo_shelf",
+    "menu": false,
+    "container": true,
+    "block_entity": "ShelfBlockEntity"
+  },
+  {
+    "block": "minecraft:barrel",
+    "kind": "container",
+    "knowledge_group": "minecraft:barrel",
+    "menu": true,
+    "container": true,
+    "block_entity": "BarrelBlockEntity"
+  },
+  {
+    "block": "minecraft:beacon",
+    "kind": "station",
+    "knowledge_group": "minecraft:beacon",
+    "menu": true,
+    "container": false,
+    "block_entity": "BeaconBlockEntity"
+  },
+  {
+    "block": "minecraft:birch_shelf",
+    "kind": "container",
+    "knowledge_group": "minecraft:birch_shelf",
+    "menu": false,
+    "container": true,
+    "block_entity": "ShelfBlockEntity"
+  },
+  {
+    "block": "minecraft:black_shulker_box",
+    "kind": "container",
+    "knowledge_group": "minecraft:shulker_box",
+    "menu": true,
+    "container": true,
+    "block_entity": "ShulkerBoxBlockEntity"
+  },
+  {
+    "block": "minecraft:blast_furnace",
+    "kind": "station",
+    "knowledge_group": "minecraft:blast_furnace",
+    "menu": true,
+    "container": true,
+    "block_entity": "BlastFurnaceBlockEntity",
+    "recipe_station": "blasting"
+  },
+  {
+    "block": "minecraft:blue_shulker_box",
+    "kind": "container",
+    "knowledge_group": "minecraft:shulker_box",
+    "menu": true,
+    "container": true,
+    "block_entity": "ShulkerBoxBlockEntity"
+  },
+  {
+    "block": "minecraft:brewing_stand",
+    "kind": "station",
+    "knowledge_group": "minecraft:brewing_stand",
+    "menu": true,
+    "container": true,
+    "block_entity": "BrewingStandBlockEntity"
+  },
+  {
+    "block": "minecraft:brown_shulker_box",
+    "kind": "container",
+    "knowledge_group": "minecraft:shulker_box",
+    "menu": true,
+    "container": true,
+    "block_entity": "ShulkerBoxBlockEntity"
+  },
+  {
+    "block": "minecraft:campfire",
+    "kind": "station",
+    "knowledge_group": "minecraft:campfire",
+    "menu": false,
+    "container": false,
+    "recipe_station": "campfire_cooking"
+  },
+  {
+    "block": "minecraft:cartography_table",
+    "kind": "station",
+    "knowledge_group": "minecraft:cartography_table",
+    "menu": true,
+    "container": false
+  },
+  {
+    "block": "minecraft:cherry_shelf",
+    "kind": "container",
+    "knowledge_group": "minecraft:cherry_shelf",
+    "menu": false,
+    "container": true,
+    "block_entity": "ShelfBlockEntity"
+  },
+  {
+    "block": "minecraft:chest",
+    "kind": "container",
+    "knowledge_group": "minecraft:chest",
+    "menu": true,
+    "container": true,
+    "block_entity": "ChestBlockEntity"
+  },
+  {
+    "block": "minecraft:chipped_anvil",
+    "kind": "station",
+    "knowledge_group": "minecraft:chipped_anvil",
+    "menu": true,
+    "container": false
+  },
+  {
+    "block": "minecraft:chiseled_bookshelf",
+    "kind": "container",
+    "knowledge_group": "minecraft:chiseled_bookshelf",
+    "menu": false,
+    "container": true,
+    "block_entity": "ChiseledBookShelfBlockEntity"
+  },
+  {
+    "block": "minecraft:copper_chest",
+    "kind": "container",
+    "knowledge_group": "minecraft:copper_chest",
+    "menu": true,
+    "container": true,
+    "block_entity": "ChestBlockEntity"
+  },
+  {
+    "block": "minecraft:crafter",
+    "kind": "station",
+    "knowledge_group": "minecraft:crafter",
+    "menu": true,
+    "container": true,
+    "block_entity": "CrafterBlockEntity",
+    "recipe_station": "crafting"
+  },
+  {
+    "block": "minecraft:crafting_table",
+    "kind": "station",
+    "knowledge_group": "minecraft:crafting_table",
+    "menu": true,
+    "container": false,
+    "recipe_station": "crafting"
+  },
+  {
+    "block": "minecraft:crimson_shelf",
+    "kind": "container",
+    "knowledge_group": "minecraft:crimson_shelf",
+    "menu": false,
+    "container": true,
+    "block_entity": "ShelfBlockEntity"
+  },
+  {
+    "block": "minecraft:cyan_shulker_box",
+    "kind": "container",
+    "knowledge_group": "minecraft:shulker_box",
+    "menu": true,
+    "container": true,
+    "block_entity": "ShulkerBoxBlockEntity"
+  },
+  {
+    "block": "minecraft:damaged_anvil",
+    "kind": "station",
+    "knowledge_group": "minecraft:damaged_anvil",
+    "menu": true,
+    "container": false
+  },
+  {
+    "block": "minecraft:dark_oak_shelf",
+    "kind": "container",
+    "knowledge_group": "minecraft:dark_oak_shelf",
+    "menu": false,
+    "container": true,
+    "block_entity": "ShelfBlockEntity"
+  },
+  {
+    "block": "minecraft:decorated_pot",
+    "kind": "container",
+    "knowledge_group": "minecraft:decorated_pot",
+    "menu": false,
+    "container": true,
+    "block_entity": "DecoratedPotBlockEntity"
+  },
+  {
+    "block": "minecraft:dispenser",
+    "kind": "container",
+    "knowledge_group": "minecraft:dispenser",
+    "menu": true,
+    "container": true,
+    "block_entity": "DispenserBlockEntity"
+  },
+  {
+    "block": "minecraft:dropper",
+    "kind": "container",
+    "knowledge_group": "minecraft:dropper",
+    "menu": true,
+    "container": true,
+    "block_entity": "DropperBlockEntity"
+  },
+  {
+    "block": "minecraft:enchanting_table",
+    "kind": "station",
+    "knowledge_group": "minecraft:enchanting_table",
+    "menu": true,
+    "container": false,
+    "block_entity": "EnchantingTableBlockEntity"
+  },
+  {
+    "block": "minecraft:ender_chest",
+    "kind": "container",
+    "knowledge_group": "minecraft:ender_chest",
+    "menu": false,
+    "container": false,
+    "block_entity": "EnderChestBlockEntity"
+  },
+  {
+    "block": "minecraft:exposed_copper_chest",
+    "kind": "container",
+    "knowledge_group": "minecraft:exposed_copper_chest",
+    "menu": true,
+    "container": true,
+    "block_entity": "ChestBlockEntity"
+  },
+  {
+    "block": "minecraft:furnace",
+    "kind": "station",
+    "knowledge_group": "minecraft:furnace",
+    "menu": true,
+    "container": true,
+    "block_entity": "FurnaceBlockEntity",
+    "recipe_station": "smelting"
+  },
+  {
+    "block": "minecraft:gray_shulker_box",
+    "kind": "container",
+    "knowledge_group": "minecraft:shulker_box",
+    "menu": true,
+    "container": true,
+    "block_entity": "ShulkerBoxBlockEntity"
+  },
+  {
+    "block": "minecraft:green_shulker_box",
+    "kind": "container",
+    "knowledge_group": "minecraft:shulker_box",
+    "menu": true,
+    "container": true,
+    "block_entity": "ShulkerBoxBlockEntity"
+  },
+  {
+    "block": "minecraft:grindstone",
+    "kind": "station",
+    "knowledge_group": "minecraft:grindstone",
+    "menu": true,
+    "container": false
+  },
+  {
+    "block": "minecraft:hopper",
+    "kind": "container",
+    "knowledge_group": "minecraft:hopper",
+    "menu": true,
+    "container": true,
+    "block_entity": "HopperBlockEntity"
+  },
+  {
+    "block": "minecraft:jukebox",
+    "kind": "container",
+    "knowledge_group": "minecraft:jukebox",
+    "menu": false,
+    "container": true,
+    "block_entity": "JukeboxBlockEntity"
+  },
+  {
+    "block": "minecraft:jungle_shelf",
+    "kind": "container",
+    "knowledge_group": "minecraft:jungle_shelf",
+    "menu": false,
+    "container": true,
+    "block_entity": "ShelfBlockEntity"
+  },
+  {
+    "block": "minecraft:lectern",
+    "kind": "container",
+    "knowledge_group": "minecraft:lectern",
+    "menu": true,
+    "container": false,
+    "block_entity": "LecternBlockEntity"
+  },
+  {
+    "block": "minecraft:light_blue_shulker_box",
+    "kind": "container",
+    "knowledge_group": "minecraft:shulker_box",
+    "menu": true,
+    "container": true,
+    "block_entity": "ShulkerBoxBlockEntity"
+  },
+  {
+    "block": "minecraft:light_gray_shulker_box",
+    "kind": "container",
+    "knowledge_group": "minecraft:shulker_box",
+    "menu": true,
+    "container": true,
+    "block_entity": "ShulkerBoxBlockEntity"
+  },
+  {
+    "block": "minecraft:lime_shulker_box",
+    "kind": "container",
+    "knowledge_group": "minecraft:shulker_box",
+    "menu": true,
+    "container": true,
+    "block_entity": "ShulkerBoxBlockEntity"
+  },
+  {
+    "block": "minecraft:loom",
+    "kind": "station",
+    "knowledge_group": "minecraft:loom",
+    "menu": true,
+    "container": false
+  },
+  {
+    "block": "minecraft:magenta_shulker_box",
+    "kind": "container",
+    "knowledge_group": "minecraft:shulker_box",
+    "menu": true,
+    "container": true,
+    "block_entity": "ShulkerBoxBlockEntity"
+  },
+  {
+    "block": "minecraft:mangrove_shelf",
+    "kind": "container",
+    "knowledge_group": "minecraft:mangrove_shelf",
+    "menu": false,
+    "container": true,
+    "block_entity": "ShelfBlockEntity"
+  },
+  {
+    "block": "minecraft:oak_shelf",
+    "kind": "container",
+    "knowledge_group": "minecraft:oak_shelf",
+    "menu": false,
+    "container": true,
+    "block_entity": "ShelfBlockEntity"
+  },
+  {
+    "block": "minecraft:orange_shulker_box",
+    "kind": "container",
+    "knowledge_group": "minecraft:shulker_box",
+    "menu": true,
+    "container": true,
+    "block_entity": "ShulkerBoxBlockEntity"
+  },
+  {
+    "block": "minecraft:oxidized_copper_chest",
+    "kind": "container",
+    "knowledge_group": "minecraft:oxidized_copper_chest",
+    "menu": true,
+    "container": true,
+    "block_entity": "ChestBlockEntity"
+  },
+  {
+    "block": "minecraft:pale_oak_shelf",
+    "kind": "container",
+    "knowledge_group": "minecraft:pale_oak_shelf",
+    "menu": false,
+    "container": true,
+    "block_entity": "ShelfBlockEntity"
+  },
+  {
+    "block": "minecraft:pink_shulker_box",
+    "kind": "container",
+    "knowledge_group": "minecraft:shulker_box",
+    "menu": true,
+    "container": true,
+    "block_entity": "ShulkerBoxBlockEntity"
+  },
+  {
+    "block": "minecraft:purple_shulker_box",
+    "kind": "container",
+    "knowledge_group": "minecraft:shulker_box",
+    "menu": true,
+    "container": true,
+    "block_entity": "ShulkerBoxBlockEntity"
+  },
+  {
+    "block": "minecraft:red_shulker_box",
+    "kind": "container",
+    "knowledge_group": "minecraft:shulker_box",
+    "menu": true,
+    "container": true,
+    "block_entity": "ShulkerBoxBlockEntity"
+  },
+  {
+    "block": "minecraft:shulker_box",
+    "kind": "container",
+    "knowledge_group": "minecraft:shulker_box",
+    "menu": true,
+    "container": true,
+    "block_entity": "ShulkerBoxBlockEntity"
+  },
+  {
+    "block": "minecraft:smithing_table",
+    "kind": "station",
+    "knowledge_group": "minecraft:smithing_table",
+    "menu": true,
+    "container": false,
+    "recipe_station": "smithing_transform"
+  },
+  {
+    "block": "minecraft:smoker",
+    "kind": "station",
+    "knowledge_group": "minecraft:smoker",
+    "menu": true,
+    "container": true,
+    "block_entity": "SmokerBlockEntity",
+    "recipe_station": "smoking"
+  },
+  {
+    "block": "minecraft:soul_campfire",
+    "kind": "station",
+    "knowledge_group": "minecraft:soul_campfire",
+    "menu": false,
+    "container": false,
+    "recipe_station": "campfire_cooking"
+  },
+  {
+    "block": "minecraft:spruce_shelf",
+    "kind": "container",
+    "knowledge_group": "minecraft:spruce_shelf",
+    "menu": false,
+    "container": true,
+    "block_entity": "ShelfBlockEntity"
+  },
+  {
+    "block": "minecraft:stonecutter",
+    "kind": "station",
+    "knowledge_group": "minecraft:stonecutter",
+    "menu": true,
+    "container": false,
+    "recipe_station": "stonecutting"
+  },
+  {
+    "block": "minecraft:trapped_chest",
+    "kind": "container",
+    "knowledge_group": "minecraft:trapped_chest",
+    "menu": true,
+    "container": true,
+    "block_entity": "TrappedChestBlockEntity"
+  },
+  {
+    "block": "minecraft:warped_shelf",
+    "kind": "container",
+    "knowledge_group": "minecraft:warped_shelf",
+    "menu": false,
+    "container": true,
+    "block_entity": "ShelfBlockEntity"
+  },
+  {
+    "block": "minecraft:waxed_copper_chest",
+    "kind": "container",
+    "knowledge_group": "minecraft:waxed_copper_chest",
+    "menu": true,
+    "container": true,
+    "block_entity": "ChestBlockEntity"
+  },
+  {
+    "block": "minecraft:waxed_exposed_copper_chest",
+    "kind": "container",
+    "knowledge_group": "minecraft:waxed_exposed_copper_chest",
+    "menu": true,
+    "container": true,
+    "block_entity": "ChestBlockEntity"
+  },
+  {
+    "block": "minecraft:waxed_oxidized_copper_chest",
+    "kind": "container",
+    "knowledge_group": "minecraft:waxed_oxidized_copper_chest",
+    "menu": true,
+    "container": true,
+    "block_entity": "ChestBlockEntity"
+  },
+  {
+    "block": "minecraft:waxed_weathered_copper_chest",
+    "kind": "container",
+    "knowledge_group": "minecraft:waxed_weathered_copper_chest",
+    "menu": true,
+    "container": true,
+    "block_entity": "ChestBlockEntity"
+  },
+  {
+    "block": "minecraft:weathered_copper_chest",
+    "kind": "container",
+    "knowledge_group": "minecraft:weathered_copper_chest",
+    "menu": true,
+    "container": true,
+    "block_entity": "ChestBlockEntity"
+  },
+  {
+    "block": "minecraft:white_shulker_box",
+    "kind": "container",
+    "knowledge_group": "minecraft:shulker_box",
+    "menu": true,
+    "container": true,
+    "block_entity": "ShulkerBoxBlockEntity"
+  },
+  {
+    "block": "minecraft:yellow_shulker_box",
+    "kind": "container",
+    "knowledge_group": "minecraft:shulker_box",
+    "menu": true,
+    "container": true,
+    "block_entity": "ShulkerBoxBlockEntity"
+  }
+]

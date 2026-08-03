@@ -8,6 +8,7 @@ import fr.euclesia.mcarchipelago.server.gameplay.AdvancementBridge;
 import fr.euclesia.mcarchipelago.server.gameplay.BacapConfigService;
 import fr.euclesia.mcarchipelago.server.gameplay.BiomeFinderService;
 import fr.euclesia.mcarchipelago.server.gameplay.FillerTrapService;
+import fr.euclesia.mcarchipelago.server.gameplay.KnowledgeUseGate;
 import fr.euclesia.mcarchipelago.server.gameplay.MobKillBridge;
 import fr.euclesia.mcarchipelago.server.gameplay.RootAdvancementService;
 import fr.euclesia.mcarchipelago.server.gameplay.StartDimensionService;
@@ -32,6 +33,10 @@ public final class MinecraftEventBridge {
         // Recompute the Structure Finder's targets on the server tick (throttled) and publish them
         // to StructureFinderState for the client to render.
         StructureFinderDriver.register();
+
+        // Station/container Knowledge gates: refuse right-clicking a block whose Knowledge is
+        // still missing (see KnowledgeUseGate).
+        KnowledgeUseGate.register();
 
         // Connect-on-join gate. A world created via the Archipelago tab stages its connection here;
         // persist it into the new world's folder, then require a live Archipelago session before the

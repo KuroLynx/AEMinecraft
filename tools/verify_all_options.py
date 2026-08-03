@@ -30,6 +30,10 @@ MAX_OPTIONS = {
     "mob_spawn_lock": {"passive", "neutral", "hostile", "boss"},
     "structure_unlock": {"All"},
     "boss_list": {"All"},
+    # "All", not the option's default: the default deliberately leaves the chest, crafting table and
+    # furnace ungated, and those three gate the widest part of the tree, so only "All" is the strictest
+    # configuration this check is supposed to test.
+    "knowledge_gates": {"All"},
     "advancements_required": 125,
 }
 

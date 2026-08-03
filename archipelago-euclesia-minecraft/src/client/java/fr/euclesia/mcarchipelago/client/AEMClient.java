@@ -3,7 +3,7 @@ package fr.euclesia.mcarchipelago.client;
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.client.connect.APConnectController;
 import fr.euclesia.mcarchipelago.client.connect.WorldLoadResume;
-import fr.euclesia.mcarchipelago.client.dump.HeadlessEntitiesDump;
+import fr.euclesia.mcarchipelago.client.dump.HeadlessWorldDump;
 import fr.euclesia.mcarchipelago.client.finder.StructureFinderBarHud;
 import fr.euclesia.mcarchipelago.client.gui.AEMScreenButtons;
 import fr.euclesia.mcarchipelago.client.gui.BiomeFinderScreen;
@@ -40,11 +40,11 @@ public class AEMClient implements ClientModInitializer {
 		// entities-dump teardown (leave + delete the temp world once it has dumped).
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			WorldLoadResume.runPending();
-			HeadlessEntitiesDump.clientTick(client);
+			HeadlessWorldDump.clientTick(client);
 		});
 
 		// When the headless entities-dump temp world has started, write entities.json off it.
-		ServerLifecycleEvents.SERVER_STARTED.register(HeadlessEntitiesDump::onServerStarted);
+		ServerLifecycleEvents.SERVER_STARTED.register(HeadlessWorldDump::onServerStarted);
 
 		// Top-left HUD sphere: green when connected to Archipelago, red when not.
 		HudElementRegistry.addLast(
