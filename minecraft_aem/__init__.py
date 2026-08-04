@@ -492,6 +492,49 @@ class MCWorld(World):
     # and nothing front-loaded at all; this guarantees the ones carrying the most weight still are.
     _KNOWLEDGE_BALANCE_TOP = 7
 
+    def _goal_knowledges(self) -> set[str]:
+        """Knowledges standing anywhere between the player and a boss the goal requires.
+
+        Volume is the wrong measure for these. A gate can block a single check and still be the thing
+        holding up the whole run, because that check is on the critical path to the Ender Dragon — the
+        same reason _STRUCTURE_BOSS_GATES and _MOB_BOSS_GATES promote a structure or mob unlock that
+        gates a required boss. Balancing has to front-load those whatever their share works out at.
+
+        Walks out from each required boss kill through the rules it depends on, following ``loc``
+        nodes, and collects every Knowledge named on the way. Deliberately an OVER-approximation: a
+        Knowledge appearing in one branch of an OR isn't strictly necessary (another branch may avoid
+        it), but treating a maybe-critical gate as critical only front-loads it, while missing a real
+        one strands the run. Cycle-guarded, since advancement rules reference each other freely.
+        """
+        cached = getattr(self, "_goal_knowledge_cache", None)
+        if cached is not None:
+            return cached
+        rules = getattr(self, "_location_rules", {})
+        found: set[str] = set()
+        seen: set[str] = set()
+        pending = [f"{BOSS_KILL_PREFIX}{boss}" for boss in self.selected_bosses]
+        while pending:
+            name = pending.pop()
+            if name in seen or name not in rules:
+                continue
+            seen.add(name)
+            node = rules[name]
+            serialized = node.canonical_json()
+            found.update(k for k in KNOWLEDGE_ITEMS if f'"{k}"' in serialized)
+            pending.extend(self._referenced_locations(node.to_dict()))
+        self._goal_knowledge_cache = found
+        return found
+
+    @staticmethod
+    def _referenced_locations(node: dict) -> list[str]:
+        """Every location name a serialized rule reaches through a ``loc`` leaf."""
+        if node.get("k") == "loc":
+            return [node["l"]]
+        out: list[str] = []
+        for child in node.get("c", ()):
+            out.extend(MCWorld._referenced_locations(child))
+        return out
+
     def _knowledge_classification(self, item_name: str) -> ItemClassification:
         """Full progression for a Knowledge the seed leans on, progression_skip_balancing for the tail.
 
@@ -520,6 +563,9 @@ class MCWorld(World):
             self._knowledge_gate_rank = [
                 name for name in sorted(KNOWLEDGE_ITEMS, key=lambda n: (-counts.get(n, 0), n))
             ]
+        # On the critical path to a required boss: front-load it however little else it gates.
+        if item_name in self._goal_knowledges():
+            return ItemClassification.progression
         threshold = self._knowledge_gate_total * self._KNOWLEDGE_BALANCE_SHARE
         if counts.get(item_name, 0) >= threshold:
             return ItemClassification.progression
