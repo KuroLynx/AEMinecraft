@@ -116,7 +116,10 @@ class MCWorld(World):
 
         if name in ITEMS:
             item_data: MCItemData = ITEMS[name]
-            return MCItem(name, item_data.classification, item_data.id, self.player)
+            classification = item_data.classification
+            if name in KNOWLEDGE_ITEMS:
+                classification = self._knowledge_classification(name)
+            return MCItem(name, classification, item_data.id, self.player)
 
         # Every Entity Unlock that enters the pool gates at least its own Kill Entity location, so it
         # must stay progression-flavoured. AP's CollectionState only collects progression items, so a
@@ -479,6 +482,40 @@ class MCWorld(World):
         if "All" in selected:
             return list(MOBS_BOSS.keys())
         return [name for name in MOBS_BOSS.keys() if name in selected]
+
+    # A Knowledge gating fewer than this share of the seed's checks is real logic, but not worth
+    # front-loading. Deliberately a share rather than a count, so it means the same thing on a 104-check
+    # vanilla seed and a 1000-check BACAP one.
+    _KNOWLEDGE_BALANCE_SHARE = 0.05
+
+    def _knowledge_classification(self, item_name: str) -> ItemClassification:
+        """Full progression for a Knowledge the seed leans on, progression_skip_balancing for the tail.
+
+        Every Knowledge gates something, so all of them must stay progression-flavoured — AP's
+        CollectionState only collects progression items, and a useful one would be invisible to the
+        solver. What differs is whether progression balancing should fight to move it early. Pickaxe
+        Handling gates half the game and deserves that; Chiseled Bookshelf gates a check or two and
+        just displaces something that matters.
+
+        Derived per seed from the compiled rules rather than curated in knowledges.csv, like
+        _structure_classification and _mob_classification: which gates carry weight depends on the
+        options (knowledge_gates, challenge_sanity, blazeandcave), so a hand-kept column would be wrong
+        for most seeds. Counted on the STRICT rules, which are the ones fill actually plans against.
+        """
+        counts = getattr(self, "_knowledge_gate_counts", None)
+        if counts is None:
+            rules = getattr(self, "_location_rules", {})
+            counts = self._knowledge_gate_counts = {}
+            for rule in rules.values():
+                serialized = rule.canonical_json()
+                for knowledge in KNOWLEDGE_ITEMS:
+                    if f'"{knowledge}"' in serialized:
+                        counts[knowledge] = counts.get(knowledge, 0) + 1
+            self._knowledge_gate_total = len(rules)
+        threshold = self._knowledge_gate_total * self._KNOWLEDGE_BALANCE_SHARE
+        if counts.get(item_name, 0) >= threshold:
+            return ItemClassification.progression
+        return ItemClassification.progression_skip_balancing
 
     def _structure_classification(self, struct_name: str) -> ItemClassification:
         """A Structure Unlock's classification, computed for this seed. It is at least
