@@ -1,0 +1,33 @@
+name: MCBacap
+description: Verify a BACAP seed fills with the derived Knowledge classification
+game: Minecraft [AEM]
+requires:
+  version: 0.6.7
+
+Minecraft [AEM]:
+  progression_balancing: 50
+  accessibility: full
+  boss_list:
+    - All
+  start_dimension:
+    overworld: 100
+    nether: 0
+  advancements_required:
+    125: 100
+  kill_sanity: 'true'
+  villager_trust: 'true'
+  mob_spawn_lock:
+    - passive
+    - neutral
+    - hostile
+  structure_unlock: []
+  trap_chance: 0
+  death_link: 'false'
+  challenge_sanity: 'true'
+  # Every gate, including the three the option's default leaves off (chest, crafting table, furnace):
+  # a real fill under the strictest gating is the point of this yaml.
+  knowledge_gates:
+    - All
+
+  blazeandcave: 'true'
+  glitch_logic: 'true'

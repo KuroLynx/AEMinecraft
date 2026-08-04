@@ -487,6 +487,10 @@ class MCWorld(World):
     # front-loading. Deliberately a share rather than a count, so it means the same thing on a 104-check
     # vanilla seed and a 1000-check BACAP one.
     _KNOWLEDGE_BALANCE_SHARE = 0.05
+    # …but the heaviest gates are always balanced, however small their share works out. A seed with
+    # few gates switched on, or one diluted by a big pack, can leave every Knowledge under the share
+    # and nothing front-loaded at all; this guarantees the ones carrying the most weight still are.
+    _KNOWLEDGE_BALANCE_TOP = 7
 
     def _knowledge_classification(self, item_name: str) -> ItemClassification:
         """Full progression for a Knowledge the seed leans on, progression_skip_balancing for the tail.
@@ -512,8 +516,17 @@ class MCWorld(World):
                     if f'"{knowledge}"' in serialized:
                         counts[knowledge] = counts.get(knowledge, 0) + 1
             self._knowledge_gate_total = len(rules)
+            # Heaviest first, name as tie-break so the ranking is reproducible for a given seed.
+            self._knowledge_gate_rank = [
+                name for name in sorted(KNOWLEDGE_ITEMS, key=lambda n: (-counts.get(n, 0), n))
+            ]
         threshold = self._knowledge_gate_total * self._KNOWLEDGE_BALANCE_SHARE
         if counts.get(item_name, 0) >= threshold:
+            return ItemClassification.progression
+        # A gate under the share still counts when it is one of the heaviest this seed has — but never
+        # on the strength of gating nothing at all, which would balance an item that blocks no check.
+        rank = self._knowledge_gate_rank.index(item_name)
+        if rank < self._KNOWLEDGE_BALANCE_TOP and counts.get(item_name, 0) > 0:
             return ItemClassification.progression
         return ItemClassification.progression_skip_balancing
 
