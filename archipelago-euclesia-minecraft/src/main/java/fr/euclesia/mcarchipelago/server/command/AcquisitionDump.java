@@ -29,7 +29,8 @@ import java.util.TreeSet;
  * processed id-sorted, so the output is deterministic.
  *
  * <p>Per-item record (only non-empty keys), {@code <ing> = {"item":x} | {"tag":x} | {"any_of":[...]}}:
- * {@code advancements / recipes / drops / mining / silk_mining / structures / trades / breeding / gameplay}.
+ * {@code advancements / recipes / drops / mining / silk_mining / structures / trades / breeding / gameplay},
+ * plus {@code chances} — {@code {"<kind>/<source>": p}} for the sources that are not a sure thing.
  *
  * <p>The {@code advancements} source (item -> advancement game_ids that grant it as a completion reward)
  * is built ONLY for the BlazeandCave's Advancements Pack ({@link #BACAP_NAMESPACE}), whose advancements
@@ -83,6 +84,12 @@ final class AcquisitionDump {
     private final Map<String, TreeSet<String>> gameplay = new TreeMap<>();
     private final Map<String, TreeSet<String>> advancements = new TreeMap<>();  // item -> adv game_ids
     private final Map<String, JsonArray> itemTags = new TreeMap<>();  // bare path -> raw values
+    // item -> {"<kind>/<source>": best-case chance}, recorded only for sources that are NOT certain.
+    // Feeds the glitch partition in the apworld (logic/acquisition.py): an unreliable ALTERNATE route
+    // — a 5.5% skull, a 2% barter — is demoted out of strict logic when a dependable source survives,
+    // while a sole source is left alone however bad the odds. Best case throughout: the question is
+    // "can a player count on this", so looting is assumed maxed and a range of rolls takes its top.
+    private final Map<String, Map<String, Double>> chances = new TreeMap<>();
 
     static JsonObject build(ResourceManager rm, String primaryNamespace) {
         AcquisitionDump dump = new AcquisitionDump();
@@ -243,6 +250,10 @@ final class AcquisitionDump {
                     silkMining.computeIfAbsent(item, k -> new TreeSet<>()).add(fileName);
                 }
             }
+            // A block's own drop is certain and records nothing; its incidental yields do (an apple
+            // off oak leaves, a sapling), and those are exactly the flimsy alternates to spot.
+            recordChances(loot.get("pools"), "mining", fileName);
+            recordChances(loot.get("pools"), "silk_mining", fileName);
             return;
         }
         TreeSet<String> items = new TreeSet<>();
@@ -262,6 +273,13 @@ final class AcquisitionDump {
                 case "shearing" -> { /* wool/etc from shearing a mob — covered by the mob */ }
                 default -> gameplay.computeIfAbsent(item, k -> new TreeSet<>()).add(fileName);
             }
+        }
+        switch (category) {
+            case "entities" -> recordChances(loot.get("pools"), "drops", fileName);
+            case "chests", "archaeology", "dispensers", "spawners" ->
+                    recordChances(loot.get("pools"), "structures", structuresFor(rel));
+            case "shearing" -> { /* not a source, so no chance either */ }
+            default -> recordChances(loot.get("pools"), "gameplay", fileName);
         }
     }
 
@@ -291,6 +309,204 @@ final class AcquisitionDump {
             }
         }
         return items;
+    }
+
+    // -- drop chance --------------------------------------------------------
+    /** Conditions that make a pool or entry roll only some of the time. */
+    private static final List<String> CHANCE_CONDITIONS =
+            List.of("random_chance", "random_chance_with_enchanted_bonus");
+    /** Looting III — the ceiling of every drop-rate enchantment vanilla scales a loot number by. */
+    private static final int MAX_ENCHANT_LEVEL = 3;
+
+    /** Best case of a loot number: a plain number, a uniform range, or a number provider. */
+    private static double number(JsonElement value, double fallback) {
+        if (value == null || value.isJsonNull()) {
+            return fallback;
+        }
+        if (value.isJsonPrimitive()) {
+            try {
+                return value.getAsDouble();
+            } catch (NumberFormatException ignored) {
+                return fallback;
+            }
+        }
+        if (value.isJsonObject()) {
+            JsonObject object = value.getAsJsonObject();
+            // A `linear` provider scales with an enchantment level: the wither skeleton skull is
+            // base 0.035 + 0.01 per level above the first. Read at the top level the enchantment
+            // allows, the same best case the rest of this measure uses.
+            if (object.has("base") && object.has("per_level_above_first")) {
+                return number(object.get("base"), fallback)
+                        + number(object.get("per_level_above_first"), 0.0) * (MAX_ENCHANT_LEVEL - 1);
+            }
+            for (String key : List.of("max", "value", "n", "base")) {
+                if (object.has(key)) {
+                    return number(object.get(key), fallback);
+                }
+            }
+        }
+        return fallback;
+    }
+
+    /** Product of the explicit random-chance conditions on a pool or entry (1.0 when none). */
+    private static double conditionChance(JsonObject holder) {
+        double chance = 1.0;
+        for (JsonElement element : array(holder.get("conditions"))) {
+            if (!element.isJsonObject()) {
+                continue;
+            }
+            JsonObject condition = element.getAsJsonObject();
+            if (!CHANCE_CONDITIONS.contains(stripNs(string(condition.get("condition"), "")))) {
+                continue;
+            }
+            for (String key : List.of("enchanted_chance", "chance", "unenchanted_chance")) {
+                if (condition.has(key)) {
+                    chance *= number(condition.get(key), 1.0);
+                    break;
+                }
+            }
+        }
+        return chance;
+    }
+
+    /**
+     * Chance a {@code set_count} function actually yields at least one item.
+     *
+     * <p>Mob tables express rarity through the count, not a condition: a wither skeleton's coal is
+     * {@code set_count uniform[-1, 1]}, i.e. nothing two rolls out of three. Ranges starting at 1 or
+     * above are certain. A looting {@code enchanted_count_increase} raises the ceiling and counts at
+     * its maximum, for the same best-case reason as the chance conditions.
+     */
+    private static double countChance(JsonObject entry) {
+        double bonus = 0.0;
+        for (JsonElement element : array(entry.get("functions"))) {
+            if (element.isJsonObject()
+                    && stripNs(string(element.getAsJsonObject().get("function"), ""))
+                            .equals("enchanted_count_increase")) {
+                bonus = Math.max(bonus, number(element.getAsJsonObject().get("count"), 0.0));
+            }
+        }
+        double chance = 1.0;
+        for (JsonElement element : array(entry.get("functions"))) {
+            if (!element.isJsonObject()) {
+                continue;
+            }
+            JsonObject function = element.getAsJsonObject();
+            if (!stripNs(string(function.get("function"), "")).equals("set_count")) {
+                continue;
+            }
+            JsonElement countElement = function.get("count");
+            if (countElement == null || !countElement.isJsonObject()
+                    || !countElement.getAsJsonObject().has("min")) {
+                continue;
+            }
+            JsonObject count = countElement.getAsJsonObject();
+            double low = number(count.get("min"), 1.0);
+            double high = number(count.get("max"), low) + bonus;
+            if (low >= 1.0 || high < low) {
+                continue;
+            }
+            // Inclusive integer draw: how many of the possible values land on 1 or more.
+            double outcomes = high - low + 1.0;
+            double favourable = high - Math.max(low, 1.0) + 1.0;
+            chance *= outcomes > 0 ? Math.max(favourable, 0.0) / outcomes : 0.0;
+        }
+        return chance;
+    }
+
+    /**
+     * Accumulates {@code item -> per-roll chance} for one entry, {@code share} being how often this
+     * entry is the one picked (its weight fraction) times any random-chance condition on it.
+     *
+     * <p>Composite entries (alternatives / group / sequence) pass their share down to every child
+     * rather than splitting it: only {@code alternatives} picks a single child, and which one wins
+     * depends on run-time predicates the table can't be read for. Crediting each child with the full
+     * share is the best case, the direction this whole measure leans.
+     */
+    private void entryChances(JsonElement element, double share, Map<String, Double> out) {
+        if (element == null || !element.isJsonObject()) {
+            return;
+        }
+        JsonObject entry = element.getAsJsonObject();
+        double entryShare = share * conditionChance(entry);
+        for (String key : List.of("children", "entries")) {
+            if (entry.has(key) && entry.get(key).isJsonArray()) {
+                for (JsonElement child : array(entry.get(key))) {
+                    entryChances(child, entryShare, out);
+                }
+                return;
+            }
+        }
+        entryShare *= countChance(entry);
+        for (String item : lootItems(entry)) {
+            out.merge(item, entryShare, Math::max);
+        }
+    }
+
+    /** {@code item -> chance of getting at least one} from a single pool, across all its rolls. */
+    private Map<String, Double> poolChances(JsonObject pool) {
+        List<JsonElement> entries = new ArrayList<>();
+        for (JsonElement entry : array(pool.get("entries"))) {
+            entries.add(entry);
+        }
+        double total = 0.0;
+        List<Double> weights = new ArrayList<>();
+        for (JsonElement entry : entries) {
+            double weight = entry.isJsonObject()
+                    ? number(entry.getAsJsonObject().get("weight"), 1.0) : 1.0;
+            weights.add(weight);
+            if (weight > 0) {
+                total += weight;
+            }
+        }
+        if (total <= 0) {
+            total = 1.0;
+        }
+        double rolls = Math.max(number(pool.get("rolls"), 1.0), 1.0);
+        double poolChance = conditionChance(pool);
+        Map<String, Double> out = new TreeMap<>();
+        for (int index = 0; index < entries.size(); index++) {
+            Map<String, Double> perRoll = new TreeMap<>();
+            entryChances(entries.get(index), (Math.max(weights.get(index), 0.0) / total) * poolChance,
+                    perRoll);
+            for (Map.Entry<String, Double> hit : perRoll.entrySet()) {
+                // At least one hit across `rolls` independent draws.
+                double combined = 1.0 - Math.pow(1.0 - Math.min(hit.getValue(), 1.0), rolls);
+                out.merge(hit.getKey(), combined, Math::max);
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Stores a table's per-item chances under {@code <kind>/<source name>}, one key per name the
+     * caller maps this table to. Certain sources are skipped — absent means dependable, which keeps
+     * the file (and the diff on every re-dump) small. A source reachable through several tables keeps
+     * its BEST chance.
+     */
+    private void recordChances(JsonElement pools, String kind, String... names) {
+        Map<String, Double> table = new TreeMap<>();
+        for (JsonElement pool : array(pools)) {
+            if (!pool.isJsonObject()) {
+                continue;
+            }
+            for (Map.Entry<String, Double> hit : poolChances(pool.getAsJsonObject()).entrySet()) {
+                // Pools are independent draws, so combine rather than take the best.
+                double previous = table.getOrDefault(hit.getKey(), 0.0);
+                table.put(hit.getKey(), 1.0 - (1.0 - previous) * (1.0 - hit.getValue()));
+            }
+        }
+        for (Map.Entry<String, Double> hit : table.entrySet()) {
+            if (hit.getValue() >= 1.0) {
+                continue;
+            }
+            double rounded = Math.round(hit.getValue() * 100000.0) / 100000.0;
+            for (String name : names) {
+                Map<String, Double> slot =
+                        chances.computeIfAbsent(hit.getKey(), k -> new TreeMap<>());
+                slot.merge(kind + "/" + name, rounded, Math::max);
+            }
+        }
     }
 
     private static boolean isEnchanted(JsonObject entry) {
@@ -582,6 +798,10 @@ final class AcquisitionDump {
             if (breeding.containsKey(item)) {
                 record.add("breeding", stringArray(breeding.get(item)));
             }
+            JsonObject itemChances = chancesFor(item);
+            if (itemChances.size() > 0) {
+                record.add("chances", itemChances);
+            }
             if (drops.containsKey(item)) {
                 record.add("drops", stringArray(drops.get(item)));
             }
@@ -625,6 +845,40 @@ final class AcquisitionDump {
             out.add(item, record);
         }
         return out;
+    }
+
+    /**
+     * An item's chance map, restricted to the sources its record actually kept. A loot table can
+     * mention an item the record drops elsewhere (a silk-only block, a referenced sub-table), and a
+     * dangling key would read as a source that isn't there.
+     */
+    private JsonObject chancesFor(String item) {
+        JsonObject out = new JsonObject();
+        Map<String, Double> known = chances.get(item);
+        if (known == null) {
+            return out;
+        }
+        Set<String> kept = new TreeSet<>();
+        addKept(kept, "drops", drops.get(item));
+        addKept(kept, "gameplay", gameplay.get(item));
+        addKept(kept, "mining", mining.get(item));
+        addKept(kept, "silk_mining", silkMining.get(item));
+        addKept(kept, "structures", structures.get(item));
+        for (Map.Entry<String, Double> hit : known.entrySet()) {
+            if (kept.contains(hit.getKey())) {
+                out.addProperty(hit.getKey(), hit.getValue());
+            }
+        }
+        return out;
+    }
+
+    private static void addKept(Set<String> kept, String kind, TreeSet<String> names) {
+        if (names == null) {
+            return;
+        }
+        for (String name : names) {
+            kept.add(kind + "/" + name);
+        }
     }
 
     // -- helpers ------------------------------------------------------------
