@@ -24,8 +24,11 @@ import java.util.Set;
  * unreachable while the Nether is still resolving, and never recover. The fixed point below
  * resolves the cycle the same way Archipelago does.
  *
- * <p>Inputs are RECEIVED items only (counts); unchecked locations are never swept. A new pass
- * must be created whenever the received-item set changes (see {@link DataLogicProvider}).
+ * <p>Inputs are the RECEIVED items (counts) and the locations already CHECKED, which seed the pass as
+ * facts (see {@link #solve}). A new pass must be created whenever either changes — see
+ * {@link DataLogicProvider}, which watches both versions. With nothing checked yet the result is
+ * identical to a rules-only sweep, which is what keeps parity with {@code tools/logic_selfcheck.py}
+ * and Archipelago's own {@code CollectionState}.
  */
 public final class LogicEvaluation {
     /** Supplies the number of copies of an item the slot has received. */
@@ -34,13 +37,21 @@ public final class LogicEvaluation {
         int count(String itemName);
     }
 
+    /** Whether the slot has already checked an AP location, by location name. */
+    @FunctionalInterface
+    public interface CheckedLocations {
+        boolean isChecked(String locationName);
+    }
+
     private final LogicGraph graph;
     private final ItemAvailability items;
+    private final CheckedLocations checked;
     private final Map<String, Boolean> regionReach = new HashMap<>();
     private final Map<String, Boolean> locationReach = new HashMap<>();
     private final Set<Integer> resolvingRefs = new HashSet<>();
 
-    LogicEvaluation(LogicGraph graph, ItemAvailability items) {
+    LogicEvaluation(LogicGraph graph, ItemAvailability items, CheckedLocations checked) {
+        this.checked = checked;
         this.graph = graph;
         this.items = items;
         solve();
@@ -73,7 +84,14 @@ public final class LogicEvaluation {
      */
     public boolean isGlitchable(String name) {
         RuleNode rule = graph.glitchRule(name);
-        return rule != null && rule.eval(this);
+        if (rule == null) {
+            return false;
+        }
+        // Same two conditions solve() uses for a location, region included. Testing the rule alone
+        // would paint a Nether advancement yellow while the player has no way into the Nether at all,
+        // since a rule need not repeat the region its location already sits in.
+        LogicGraph.LocationEntry entry = graph.location(name);
+        return entry != null && canReachRegion(entry.region()) && rule.eval(this);
     }
 
     /**
@@ -98,6 +116,16 @@ public final class LogicEvaluation {
 
     private void solve() {
         regionReach.put(graph.origin(), true);
+        // A checked location is history, not a prediction: you completed it, so whatever it gates is
+        // open regardless of whether the rules can explain how. Seeding those in before the fixed
+        // point lets reality propagate — complete Ice Bucket Challenge by a route logic never modelled
+        // and the Nether edge (which asks for loc("Ice Bucket Challenge")) resolves the moment the
+        // Dimension Unlock arrives, instead of the whole dimension reading unreachable forever.
+        for (String name : graph.locations().keySet()) {
+            if (checked.isChecked(name)) {
+                locationReach.put(name, true);
+            }
+        }
         boolean changed = true;
         while (changed) { // monotone ⇒ terminates (a pass can only flip false → true)
             changed = false;

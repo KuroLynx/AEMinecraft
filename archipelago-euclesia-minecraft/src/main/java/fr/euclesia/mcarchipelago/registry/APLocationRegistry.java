@@ -15,6 +15,12 @@ public final class APLocationRegistry {
     private final Map<Long, String> namesById = new HashMap<>();
     private final Set<Long> missing = new HashSet<>();
     private final Set<Long> checked = new HashSet<>();
+    // Bumped whenever the checked set changes, so a cached reachability pass can tell it went stale.
+    // A checked location is a FACT the logic evaluation seeds itself with (LogicEvaluation.solve):
+    // however you completed it, everything gated behind it is genuinely open now. Without this
+    // counter the client would only re-colour when an ITEM arrived (APItemRegistry.receivedVersion),
+    // leaving the tracker showing pre-check colours until the next item happened to land.
+    private volatile int checkedVersion;
 
     public void loadSlotData(APSlotData slotData) {
         idsByGameId.putAll(slotData.locationIdsByGameId());
@@ -33,11 +39,21 @@ public final class APLocationRegistry {
     public void replaceMissing(Collection<Long> locations) {
         missing.clear();
         missing.addAll(locations);
+        // A replaced missing-set implies a different checked-set (it is the complement the server
+        // sent), so anything cached off checks has to be recomputed.
+        checkedVersion++;
     }
 
     public void markChecked(Collection<Long> locations) {
-        checked.addAll(locations);
+        if (checked.addAll(locations)) {
+            checkedVersion++;
+        }
         missing.removeAll(locations);
+    }
+
+    /** Changes whenever the checked set does; see {@link #checkedVersion}. */
+    public int checkedVersion() {
+        return checkedVersion;
     }
 
     public Optional<Long> idForGameId(String gameId) {

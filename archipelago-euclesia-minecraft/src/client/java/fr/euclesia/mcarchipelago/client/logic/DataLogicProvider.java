@@ -31,6 +31,7 @@ public final class DataLogicProvider implements LogicProvider {
     private LogicGraph graph;             // parsed from parsedFrom (null if absent/invalid)
     private LogicEvaluation evaluation;   // memoized reachability pass
     private int evaluationVersion = -1;   // APItemRegistry version the pass was built for
+    private int evaluationChecked = -1;   // APLocationRegistry checked version the pass was built for
 
     @Override
     public LogicState stateFor(Identifier advancementId) {
@@ -242,10 +243,17 @@ public final class DataLogicProvider implements LogicProvider {
 
     private LogicEvaluation currentEvaluation(ArchipelagoClient client, LogicGraph graph) {
         APItemRegistry items = client.registries().apItems();
+        APLocationRegistry locations = client.registries().apLocations();
+        // Checked locations feed the pass (LogicEvaluation.solve), so a check invalidates it just as
+        // an item does. Watching receivedVersion alone left the tracker showing pre-check colours
+        // until the next item happened to land.
         int version = items.receivedVersion();
-        if (evaluation == null || version != evaluationVersion) {
-            evaluation = graph.newEvaluation(items::receivedCount);
+        int checked = locations.checkedVersion();
+        if (evaluation == null || version != evaluationVersion || checked != evaluationChecked) {
+            evaluation = graph.newEvaluation(items::receivedCount,
+                    name -> locations.idForName(name).map(locations::isChecked).orElse(false));
             evaluationVersion = version;
+            evaluationChecked = checked;
         }
         return evaluation;
     }

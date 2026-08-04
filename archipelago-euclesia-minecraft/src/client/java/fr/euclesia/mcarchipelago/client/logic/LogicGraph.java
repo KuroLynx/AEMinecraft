@@ -112,8 +112,9 @@ public final class LogicGraph {
         return locationNameByGameId.get(gameId);
     }
 
-    public LogicEvaluation newEvaluation(LogicEvaluation.ItemAvailability items) {
-        return new LogicEvaluation(this, items);
+    public LogicEvaluation newEvaluation(LogicEvaluation.ItemAvailability items,
+                                        LogicEvaluation.CheckedLocations checked) {
+        return new LogicEvaluation(this, items, checked);
     }
 
     String origin() {
