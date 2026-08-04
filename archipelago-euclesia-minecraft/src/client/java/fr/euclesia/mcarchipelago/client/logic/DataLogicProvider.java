@@ -23,7 +23,7 @@ import java.util.Optional;
  * whenever the received-item set changes (tracked by {@link APItemRegistry#receivedVersion()}).
  * All caching is touched only from the render thread that calls {@link #stateFor}.
  *
- * <p>{@code GLITCHABLE} is not computed here yet; locations are classified as
+ * <p>{@code GLITCHABLE} comes from the export's permissive twin rule (see stateFrom); otherwise
  * {@link LogicState#CHECKED}, {@link LogicState#IN_LOGIC} or {@link LogicState#OUT_OF_LOGIC}.
  */
 public final class DataLogicProvider implements LogicProvider {
@@ -79,8 +79,21 @@ public final class DataLogicProvider implements LogicProvider {
             return LogicState.CHECKED;
         }
 
-        return currentEvaluation(client, graph).canReachLocation(locationName)
-                ? LogicState.IN_LOGIC
+        return stateFrom(currentEvaluation(client, graph), locationName);
+    }
+
+    /**
+     * Green when strict logic reaches it, YELLOW when only a route the randomizer refused to count on
+     * does (a rare drop, a non-progression structure's chest, a Wandering Trader), red otherwise.
+     * The yellow tier is absent unless the seed enabled glitch_logic — with it off no permissive rule
+     * ships, isGlitchable is always false, and tiles read green/red exactly as before.
+     */
+    private static LogicState stateFrom(LogicEvaluation evaluation, String locationName) {
+        if (evaluation.canReachLocation(locationName)) {
+            return LogicState.IN_LOGIC;
+        }
+        return evaluation.isGlitchable(locationName)
+                ? LogicState.GLITCHABLE
                 : LogicState.OUT_OF_LOGIC;
     }
 
@@ -110,9 +123,7 @@ public final class DataLogicProvider implements LogicProvider {
         if (graph == null || locationName == null) {
             return LogicState.OUT_OF_LOGIC;
         }
-        return currentEvaluation(client, graph).canReachLocation(locationName)
-                ? LogicState.IN_LOGIC
-                : LogicState.OUT_OF_LOGIC;
+        return stateFrom(currentEvaluation(client, graph), locationName);
     }
 
     private static boolean isCategoryRoot(String gameId) {

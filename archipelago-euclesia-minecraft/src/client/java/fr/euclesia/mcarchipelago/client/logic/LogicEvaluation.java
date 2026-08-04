@@ -61,6 +61,22 @@ public final class LogicEvaluation {
     }
 
     /**
+     * Whether {@code name} is reachable by a route the randomizer refused to count on — a rare drop,
+     * a chest in a structure the seed doesn't treat as progression, a Wandering Trader (see
+     * {@code RuleHelper._demote} in the apworld). False when the seed shipped no permissive rule for
+     * this location, which is the usual case: the two graphs agree almost everywhere.
+     *
+     * <p>Evaluated against the SOLVED strict snapshot rather than a second fixed point of its own.
+     * That is deliberate and slightly conservative: a glitch route is judged on regions and locations
+     * strict logic already grants, so glitch routes never chain into one another. Anything it does
+     * report is genuinely reachable; it just won't find a route that needs two glitches in sequence.
+     */
+    public boolean isGlitchable(String name) {
+        RuleNode rule = graph.glitchRule(name);
+        return rule != null && rule.eval(this);
+    }
+
+    /**
      * Evaluate a shared subtree behind a {@code ref}. Definitions are acyclic by construction
      * (the exporter only hoists subtrees of the acyclic rule forest), so the guard below is purely
      * defensive: a re-entered id means a cycle slipped through, which resolves to {@code false}
