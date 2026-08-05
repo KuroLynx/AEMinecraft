@@ -150,9 +150,10 @@ def _glitch_rules(world, locations: dict, reward_event_rules: dict) -> dict:
     Empty when the player turned glitch_logic off, which is the whole of that option: it changes what
     the tracker tells you and nothing else. Placement never consults this graph.
 
-    Known gap: only LOCATION rules get a twin. Region edges are captured during create_regions from
-    the strict helper, so a region reachable only by a glitch route still reads unreachable and its
-    locations stay red. Worth revisiting once the glitch graph has proven itself in game.
+    Only LOCATION rules get a twin, and today that costs nothing: every region edge built in
+    create_regions is has/reached/knowledge — leaves that read the same in both graphs — except
+    can_get_obsidian(), which serializes identically strict and glitch under either start dimension.
+    An edge built from a demotable helper would be the case to revisit.
     """
     if not world.options.glitch_logic:
         return {}

@@ -78,9 +78,12 @@ public final class LogicEvaluation {
      * this location, which is the usual case: the two graphs agree almost everywhere.
      *
      * <p>Evaluated against the SOLVED strict snapshot rather than a second fixed point of its own.
-     * That is deliberate and slightly conservative: a glitch route is judged on regions and locations
-     * strict logic already grants, so glitch routes never chain into one another. Anything it does
-     * report is genuinely reachable; it just won't find a route that needs two glitches in sequence.
+     * That is the definition of yellow, not a shortcut: yellow means doable RIGHT NOW if the game
+     * cooperates, so exactly one unreliable step is allowed. A glitch route may lean on any location
+     * strict logic already grants — those you can simply go and do — but never on another glitch
+     * route, because a check that needs an unreliable one done first is not doable right now. It goes
+     * red, and re-colours by itself the moment you actually pull the first one off: the check lands in
+     * the checked set and {@link #solve} seeds it as fact. Sequence is handled by time, not prediction.
      */
     public boolean isGlitchable(String name) {
         RuleNode rule = graph.glitchRule(name);
