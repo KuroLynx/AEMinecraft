@@ -19,13 +19,17 @@ def _manifest(pack_name: str) -> dict:
         return json.load(f)
 
 
-def build_location_rules(world) -> dict:
+def build_location_rules(world, glitch: bool = False) -> dict:
     """The final reachability rule for every active location this seed (advancements + mob/boss kills),
     keyed by location name. Advancement logic is derived from the criteria (TriggerCompiler), with the
     curated rule, then the parent chain, then ``Const(True)`` as fallbacks; mob kills come from
     ``collect_entity_rules``. Computed once and reused for both region placement (create_regions) and
-    ``set_rule`` (set_rules), so the two never diverge."""
-    helper = RuleHelper(world)
+    ``set_rule`` (set_rules), so the two never diverge.
+
+    ``glitch=True`` builds the permissive twin instead: same locations, but the unreliable alternates
+    strict logic drops are kept (see RuleHelper._demote), and BACAP rewards join as ``loc`` nodes.
+    Nothing fills against it — it ships in slot_data so the mod can colour a tile GLITCHABLE."""
+    helper = RuleHelper(world, glitch=glitch)
     existing = set(world._get_active_locations())
     curated = collect_advancement_rules(helper)              # by display name
     compiler = TriggerCompiler(helper, frozenset(existing))

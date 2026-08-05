@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
-from Options import Choice, OptionDict, OptionError, OptionSet, PerGameCommonOptions, Range, Toggle
+from Options import (Choice, DefaultOnToggle, OptionDict, OptionError, OptionSet,
+                     PerGameCommonOptions, Range, Toggle)
 
 from .data import (
     ADVANCEMENT_LOCATIONS,
@@ -315,6 +316,24 @@ class BacapRewards(Toggle):
     default = 0
 
 
+class GlitchLogic(DefaultOnToggle):
+    """Show, in the advancement tracker, the checks you can only reach by an unreliable route.
+
+    The randomizer deliberately ignores routes you cannot count on when it decides where items go: a
+    2% barter, a chest in a structure the seed doesn't treat as progression, a Wandering Trader who
+    has to turn up and offer the right thing. That keeps the seed honest — it never expects you to
+    get lucky — but it means the tracker would paint plenty of genuinely doable checks red.
+
+    - enabled (default): such a check is drawn YELLOW. Not promised to you, but possible right now if
+      the game cooperates.
+    - disabled: it stays red like anything else you can't reach yet.
+
+    Display only. Item placement is identical either way, so turning this off never changes what a
+    seed asks of you — only how much the tracker tells you.
+    """
+    display_name = "Glitch Logic"
+
+
 class ItemGateBehavior(OptionDict):
     """Decide, per acquisition route, whether a still-locked item is blocked.
 
@@ -398,3 +417,4 @@ class MCOptions(PerGameCommonOptions):
     blazeandcave: BlazeAndCave
     bacap_rewards: BacapRewards
     item_gate_behavior: ItemGateBehavior
+    glitch_logic: GlitchLogic

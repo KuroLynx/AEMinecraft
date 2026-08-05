@@ -13,8 +13,14 @@ Shape::
       "locations": {
          "<AP location name>": {"game_id": "<mc id>", "region": "<region>", "rule": <ast>}
       },
+      "glitch": { "<AP location name>": {"rule": <ast>} },
       "definitions": { "<id>": <ast>, ... }
     }
+
+``glitch`` holds the permissive rule for the locations whose two graphs disagree (see
+:func:`_glitch_rules`); the mod falls back to it when the strict rule says unreachable, to colour a
+tile GLITCHABLE instead of out-of-logic. Absent locations have identical rules in both graphs, and
+the whole map is empty when the glitch_logic option is off.
 
 All keys/strings are plain (region names are normalised away from enum members in
 ``create_regions``). Rules contain only the primitive node kinds documented in
@@ -122,9 +128,46 @@ def build_logic_export(world) -> dict:
         "origin": origin,
         "regions": regions,
         "locations": locations,
+        "glitch": _glitch_rules(world, locations, reward_event_rules),
     }
     _dedup_rules(export)
     return export
+
+
+def _glitch_rules(world, locations: dict, reward_event_rules: dict) -> dict:
+    """The permissive twin of each location rule, ``{name: {"rule": <ast>}}`` — but ONLY where it
+    differs from the strict one.
+
+    Strict logic drops routes the player can't count on (RuleHelper._demote), which is right for item
+    placement and wrong for a tracker: a check you could do this minute with a bit of luck would sit
+    there red. The mod evaluates this second rule for anything strict logic calls unreachable, and
+    paints it GLITCHABLE (yellow) when it passes.
+
+    Most locations compile identically in both graphs, and shipping only the differences keeps this
+    close to free — the shared subtrees are hoisted into the same ``definitions`` table by
+    _dedup_rules, so a glitch rule is usually a handful of refs.
+
+    Empty when the player turned glitch_logic off, which is the whole of that option: it changes what
+    the tracker tells you and nothing else. Placement never consults this graph.
+
+    Only LOCATION rules get a twin, and today that costs nothing: every region edge built in
+    create_regions is has/reached/knowledge — leaves that read the same in both graphs — except
+    can_get_obsidian(), which serializes identically strict and glitch under either start dimension.
+    An edge built from a demotable helper would be the case to revisit.
+    """
+    if not world.options.glitch_logic:
+        return {}
+    from .logic.root import build_location_rules  # local import: module-level would cycle
+
+    glitch: dict[str, dict] = {}
+    for name, rule in build_location_rules(world, glitch=True).items():
+        if name not in locations:
+            continue  # a reward event or a location this seed didn't create
+        as_dict = _inline_reward_events(rule.to_dict(), reward_event_rules) \
+            if reward_event_rules else rule.to_dict()
+        if as_dict != locations[name]["rule"]:
+            glitch[name] = {"rule": as_dict}
+    return glitch
 
 
 def _inline_reward_events(node: dict, reward_event_rules: dict[str, dict]) -> dict:
@@ -150,6 +193,7 @@ def _dedup_rules(export: dict) -> None:
     with identical logic. Leaves (``has``/``region``/``loc``/``const``) are left inline — they are
     smaller than a ref, so hoisting them would only bloat the table."""
     holders = list(export["locations"].values())
+    holders.extend(export.get("glitch", {}).values())
     for edges in export["regions"].values():
         holders.extend(edges)
 

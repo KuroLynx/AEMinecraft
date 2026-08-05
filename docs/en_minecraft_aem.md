@@ -114,6 +114,16 @@ Yes — it is built into the mod. An in-game **Archipelago advancement tab** tra
 advancements that are currently in logic are highlighted, so you can see what you can work toward with
 the items you have.
 
+A highlighted tile comes in two colours:
+
+- **Green** — in logic. The items you have are enough; the randomizer promises this one is doable.
+- **Yellow** — reachable, but only by a route the randomizer refused to count on: a rare barter, a
+  chest in a structure this seed doesn't treat as progression, a Wandering Trader turning up with the
+  right offer. Possible right now if the game cooperates, never required of you.
+
+Yellow tiles are what the `glitch_logic` option controls. It is display-only — item placement is
+identical either way — so turning it off simply puts the tracker back to green and red.
+
 ## What should I know regarding logic?
 
 - You start in your **start dimension** for free (Overworld by default). The other dimensions each
@@ -128,6 +138,14 @@ the items you have.
   the Wither; Blaze and Enderman for reaching the End) is locked behind an Entity Unlock, that unlock
   is treated as progression.
 - Structures you do **not** lock are reachable as soon as you can reach their dimension.
+- **Logic never expects you to get lucky.** A route only counts if you can rely on it, so a rare drop,
+  a piggy barter, a Wandering Trader or a chest in a structure this seed doesn't treat as progression
+  is not something an item will ever be placed behind. Mining, crafting and trading with a villager you
+  can settle are. The exception is an item that has no dependable source at all — a wither skeleton
+  skull is a 5.5% drop and that *is* how you get one — so its sources are kept rather than leaving it
+  unobtainable.
+- That is why some checks the tracker paints **yellow** look perfectly ordinary: they are reachable,
+  just not by a route the randomizer was willing to promise.
 
 ## Is there anything else I should know?
 

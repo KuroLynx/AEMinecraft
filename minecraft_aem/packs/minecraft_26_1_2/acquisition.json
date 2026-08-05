@@ -127,6 +127,9 @@
     ]
   },
   "acacia_planks": {
+    "chances": {
+      "structures/trial_chambers": 0.24858
+    },
     "mining": [
       "acacia_planks"
     ],
@@ -173,6 +176,9 @@
     ]
   },
   "acacia_sapling": {
+    "chances": {
+      "structures/village_savanna": 0.85928
+    },
     "mining": [
       "acacia_leaves",
       "acacia_sapling",
@@ -282,6 +288,9 @@
     ]
   },
   "activator_rail": {
+    "chances": {
+      "structures/mineshaft": 0.271
+    },
     "mining": [
       "activator_rail"
     ],
@@ -341,6 +350,10 @@
     ]
   },
   "amethyst_shard": {
+    "chances": {
+      "structures/ancient_city": 0.30488,
+      "structures/trial_chambers": 0.548
+    },
     "mining": [
       "amethyst_cluster"
     ],
@@ -350,6 +363,9 @@
     ]
   },
   "ancient_debris": {
+    "chances": {
+      "structures/bastion_remnant": 0.24465
+    },
     "mining": [
       "ancient_debris"
     ],
@@ -445,6 +461,9 @@
     ]
   },
   "angler_pottery_sherd": {
+    "chances": {
+      "structures/ocean_ruin_warm": 0.06667
+    },
     "structures": [
       "ocean_ruin_warm"
     ]
@@ -471,6 +490,15 @@
     "breeding": [
       "horse"
     ],
+    "chances": {
+      "structures/igloo": 0.88645,
+      "structures/stronghold": 0.66976,
+      "structures/village_desert": 0.7013,
+      "structures/village_plains": 0.87967,
+      "structures/village_savanna": 0.7013,
+      "structures/village_snowy": 0.7013,
+      "structures/village_taiga": 0.7013
+    },
     "mining": [
       "dark_oak_leaves",
       "oak_leaves"
@@ -492,6 +520,9 @@
     ]
   },
   "archer_pottery_sherd": {
+    "chances": {
+      "structures/desert_pyramid": 0.125
+    },
     "structures": [
       "desert_pyramid"
     ]
@@ -518,11 +549,30 @@
     ]
   },
   "arms_up_pottery_sherd": {
+    "chances": {
+      "structures/desert_well": 0.25
+    },
     "structures": [
       "desert_well"
     ]
   },
   "arrow": {
+    "chances": {
+      "drops/bogged": 0.75,
+      "drops/parched": 0.75,
+      "drops/skeleton": 0.75,
+      "drops/stray": 0.75,
+      "gameplay/corridor": 0.2849,
+      "gameplay/fletcher_gift": 0.66667,
+      "structures/bastion_remnant": 0.5904,
+      "structures/pillager_outpost": 0.45229,
+      "structures/trial_chambers": 0.62329,
+      "structures/village_desert": 0.36546,
+      "structures/village_plains": 0.36546,
+      "structures/village_savanna": 0.36546,
+      "structures/village_snowy": 0.36546,
+      "structures/village_taiga": 0.36546
+    },
     "drops": [
       "bogged",
       "parched",
@@ -595,6 +645,10 @@
     ]
   },
   "baked_potato": {
+    "chances": {
+      "structures/ancient_city": 0.69205,
+      "structures/trial_chambers": 0.66144
+    },
     "recipes": [
       {
         "ingredients": [
@@ -630,6 +684,11 @@
     "breeding": [
       "panda"
     ],
+    "chances": {
+      "gameplay/junk": 0.09091,
+      "structures/jungle_pyramid": 0.66959,
+      "structures/shipwreck": 0.21414
+    },
     "drops": [
       "panda"
     ],
@@ -743,6 +802,9 @@
     ]
   },
   "bamboo_hanging_sign": {
+    "chances": {
+      "structures/trial_chambers": 0.28371
+    },
     "mining": [
       "bamboo_hanging_sign"
     ],
@@ -809,6 +871,9 @@
     ]
   },
   "bamboo_planks": {
+    "chances": {
+      "structures/trial_chambers": 0.66144
+    },
     "mining": [
       "bamboo_planks"
     ],
@@ -939,6 +1004,13 @@
     ]
   },
   "barrel": {
+    "chances": {
+      "structures/village_desert": 0.37908,
+      "structures/village_plains": 0.37908,
+      "structures/village_savanna": 0.37908,
+      "structures/village_snowy": 0.37908,
+      "structures/village_taiga": 0.37908
+    },
     "mining": [
       "barrel"
     ],
@@ -1069,6 +1141,13 @@
     ]
   },
   "beef": {
+    "chances": {
+      "structures/village_desert": 0.70055,
+      "structures/village_plains": 0.70055,
+      "structures/village_savanna": 0.70055,
+      "structures/village_snowy": 0.70055,
+      "structures/village_taiga": 0.70055
+    },
     "drops": [
       "cow",
       "mooshroom"
@@ -1149,6 +1228,14 @@
       "chicken",
       "parrot"
     ],
+    "chances": {
+      "structures/end_city": 0.29314,
+      "structures/mansion": 0.20972,
+      "structures/mineshaft": 0.34983,
+      "structures/monster_room": 0.28361,
+      "structures/trail_ruins": 0.02222,
+      "structures/village_snowy": 0.81227
+    },
     "mining": [
       "beetroots"
     ],
@@ -1168,6 +1255,9 @@
     ]
   },
   "beetroot_soup": {
+    "chances": {
+      "structures/village_snowy": 0.14134
+    },
     "recipes": [
       {
         "ingredients": [
@@ -1186,6 +1276,9 @@
     ]
   },
   "bell": {
+    "chances": {
+      "structures/ruined_portal": 0.01992
+    },
     "mining": [
       "bell"
     ],
@@ -2078,6 +2171,14 @@
     ]
   },
   "black_wool": {
+    "chances": {
+      "gameplay/shepherd_gift": 0.0625,
+      "structures/village_desert": 0.50282,
+      "structures/village_plains": 0.50282,
+      "structures/village_savanna": 0.50282,
+      "structures/village_snowy": 0.50282,
+      "structures/village_taiga": 0.50282
+    },
     "drops": [
       "black"
     ],
@@ -2161,6 +2262,9 @@
     ]
   },
   "blackstone": {
+    "chances": {
+      "gameplay/piglin_bartering": 0.08529
+    },
     "gameplay": [
       "piglin_bartering"
     ],
@@ -2238,6 +2342,9 @@
     ]
   },
   "blade_pottery_sherd": {
+    "chances": {
+      "structures/ocean_ruin_cold": 0.06667
+    },
     "structures": [
       "ocean_ruin_cold"
     ]
@@ -2276,6 +2383,9 @@
     ]
   },
   "blaze_rod": {
+    "chances": {
+      "drops/blaze": 0.66667
+    },
     "drops": [
       "blaze"
     ]
@@ -2617,6 +2727,9 @@
     ]
   },
   "blue_dye": {
+    "chances": {
+      "structures/trail_ruins": 0.04444
+    },
     "recipes": [
       {
         "ingredients": [
@@ -2747,6 +2860,9 @@
     ]
   },
   "blue_ice": {
+    "chances": {
+      "structures/village_snowy": 0.14134
+    },
     "recipes": [
       {
         "ingredients": [
@@ -2874,6 +2990,9 @@
     ]
   },
   "blue_stained_glass_pane": {
+    "chances": {
+      "structures/trail_ruins": 0.02222
+    },
     "recipes": [
       {
         "ingredients": [
@@ -2927,6 +3046,9 @@
     ]
   },
   "blue_wool": {
+    "chances": {
+      "gameplay/shepherd_gift": 0.0625
+    },
     "drops": [
       "blue"
     ],
@@ -3003,6 +3125,9 @@
     ]
   },
   "bolt_armor_trim_smithing_template": {
+    "chances": {
+      "structures/trial_chambers": 0.25
+    },
     "recipes": [
       {
         "ingredients": [
@@ -3031,6 +3156,20 @@
     ]
   },
   "bone": {
+    "chances": {
+      "drops/bogged": 0.75,
+      "drops/parched": 0.75,
+      "drops/skeleton": 0.75,
+      "drops/skeleton_horse": 0.75,
+      "drops/stray": 0.75,
+      "drops/wither_skeleton": 0.75,
+      "gameplay/junk": 0.09091,
+      "structures/ancient_city": 0.45865,
+      "structures/desert_pyramid": 0.73271,
+      "structures/jungle_pyramid": 0.78285,
+      "structures/mansion": 0.57813,
+      "structures/monster_room": 0.57813
+    },
     "drops": [
       "bogged",
       "parched",
@@ -3051,6 +3190,9 @@
     ]
   },
   "bone_block": {
+    "chances": {
+      "structures/bastion_remnant": 0.27398
+    },
     "mining": [
       "bone_block"
     ],
@@ -3069,6 +3211,13 @@
     ]
   },
   "bone_meal": {
+    "chances": {
+      "drops/cod": 0.05,
+      "drops/pufferfish": 0.05,
+      "drops/salmon": 0.05,
+      "drops/tropical_fish": 0.05,
+      "structures/trial_chambers": 0.24858
+    },
     "drops": [
       "cod",
       "pufferfish",
@@ -3101,6 +3250,25 @@
     ]
   },
   "book": {
+    "chances": {
+      "gameplay/piglin_bartering": 0.01066,
+      "gameplay/treasure": 0.16667,
+      "structures/ancient_city": 0.45865,
+      "structures/bastion_remnant": 0.11236,
+      "structures/desert_pyramid": 0.28663,
+      "structures/jungle_pyramid": 0.06555,
+      "structures/mansion": 0.25499,
+      "structures/mineshaft": 0.14085,
+      "structures/monster_room": 0.1942,
+      "structures/ocean_ruin_cold": 0.21739,
+      "structures/ocean_ruin_warm": 0.21739,
+      "structures/pillager_outpost": 0.13026,
+      "structures/shipwreck": 0.34508,
+      "structures/stronghold": 0.99221,
+      "structures/trial_chambers": 0.08696,
+      "structures/village_desert": 0.20178,
+      "structures/village_plains": 0.17159
+    },
     "gameplay": [
       "librarian_gift",
       "piglin_bartering",
@@ -3217,6 +3385,11 @@
     ]
   },
   "bow": {
+    "chances": {
+      "gameplay/treasure": 0.16667,
+      "gameplay/trial_chamber_ranged": 0.5,
+      "structures/trial_chambers": 0.13043
+    },
     "gameplay": [
       "treasure",
       "trial_chamber_ranged"
@@ -3249,6 +3422,9 @@
     ]
   },
   "bowl": {
+    "chances": {
+      "gameplay/junk": 0.09091
+    },
     "drops": [
       "turtle"
     ],
@@ -3325,6 +3501,19 @@
     ]
   },
   "bread": {
+    "chances": {
+      "gameplay/farmer_gift": 0.33333,
+      "structures/mansion": 0.38458,
+      "structures/mineshaft": 0.48547,
+      "structures/monster_room": 0.50213,
+      "structures/stronghold": 0.66976,
+      "structures/trial_chambers": 0.3,
+      "structures/village_desert": 0.97468,
+      "structures/village_plains": 0.97468,
+      "structures/village_savanna": 0.97468,
+      "structures/village_snowy": 0.97468,
+      "structures/village_taiga": 0.97468
+    },
     "gameplay": [
       "farmer_gift"
     ],
@@ -3363,6 +3552,9 @@
     ]
   },
   "brewer_pottery_sherd": {
+    "chances": {
+      "structures/desert_well": 0.25
+    },
     "structures": [
       "desert_well"
     ]
@@ -3396,6 +3588,10 @@
     ]
   },
   "brick": {
+    "chances": {
+      "structures/desert_well": 0.125,
+      "structures/trail_ruins": 0.04444
+    },
     "recipes": [
       {
         "ingredients": [
@@ -3715,6 +3911,9 @@
     ]
   },
   "brown_candle": {
+    "chances": {
+      "structures/trail_ruins": 0.04444
+    },
     "mining": [
       "brown_candle",
       "brown_candle_cake"
@@ -3960,6 +4159,9 @@
     ]
   },
   "brown_mushroom": {
+    "chances": {
+      "mining/brown_mushroom_block": 0.22222
+    },
     "mining": [
       "brown_mushroom",
       "brown_mushroom_block",
@@ -4116,6 +4318,14 @@
     ]
   },
   "brown_wool": {
+    "chances": {
+      "gameplay/shepherd_gift": 0.0625,
+      "structures/village_desert": 0.36546,
+      "structures/village_plains": 0.36546,
+      "structures/village_savanna": 0.36546,
+      "structures/village_snowy": 0.36546,
+      "structures/village_taiga": 0.36546
+    },
     "drops": [
       "brown"
     ],
@@ -4238,6 +4448,12 @@
     ]
   },
   "bucket": {
+    "chances": {
+      "structures/mansion": 0.20972,
+      "structures/monster_room": 0.28361,
+      "structures/trial_chambers": 0.08818,
+      "structures/village_savanna": 0.16124
+    },
     "recipes": [
       {
         "ingredients": [
@@ -4256,6 +4472,13 @@
     ]
   },
   "bundle": {
+    "chances": {
+      "structures/village_desert": 0.33333,
+      "structures/village_plains": 0.33333,
+      "structures/village_savanna": 0.33333,
+      "structures/village_snowy": 0.33333,
+      "structures/village_taiga": 0.33333
+    },
     "recipes": [
       {
         "ingredients": [
@@ -4278,6 +4501,9 @@
     ]
   },
   "burn_pottery_sherd": {
+    "chances": {
+      "structures/trail_ruins": 0.08333
+    },
     "structures": [
       "trail_ruins"
     ]
@@ -4291,6 +4517,9 @@
     "breeding": [
       "camel"
     ],
+    "chances": {
+      "structures/village_desert": 0.92598
+    },
     "mining": [
       "cactus",
       "potted_cactus"
@@ -4314,6 +4543,9 @@
     ]
   },
   "cake": {
+    "chances": {
+      "structures/trial_chambers": 0.548
+    },
     "recipes": [
       {
         "ingredients": [
@@ -4544,6 +4776,9 @@
     ]
   },
   "candle": {
+    "chances": {
+      "structures/ancient_city": 0.30488
+    },
     "mining": [
       "candle",
       "candle_cake"
@@ -4571,6 +4806,13 @@
       "pig",
       "rabbit"
     ],
+    "chances": {
+      "drops/husk": 0.01833,
+      "drops/zombie": 0.01833,
+      "drops/zombie_villager": 0.01833,
+      "structures/pillager_outpost": 0.64828,
+      "structures/shipwreck": 0.5811
+    },
     "drops": [
       "husk",
       "zombie",
@@ -4678,6 +4920,9 @@
     ]
   },
   "chainmail_boots": {
+    "chances": {
+      "gameplay/armorer_gift": 0.25
+    },
     "gameplay": [
       "armorer_gift"
     ],
@@ -4689,6 +4934,10 @@
     ]
   },
   "chainmail_chestplate": {
+    "chances": {
+      "gameplay/armorer_gift": 0.25,
+      "structures/mansion": 0.25499
+    },
     "gameplay": [
       "armorer_gift"
     ],
@@ -4703,6 +4952,9 @@
     ]
   },
   "chainmail_helmet": {
+    "chances": {
+      "gameplay/armorer_gift": 0.25
+    },
     "gameplay": [
       "armorer_gift"
     ],
@@ -4714,6 +4966,9 @@
     ]
   },
   "chainmail_leggings": {
+    "chances": {
+      "gameplay/armorer_gift": 0.25
+    },
     "gameplay": [
       "armorer_gift"
     ],
@@ -5195,6 +5450,9 @@
     ]
   },
   "chicken": {
+    "chances": {
+      "gameplay/cat_morning_gift": 0.16129
+    },
     "drops": [
       "chicken"
     ],
@@ -5618,11 +5876,17 @@
     ]
   },
   "chorus_fruit": {
+    "chances": {
+      "mining/chorus_plant": 0.5
+    },
     "mining": [
       "chorus_plant"
     ]
   },
   "clay": {
+    "chances": {
+      "structures/trail_ruins": 0.04444
+    },
     "gameplay": [
       "mason_gift"
     ],
@@ -5644,6 +5908,13 @@
     ]
   },
   "clay_ball": {
+    "chances": {
+      "structures/village_desert": 0.32982,
+      "structures/village_plains": 0.32982,
+      "structures/village_savanna": 0.32982,
+      "structures/village_snowy": 0.32982,
+      "structures/village_taiga": 0.32982
+    },
     "mining": [
       "clay"
     ],
@@ -5656,6 +5927,10 @@
     ]
   },
   "clock": {
+    "chances": {
+      "structures/ruined_portal": 0.09619,
+      "structures/shipwreck": 0.07689
+    },
     "recipes": [
       {
         "ingredients": [
@@ -5687,6 +5962,24 @@
     ]
   },
   "coal": {
+    "chances": {
+      "drops/wither_skeleton": 0.5,
+      "structures/ancient_city": 0.5811,
+      "structures/igloo": 0.88645,
+      "structures/mansion": 0.30124,
+      "structures/mineshaft": 0.34983,
+      "structures/monster_room": 0.4003,
+      "structures/ocean_ruin_cold": 0.96098,
+      "structures/ocean_ruin_warm": 0.96098,
+      "structures/shipwreck": 0.5234,
+      "structures/stronghold": 0.50518,
+      "structures/trail_ruins": 0.02222,
+      "structures/village_desert": 0.63335,
+      "structures/village_plains": 0.63335,
+      "structures/village_savanna": 0.63335,
+      "structures/village_snowy": 0.63335,
+      "structures/village_taiga": 0.63335
+    },
     "drops": [
       "wither_skeleton"
     ],
@@ -5793,6 +6086,9 @@
     ]
   },
   "coast_armor_trim_smithing_template": {
+    "chances": {
+      "structures/shipwreck": 0.16667
+    },
     "recipes": [
       {
         "ingredients": [
@@ -6050,6 +6346,19 @@
       "ocelot",
       "wolf"
     ],
+    "chances": {
+      "drops/dolphin": 0.66667,
+      "drops/elder_guardian": 0.5,
+      "drops/guardian": 0.4,
+      "drops/polar_bear": 0.5625,
+      "gameplay/fish": 0.6,
+      "gameplay/fisherman_gift": 0.5,
+      "structures/village_desert": 0.63335,
+      "structures/village_plains": 0.63335,
+      "structures/village_savanna": 0.63335,
+      "structures/village_snowy": 0.63335,
+      "structures/village_taiga": 0.63335
+    },
     "drops": [
       "cod",
       "dolphin",
@@ -6102,6 +6411,17 @@
     ]
   },
   "compass": {
+    "chances": {
+      "structures/ancient_city": 0.21414,
+      "structures/shipwreck": 0.07689,
+      "structures/stronghold": 0.17649,
+      "structures/trial_chambers": 0.08818,
+      "structures/village_desert": 0.40951,
+      "structures/village_plains": 0.40951,
+      "structures/village_savanna": 0.40951,
+      "structures/village_snowy": 0.40951,
+      "structures/village_taiga": 0.40951
+    },
     "recipes": [
       {
         "ingredients": [
@@ -6204,6 +6524,10 @@
     ]
   },
   "cooked_beef": {
+    "chances": {
+      "gameplay/butcher_gift": 0.2,
+      "structures/trial_chambers": 0.3
+    },
     "gameplay": [
       "butcher_gift"
     ],
@@ -6238,6 +6562,10 @@
     ]
   },
   "cooked_chicken": {
+    "chances": {
+      "gameplay/butcher_gift": 0.2,
+      "structures/trial_chambers": 0.3
+    },
     "gameplay": [
       "butcher_gift"
     ],
@@ -6281,6 +6609,9 @@
     "breeding": [
       "wolf"
     ],
+    "chances": {
+      "structures/buried_treasure": 0.75
+    },
     "recipes": [
       {
         "ingredients": [
@@ -6318,6 +6649,9 @@
     ]
   },
   "cooked_mutton": {
+    "chances": {
+      "gameplay/butcher_gift": 0.2
+    },
     "gameplay": [
       "butcher_gift"
     ],
@@ -6352,6 +6686,10 @@
     "breeding": [
       "piglin"
     ],
+    "chances": {
+      "gameplay/butcher_gift": 0.2,
+      "structures/bastion_remnant": 0.27398
+    },
     "gameplay": [
       "butcher_gift"
     ],
@@ -6392,6 +6730,9 @@
     ]
   },
   "cooked_rabbit": {
+    "chances": {
+      "gameplay/butcher_gift": 0.2
+    },
     "gameplay": [
       "butcher_gift"
     ],
@@ -6426,6 +6767,9 @@
     "breeding": [
       "wolf"
     ],
+    "chances": {
+      "structures/buried_treasure": 0.75
+    },
     "recipes": [
       {
         "ingredients": [
@@ -6466,6 +6810,9 @@
     "breeding": [
       "parrot_poisonous"
     ],
+    "chances": {
+      "gameplay/farmer_gift": 0.33333
+    },
     "gameplay": [
       "farmer_gift"
     ],
@@ -6694,6 +7041,19 @@
     ]
   },
   "copper_horse_armor": {
+    "chances": {
+      "structures/desert_pyramid": 0.22167,
+      "structures/end_city": 0.06555,
+      "structures/fortress": 0.23279,
+      "structures/jungle_pyramid": 0.06555,
+      "structures/monster_room": 0.28108,
+      "structures/stronghold": 0.02941,
+      "structures/village_desert": 0.07237,
+      "structures/village_plains": 0.07237,
+      "structures/village_savanna": 0.07237,
+      "structures/village_snowy": 0.07237,
+      "structures/village_taiga": 0.07237
+    },
     "structures": [
       "desert_pyramid",
       "end_city",
@@ -6709,6 +7069,9 @@
     ]
   },
   "copper_ingot": {
+    "chances": {
+      "drops/drowned": 0.17
+    },
     "drops": [
       "copper_golem",
       "drowned"
@@ -6819,6 +7182,12 @@
     ]
   },
   "copper_nautilus_armor": {
+    "chances": {
+      "structures/buried_treasure": 0.10811,
+      "structures/ocean_ruin_cold": 0.10811,
+      "structures/ocean_ruin_warm": 0.10811,
+      "structures/shipwreck": 0.10811
+    },
     "structures": [
       "buried_treasure",
       "ocean_ruin_cold",
@@ -6972,6 +7341,13 @@
     ]
   },
   "copper_spear": {
+    "chances": {
+      "structures/village_desert": 0.41799,
+      "structures/village_plains": 0.41799,
+      "structures/village_savanna": 0.41799,
+      "structures/village_snowy": 0.41799,
+      "structures/village_taiga": 0.41799
+    },
     "recipes": [
       {
         "ingredients": [
@@ -7344,6 +7720,9 @@
     "breeding": [
       "hoglin"
     ],
+    "chances": {
+      "structures/bastion_remnant": 0.25653
+    },
     "mining": [
       "crimson_fungus",
       "potted_crimson_fungus"
@@ -7386,6 +7765,9 @@
     ]
   },
   "crimson_nylium": {
+    "chances": {
+      "structures/bastion_remnant": 0.25653
+    },
     "mining": [
       "crimson_nylium"
     ],
@@ -7437,6 +7819,9 @@
     ]
   },
   "crimson_roots": {
+    "chances": {
+      "structures/bastion_remnant": 0.25653
+    },
     "mining": [
       "crimson_roots",
       "potted_crimson_roots"
@@ -7529,6 +7914,10 @@
     ]
   },
   "crossbow": {
+    "chances": {
+      "structures/bastion_remnant": 0.15834,
+      "structures/trial_chambers": 0.13793
+    },
     "recipes": [
       {
         "ingredients": [
@@ -7565,6 +7954,10 @@
     ]
   },
   "crying_obsidian": {
+    "chances": {
+      "gameplay/piglin_bartering": 0.08529,
+      "structures/bastion_remnant": 0.3757
+    },
     "gameplay": [
       "piglin_bartering"
     ],
@@ -8368,6 +8761,9 @@
     ]
   },
   "cyan_wool": {
+    "chances": {
+      "gameplay/shepherd_gift": 0.0625
+    },
     "drops": [
       "cyan"
     ],
@@ -8453,6 +8849,9 @@
       "bee",
       "rabbit"
     ],
+    "chances": {
+      "structures/village_plains": 0.31684
+    },
     "mining": [
       "dandelion",
       "potted_dandelion"
@@ -8468,6 +8867,9 @@
     ]
   },
   "danger_pottery_sherd": {
+    "chances": {
+      "structures/trail_ruins": 0.08333
+    },
     "structures": [
       "trail_ruins"
     ]
@@ -8906,6 +9308,10 @@
     ]
   },
   "dead_bush": {
+    "chances": {
+      "structures/trail_ruins": 0.02222,
+      "structures/village_desert": 0.36699
+    },
     "mining": [
       "dead_bush",
       "potted_dead_bush"
@@ -9429,6 +9835,9 @@
     ]
   },
   "detector_rail": {
+    "chances": {
+      "structures/mineshaft": 0.271
+    },
     "mining": [
       "detector_rail"
     ],
@@ -9453,6 +9862,24 @@
     ]
   },
   "diamond": {
+    "chances": {
+      "gameplay/corridor": 0.01425,
+      "structures/bastion_remnant": 0.12804,
+      "structures/buried_treasure": 0.7037,
+      "structures/desert_pyramid": 0.125,
+      "structures/end_city": 0.29314,
+      "structures/fortress": 0.23279,
+      "structures/jungle_pyramid": 0.18595,
+      "structures/mineshaft": 0.11694,
+      "structures/shipwreck": 0.18406,
+      "structures/stronghold": 0.08649,
+      "structures/trial_chambers": 0.30985,
+      "structures/village_desert": 0.20348,
+      "structures/village_plains": 0.20348,
+      "structures/village_savanna": 0.20348,
+      "structures/village_snowy": 0.20348,
+      "structures/village_taiga": 0.20348
+    },
     "gameplay": [
       "corridor"
     ],
@@ -9521,6 +9948,9 @@
     ]
   },
   "diamond_axe": {
+    "chances": {
+      "structures/trial_chambers": 0.16447
+    },
     "recipes": [
       {
         "ingredients": [
@@ -9553,6 +9983,10 @@
     ]
   },
   "diamond_block": {
+    "chances": {
+      "gameplay/corridor": 0.00285,
+      "structures/trial_chambers": 0.03448
+    },
     "gameplay": [
       "corridor"
     ],
@@ -9574,6 +10008,10 @@
     ]
   },
   "diamond_boots": {
+    "chances": {
+      "structures/bastion_remnant": 0.15226,
+      "structures/end_city": 0.18595
+    },
     "recipes": [
       {
         "ingredients": [
@@ -9596,6 +10034,12 @@
     ]
   },
   "diamond_chestplate": {
+    "chances": {
+      "structures/bastion_remnant": 0.15226,
+      "structures/end_city": 0.18595,
+      "structures/mansion": 0.13374,
+      "structures/trial_chambers": 0.10345
+    },
     "recipes": [
       {
         "ingredients": [
@@ -9620,6 +10064,10 @@
     ]
   },
   "diamond_helmet": {
+    "chances": {
+      "structures/bastion_remnant": 0.15226,
+      "structures/end_city": 0.18595
+    },
     "recipes": [
       {
         "ingredients": [
@@ -9642,6 +10090,10 @@
     ]
   },
   "diamond_hoe": {
+    "chances": {
+      "structures/ancient_city": 0.21414,
+      "structures/mansion": 0.36436
+    },
     "recipes": [
       {
         "ingredients": [
@@ -9671,6 +10123,20 @@
     ]
   },
   "diamond_horse_armor": {
+    "chances": {
+      "structures/ancient_city": 0.21414,
+      "structures/desert_pyramid": 0.07855,
+      "structures/end_city": 0.06555,
+      "structures/fortress": 0.1452,
+      "structures/jungle_pyramid": 0.06555,
+      "structures/monster_room": 0.10059,
+      "structures/stronghold": 0.02941,
+      "structures/village_desert": 0.07237,
+      "structures/village_plains": 0.07237,
+      "structures/village_savanna": 0.07237,
+      "structures/village_snowy": 0.07237,
+      "structures/village_taiga": 0.07237
+    },
     "structures": [
       "ancient_city",
       "desert_pyramid",
@@ -9687,6 +10153,11 @@
     ]
   },
   "diamond_leggings": {
+    "chances": {
+      "structures/ancient_city": 0.21414,
+      "structures/bastion_remnant": 0.15226,
+      "structures/end_city": 0.18595
+    },
     "recipes": [
       {
         "ingredients": [
@@ -9710,6 +10181,12 @@
     ]
   },
   "diamond_nautilus_armor": {
+    "chances": {
+      "structures/buried_treasure": 0.01081,
+      "structures/ocean_ruin_cold": 0.01081,
+      "structures/ocean_ruin_warm": 0.01081,
+      "structures/shipwreck": 0.01081
+    },
     "structures": [
       "buried_treasure",
       "ocean_ruin_cold",
@@ -9723,6 +10200,11 @@
     ]
   },
   "diamond_pickaxe": {
+    "chances": {
+      "structures/bastion_remnant": 0.12,
+      "structures/end_city": 0.18595,
+      "structures/trial_chambers": 0.16447
+    },
     "recipes": [
       {
         "ingredients": [
@@ -9753,6 +10235,10 @@
     ]
   },
   "diamond_shovel": {
+    "chances": {
+      "structures/bastion_remnant": 0.15,
+      "structures/end_city": 0.18595
+    },
     "recipes": [
       {
         "ingredients": [
@@ -9782,6 +10268,10 @@
     ]
   },
   "diamond_spear": {
+    "chances": {
+      "structures/bastion_remnant": 0.15226,
+      "structures/end_city": 0.18595
+    },
     "recipes": [
       {
         "ingredients": [
@@ -9805,6 +10295,11 @@
     ]
   },
   "diamond_sword": {
+    "chances": {
+      "gameplay/trial_chamber_melee": 0.14286,
+      "structures/bastion_remnant": 0.15226,
+      "structures/end_city": 0.18595
+    },
     "gameplay": [
       "trial_chamber_melee"
     ],
@@ -9934,6 +10429,9 @@
     ]
   },
   "disc_fragment_5": {
+    "chances": {
+      "structures/ancient_city": 0.38609
+    },
     "structures": [
       "ancient_city"
     ]
@@ -9970,6 +10468,9 @@
     ]
   },
   "dried_ghast": {
+    "chances": {
+      "gameplay/piglin_bartering": 0.02132
+    },
     "gameplay": [
       "piglin_bartering"
     ],
@@ -10081,6 +10582,9 @@
     ]
   },
   "dune_armor_trim_smithing_template": {
+    "chances": {
+      "structures/desert_pyramid": 0.14286
+    },
     "recipes": [
       {
         "ingredients": [
@@ -10102,11 +10606,22 @@
     ]
   },
   "echo_shard": {
+    "chances": {
+      "structures/ancient_city": 0.38609
+    },
     "structures": [
       "ancient_city"
     ]
   },
   "egg": {
+    "chances": {
+      "structures/trial_chambers": 0.06897,
+      "structures/village_desert": 0.36546,
+      "structures/village_plains": 0.36546,
+      "structures/village_savanna": 0.36546,
+      "structures/village_snowy": 0.36546,
+      "structures/village_taiga": 0.36546
+    },
     "gameplay": [
       "chicken_lay"
     ],
@@ -10120,6 +10635,27 @@
     ]
   },
   "emerald": {
+    "chances": {
+      "drops/evoker": 0.66667,
+      "drops/vindicator": 0.66667,
+      "gameplay/corridor": 0.35613,
+      "structures/buried_treasure": 0.7037,
+      "structures/desert_pyramid": 0.22167,
+      "structures/desert_well": 0.125,
+      "structures/end_city": 0.12748,
+      "structures/igloo": 0.12015,
+      "structures/jungle_pyramid": 0.12748,
+      "structures/ocean_ruin_cold": 0.23755,
+      "structures/ocean_ruin_warm": 0.23755,
+      "structures/shipwreck": 0.84447,
+      "structures/trail_ruins": 0.04444,
+      "structures/trial_chambers": 0.33333,
+      "structures/village_desert": 0.48709,
+      "structures/village_plains": 0.48709,
+      "structures/village_savanna": 0.48709,
+      "structures/village_snowy": 0.48709,
+      "structures/village_taiga": 0.48709
+    },
     "drops": [
       "evoker",
       "vindicator"
@@ -10543,6 +11079,10 @@
     ]
   },
   "emerald_block": {
+    "chances": {
+      "gameplay/corridor": 0.01425,
+      "structures/trial_chambers": 0.17241
+    },
     "gameplay": [
       "corridor"
     ],
@@ -10569,6 +11109,22 @@
     ]
   },
   "enchanted_book": {
+    "chances": {
+      "gameplay/piglin_bartering": 0.01066,
+      "gameplay/treasure": 0.16667,
+      "structures/ancient_city": 0.45865,
+      "structures/bastion_remnant": 0.11236,
+      "structures/desert_pyramid": 0.28663,
+      "structures/jungle_pyramid": 0.06555,
+      "structures/mansion": 0.25499,
+      "structures/mineshaft": 0.14085,
+      "structures/monster_room": 0.1942,
+      "structures/ocean_ruin_cold": 0.21739,
+      "structures/ocean_ruin_warm": 0.21739,
+      "structures/pillager_outpost": 0.13026,
+      "structures/stronghold": 0.88184,
+      "structures/trial_chambers": 0.08696
+    },
     "gameplay": [
       "piglin_bartering",
       "treasure"
@@ -10610,6 +11166,16 @@
     "breeding": [
       "horse"
     ],
+    "chances": {
+      "structures/ancient_city": 0.11287,
+      "structures/bastion_remnant": 0.05262,
+      "structures/desert_pyramid": 0.032,
+      "structures/mansion": 0.05503,
+      "structures/mineshaft": 0.01408,
+      "structures/monster_room": 0.04109,
+      "structures/ruined_portal": 0.01992,
+      "structures/trial_chambers": 0.3
+    },
     "structures": [
       "ancient_city",
       "bastion_remnant",
@@ -10833,6 +11399,12 @@
     ]
   },
   "ender_pearl": {
+    "chances": {
+      "drops/enderman": 0.66667,
+      "gameplay/piglin_bartering": 0.02132,
+      "structures/stronghold": 0.26859,
+      "structures/trial_chambers": 0.28371
+    },
     "drops": [
       "enderman"
     ],
@@ -10851,6 +11423,11 @@
     ]
   },
   "experience_bottle": {
+    "chances": {
+      "structures/ancient_city": 0.30488,
+      "structures/pillager_outpost": 0.68304,
+      "structures/shipwreck": 0.18406
+    },
     "structures": [
       "ancient_city",
       "pillager_outpost",
@@ -10864,6 +11441,9 @@
     ]
   },
   "explorer_pottery_sherd": {
+    "chances": {
+      "structures/ocean_ruin_cold": 0.06667
+    },
     "structures": [
       "ocean_ruin_cold"
     ]
@@ -11074,6 +11654,9 @@
     ]
   },
   "eye_armor_trim_smithing_template": {
+    "chances": {
+      "structures/stronghold": 0.1
+    },
     "recipes": [
       {
         "ingredients": [
@@ -11095,6 +11678,16 @@
     ]
   },
   "feather": {
+    "chances": {
+      "drops/chicken": 0.75,
+      "gameplay/cat_morning_gift": 0.16129,
+      "structures/shipwreck": 0.59994,
+      "structures/village_desert": 0.7794,
+      "structures/village_plains": 0.7794,
+      "structures/village_savanna": 0.7794,
+      "structures/village_snowy": 0.7794,
+      "structures/village_taiga": 0.7794
+    },
     "drops": [
       "chicken",
       "parrot"
@@ -11130,6 +11723,9 @@
     ]
   },
   "fern": {
+    "chances": {
+      "structures/village_taiga": 0.2606
+    },
     "mining": [
       "fern",
       "large_fern",
@@ -11184,6 +11780,11 @@
     ]
   },
   "fire_charge": {
+    "chances": {
+      "gameplay/piglin_bartering": 0.08529,
+      "structures/ruined_portal": 0.57145,
+      "structures/trial_chambers": 0.2069
+    },
     "gameplay": [
       "piglin_bartering"
     ],
@@ -11263,6 +11864,12 @@
     ]
   },
   "fishing_rod": {
+    "chances": {
+      "gameplay/junk": 0.01818,
+      "gameplay/treasure": 0.16667,
+      "structures/ocean_ruin_cold": 0.41667,
+      "structures/ocean_ruin_warm": 0.41667
+    },
     "gameplay": [
       "junk",
       "treasure"
@@ -11347,6 +11954,14 @@
     ]
   },
   "flint": {
+    "chances": {
+      "structures/ruined_portal": 0.57145,
+      "structures/village_desert": 0.7794,
+      "structures/village_plains": 0.7794,
+      "structures/village_savanna": 0.7794,
+      "structures/village_snowy": 0.7794,
+      "structures/village_taiga": 0.7794
+    },
     "mining": [
       "gravel"
     ],
@@ -11366,6 +11981,10 @@
     ]
   },
   "flint_and_steel": {
+    "chances": {
+      "structures/fortress": 0.23279,
+      "structures/ruined_portal": 0.57145
+    },
     "recipes": [
       {
         "ingredients": [
@@ -11385,6 +12004,9 @@
     ]
   },
   "flow_armor_trim_smithing_template": {
+    "chances": {
+      "structures/trial_chambers": 0.3
+    },
     "recipes": [
       {
         "ingredients": [
@@ -11406,6 +12028,9 @@
     ]
   },
   "flow_banner_pattern": {
+    "chances": {
+      "structures/trial_chambers": 0.2
+    },
     "structures": [
       "trial_chambers"
     ]
@@ -11426,6 +12051,14 @@
     ]
   },
   "flower_pot": {
+    "chances": {
+      "structures/trail_ruins": 0.02222,
+      "structures/village_desert": 0.32982,
+      "structures/village_plains": 0.32982,
+      "structures/village_savanna": 0.32982,
+      "structures/village_snowy": 0.32982,
+      "structures/village_taiga": 0.32982
+    },
     "mining": [
       "flower_pot",
       "potted_acacia_sapling",
@@ -11505,11 +12138,17 @@
     ]
   },
   "friend_pottery_sherd": {
+    "chances": {
+      "structures/trail_ruins": 0.08333
+    },
     "structures": [
       "trail_ruins"
     ]
   },
   "furnace": {
+    "chances": {
+      "structures/village_snowy": 0.14134
+    },
     "mining": [
       "furnace"
     ],
@@ -11553,11 +12192,17 @@
     ]
   },
   "ghast_tear": {
+    "chances": {
+      "drops/ghast": 0.66667
+    },
     "drops": [
       "ghast"
     ]
   },
   "gilded_blackstone": {
+    "chances": {
+      "structures/bastion_remnant": 0.48738
+    },
     "mining": [
       "gilded_blackstone"
     ],
@@ -11594,6 +12239,9 @@
     ]
   },
   "glass_bottle": {
+    "chances": {
+      "drops/witch": 0.28822
+    },
     "drops": [
       "witch"
     ],
@@ -11624,6 +12272,9 @@
     ]
   },
   "glistering_melon_slice": {
+    "chances": {
+      "structures/ruined_portal": 0.09619
+    },
     "recipes": [
       {
         "ingredients": [
@@ -11659,6 +12310,11 @@
     "breeding": [
       "fox"
     ],
+    "chances": {
+      "structures/ancient_city": 0.30488,
+      "structures/mineshaft": 0.48547,
+      "structures/trial_chambers": 0.44507
+    },
     "gameplay": [
       "cave_vine"
     ],
@@ -11698,6 +12354,9 @@
     ]
   },
   "glowstone": {
+    "chances": {
+      "structures/bastion_remnant": 0.25653
+    },
     "mining": [
       "glowstone"
     ],
@@ -11726,6 +12385,9 @@
     ]
   },
   "glowstone_dust": {
+    "chances": {
+      "drops/witch": 0.28822
+    },
     "drops": [
       "witch"
     ],
@@ -11739,6 +12401,10 @@
     ]
   },
   "gold_block": {
+    "chances": {
+      "structures/bastion_remnant": 0.3757,
+      "structures/ruined_portal": 0.01992
+    },
     "mining": [
       "gold_block"
     ],
@@ -11758,6 +12424,26 @@
     ]
   },
   "gold_ingot": {
+    "chances": {
+      "drops/zombified_piglin": 0.055,
+      "structures/bastion_remnant": 0.3757,
+      "structures/buried_treasure": 0.93224,
+      "structures/desert_pyramid": 0.22167,
+      "structures/end_city": 0.66959,
+      "structures/fortress": 0.57442,
+      "structures/jungle_pyramid": 0.66959,
+      "structures/mansion": 0.10948,
+      "structures/mineshaft": 0.18899,
+      "structures/monster_room": 0.15065,
+      "structures/ruined_portal": 0.09619,
+      "structures/shipwreck": 0.33897,
+      "structures/stronghold": 0.28561,
+      "structures/village_desert": 0.35114,
+      "structures/village_plains": 0.35114,
+      "structures/village_savanna": 0.35114,
+      "structures/village_snowy": 0.35114,
+      "structures/village_taiga": 0.35114
+    },
     "drops": [
       "zombified_piglin"
     ],
@@ -11864,6 +12550,18 @@
     ]
   },
   "gold_nugget": {
+    "chances": {
+      "drops/zombified_piglin": 0.66667,
+      "structures/bastion_remnant": 0.5904,
+      "structures/igloo": 0.74911,
+      "structures/ocean_ruin_cold": 0.94432,
+      "structures/ocean_ruin_warm": 0.94432,
+      "structures/ruined_portal": 0.2646,
+      "structures/shipwreck": 0.48709,
+      "structures/trail_ruins": 0.02222,
+      "structures/village_plains": 0.17159,
+      "structures/village_savanna": 0.16124
+    },
     "drops": [
       "zombified_piglin"
     ],
@@ -11992,6 +12690,18 @@
     "breeding": [
       "horse"
     ],
+    "chances": {
+      "structures/bastion_remnant": 0.10112,
+      "structures/desert_pyramid": 0.28663,
+      "structures/mansion": 0.36436,
+      "structures/mineshaft": 0.28169,
+      "structures/monster_room": 0.28108,
+      "structures/ocean_ruin_cold": 0.04348,
+      "structures/ocean_ruin_warm": 0.04348,
+      "structures/ruined_portal": 0.2646,
+      "structures/stronghold": 0.02941,
+      "structures/trial_chambers": 0.33333
+    },
     "recipes": [
       {
         "ingredients": [
@@ -12020,6 +12730,12 @@
     ]
   },
   "golden_axe": {
+    "chances": {
+      "gameplay/weaponsmith_gift": 0.33333,
+      "structures/bastion_remnant": 0.25653,
+      "structures/ruined_portal": 0.2646,
+      "structures/trial_chambers": 0.32134
+    },
     "gameplay": [
       "weaponsmith_gift"
     ],
@@ -12047,6 +12763,10 @@
     ]
   },
   "golden_boots": {
+    "chances": {
+      "structures/bastion_remnant": 0.14793,
+      "structures/ruined_portal": 0.2646
+    },
     "recipes": [
       {
         "ingredients": [
@@ -12067,6 +12787,12 @@
       "horse",
       "rabbit"
     ],
+    "chances": {
+      "structures/ancient_city": 0.69205,
+      "structures/bastion_remnant": 0.13483,
+      "structures/ruined_portal": 0.09619,
+      "structures/trial_chambers": 0.2
+    },
     "recipes": [
       {
         "ingredients": [
@@ -12094,6 +12820,11 @@
     ]
   },
   "golden_chestplate": {
+    "chances": {
+      "structures/bastion_remnant": 0.14793,
+      "structures/fortress": 0.23279,
+      "structures/ruined_portal": 0.2646
+    },
     "recipes": [
       {
         "ingredients": [
@@ -12136,6 +12867,12 @@
     ]
   },
   "golden_helmet": {
+    "chances": {
+      "structures/bastion_remnant": 0.14793,
+      "structures/ocean_ruin_cold": 0.08333,
+      "structures/ocean_ruin_warm": 0.08333,
+      "structures/ruined_portal": 0.2646
+    },
     "recipes": [
       {
         "ingredients": [
@@ -12154,6 +12891,9 @@
     ]
   },
   "golden_hoe": {
+    "chances": {
+      "structures/ruined_portal": 0.2646
+    },
     "recipes": [
       {
         "ingredients": [
@@ -12176,6 +12916,20 @@
     ]
   },
   "golden_horse_armor": {
+    "chances": {
+      "structures/desert_pyramid": 0.15237,
+      "structures/end_city": 0.06555,
+      "structures/fortress": 0.35135,
+      "structures/jungle_pyramid": 0.06555,
+      "structures/monster_room": 0.1942,
+      "structures/ruined_portal": 0.09619,
+      "structures/stronghold": 0.02941,
+      "structures/village_desert": 0.07237,
+      "structures/village_plains": 0.07237,
+      "structures/village_savanna": 0.07237,
+      "structures/village_snowy": 0.07237,
+      "structures/village_taiga": 0.07237
+    },
     "structures": [
       "desert_pyramid",
       "end_city",
@@ -12192,6 +12946,10 @@
     ]
   },
   "golden_leggings": {
+    "chances": {
+      "structures/bastion_remnant": 0.14793,
+      "structures/ruined_portal": 0.2646
+    },
     "recipes": [
       {
         "ingredients": [
@@ -12208,6 +12966,12 @@
     ]
   },
   "golden_nautilus_armor": {
+    "chances": {
+      "structures/buried_treasure": 0.02703,
+      "structures/ocean_ruin_cold": 0.02703,
+      "structures/ocean_ruin_warm": 0.02703,
+      "structures/shipwreck": 0.02703
+    },
     "structures": [
       "buried_treasure",
       "ocean_ruin_cold",
@@ -12216,6 +12980,10 @@
     ]
   },
   "golden_pickaxe": {
+    "chances": {
+      "structures/ruined_portal": 0.2646,
+      "structures/trial_chambers": 0.32134
+    },
     "recipes": [
       {
         "ingredients": [
@@ -12239,6 +13007,9 @@
     ]
   },
   "golden_shovel": {
+    "chances": {
+      "structures/ruined_portal": 0.2646
+    },
     "recipes": [
       {
         "ingredients": [
@@ -12280,6 +13051,11 @@
     ]
   },
   "golden_sword": {
+    "chances": {
+      "structures/bastion_remnant": 0.14793,
+      "structures/fortress": 0.23279,
+      "structures/ruined_portal": 0.2646
+    },
     "recipes": [
       {
         "ingredients": [
@@ -12396,6 +13172,9 @@
     ]
   },
   "gravel": {
+    "chances": {
+      "gameplay/piglin_bartering": 0.08529
+    },
     "gameplay": [
       "piglin_bartering"
     ],
@@ -13003,6 +13782,14 @@
     ]
   },
   "gray_wool": {
+    "chances": {
+      "gameplay/shepherd_gift": 0.0625,
+      "structures/village_desert": 0.36546,
+      "structures/village_plains": 0.36546,
+      "structures/village_savanna": 0.36546,
+      "structures/village_snowy": 0.36546,
+      "structures/village_taiga": 0.36546
+    },
     "drops": [
       "gray"
     ],
@@ -13299,6 +14086,9 @@
     ]
   },
   "green_candle": {
+    "chances": {
+      "structures/trail_ruins": 0.04444
+    },
     "mining": [
       "green_candle",
       "green_candle_cake"
@@ -13425,6 +14215,9 @@
     ]
   },
   "green_dye": {
+    "chances": {
+      "structures/village_desert": 0.20178
+    },
     "recipes": [
       {
         "ingredients": [
@@ -13680,6 +14473,9 @@
     ]
   },
   "green_wool": {
+    "chances": {
+      "gameplay/shepherd_gift": 0.0625
+    },
     "drops": [
       "green"
     ],
@@ -13814,6 +14610,15 @@
     ]
   },
   "gunpowder": {
+    "chances": {
+      "drops/creeper": 0.75,
+      "drops/ghast": 0.75,
+      "drops/witch": 0.28822,
+      "structures/desert_pyramid": 0.5904,
+      "structures/mansion": 0.57813,
+      "structures/monster_room": 0.57813,
+      "structures/shipwreck": 0.30488
+    },
     "drops": [
       "creeper",
       "ghast",
@@ -13833,6 +14638,9 @@
     ]
   },
   "guster_banner_pattern": {
+    "chances": {
+      "structures/trial_chambers": 0.16667
+    },
     "structures": [
       "trial_chambers"
     ]
@@ -13867,16 +14675,25 @@
     ]
   },
   "heart_pottery_sherd": {
+    "chances": {
+      "structures/trail_ruins": 0.08333
+    },
     "structures": [
       "trail_ruins"
     ]
   },
   "heartbreak_pottery_sherd": {
+    "chances": {
+      "structures/trail_ruins": 0.08333
+    },
     "structures": [
       "trail_ruins"
     ]
   },
   "heavy_core": {
+    "chances": {
+      "structures/trial_chambers": 0.1
+    },
     "mining": [
       "heavy_core"
     ],
@@ -13915,6 +14732,9 @@
     ]
   },
   "honey_bottle": {
+    "chances": {
+      "structures/trial_chambers": 0.12
+    },
     "recipes": [
       {
         "ingredients": [
@@ -13933,6 +14753,9 @@
     ]
   },
   "honeycomb": {
+    "chances": {
+      "structures/trial_chambers": 0.62329
+    },
     "gameplay": [
       "beehive"
     ],
@@ -14010,6 +14833,9 @@
     ]
   },
   "host_armor_trim_smithing_template": {
+    "chances": {
+      "structures/trail_ruins": 0.08333
+    },
     "recipes": [
       {
         "ingredients": [
@@ -14031,6 +14857,9 @@
     ]
   },
   "howl_pottery_sherd": {
+    "chances": {
+      "structures/trail_ruins": 0.08333
+    },
     "structures": [
       "trail_ruins"
     ]
@@ -14041,6 +14870,9 @@
     ]
   },
   "ink_sac": {
+    "chances": {
+      "gameplay/junk": 0.00909
+    },
     "drops": [
       "squid"
     ],
@@ -14049,6 +14881,12 @@
     ]
   },
   "iron_axe": {
+    "chances": {
+      "gameplay/weaponsmith_gift": 0.33333,
+      "structures/ocean_ruin_cold": 0.06667,
+      "structures/ocean_ruin_warm": 0.06667,
+      "structures/trial_chambers": 0.14973
+    },
     "gameplay": [
       "weaponsmith_gift"
     ],
@@ -14101,6 +14939,10 @@
     ]
   },
   "iron_block": {
+    "chances": {
+      "structures/bastion_remnant": 0.3757,
+      "structures/trial_chambers": 0.548
+    },
     "mining": [
       "iron_block"
     ],
@@ -14120,6 +14962,16 @@
     ]
   },
   "iron_boots": {
+    "chances": {
+      "gameplay/piglin_bartering": 0.01706,
+      "structures/end_city": 0.18595,
+      "structures/stronghold": 0.14128,
+      "structures/village_desert": 0.31808,
+      "structures/village_plains": 0.31808,
+      "structures/village_savanna": 0.31808,
+      "structures/village_snowy": 0.31808,
+      "structures/village_taiga": 0.31808
+    },
     "gameplay": [
       "piglin_bartering"
     ],
@@ -14150,6 +15002,9 @@
     ]
   },
   "iron_chain": {
+    "chances": {
+      "structures/bastion_remnant": 0.27398
+    },
     "mining": [
       "iron_chain"
     ],
@@ -14171,6 +15026,16 @@
     ]
   },
   "iron_chestplate": {
+    "chances": {
+      "structures/end_city": 0.18595,
+      "structures/stronghold": 0.14128,
+      "structures/trial_chambers": 0.08696,
+      "structures/village_desert": 0.31808,
+      "structures/village_plains": 0.31808,
+      "structures/village_savanna": 0.31808,
+      "structures/village_snowy": 0.31808,
+      "structures/village_taiga": 0.31808
+    },
     "recipes": [
       {
         "ingredients": [
@@ -14214,6 +15079,15 @@
     ]
   },
   "iron_helmet": {
+    "chances": {
+      "structures/end_city": 0.18595,
+      "structures/stronghold": 0.14128,
+      "structures/village_desert": 0.48709,
+      "structures/village_plains": 0.48709,
+      "structures/village_savanna": 0.48709,
+      "structures/village_snowy": 0.48709,
+      "structures/village_taiga": 0.48709
+    },
     "recipes": [
       {
         "ingredients": [
@@ -14260,6 +15134,19 @@
     ]
   },
   "iron_horse_armor": {
+    "chances": {
+      "structures/desert_pyramid": 0.22167,
+      "structures/end_city": 0.06555,
+      "structures/fortress": 0.23279,
+      "structures/jungle_pyramid": 0.06555,
+      "structures/monster_room": 0.28108,
+      "structures/stronghold": 0.02941,
+      "structures/village_desert": 0.07237,
+      "structures/village_plains": 0.07237,
+      "structures/village_savanna": 0.07237,
+      "structures/village_snowy": 0.07237,
+      "structures/village_taiga": 0.07237
+    },
     "structures": [
       "desert_pyramid",
       "end_city",
@@ -14275,6 +15162,30 @@
     ]
   },
   "iron_ingot": {
+    "chances": {
+      "drops/husk": 0.01833,
+      "drops/zombie": 0.01833,
+      "drops/zombie_villager": 0.01833,
+      "gameplay/corridor": 0.2849,
+      "structures/bastion_remnant": 0.3757,
+      "structures/buried_treasure": 0.99886,
+      "structures/desert_pyramid": 0.22167,
+      "structures/end_city": 0.51087,
+      "structures/fortress": 0.23279,
+      "structures/jungle_pyramid": 0.51087,
+      "structures/mansion": 0.20972,
+      "structures/mineshaft": 0.34983,
+      "structures/monster_room": 0.28361,
+      "structures/pillager_outpost": 0.35584,
+      "structures/shipwreck": 0.9959,
+      "structures/stronghold": 0.50518,
+      "structures/trial_chambers": 0.12,
+      "structures/village_desert": 0.7627,
+      "structures/village_plains": 0.7627,
+      "structures/village_savanna": 0.7627,
+      "structures/village_snowy": 0.7627,
+      "structures/village_taiga": 0.7627
+    },
     "drops": [
       "husk",
       "iron_golem",
@@ -14372,6 +15283,16 @@
     ]
   },
   "iron_leggings": {
+    "chances": {
+      "structures/ancient_city": 0.30488,
+      "structures/end_city": 0.18595,
+      "structures/stronghold": 0.14128,
+      "structures/village_desert": 0.31808,
+      "structures/village_plains": 0.31808,
+      "structures/village_savanna": 0.31808,
+      "structures/village_snowy": 0.31808,
+      "structures/village_taiga": 0.31808
+    },
     "recipes": [
       {
         "ingredients": [
@@ -14400,6 +15321,12 @@
     ]
   },
   "iron_nautilus_armor": {
+    "chances": {
+      "structures/buried_treasure": 0.05405,
+      "structures/ocean_ruin_cold": 0.05405,
+      "structures/ocean_ruin_warm": 0.05405,
+      "structures/shipwreck": 0.05405
+    },
     "structures": [
       "buried_treasure",
       "ocean_ruin_cold",
@@ -14408,6 +15335,13 @@
     ]
   },
   "iron_nugget": {
+    "chances": {
+      "gameplay/piglin_bartering": 0.02132,
+      "structures/bastion_remnant": 0.5904,
+      "structures/ruined_portal": 0.57145,
+      "structures/shipwreck": 0.99258,
+      "structures/village_taiga": 0.13889
+    },
     "gameplay": [
       "piglin_bartering"
     ],
@@ -14548,6 +15482,16 @@
     ]
   },
   "iron_pickaxe": {
+    "chances": {
+      "structures/end_city": 0.18595,
+      "structures/mineshaft": 0.07042,
+      "structures/stronghold": 0.14128,
+      "structures/village_desert": 0.54739,
+      "structures/village_plains": 0.54739,
+      "structures/village_savanna": 0.54739,
+      "structures/village_snowy": 0.54739,
+      "structures/village_taiga": 0.54739
+    },
     "recipes": [
       {
         "ingredients": [
@@ -14587,6 +15531,14 @@
     ]
   },
   "iron_shovel": {
+    "chances": {
+      "structures/end_city": 0.18595,
+      "structures/village_desert": 0.54739,
+      "structures/village_plains": 0.54739,
+      "structures/village_savanna": 0.54739,
+      "structures/village_snowy": 0.54739,
+      "structures/village_taiga": 0.54739
+    },
     "recipes": [
       {
         "ingredients": [
@@ -14620,6 +15572,14 @@
     ]
   },
   "iron_spear": {
+    "chances": {
+      "structures/buried_treasure": 0.33333,
+      "structures/village_desert": 0.31808,
+      "structures/village_plains": 0.31808,
+      "structures/village_savanna": 0.31808,
+      "structures/village_snowy": 0.31808,
+      "structures/village_taiga": 0.31808
+    },
     "recipes": [
       {
         "ingredients": [
@@ -14647,6 +15607,18 @@
     ]
   },
   "iron_sword": {
+    "chances": {
+      "gameplay/trial_chamber_melee": 0.57143,
+      "structures/bastion_remnant": 0.19,
+      "structures/buried_treasure": 0.33333,
+      "structures/end_city": 0.18595,
+      "structures/stronghold": 0.14128,
+      "structures/village_desert": 0.31808,
+      "structures/village_plains": 0.31808,
+      "structures/village_savanna": 0.31808,
+      "structures/village_snowy": 0.31808,
+      "structures/village_taiga": 0.31808
+    },
     "gameplay": [
       "trial_chamber_melee"
     ],
@@ -15137,6 +16109,16 @@
     ]
   },
   "lapis_lazuli": {
+    "chances": {
+      "gameplay/cleric_gift": 0.5,
+      "structures/mineshaft": 0.18899,
+      "structures/shipwreck": 0.7627,
+      "structures/village_desert": 0.35114,
+      "structures/village_plains": 0.35114,
+      "structures/village_savanna": 0.35114,
+      "structures/village_snowy": 0.35114,
+      "structures/village_taiga": 0.35114
+    },
     "gameplay": [
       "cleric_gift"
     ],
@@ -15213,11 +16195,19 @@
     ]
   },
   "large_fern": {
+    "chances": {
+      "structures/village_taiga": 0.2606
+    },
     "structures": [
       "village_taiga"
     ]
   },
   "lead": {
+    "chances": {
+      "structures/ancient_city": 0.21414,
+      "structures/mansion": 0.46247,
+      "structures/trail_ruins": 0.02222
+    },
     "recipes": [
       {
         "ingredients": [
@@ -15284,6 +16274,29 @@
     ]
   },
   "leather": {
+    "chances": {
+      "drops/cow": 0.75,
+      "drops/donkey": 0.75,
+      "drops/hoglin": 0.66667,
+      "drops/horse": 0.75,
+      "drops/llama": 0.75,
+      "drops/mooshroom": 0.75,
+      "drops/mule": 0.75,
+      "drops/trader_llama": 0.75,
+      "gameplay/junk": 0.09091,
+      "gameplay/piglin_bartering": 0.08529,
+      "structures/ancient_city": 0.21414,
+      "structures/bastion_remnant": 0.5904,
+      "structures/desert_pyramid": 0.28663,
+      "structures/jungle_pyramid": 0.18595,
+      "structures/monster_room": 0.36148,
+      "structures/stronghold": 0.02941,
+      "structures/village_desert": 0.2758,
+      "structures/village_plains": 0.2758,
+      "structures/village_savanna": 0.2758,
+      "structures/village_snowy": 0.2758,
+      "structures/village_taiga": 0.2758
+    },
     "drops": [
       "cow",
       "donkey",
@@ -15324,6 +16337,15 @@
     ]
   },
   "leather_boots": {
+    "chances": {
+      "gameplay/junk": 0.09091,
+      "structures/shipwreck": 0.30488,
+      "structures/village_desert": 0.48709,
+      "structures/village_plains": 0.48709,
+      "structures/village_savanna": 0.48709,
+      "structures/village_snowy": 0.48709,
+      "structures/village_taiga": 0.48709
+    },
     "gameplay": [
       "junk"
     ],
@@ -15353,6 +16375,17 @@
     ]
   },
   "leather_chestplate": {
+    "chances": {
+      "structures/buried_treasure": 0.33333,
+      "structures/ocean_ruin_cold": 0.08333,
+      "structures/ocean_ruin_warm": 0.08333,
+      "structures/shipwreck": 0.30488,
+      "structures/village_desert": 0.48709,
+      "structures/village_plains": 0.48709,
+      "structures/village_savanna": 0.48709,
+      "structures/village_snowy": 0.48709,
+      "structures/village_taiga": 0.48709
+    },
     "recipes": [
       {
         "ingredients": [
@@ -15386,6 +16419,14 @@
     ]
   },
   "leather_helmet": {
+    "chances": {
+      "structures/shipwreck": 0.30488,
+      "structures/village_desert": 0.48709,
+      "structures/village_plains": 0.48709,
+      "structures/village_savanna": 0.48709,
+      "structures/village_snowy": 0.48709,
+      "structures/village_taiga": 0.48709
+    },
     "recipes": [
       {
         "ingredients": [
@@ -15434,6 +16475,14 @@
     ]
   },
   "leather_leggings": {
+    "chances": {
+      "structures/shipwreck": 0.30488,
+      "structures/village_desert": 0.48709,
+      "structures/village_plains": 0.48709,
+      "structures/village_savanna": 0.48709,
+      "structures/village_snowy": 0.48709,
+      "structures/village_taiga": 0.48709
+    },
     "recipes": [
       {
         "ingredients": [
@@ -15869,6 +16918,9 @@
     ]
   },
   "light_blue_dye": {
+    "chances": {
+      "structures/trail_ruins": 0.04444
+    },
     "recipes": [
       {
         "ingredients": [
@@ -16085,6 +17137,9 @@
     ]
   },
   "light_blue_stained_glass_pane": {
+    "chances": {
+      "structures/trail_ruins": 0.02222
+    },
     "recipes": [
       {
         "ingredients": [
@@ -16138,6 +17193,9 @@
     ]
   },
   "light_blue_wool": {
+    "chances": {
+      "gameplay/shepherd_gift": 0.0625
+    },
     "drops": [
       "light_blue"
     ],
@@ -16836,6 +17894,14 @@
     ]
   },
   "light_gray_wool": {
+    "chances": {
+      "gameplay/shepherd_gift": 0.0625,
+      "structures/village_desert": 0.36546,
+      "structures/village_plains": 0.36546,
+      "structures/village_savanna": 0.36546,
+      "structures/village_snowy": 0.36546,
+      "structures/village_taiga": 0.36546
+    },
     "drops": [
       "light_gray"
     ],
@@ -16919,6 +17985,9 @@
     ]
   },
   "light_weighted_pressure_plate": {
+    "chances": {
+      "structures/ruined_portal": 0.09619
+    },
     "mining": [
       "light_weighted_pressure_plate"
     ],
@@ -16975,6 +18044,9 @@
     ]
   },
   "lily_pad": {
+    "chances": {
+      "gameplay/junk": 0.15455
+    },
     "gameplay": [
       "junk"
     ],
@@ -17588,6 +18660,9 @@
     ]
   },
   "lime_wool": {
+    "chances": {
+      "gameplay/shepherd_gift": 0.0625
+    },
     "drops": [
       "lime"
     ],
@@ -17664,11 +18739,17 @@
     ]
   },
   "lingering_potion": {
+    "chances": {
+      "structures/trial_chambers": 0.14286
+    },
     "structures": [
       "trial_chambers"
     ]
   },
   "lodestone": {
+    "chances": {
+      "structures/ruined_portal": 0.66667
+    },
     "mining": [
       "lodestone"
     ],
@@ -18346,6 +19427,9 @@
     ]
   },
   "magenta_stained_glass_pane": {
+    "chances": {
+      "structures/trail_ruins": 0.02222
+    },
     "recipes": [
       {
         "ingredients": [
@@ -18399,6 +19483,9 @@
     ]
   },
   "magenta_wool": {
+    "chances": {
+      "gameplay/shepherd_gift": 0.0625
+    },
     "drops": [
       "magenta"
     ],
@@ -18490,6 +19577,10 @@
     ]
   },
   "magma_cream": {
+    "chances": {
+      "drops/magma_cube": 0.1,
+      "structures/bastion_remnant": 0.48738
+    },
     "drops": [
       "magma_cube"
     ],
@@ -18794,6 +19885,17 @@
     ]
   },
   "map": {
+    "chances": {
+      "gameplay/cartographer_gift": 0.5,
+      "structures/ocean_ruin_cold": 0.43478,
+      "structures/ocean_ruin_warm": 0.43478,
+      "structures/stronghold": 0.17649,
+      "structures/village_desert": 0.67232,
+      "structures/village_plains": 0.67232,
+      "structures/village_savanna": 0.67232,
+      "structures/village_snowy": 0.67232,
+      "structures/village_taiga": 0.67232
+    },
     "gameplay": [
       "cartographer_gift"
     ],
@@ -18893,6 +19995,11 @@
       "chicken",
       "parrot"
     ],
+    "chances": {
+      "structures/mansion": 0.20972,
+      "structures/mineshaft": 0.34983,
+      "structures/monster_room": 0.28361
+    },
     "mining": [
       "attached_melon_stem",
       "melon_stem"
@@ -18925,6 +20032,9 @@
     ]
   },
   "milk_bucket": {
+    "chances": {
+      "structures/trial_chambers": 0.24858
+    },
     "structures": [
       "trial_chambers"
     ]
@@ -18942,6 +20052,9 @@
     ]
   },
   "miner_pottery_sherd": {
+    "chances": {
+      "structures/desert_pyramid": 0.125
+    },
     "structures": [
       "desert_pyramid"
     ]
@@ -18962,6 +20075,10 @@
     ]
   },
   "moss_block": {
+    "chances": {
+      "structures/shipwreck": 0.5811,
+      "structures/trial_chambers": 0.24858
+    },
     "mining": [
       "moss_block"
     ],
@@ -19191,6 +20308,9 @@
     ]
   },
   "mourner_pottery_sherd": {
+    "chances": {
+      "structures/ocean_ruin_cold": 0.06667
+    },
     "structures": [
       "ocean_ruin_cold"
     ]
@@ -19326,6 +20446,11 @@
     ]
   },
   "music_disc_13": {
+    "chances": {
+      "structures/ancient_city": 0.21414,
+      "structures/mansion": 0.36436,
+      "structures/monster_room": 0.28108
+    },
     "structures": [
       "ancient_city",
       "mansion",
@@ -19345,6 +20470,11 @@
     ]
   },
   "music_disc_cat": {
+    "chances": {
+      "structures/ancient_city": 0.21414,
+      "structures/mansion": 0.36436,
+      "structures/monster_room": 0.28108
+    },
     "structures": [
       "ancient_city",
       "mansion",
@@ -19352,11 +20482,17 @@
     ]
   },
   "music_disc_creator": {
+    "chances": {
+      "structures/trial_chambers": 0.1
+    },
     "structures": [
       "trial_chambers"
     ]
   },
   "music_disc_creator_music_box": {
+    "chances": {
+      "gameplay/corridor": 0.01425
+    },
     "gameplay": [
       "corridor"
     ]
@@ -19367,6 +20503,11 @@
     ]
   },
   "music_disc_otherside": {
+    "chances": {
+      "structures/ancient_city": 0.11287,
+      "structures/monster_room": 0.04109,
+      "structures/stronghold": 0.02941
+    },
     "structures": [
       "ancient_city",
       "monster_room",
@@ -19374,16 +20515,25 @@
     ]
   },
   "music_disc_pigstep": {
+    "chances": {
+      "structures/bastion_remnant": 0.05618
+    },
     "structures": [
       "bastion_remnant"
     ]
   },
   "music_disc_precipice": {
+    "chances": {
+      "structures/trial_chambers": 0.16667
+    },
     "structures": [
       "trial_chambers"
     ]
   },
   "music_disc_relic": {
+    "chances": {
+      "structures/trail_ruins": 0.08333
+    },
     "structures": [
       "trail_ruins"
     ]
@@ -19394,6 +20544,13 @@
     ]
   },
   "mutton": {
+    "chances": {
+      "structures/village_desert": 0.70055,
+      "structures/village_plains": 0.70055,
+      "structures/village_savanna": 0.70055,
+      "structures/village_snowy": 0.70055,
+      "structures/village_taiga": 0.70055
+    },
     "drops": [
       "sheep"
     ],
@@ -19411,6 +20568,11 @@
     ]
   },
   "name_tag": {
+    "chances": {
+      "gameplay/treasure": 0.16667,
+      "structures/mineshaft": 0.42254,
+      "structures/monster_room": 0.36148
+    },
     "gameplay": [
       "treasure"
     ],
@@ -19449,6 +20611,10 @@
     ]
   },
   "nautilus_shell": {
+    "chances": {
+      "drops/nautilus": 0.08,
+      "gameplay/treasure": 0.16667
+    },
     "drops": [
       "nautilus"
     ],
@@ -19463,6 +20629,9 @@
     ]
   },
   "nether_brick": {
+    "chances": {
+      "gameplay/piglin_bartering": 0.08529
+    },
     "gameplay": [
       "piglin_bartering"
     ],
@@ -19600,6 +20769,9 @@
     ]
   },
   "nether_wart": {
+    "chances": {
+      "structures/fortress": 0.23279
+    },
     "mining": [
       "nether_wart"
     ],
@@ -19770,6 +20942,9 @@
     ]
   },
   "netherite_ingot": {
+    "chances": {
+      "structures/bastion_remnant": 0.35038
+    },
     "recipes": [
       {
         "ingredients": [
@@ -19862,6 +21037,9 @@
     ]
   },
   "netherite_scrap": {
+    "chances": {
+      "structures/bastion_remnant": 0.19934
+    },
     "recipes": [
       {
         "ingredients": [
@@ -19951,6 +21129,9 @@
     ]
   },
   "netherite_upgrade_smithing_template": {
+    "chances": {
+      "structures/bastion_remnant": 0.1
+    },
     "recipes": [
       {
         "ingredients": [
@@ -20127,6 +21308,9 @@
     ]
   },
   "oak_hanging_sign": {
+    "chances": {
+      "structures/trail_ruins": 0.02222
+    },
     "mining": [
       "oak_hanging_sign"
     ],
@@ -20207,6 +21391,13 @@
     ]
   },
   "oak_sapling": {
+    "chances": {
+      "structures/village_desert": 0.31808,
+      "structures/village_plains": 0.62802,
+      "structures/village_savanna": 0.31808,
+      "structures/village_snowy": 0.31808,
+      "structures/village_taiga": 0.31808
+    },
     "mining": [
       "oak_leaves",
       "oak_sapling",
@@ -20341,6 +21532,17 @@
     ]
   },
   "obsidian": {
+    "chances": {
+      "gameplay/piglin_bartering": 0.08529,
+      "structures/bastion_remnant": 0.27398,
+      "structures/fortress": 0.09869,
+      "structures/ruined_portal": 0.57145,
+      "structures/village_desert": 0.31808,
+      "structures/village_plains": 0.31808,
+      "structures/village_savanna": 0.31808,
+      "structures/village_snowy": 0.31808,
+      "structures/village_taiga": 0.31808
+    },
     "gameplay": [
       "piglin_bartering"
     ],
@@ -20360,6 +21562,9 @@
     ]
   },
   "ochre_froglight": {
+    "chances": {
+      "drops/magma_cube": 0.25
+    },
     "drops": [
       "magma_cube"
     ],
@@ -20368,6 +21573,9 @@
     ]
   },
   "ominous_bottle": {
+    "chances": {
+      "structures/trial_chambers": 0.08
+    },
     "drops": [
       "pillager"
     ],
@@ -20732,6 +21940,9 @@
     ]
   },
   "orange_dye": {
+    "chances": {
+      "structures/trail_ruins": 0.04444
+    },
     "recipes": [
       {
         "ingredients": [
@@ -21029,6 +22240,9 @@
     ]
   },
   "orange_wool": {
+    "chances": {
+      "gameplay/shepherd_gift": 0.0625
+    },
     "drops": [
       "orange"
     ],
@@ -21325,6 +22539,9 @@
     ]
   },
   "packed_ice": {
+    "chances": {
+      "structures/ancient_city": 0.91899
+    },
     "recipes": [
       {
         "ingredients": [
@@ -21750,6 +22967,16 @@
     ]
   },
   "paper": {
+    "chances": {
+      "gameplay/cartographer_gift": 0.5,
+      "structures/shipwreck": 0.89372,
+      "structures/stronghold": 0.99221,
+      "structures/village_desert": 0.83193,
+      "structures/village_plains": 0.83193,
+      "structures/village_savanna": 0.83193,
+      "structures/village_snowy": 0.83193,
+      "structures/village_taiga": 0.83193
+    },
     "gameplay": [
       "cartographer_gift"
     ],
@@ -21774,6 +23001,9 @@
     ]
   },
   "pearlescent_froglight": {
+    "chances": {
+      "drops/magma_cube": 0.25
+    },
     "drops": [
       "magma_cube"
     ],
@@ -21795,6 +23025,10 @@
     ]
   },
   "phantom_membrane": {
+    "chances": {
+      "drops/phantom": 0.66667,
+      "gameplay/cat_morning_gift": 0.03226
+    },
     "drops": [
       "phantom"
     ],
@@ -21803,6 +23037,9 @@
     ]
   },
   "piglin_banner_pattern": {
+    "chances": {
+      "structures/bastion_remnant": 0.10112
+    },
     "structures": [
       "bastion_remnant"
     ]
@@ -22397,6 +23634,9 @@
     ]
   },
   "pink_stained_glass_pane": {
+    "chances": {
+      "structures/trail_ruins": 0.02222
+    },
     "recipes": [
       {
         "ingredients": [
@@ -22465,6 +23705,9 @@
     ]
   },
   "pink_wool": {
+    "chances": {
+      "gameplay/shepherd_gift": 0.0625
+    },
     "drops": [
       "pink"
     ],
@@ -22615,6 +23858,9 @@
       "chicken",
       "parrot"
     ],
+    "chances": {
+      "gameplay/sniffer_digging": 0.5
+    },
     "gameplay": [
       "sniffer_digging"
     ],
@@ -22628,6 +23874,9 @@
     ]
   },
   "plenty_pottery_sherd": {
+    "chances": {
+      "structures/ocean_ruin_cold": 0.06667
+    },
     "structures": [
       "ocean_ruin_cold"
     ]
@@ -22655,6 +23904,10 @@
     ]
   },
   "poisonous_potato": {
+    "chances": {
+      "mining/potatoes": 0.02,
+      "structures/shipwreck": 0.5811
+    },
     "mining": [
       "potatoes"
     ],
@@ -23532,6 +24785,10 @@
     "breeding": [
       "bee"
     ],
+    "chances": {
+      "drops/iron_golem": 0.66667,
+      "structures/village_plains": 0.17159
+    },
     "drops": [
       "iron_golem"
     ],
@@ -23556,6 +24813,14 @@
     "breeding": [
       "piglin"
     ],
+    "chances": {
+      "structures/bastion_remnant": 0.25653,
+      "structures/village_desert": 0.70055,
+      "structures/village_plains": 0.70055,
+      "structures/village_savanna": 0.70055,
+      "structures/village_snowy": 0.70055,
+      "structures/village_taiga": 0.70055
+    },
     "drops": [
       "hoglin",
       "pig"
@@ -23573,6 +24838,16 @@
     "breeding": [
       "pig"
     ],
+    "chances": {
+      "drops/husk": 0.01833,
+      "drops/zombie": 0.01833,
+      "drops/zombie_villager": 0.01833,
+      "structures/pillager_outpost": 0.64828,
+      "structures/shipwreck": 0.5811,
+      "structures/village_plains": 0.87967,
+      "structures/village_snowy": 0.81227,
+      "structures/village_taiga": 0.8057
+    },
     "drops": [
       "husk",
       "zombie",
@@ -23590,6 +24865,12 @@
     ]
   },
   "potion": {
+    "chances": {
+      "gameplay/junk": 0.09091,
+      "gameplay/piglin_bartering": 0.02132,
+      "structures/ancient_city": 0.45865,
+      "structures/trial_chambers": 0.24858
+    },
     "gameplay": [
       "junk",
       "piglin_bartering"
@@ -23607,6 +24888,9 @@
     ]
   },
   "powered_rail": {
+    "chances": {
+      "structures/mineshaft": 0.271
+    },
     "mining": [
       "powered_rail"
     ],
@@ -23707,6 +24991,11 @@
     ]
   },
   "prismarine_crystals": {
+    "chances": {
+      "drops/elder_guardian": 0.33333,
+      "drops/guardian": 0.4,
+      "structures/buried_treasure": 0.7037
+    },
     "drops": [
       "elder_guardian",
       "guardian"
@@ -23719,6 +25008,10 @@
     ]
   },
   "prismarine_shard": {
+    "chances": {
+      "drops/elder_guardian": 0.75,
+      "drops/guardian": 0.75
+    },
     "drops": [
       "elder_guardian",
       "guardian"
@@ -23794,6 +25087,9 @@
     ]
   },
   "prize_pottery_sherd": {
+    "chances": {
+      "structures/desert_pyramid": 0.125
+    },
     "structures": [
       "desert_pyramid"
     ]
@@ -23802,6 +25098,9 @@
     "breeding": [
       "wolf"
     ],
+    "chances": {
+      "gameplay/fish": 0.13
+    },
     "drops": [
       "pufferfish"
     ],
@@ -23821,6 +25120,9 @@
     ]
   },
   "pumpkin": {
+    "chances": {
+      "structures/shipwreck": 0.21414
+    },
     "mining": [
       "pumpkin"
     ],
@@ -23835,6 +25137,10 @@
     ]
   },
   "pumpkin_pie": {
+    "chances": {
+      "gameplay/farmer_gift": 0.33333,
+      "structures/village_taiga": 0.13889
+    },
     "gameplay": [
       "farmer_gift"
     ],
@@ -23879,6 +25185,12 @@
       "chicken",
       "parrot"
     ],
+    "chances": {
+      "structures/mansion": 0.20972,
+      "structures/mineshaft": 0.34983,
+      "structures/monster_room": 0.28361,
+      "structures/village_taiga": 0.54036
+    },
     "gameplay": [
       "pumpkin"
     ],
@@ -24123,6 +25435,9 @@
     ]
   },
   "purple_candle": {
+    "chances": {
+      "structures/trail_ruins": 0.04444
+    },
     "mining": [
       "purple_candle",
       "purple_candle_cake"
@@ -24454,6 +25769,9 @@
     ]
   },
   "purple_stained_glass_pane": {
+    "chances": {
+      "structures/trail_ruins": 0.02222
+    },
     "recipes": [
       {
         "ingredients": [
@@ -24507,6 +25825,9 @@
     ]
   },
   "purple_wool": {
+    "chances": {
+      "gameplay/shepherd_gift": 0.0625
+    },
     "drops": [
       "purple"
     ],
@@ -24681,6 +26002,10 @@
     ]
   },
   "quartz": {
+    "chances": {
+      "gameplay/piglin_bartering": 0.04264,
+      "structures/bastion_remnant": 0.3757
+    },
     "gameplay": [
       "piglin_bartering"
     ],
@@ -24857,6 +26182,11 @@
     "breeding": [
       "camel_husk"
     ],
+    "chances": {
+      "drops/husk": 0.66667,
+      "drops/rabbit": 0.19,
+      "gameplay/cat_morning_gift": 0.16129
+    },
     "drops": [
       "husk",
       "rabbit"
@@ -24866,6 +26196,10 @@
     ]
   },
   "rabbit_hide": {
+    "chances": {
+      "drops/rabbit": 0.66667,
+      "gameplay/cat_morning_gift": 0.16129
+    },
     "drops": [
       "rabbit"
     ],
@@ -24927,6 +26261,9 @@
     ]
   },
   "rail": {
+    "chances": {
+      "structures/mineshaft": 0.784
+    },
     "mining": [
       "rail"
     ],
@@ -24948,6 +26285,9 @@
     ]
   },
   "raiser_armor_trim_smithing_template": {
+    "chances": {
+      "structures/trail_ruins": 0.08333
+    },
     "recipes": [
       {
         "ingredients": [
@@ -25290,6 +26630,9 @@
     ]
   },
   "red_candle": {
+    "chances": {
+      "structures/trail_ruins": 0.04444
+    },
     "mining": [
       "red_candle",
       "red_candle_cake"
@@ -25563,6 +26906,10 @@
     "breeding": [
       "zombie_horse"
     ],
+    "chances": {
+      "drops/zombie": 0.66667,
+      "mining/red_mushroom_block": 0.22222
+    },
     "drops": [
       "zombie"
     ],
@@ -25871,6 +27218,9 @@
     ]
   },
   "red_stained_glass_pane": {
+    "chances": {
+      "structures/trail_ruins": 0.02222
+    },
     "recipes": [
       {
         "ingredients": [
@@ -25939,6 +27289,9 @@
     ]
   },
   "red_wool": {
+    "chances": {
+      "gameplay/shepherd_gift": 0.0625
+    },
     "drops": [
       "red"
     ],
@@ -26015,6 +27368,18 @@
     ]
   },
   "redstone": {
+    "chances": {
+      "gameplay/cleric_gift": 0.5,
+      "structures/mansion": 0.30124,
+      "structures/mineshaft": 0.18899,
+      "structures/monster_room": 0.4003,
+      "structures/stronghold": 0.28561,
+      "structures/village_desert": 0.58926,
+      "structures/village_plains": 0.58926,
+      "structures/village_savanna": 0.58926,
+      "structures/village_snowy": 0.58926,
+      "structures/village_taiga": 0.58926
+    },
     "drops": [
       "witch"
     ],
@@ -26275,6 +27640,9 @@
     ]
   },
   "resin_clump": {
+    "chances": {
+      "structures/mansion": 0.73969
+    },
     "mining": [
       "creaking_heart",
       "resin_clump"
@@ -26312,6 +27680,9 @@
     ]
   },
   "rib_armor_trim_smithing_template": {
+    "chances": {
+      "structures/fortress": 0.06667
+    },
     "recipes": [
       {
         "ingredients": [
@@ -26352,6 +27723,29 @@
     ]
   },
   "rotten_flesh": {
+    "chances": {
+      "drops/drowned": 0.75,
+      "drops/husk": 0.75,
+      "drops/zombie": 0.75,
+      "drops/zombie_nautilus": 0.8,
+      "drops/zombie_villager": 0.75,
+      "drops/zombified_piglin": 0.66667,
+      "gameplay/cat_morning_gift": 0.16129,
+      "gameplay/junk": 0.09091,
+      "structures/desert_pyramid": 0.73271,
+      "structures/igloo": 0.74911,
+      "structures/jungle_pyramid": 0.69549,
+      "structures/mansion": 0.57813,
+      "structures/monster_room": 0.57813,
+      "structures/ocean_ruin_cold": 0.76743,
+      "structures/ocean_ruin_warm": 0.76743,
+      "structures/shipwreck": 0.45865,
+      "structures/village_desert": 0.97468,
+      "structures/village_plains": 0.97468,
+      "structures/village_savanna": 0.97468,
+      "structures/village_snowy": 0.97468,
+      "structures/village_taiga": 0.97468
+    },
     "drops": [
       "camel_husk",
       "drowned",
@@ -26384,6 +27778,17 @@
     ]
   },
   "saddle": {
+    "chances": {
+      "gameplay/treasure": 0.16667,
+      "structures/bastion_remnant": 0.12,
+      "structures/end_city": 0.18595,
+      "structures/fortress": 0.42236,
+      "structures/village_desert": 0.2758,
+      "structures/village_plains": 0.2758,
+      "structures/village_savanna": 0.2758,
+      "structures/village_snowy": 0.2758,
+      "structures/village_taiga": 0.2758
+    },
     "drops": [
       "ravager"
     ],
@@ -26426,6 +27831,16 @@
       "ocelot",
       "wolf"
     ],
+    "chances": {
+      "drops/polar_bear": 0.1875,
+      "gameplay/fish": 0.25,
+      "gameplay/fisherman_gift": 0.5,
+      "structures/village_desert": 0.37908,
+      "structures/village_plains": 0.37908,
+      "structures/village_savanna": 0.37908,
+      "structures/village_snowy": 0.37908,
+      "structures/village_taiga": 0.37908
+    },
     "drops": [
       "polar_bear",
       "salmon"
@@ -26448,6 +27863,9 @@
     ]
   },
   "sand": {
+    "chances": {
+      "structures/desert_pyramid": 0.5904
+    },
     "mining": [
       "sand"
     ],
@@ -26563,6 +27981,9 @@
     ]
   },
   "scaffolding": {
+    "chances": {
+      "structures/trial_chambers": 0.28371
+    },
     "mining": [
       "scaffolding"
     ],
@@ -26584,6 +28005,9 @@
     ]
   },
   "sculk": {
+    "chances": {
+      "structures/ancient_city": 0.30488
+    },
     "silk_mining": [
       "sculk"
     ],
@@ -26592,6 +28016,9 @@
     ]
   },
   "sculk_catalyst": {
+    "chances": {
+      "structures/ancient_city": 0.21414
+    },
     "drops": [
       "warden"
     ],
@@ -26603,6 +28030,9 @@
     ]
   },
   "sculk_sensor": {
+    "chances": {
+      "structures/ancient_city": 0.30488
+    },
     "silk_mining": [
       "sculk_sensor"
     ],
@@ -26653,6 +28083,9 @@
     "breeding": [
       "turtle"
     ],
+    "chances": {
+      "drops/turtle": 0.75
+    },
     "drops": [
       "turtle"
     ],
@@ -26662,6 +28095,9 @@
     ]
   },
   "sentry_armor_trim_smithing_template": {
+    "chances": {
+      "structures/pillager_outpost": 0.25
+    },
     "recipes": [
       {
         "ingredients": [
@@ -26683,6 +28119,9 @@
     ]
   },
   "shaper_armor_trim_smithing_template": {
+    "chances": {
+      "structures/trail_ruins": 0.08333
+    },
     "recipes": [
       {
         "ingredients": [
@@ -26704,11 +28143,21 @@
     ]
   },
   "sheaf_pottery_sherd": {
+    "chances": {
+      "structures/trail_ruins": 0.08333
+    },
     "structures": [
       "trail_ruins"
     ]
   },
   "shears": {
+    "chances": {
+      "structures/village_desert": 0.19929,
+      "structures/village_plains": 0.19929,
+      "structures/village_savanna": 0.19929,
+      "structures/village_snowy": 0.19929,
+      "structures/village_taiga": 0.19929
+    },
     "recipes": [
       {
         "ingredients": [
@@ -26734,6 +28183,9 @@
     ]
   },
   "shelter_pottery_sherd": {
+    "chances": {
+      "structures/ocean_ruin_warm": 0.06667
+    },
     "structures": [
       "ocean_ruin_warm"
     ]
@@ -26744,6 +28196,9 @@
     ]
   },
   "shield": {
+    "chances": {
+      "structures/trial_chambers": 0.13043
+    },
     "recipes": [
       {
         "ingredients": [
@@ -26810,6 +28265,9 @@
     ]
   },
   "short_grass": {
+    "chances": {
+      "structures/village_savanna": 0.6017
+    },
     "mining": [
       "short_grass",
       "tall_grass"
@@ -26842,11 +28300,17 @@
     ]
   },
   "shulker_shell": {
+    "chances": {
+      "drops/shulker": 0.6875
+    },
     "drops": [
       "shulker"
     ]
   },
   "silence_armor_trim_smithing_template": {
+    "chances": {
+      "structures/ancient_city": 0.0125
+    },
     "recipes": [
       {
         "ingredients": [
@@ -26891,6 +28355,9 @@
     ]
   },
   "skull_pottery_sherd": {
+    "chances": {
+      "structures/desert_pyramid": 0.125
+    },
     "structures": [
       "desert_pyramid"
     ]
@@ -26899,6 +28366,10 @@
     "breeding": [
       "frog"
     ],
+    "chances": {
+      "drops/slime": 0.5,
+      "gameplay/panda_sneeze": 0.00143
+    },
     "drops": [
       "slime"
     ],
@@ -27358,6 +28829,13 @@
     ]
   },
   "smooth_stone": {
+    "chances": {
+      "structures/village_desert": 0.32982,
+      "structures/village_plains": 0.32982,
+      "structures/village_savanna": 0.32982,
+      "structures/village_snowy": 0.32982,
+      "structures/village_taiga": 0.32982
+    },
     "mining": [
       "smooth_stone"
     ],
@@ -27403,6 +28881,9 @@
     ]
   },
   "sniffer_egg": {
+    "chances": {
+      "structures/ocean_ruin_warm": 0.06667
+    },
     "mining": [
       "sniffer_egg"
     ],
@@ -27411,11 +28892,17 @@
     ]
   },
   "snort_pottery_sherd": {
+    "chances": {
+      "structures/ocean_ruin_warm": 0.06667
+    },
     "structures": [
       "ocean_ruin_warm"
     ]
   },
   "snout_armor_trim_smithing_template": {
+    "chances": {
+      "structures/bastion_remnant": 0.08333
+    },
     "recipes": [
       {
         "ingredients": [
@@ -27452,6 +28939,9 @@
     ]
   },
   "snow_block": {
+    "chances": {
+      "structures/village_snowy": 0.46622
+    },
     "mining": [
       "snow",
       "snow_block"
@@ -27474,6 +28964,12 @@
     "breeding": [
       "happy_ghast"
     ],
+    "chances": {
+      "drops/snow_golem": 0.9375,
+      "structures/ancient_city": 0.9972,
+      "structures/trial_chambers": 0.2069,
+      "structures/village_snowy": 0.81227
+    },
     "drops": [
       "snow_golem"
     ],
@@ -27667,6 +29163,10 @@
     ]
   },
   "soul_sand": {
+    "chances": {
+      "gameplay/piglin_bartering": 0.08529,
+      "structures/bastion_remnant": 0.25653
+    },
     "gameplay": [
       "piglin_bartering"
     ],
@@ -27684,6 +29184,9 @@
     ]
   },
   "soul_torch": {
+    "chances": {
+      "structures/ancient_city": 0.45865
+    },
     "mining": [
       "soul_torch"
     ],
@@ -27722,6 +29225,10 @@
     ]
   },
   "spectral_arrow": {
+    "chances": {
+      "gameplay/piglin_bartering": 0.08529,
+      "structures/bastion_remnant": 0.3757
+    },
     "gameplay": [
       "piglin_bartering"
     ],
@@ -27746,6 +29253,12 @@
     "breeding": [
       "armadillo"
     ],
+    "chances": {
+      "drops/cave_spider": 0.5,
+      "drops/spider": 0.5,
+      "drops/witch": 0.28822,
+      "structures/desert_pyramid": 0.34743
+    },
     "drops": [
       "cave_spider",
       "spider",
@@ -27756,6 +29269,9 @@
     ]
   },
   "spire_armor_trim_smithing_template": {
+    "chances": {
+      "structures/end_city": 0.06667
+    },
     "recipes": [
       {
         "ingredients": [
@@ -27777,6 +29293,10 @@
     ]
   },
   "splash_potion": {
+    "chances": {
+      "gameplay/piglin_bartering": 0.01706,
+      "structures/trial_chambers": 0.03448
+    },
     "gameplay": [
       "piglin_bartering"
     ],
@@ -27901,6 +29421,9 @@
     ]
   },
   "spruce_hanging_sign": {
+    "chances": {
+      "structures/trail_ruins": 0.02222
+    },
     "mining": [
       "spruce_hanging_sign"
     ],
@@ -27927,6 +29450,9 @@
     ]
   },
   "spruce_log": {
+    "chances": {
+      "structures/village_taiga": 0.8057
+    },
     "mining": [
       "spruce_log"
     ],
@@ -27984,6 +29510,9 @@
     ]
   },
   "spruce_sapling": {
+    "chances": {
+      "structures/village_taiga": 0.54036
+    },
     "mining": [
       "potted_spruce_sapling",
       "spruce_leaves",
@@ -28015,6 +29544,9 @@
     ]
   },
   "spruce_sign": {
+    "chances": {
+      "structures/village_taiga": 0.13889
+    },
     "mining": [
       "spruce_sign"
     ],
@@ -28111,6 +29643,18 @@
     ]
   },
   "stick": {
+    "chances": {
+      "drops/witch": 0.51494,
+      "gameplay/junk": 0.04545,
+      "mining/dead_bush": 0.66667,
+      "structures/desert_well": 0.125,
+      "structures/trial_chambers": 0.36148,
+      "structures/village_desert": 0.97741,
+      "structures/village_plains": 0.97741,
+      "structures/village_savanna": 0.97741,
+      "structures/village_snowy": 0.97741,
+      "structures/village_taiga": 0.97741
+    },
     "drops": [
       "witch"
     ],
@@ -28215,6 +29759,13 @@
     ]
   },
   "stone": {
+    "chances": {
+      "structures/village_desert": 0.56624,
+      "structures/village_plains": 0.56624,
+      "structures/village_savanna": 0.56624,
+      "structures/village_snowy": 0.56624,
+      "structures/village_taiga": 0.56624
+    },
     "mining": [
       "stone"
     ],
@@ -28240,6 +29791,14 @@
     ]
   },
   "stone_axe": {
+    "chances": {
+      "gameplay/toolsmith_gift": 0.25,
+      "gameplay/weaponsmith_gift": 0.33333,
+      "structures/igloo": 0.22747,
+      "structures/ocean_ruin_cold": 0.42417,
+      "structures/ocean_ruin_warm": 0.42417,
+      "structures/trial_chambers": 0.28371
+    },
     "gameplay": [
       "toolsmith_gift",
       "weaponsmith_gift"
@@ -28374,6 +29933,13 @@
     ]
   },
   "stone_bricks": {
+    "chances": {
+      "structures/village_desert": 0.56624,
+      "structures/village_plains": 0.56624,
+      "structures/village_savanna": 0.56624,
+      "structures/village_snowy": 0.56624,
+      "structures/village_taiga": 0.56624
+    },
     "mining": [
       "stone_bricks"
     ],
@@ -28422,6 +29988,9 @@
     ]
   },
   "stone_hoe": {
+    "chances": {
+      "gameplay/toolsmith_gift": 0.25
+    },
     "gameplay": [
       "toolsmith_gift"
     ],
@@ -28456,6 +30025,10 @@
     ]
   },
   "stone_pickaxe": {
+    "chances": {
+      "gameplay/toolsmith_gift": 0.25,
+      "structures/trial_chambers": 0.44507
+    },
     "gameplay": [
       "toolsmith_gift"
     ],
@@ -28508,6 +30081,9 @@
     ]
   },
   "stone_shovel": {
+    "chances": {
+      "gameplay/toolsmith_gift": 0.25
+    },
     "gameplay": [
       "toolsmith_gift"
     ],
@@ -28565,6 +30141,10 @@
     ]
   },
   "stone_spear": {
+    "chances": {
+      "structures/ocean_ruin_cold": 0.42417,
+      "structures/ocean_ruin_warm": 0.42417
+    },
     "recipes": [
       {
         "ingredients": [
@@ -28660,6 +30240,20 @@
     ]
   },
   "string": {
+    "chances": {
+      "drops/cat": 0.66667,
+      "drops/cave_spider": 0.75,
+      "drops/spider": 0.75,
+      "gameplay/cat_morning_gift": 0.16129,
+      "gameplay/junk": 0.04545,
+      "gameplay/piglin_bartering": 0.04264,
+      "structures/bastion_remnant": 0.5904,
+      "structures/desert_pyramid": 0.5904,
+      "structures/mansion": 0.57813,
+      "structures/monster_room": 0.57813,
+      "structures/pillager_outpost": 0.45229,
+      "structures/trail_ruins": 0.02222
+    },
     "drops": [
       "cat",
       "cave_spider",
@@ -28913,6 +30507,9 @@
     "breeding": [
       "horse"
     ],
+    "chances": {
+      "drops/witch": 0.28822
+    },
     "drops": [
       "witch"
     ],
@@ -28955,6 +30552,11 @@
     ]
   },
   "suspicious_stew": {
+    "chances": {
+      "structures/ancient_city": 0.69205,
+      "structures/desert_well": 0.125,
+      "structures/shipwreck": 0.71847
+    },
     "recipes": [
       {
         "ingredients": [
@@ -29262,6 +30864,9 @@
     "breeding": [
       "fox"
     ],
+    "chances": {
+      "structures/village_taiga": 0.54036
+    },
     "gameplay": [
       "sweet_berry_bush"
     ],
@@ -29284,6 +30889,9 @@
     ]
   },
   "tall_grass": {
+    "chances": {
+      "structures/village_savanna": 0.6017
+    },
     "structures": [
       "village_savanna"
     ]
@@ -29322,6 +30930,9 @@
     ]
   },
   "tide_armor_trim_smithing_template": {
+    "chances": {
+      "drops/elder_guardian": 0.2
+    },
     "drops": [
       "elder_guardian"
     ],
@@ -29361,6 +30972,13 @@
     ]
   },
   "tipped_arrow": {
+    "chances": {
+      "drops/bogged": 0.66667,
+      "drops/parched": 0.66667,
+      "drops/stray": 0.66667,
+      "gameplay/fletcher_gift": 0.01282,
+      "structures/trial_chambers": 0.24858
+    },
     "drops": [
       "bogged",
       "parched",
@@ -29390,6 +31008,11 @@
     ]
   },
   "tnt": {
+    "chances": {
+      "structures/buried_treasure": 0.70864,
+      "structures/desert_pyramid": 0.125,
+      "structures/shipwreck": 0.11287
+    },
     "mining": [
       "tnt"
     ],
@@ -29435,6 +31058,11 @@
     ]
   },
   "torch": {
+    "chances": {
+      "structures/mineshaft": 0.657,
+      "structures/trial_chambers": 0.28371,
+      "structures/village_savanna": 0.16124
+    },
     "mining": [
       "torch"
     ],
@@ -29479,6 +31107,9 @@
       "parrot",
       "sniffer"
     ],
+    "chances": {
+      "gameplay/sniffer_digging": 0.5
+    },
     "gameplay": [
       "sniffer_digging"
     ],
@@ -29510,6 +31141,10 @@
     ]
   },
   "trial_key": {
+    "chances": {
+      "gameplay/corridor": 0.02849,
+      "structures/trial_chambers": 0.08104
+    },
     "gameplay": [
       "corridor"
     ],
@@ -29518,11 +31153,18 @@
     ]
   },
   "trident": {
+    "chances": {
+      "structures/trial_chambers": 0.08333
+    },
     "structures": [
       "trial_chambers"
     ]
   },
   "tripwire_hook": {
+    "chances": {
+      "gameplay/junk": 0.09091,
+      "structures/pillager_outpost": 0.35584
+    },
     "gameplay": [
       "junk"
     ],
@@ -29590,6 +31232,9 @@
     "breeding": [
       "wolf"
     ],
+    "chances": {
+      "gameplay/fish": 0.02
+    },
     "drops": [
       "tropical_fish"
     ],
@@ -29631,6 +31276,9 @@
     ]
   },
   "tuff": {
+    "chances": {
+      "structures/trial_chambers": 0.40283
+    },
     "mining": [
       "tuff"
     ],
@@ -29884,6 +31532,9 @@
     ]
   },
   "verdant_froglight": {
+    "chances": {
+      "drops/magma_cube": 0.25
+    },
     "drops": [
       "magma_cube"
     ],
@@ -29892,6 +31543,9 @@
     ]
   },
   "vex_armor_trim_smithing_template": {
+    "chances": {
+      "structures/mansion": 0.5
+    },
     "recipes": [
       {
         "ingredients": [
@@ -29924,6 +31578,9 @@
     ]
   },
   "ward_armor_trim_smithing_template": {
+    "chances": {
+      "structures/ancient_city": 0.05
+    },
     "recipes": [
       {
         "ingredients": [
@@ -30213,6 +31870,14 @@
     ]
   },
   "water_bucket": {
+    "chances": {
+      "structures/trial_chambers": 0.13793,
+      "structures/village_desert": 0.37908,
+      "structures/village_plains": 0.37908,
+      "structures/village_savanna": 0.37908,
+      "structures/village_snowy": 0.37908,
+      "structures/village_taiga": 0.37908
+    },
     "structures": [
       "trial_chambers",
       "village_desert",
@@ -31775,6 +33440,9 @@
     ]
   },
   "wayfinder_armor_trim_smithing_template": {
+    "chances": {
+      "structures/trail_ruins": 0.08333
+    },
     "recipes": [
       {
         "ingredients": [
@@ -32022,6 +33690,21 @@
       "llama",
       "sheep"
     ],
+    "chances": {
+      "structures/igloo": 0.74911,
+      "structures/mansion": 0.38458,
+      "structures/monster_room": 0.50213,
+      "structures/ocean_ruin_cold": 0.96098,
+      "structures/ocean_ruin_warm": 0.96098,
+      "structures/pillager_outpost": 0.79646,
+      "structures/shipwreck": 0.5811,
+      "structures/trail_ruins": 0.04444,
+      "structures/village_desert": 0.92598,
+      "structures/village_plains": 0.7794,
+      "structures/village_savanna": 0.7794,
+      "structures/village_snowy": 0.7794,
+      "structures/village_taiga": 0.7794
+    },
     "mining": [
       "wheat"
     ],
@@ -32056,6 +33739,18 @@
       "chicken",
       "parrot"
     ],
+    "chances": {
+      "mining/fern": 0.125,
+      "mining/large_fern": 0.23438,
+      "mining/short_grass": 0.125,
+      "mining/tall_grass": 0.23438,
+      "structures/trail_ruins": 0.02222,
+      "structures/village_desert": 0.79654,
+      "structures/village_plains": 0.79654,
+      "structures/village_savanna": 0.85928,
+      "structures/village_snowy": 0.79654,
+      "structures/village_taiga": 0.79654
+    },
     "gameplay": [
       "unemployed_gift"
     ],
@@ -32418,6 +34113,9 @@
     ]
   },
   "white_dye": {
+    "chances": {
+      "structures/trail_ruins": 0.04444
+    },
     "recipes": [
       {
         "ingredients": [
@@ -32696,6 +34394,14 @@
     ]
   },
   "white_wool": {
+    "chances": {
+      "gameplay/shepherd_gift": 0.0625,
+      "structures/village_desert": 0.7794,
+      "structures/village_plains": 0.7794,
+      "structures/village_savanna": 0.7794,
+      "structures/village_snowy": 0.7794,
+      "structures/village_taiga": 0.7794
+    },
     "drops": [
       "white"
     ],
@@ -32787,6 +34493,9 @@
     ]
   },
   "wild_armor_trim_smithing_template": {
+    "chances": {
+      "structures/jungle_pyramid": 0.33333
+    },
     "recipes": [
       {
         "ingredients": [
@@ -32822,6 +34531,9 @@
     ]
   },
   "wind_charge": {
+    "chances": {
+      "structures/trial_chambers": 0.26667
+    },
     "recipes": [
       {
         "ingredients": [
@@ -32846,6 +34558,9 @@
     ]
   },
   "wither_skeleton_skull": {
+    "chances": {
+      "drops/wither_skeleton": 0.055
+    },
     "drops": [
       "wither_skeleton"
     ],
@@ -32869,6 +34584,9 @@
     ]
   },
   "wooden_axe": {
+    "chances": {
+      "structures/trial_chambers": 0.62329
+    },
     "recipes": [
       {
         "ingredients": [
@@ -32924,6 +34642,11 @@
     ]
   },
   "wooden_hoe": {
+    "chances": {
+      "structures/ocean_ruin_cold": 0.13333,
+      "structures/ocean_ruin_warm": 0.13333,
+      "structures/trail_ruins": 0.04444
+    },
     "recipes": [
       {
         "ingredients": [
@@ -33565,6 +35288,14 @@
     ]
   },
   "yellow_dye": {
+    "chances": {
+      "structures/trail_ruins": 0.04444,
+      "structures/village_desert": 0.32982,
+      "structures/village_plains": 0.32982,
+      "structures/village_savanna": 0.32982,
+      "structures/village_snowy": 0.32982,
+      "structures/village_taiga": 0.32982
+    },
     "recipes": [
       {
         "ingredients": [
@@ -33799,6 +35530,9 @@
     ]
   },
   "yellow_stained_glass_pane": {
+    "chances": {
+      "structures/trail_ruins": 0.02222
+    },
     "recipes": [
       {
         "ingredients": [
@@ -33852,6 +35586,9 @@
     ]
   },
   "yellow_wool": {
+    "chances": {
+      "gameplay/shepherd_gift": 0.0625
+    },
     "drops": [
       "yellow"
     ],

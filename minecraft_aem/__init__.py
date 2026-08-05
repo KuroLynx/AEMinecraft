@@ -116,7 +116,10 @@ class MCWorld(World):
 
         if name in ITEMS:
             item_data: MCItemData = ITEMS[name]
-            return MCItem(name, item_data.classification, item_data.id, self.player)
+            classification = item_data.classification
+            if name in KNOWLEDGE_ITEMS:
+                classification = self._knowledge_classification(name)
+            return MCItem(name, classification, item_data.id, self.player)
 
         # Every Entity Unlock that enters the pool gates at least its own Kill Entity location, so it
         # must stay progression-flavoured. AP's CollectionState only collects progression items, so a
@@ -479,6 +482,99 @@ class MCWorld(World):
         if "All" in selected:
             return list(MOBS_BOSS.keys())
         return [name for name in MOBS_BOSS.keys() if name in selected]
+
+    # A Knowledge gating fewer than this share of the seed's checks is real logic, but not worth
+    # front-loading. Deliberately a share rather than a count, so it means the same thing on a 104-check
+    # vanilla seed and a 1000-check BACAP one.
+    _KNOWLEDGE_BALANCE_SHARE = 0.05
+    # …but the heaviest gates are always balanced, however small their share works out. A seed with
+    # few gates switched on, or one diluted by a big pack, can leave every Knowledge under the share
+    # and nothing front-loaded at all; this guarantees the ones carrying the most weight still are.
+    _KNOWLEDGE_BALANCE_TOP = 7
+
+    def _goal_knowledges(self) -> set[str]:
+        """Knowledges standing anywhere between the player and a boss the goal requires.
+
+        Volume is the wrong measure for these. A gate can block a single check and still be the thing
+        holding up the whole run, because that check is on the critical path to the Ender Dragon — the
+        same reason _STRUCTURE_BOSS_GATES and _MOB_BOSS_GATES promote a structure or mob unlock that
+        gates a required boss. Balancing has to front-load those whatever their share works out at.
+
+        Walks out from each required boss kill through the rules it depends on, following ``loc``
+        nodes, and collects every Knowledge named on the way. Deliberately an OVER-approximation: a
+        Knowledge appearing in one branch of an OR isn't strictly necessary (another branch may avoid
+        it), but treating a maybe-critical gate as critical only front-loads it, while missing a real
+        one strands the run. Cycle-guarded, since advancement rules reference each other freely.
+        """
+        cached = getattr(self, "_goal_knowledge_cache", None)
+        if cached is not None:
+            return cached
+        rules = getattr(self, "_location_rules", {})
+        found: set[str] = set()
+        seen: set[str] = set()
+        pending = [f"{BOSS_KILL_PREFIX}{boss}" for boss in self.selected_bosses]
+        while pending:
+            name = pending.pop()
+            if name in seen or name not in rules:
+                continue
+            seen.add(name)
+            node = rules[name]
+            serialized = node.canonical_json()
+            found.update(k for k in KNOWLEDGE_ITEMS if f'"{k}"' in serialized)
+            pending.extend(self._referenced_locations(node.to_dict()))
+        self._goal_knowledge_cache = found
+        return found
+
+    @staticmethod
+    def _referenced_locations(node: dict) -> list[str]:
+        """Every location name a serialized rule reaches through a ``loc`` leaf."""
+        if node.get("k") == "loc":
+            return [node["l"]]
+        out: list[str] = []
+        for child in node.get("c", ()):
+            out.extend(MCWorld._referenced_locations(child))
+        return out
+
+    def _knowledge_classification(self, item_name: str) -> ItemClassification:
+        """Full progression for a Knowledge the seed leans on, progression_skip_balancing for the tail.
+
+        Every Knowledge gates something, so all of them must stay progression-flavoured — AP's
+        CollectionState only collects progression items, and a useful one would be invisible to the
+        solver. What differs is whether progression balancing should fight to move it early. Pickaxe
+        Handling gates half the game and deserves that; Chiseled Bookshelf gates a check or two and
+        just displaces something that matters.
+
+        Derived per seed from the compiled rules rather than curated in knowledges.csv, like
+        _structure_classification and _mob_classification: which gates carry weight depends on the
+        options (knowledge_gates, challenge_sanity, blazeandcave), so a hand-kept column would be wrong
+        for most seeds. Counted on the STRICT rules, which are the ones fill actually plans against.
+        """
+        counts = getattr(self, "_knowledge_gate_counts", None)
+        if counts is None:
+            rules = getattr(self, "_location_rules", {})
+            counts = self._knowledge_gate_counts = {}
+            for rule in rules.values():
+                serialized = rule.canonical_json()
+                for knowledge in KNOWLEDGE_ITEMS:
+                    if f'"{knowledge}"' in serialized:
+                        counts[knowledge] = counts.get(knowledge, 0) + 1
+            self._knowledge_gate_total = len(rules)
+            # Heaviest first, name as tie-break so the ranking is reproducible for a given seed.
+            self._knowledge_gate_rank = [
+                name for name in sorted(KNOWLEDGE_ITEMS, key=lambda n: (-counts.get(n, 0), n))
+            ]
+        # On the critical path to a required boss: front-load it however little else it gates.
+        if item_name in self._goal_knowledges():
+            return ItemClassification.progression
+        threshold = self._knowledge_gate_total * self._KNOWLEDGE_BALANCE_SHARE
+        if counts.get(item_name, 0) >= threshold:
+            return ItemClassification.progression
+        # A gate under the share still counts when it is one of the heaviest this seed has — but never
+        # on the strength of gating nothing at all, which would balance an item that blocks no check.
+        rank = self._knowledge_gate_rank.index(item_name)
+        if rank < self._KNOWLEDGE_BALANCE_TOP and counts.get(item_name, 0) > 0:
+            return ItemClassification.progression
+        return ItemClassification.progression_skip_balancing
 
     def _structure_classification(self, struct_name: str) -> ItemClassification:
         """A Structure Unlock's classification, computed for this seed. It is at least

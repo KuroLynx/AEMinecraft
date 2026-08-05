@@ -28,17 +28,21 @@ public final class LogicGraph {
     private final Map<String, List<Edge>> regions;
     private final Map<String, LocationEntry> locations;
     private final Map<String, String> locationNameByGameId;
+    /** Permissive rule per location, for the ones whose two graphs disagree (may be empty). */
+    private final Map<String, RuleNode> glitchRules;
     private final Map<Integer, RuleNode> definitions;
 
     private LogicGraph(String origin,
                        Map<String, List<Edge>> regions,
                        Map<String, LocationEntry> locations,
                        Map<String, String> locationNameByGameId,
+                       Map<String, RuleNode> glitchRules,
                        Map<Integer, RuleNode> definitions) {
         this.origin = origin;
         this.regions = regions;
         this.locations = locations;
         this.locationNameByGameId = locationNameByGameId;
+        this.glitchRules = glitchRules;
         this.definitions = definitions;
     }
 
@@ -76,7 +80,26 @@ public final class LogicGraph {
             locationNameByGameId.put(gameId, entry.getKey());
         }
 
-        return new LogicGraph(origin, regions, locations, locationNameByGameId, definitions);
+        // The permissive twin of a location's rule, shipped only where the two graphs disagree
+        // (logic_export._glitch_rules). Absent when the seed turned glitch_logic off.
+        Map<String, RuleNode> glitchRules = new HashMap<>();
+        if (root.has("glitch") && root.get("glitch").isJsonObject()) {
+            for (Map.Entry<String, JsonElement> entry : root.getAsJsonObject("glitch").entrySet()) {
+                glitchRules.put(entry.getKey(),
+                        RuleNode.parse(entry.getValue().getAsJsonObject().get("rule")));
+            }
+        }
+
+        return new LogicGraph(origin, regions, locations, locationNameByGameId, glitchRules,
+                definitions);
+    }
+
+    /**
+     * The permissive rule for {@code name}, or {@code null} when this location reads the same in both
+     * graphs (or the seed shipped none). See {@code RuleHelper._demote} for what the two differ on.
+     */
+    RuleNode glitchRule(String name) {
+        return glitchRules.get(name);
     }
 
     /** @return the shared subtree for a {@code ref} id, or {@code null} if absent. */
@@ -89,8 +112,9 @@ public final class LogicGraph {
         return locationNameByGameId.get(gameId);
     }
 
-    public LogicEvaluation newEvaluation(LogicEvaluation.ItemAvailability items) {
-        return new LogicEvaluation(this, items);
+    public LogicEvaluation newEvaluation(LogicEvaluation.ItemAvailability items,
+                                        LogicEvaluation.CheckedLocations checked) {
+        return new LogicEvaluation(this, items, checked);
     }
 
     String origin() {
