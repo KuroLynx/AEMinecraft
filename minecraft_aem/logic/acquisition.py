@@ -263,6 +263,9 @@ class RuleHelper:
         # honour it, so a tile the player can genuinely reach — a chest they may now open ungated —
         # reads yellow instead of a flat lie in red.
         self.gate_routes = world._item_gate_routes()
+        # Locations this seed actually created. reached() consults it: a rule may only name a
+        # location AP knows about, or state.can_reach_location raises KeyError mid-fill.
+        self.active_locations = set(world._get_active_locations())
         # Memo for acquire(): the acquisition table + options are fixed for this helper, so
         # acquire(base, stack) is pure. Datapack-scale compilation calls it millions of times for the
         # same (base, stack) pairs (planks/sticks/ingots recur in every recipe); caching collapses
@@ -436,6 +439,22 @@ class RuleHelper:
         return self.any_of(*[self.structure(gid) for gid in
                              (S_VILLAGE_DESERT, S_VILLAGE_PLAINS, S_VILLAGE_SAVANNA, S_VILLAGE_SNOWY, S_VILLAGE_TAIGA)])
 
+    def can_win_raid(self):
+        """Win a raid, which is what makes villagers throw profession gifts.
+
+        Stated as the two things the game actually asks for — a pillager to take Bad Omen from, and a
+        village to carry it into — NOT as reaching 'Advancement: Hero of the Village'. The advancement
+        is only the game's acknowledgement that you did this; it is not a prerequisite, and whether it
+        exists as a location at all depends on challenge_sanity (it is challenge-framed). Naming it
+        made three gift routes vanish, or worse crash the fill with a KeyError, on every seed that left
+        challenge_sanity off — see reached().
+
+        This is the condition ``_gameplay_table`` already used for the fifteen ``*_gift`` loot tables;
+        the three hand-written gift routes now share it instead of expressing the same idea a second,
+        more fragile way.
+        """
+        return self.all_of(self.entity(E_PILLAGER), self.any_village())
+
     def any_portal(self, nether_allowed: bool = False):
         portals = [
             S_RUINED_PORTAL, S_RUINED_PORTAL_DESERT, S_RUINED_PORTAL_OCEAN, S_RUINED_PORTAL_MOUNTAIN, S_RUINED_PORTAL_JUNGLE,
@@ -458,6 +477,24 @@ class RuleHelper:
         return ReachRegion(self.player, region_name)
 
     def reached(self, location: str):
+        """Reaching another location. Resolves to Const(False) when this seed never created it.
+
+        Options decide which advancements become checks — challenge_sanity drops every challenge-frame
+        one, kill_sanity the mob kills, an inactive pack its whole tab — but a curated rule names its
+        source unconditionally. 'Hero of the Village' is the live example: it is challenge-framed, so
+        the default seed has no such location, while three villager-gift routes (fletcher, cleric,
+        fisherman) still ask for it. AP's can_reach_location looks the name up in a dict and raises
+        KeyError, which surfaced as an intermittent generation crash: the enclosing any_of short-
+        circuits, so whether fill ever evaluates that branch depends on the seed.
+
+        False, not "keep it", because the location genuinely isn't part of this seed's graph. The
+        advancement is still completable in game, so this UNDER-approximates: a route the player could
+        take is one logic won't count on. That is the safe direction — a route logic ignores can only
+        make fill more conservative, never deadlock it — and matches how the exporter and set_rules
+        already skip locations the seed didn't create.
+        """
+        if location not in self.active_locations:
+            return Const(False)
         return ReachLocation(self.player, location)
 
     # -----------------------------------------------------------------------
@@ -517,7 +554,7 @@ class RuleHelper:
             self.reached(f"{ADVANCEMENT_PREFIX}{A_TRIAL_EDITION}"),  # Entrance/Supply/Common chest | Also tipped arrow
             self.any_village(),  # Fletcher chest
             self.can_trade_villager(),  # Fletcher trade
-            self.reached(f"{ADVANCEMENT_PREFIX}{A_HERO_OF_THE_VILLAGE}"),  # Fletcher gift
+            self.can_win_raid(),  # Fletcher gift
             self.can_barter(),  # Spectral Arrow
         )
 
@@ -574,7 +611,7 @@ class RuleHelper:
                 self.any_village(),  # temple chest
                 self.structure(S_MANSION),  # chest
                 self.entity(E_WITCH),  # Witch drop
-                self.reached(f"{ADVANCEMENT_PREFIX}{A_HERO_OF_THE_VILLAGE}"),  # Cleric gift
+                self.can_win_raid(),  # Cleric gift
                 self.can_trade_villager(1),  # Cleric novice trade (cleric/1/emerald_redstone)
             ),
         )
@@ -814,7 +851,7 @@ class RuleHelper:
             self.knowledge(K_FISHING),                              # rod
             self.has_any_entities(E_GUARDIAN, E_ELDER_GUARDIAN, E_DOLPHIN, E_POLAR_BEAR),  # mob drops
             self.any_village(),                                     # village chest
-            self.reached(f"{ADVANCEMENT_PREFIX}{A_HERO_OF_THE_VILLAGE}"),  # Fisherman gift
+            self.can_win_raid(),  # Fisherman gift
         )
 
     def can_get_all_fish(self):
@@ -1525,7 +1562,7 @@ class RuleHelper:
         if mob is not None:
             return self.entity(mob)
         if table in _GAMEPLAY_VILLAGER_GIFTS:
-            return self.all_of(self.entity(E_PILLAGER), self.any_village())  # Hero of the Village
+            return self.can_win_raid()  # villagers throw gifts after a won raid
         harvest = _GAMEPLAY_HARVEST.get(table)
         if harvest is not None:
             region, needs_shears = harvest
