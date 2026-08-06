@@ -149,6 +149,11 @@ _CUSTOM_STAT_ITEM = {
 # enough for phantoms (BACAP's "Insomniac") is just waiting, reachable anywhere.
 _CUSTOM_STAT_TRIVIAL = frozenset({"minecraft:time_since_rest", "minecraft:time_since_death"})
 
+# Equipment slots an entity predicate can constrain (vanilla EquipmentSlot names). Read by
+# _entity_equipment_node so "an entity wearing X" also requires being able to obtain X.
+_EQUIPMENT_SLOTS = frozenset({"head", "chest", "legs", "feet", "body", "saddle",
+                              "mainhand", "offhand"})
+
 # Non-item natural blocks whose mere presence pins the dimension(s) you can be in to interact with one
 # (entering / standing on / placing it). Each maps to the region(s) where that block exists — a block
 # carries no acquirable item, and every advancement is placed in the Overworld region, so without this
@@ -156,6 +161,13 @@ _CUSTOM_STAT_TRIVIAL = frozenset({"minecraft:time_since_rest", "minecraft:time_s
 # Nether start, reachable without the Overworld). Values are a tuple of regions (the block is in ONE of
 # them → OR). Water exists in the Overworld AND the End (never the Nether); powder snow / berry bushes /
 # dirt paths are Overworld-only; the portal/vine/soul-fire blocks pin the Nether or the End.
+# Blocks whose dimension is not the whole story: something must have happened before one exists at
+# all. Applied on top of _BLOCK_REGION by _block_region_node. Keyed by block path, value takes the
+# RuleHelper so the gate is built lazily.
+_BLOCK_EXTRA_GATE = {
+    "end_gateway": lambda h: h.outer_end(),  # spawns only when the dragon dies
+}
+
 _BLOCK_REGION = {
     "end_portal": (REGION_END,),
     "end_gateway": (REGION_END,),
@@ -373,7 +385,11 @@ class TriggerCompiler:
         if trigger == "minecraft:kill_mob_near_sculk_catalyst":
             return self._sculk_kill_node(cond)
         if trigger == "minecraft:bee_nest_destroyed":
-            return self._entity_gid("minecraft:bee")
+            # Break a bee nest — with whatever tool the criterion demands. Total Beelocation wants
+            # Silk Touch (otherwise the nest just breaks and the bees are lost), and only the bee
+            # was being asked for, so it read green on a world with no way to enchant anything.
+            return self._all_opt(self._entity_gid("minecraft:bee"),
+                                 self._item_predicate(cond.get("item")))
         if trigger == "minecraft:allay_drop_item_on_block":
             return self._all_req(self._entity_gid("minecraft:allay"),
                                  self.h.acquire("minecraft:note_block"))
@@ -462,10 +478,37 @@ class TriggerCompiler:
         """Display names for the entity/entities a criterion's `entity` predicate pins via `type`."""
         return self._entity_names_from_type(self._predicate_value(cond.get("entity"), "type"))
 
-    def _entity_node(self, cond: dict) -> Rule | None:
-        """Reach the entity/entities a criterion's `entity` predicate pins (single id or ``#tag``)."""
-        options = [self.h.entity(name) for name in self._entity_names(cond)]
-        return or_(*options) if options else None
+    def _entity_node(self, cond: dict, gate=None) -> Rule | None:
+        """Reach the entity/entities a criterion's `entity` predicate pins (single id or ``#tag``),
+        and be able to put on it whatever that predicate says it is WEARING.
+
+        ``gate`` is what each pinned species must satisfy, defaulting to plain reachability
+        (``RuleHelper.entity``). A kill criterion passes ``can_defeat`` instead — see
+        _player_killed_node."""
+        gate = gate or self.h.entity
+        options = [gate(name) for name in self._entity_names(cond)]
+        if not options:
+            return None  # callers keep their own "any mob" fallbacks for an unpinned predicate
+        equipment = self._entity_equipment_node(cond)
+        node = or_(*options)
+        return node if equipment is None else and_(node, equipment)
+
+    def _entity_equipment_node(self, cond: dict) -> Rule | None:
+        """The gear an `entity` predicate demands the target be wearing, via its ``equipment`` map.
+
+        A predicate can pin more than a species: Good as New wants "a wolf whose body slot holds
+        undamaged wolf armor", and the wolf on its own is trivially reachable, so ignoring the
+        equipment collapsed the whole criterion to a bare Overworld check — no wolf armor, and so
+        no armadillo scutes and no crafting Knowledge either. Each slot resolves through the
+        ordinary item predicate, so an enchantment or trim on the gear comes along with it; a slot
+        that resolves to nothing is skipped rather than voiding the gate."""
+        equipment = self._predicate_value(cond.get("entity"), "equipment")
+        if not isinstance(equipment, dict):
+            return None
+        parts = [self._item_predicate(slot) for name, slot in equipment.items()
+                 if name in _EQUIPMENT_SLOTS]
+        parts = [part for part in parts if part is not None]
+        return and_(*parts) if parts else None
 
     def _entity_killed_player_node(self, cond: dict) -> Rule | None:
         """``entity_killed_player``: a non-player entity kills you. An armor stand (BACAP's Living
@@ -599,9 +642,16 @@ class TriggerCompiler:
 
     def _player_killed_node(self, cond: dict) -> Rule | None:
         """``player_killed_entity``: kill an entity. The victim is on `entity`; any weapon constraint is
-        on `killing_blow` (a projectile, the killer's held mainhand item, or a melee player-attack)."""
+        on `killing_blow` (a projectile, the killer's held mainhand item, or a melee player-attack).
+
+        The victim gate is can_defeat, not plain reachability: killing something is not the same as
+        standing next to it. For an ordinary mob the two are identical (can_defeat says so — anything
+        is beatable bare-handed), so this only bites on the four bosses, which is exactly where it
+        should. "Free the End" compiled to a bare Region(The End): no bow, no gear, no fight. It also
+        puts the kill ADVANCEMENTS on the same footing as the Kill/Boss Kill LOCATIONS, which have
+        always used can_defeat (engine.collect_entity_rules)."""
         weapon = self._killing_blow_weapon(cond.get("killing_blow"))
-        victim = self._entity_node(cond)
+        victim = self._entity_node(cond, gate=self.h.can_defeat)
         parts = [n for n in (weapon, victim) if n is not None]
         if victim is None and cond.get("entity"):
             # Victim pinned only by what it wears (Trick or Treat!: kill any mob in a carved pumpkin):
@@ -964,8 +1014,13 @@ class TriggerCompiler:
         predicates = pred.get("predicates")
         if not isinstance(predicates, dict):
             return None
-        on_item = "enchantments" in predicates
-        on_book = "stored_enchantments" in predicates
+        # Component keys are namespaced in the data ("minecraft:enchantments"); accept the bare form
+        # too, the way _criterion normalises triggers and _trim_gate already reads its own key. Only
+        # the bare spelling was matched, so an enchantment requirement silently evaluated to "no
+        # enchantment needed" — Total Beelocation asks for Silk Touch and compiled to "reach a bee".
+        on_item = "enchantments" in predicates or "minecraft:enchantments" in predicates
+        on_book = ("stored_enchantments" in predicates
+                   or "minecraft:stored_enchantments" in predicates)
         if not on_item and not on_book:
             return None
         routes = [self.h.acquire("minecraft:enchanting_table")]
@@ -1206,17 +1261,35 @@ class TriggerCompiler:
     def _block_region_node(self, blocks: list) -> Rule | None:
         """Reach a dimension a non-item natural block pins (``_BLOCK_REGION``), OR-ed over every region
         any listed block can be in (blocks in a criterion are alternatives). ``None`` when no listed
-        block pins a dimension."""
-        regions = set()
+        block pins a dimension.
+
+        A couple of these blocks need more than their dimension: an End gateway is not part of the
+        world you arrive in — it spawns when the dragon dies — so "Remote Getaway" was satisfied by
+        stepping through the End portal. Its extra gate is AND-ed onto that block's own branch, so
+        an OR over several blocks still lets a cheaper alternative through."""
+        options = []
         for block in blocks:
-            regions.update(_BLOCK_REGION.get(self._path(block), ()))
-        return self._any_opt(*[self.h.access_region(r) for r in sorted(regions)]) if regions else None
+            path = self._path(block)
+            extra = _BLOCK_EXTRA_GATE.get(path)
+            for region in _BLOCK_REGION.get(path, ()):
+                node = self.h.access_region(region)
+                options.append(node if extra is None else and_(node, extra(self.h)))
+        return self._any_opt(*options) if options else None
 
     @staticmethod
     def _all_req(*nodes) -> Rule | None:
         """AND of nodes that are ALL required — ``None`` (fall back) if any is unresolved, so a
         half-built gate never silently weakens to its resolvable half."""
         return None if any(n is None for n in nodes) else and_(*nodes)
+
+    @staticmethod
+    def _all_opt(*nodes) -> Rule | None:
+        """AND over the resolvable nodes; ``None`` only when nothing resolved. Unlike _all_req this
+        keeps a partly-resolved gate instead of discarding it — for criteria where each part is an
+        independent requirement, so dropping an unresolvable one still leaves a sound (if weaker)
+        rule, and falling back to the parent chain would be weaker still."""
+        present = [n for n in nodes if n is not None]
+        return and_(*present) if present else None
 
     @staticmethod
     def _any_opt(*nodes) -> Rule | None:

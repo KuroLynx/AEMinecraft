@@ -4,6 +4,8 @@ from importlib.resources import files
 
 # AST primitives must be imported directly: `from .. import *` cannot supply them because the
 # package __init__ imports this module (via set_rules) before it defines Const/Has/and_/… .
+from BaseClasses import ItemClassification
+
 from .ast import And, Const, Has, ReachRegion, ReachLocation, and_, or_, at_least
 from ..content.registry import base_pack, overlay_packs  # registry only imports constants → cycle-safe
 from .. import *
@@ -146,6 +148,12 @@ _END_BLOCK_HINTS = ("end_stone", "chorus", "purpur", "dragon_egg")
 # circular. Only blocks that BOTH self-mine and have a recipe need listing (others keep self-mining
 # unconditionally). Missing one merely over-gates it to its recipe; wrongly adding a placed-only
 # block would under-gate it, so keep this conservative.
+# Structures with nothing above ground to see. Exploring finds every other structure eventually —
+# a village, a ruined portal, a mansion all sit on the surface — but a stronghold is buried with no
+# trace, so "wander until you trip over one" is not a route at all, not even an unreliable one. Read
+# by structure_located, which therefore gives these no free glitch pass.
+_NO_SURFACE_TRACE = frozenset({S_STRONGHOLD})
+
 _NATURAL_SELF_MINED = frozenset({
     "stone", "cobblestone", "granite", "diorite", "andesite", "tuff", "calcite", "deepslate",
     "cobbled_deepslate", "dripstone_block", "amethyst_block", "sandstone", "red_sandstone",
@@ -201,7 +209,12 @@ class RuleHelper:
     time, so the resulting tree contains only the primitive node kinds.
     """
 
-    def __init__(self, world: World):
+    # A source you can't count on: worse than one attempt in four. Real tables cluster well clear of
+    # this line (a 70% buried-treasure diamond against a 2% barter), so the exact cut matters less
+    # than having one at all.
+    _GLITCH_CHANCE = 0.25
+
+    def __init__(self, world: World, glitch: bool = False):
         self.world = world
         self.player = world.player
         # Structures locked behind a 'Structure Unlock' item (structure_unlock option). Others are
@@ -212,22 +225,67 @@ class RuleHelper:
         self.active_structures = world._get_active_structures()
         # Options resolved once, up front, so rule nodes never carry option logic.
         self.villager_trust = bool(world.options.villager_trust.value)
+        # Knowledge gates active this seed (knowledge_gates option), as BARE names — the form K_* and
+        # TOOL_LOCKS use. self.knowledge() drops the requirement for anything not in here.
+        self.active_knowledges = world._active_knowledges()
         # Mobs locked behind an 'Entity Unlock' item (mob_spawn_lock option), resolved to concrete
         # mob names (categories/All/individual names all collapse to this set).
         self.locked_mobs = world._get_locked_mobs()
         # Biome Finder enabled (start or in_pool); disabled == 0. Biome-specific advancements require
         # it when on, since that's how you locate the biome.
         self.biome_finder_enabled = bool(world.options.biome_finder.value)
+        # Structure Finder enabled (start or in_pool). Read by structure_located: with the option
+        # off there is no such item, so the requirement vanishes rather than blocking everything.
+        self.structure_finder_enabled = (world.options.structure_finder.value
+                                         != world.options.structure_finder.option_disabled)
         # BACAP advancement rewards, modeled as event items: base item -> active location names that
         # grant it (empty unless bacap_rewards is on). acquire() sources a rewarded item via
         # has(REWARD_EVENT_PREFIX + base); the event location carrying the reached() OR is created in
         # create_regions / build_location_rules. See reward_events for the cycle rationale.
         self.reward_events = reward_events(world)
+        # -- glitch partition ------------------------------------------------
+        # Two graphs come out of this compiler. STRICT (glitch=False) is what Archipelago fills
+        # against: it drops any alternate route that leans on luck or on content the seed doesn't
+        # treat as progression, which is what forces Pickaxe Handling / Material Handling into the
+        # early spheres instead of letting a lucky chest stand in for them. GLITCH (glitch=True)
+        # keeps those routes, and is shipped in slot_data purely so the mod can paint a tile yellow
+        # (LogicState.GLITCHABLE) rather than red. Fill never sees the glitch graph.
+        self.glitch = bool(glitch)
+        # The dimension the player wakes up in — a route that never leaves it is the cheapest thing
+        # this seed has, whatever else the rules demand (see _demote).
+        self.start_region = (REGION_NETHER
+                             if world.options.start_dimension.current_key == "nether"
+                             else REGION_OVERWORLD)
+        # Structures / mobs whose unlock item is FULL progression this seed. Everything else is
+        # skip_balancing (or has no unlock item at all when the lock option is off), i.e. content the
+        # seed doesn't consider load-bearing — so a route through it is a glitch candidate.
+        self.progression_structures = {
+            name for name in self.active_structures
+            if world._structure_classification(name) == ItemClassification.progression
+        }
+        self.progression_mobs = {
+            name for name in MOBS_ALL
+            if world._mob_classification(name) == ItemClassification.progression
+        }
+        # item_gate_behavior, route -> is it gated. Strict logic ignores this and assumes every route
+        # gated (the defaults), which is the safe direction: a route the seed opened makes the GAME
+        # more permissive than logic, never less, so fill can't deadlock on it. The glitch graph does
+        # honour it, so a tile the player can genuinely reach — a chest they may now open ungated —
+        # reads yellow instead of a flat lie in red.
+        self.gate_routes = world._item_gate_routes()
+        # Locations this seed actually created. reached() consults it: a rule may only name a
+        # location AP knows about, or state.can_reach_location raises KeyError mid-fill.
+        self.active_locations = set(world._get_active_locations())
         # Memo for acquire(): the acquisition table + options are fixed for this helper, so
         # acquire(base, stack) is pure. Datapack-scale compilation calls it millions of times for the
         # same (base, stack) pairs (planks/sticks/ingots recur in every recipe); caching collapses
         # that. Returned nodes are shared read-only across rules, which is safe (eval + to_dict only).
-        self._acquire_cache: dict[tuple[str, frozenset], object] = {}
+        self._acquire_cache: dict[tuple[str, frozenset, frozenset], object] = {}
+        # Structures whose "how do you find one" gate is being computed right now (see structure()).
+        # It is part of the acquire() cache key because it changes the answer: while resolving the
+        # stronghold's gate, ender pearls must not be sourced from a stronghold chest, and that
+        # narrower result must not be cached over the ordinary one.
+        self._finding_stack: frozenset = frozenset()
         # Thunks (deferred so cross-referencing mobs don't recurse at construction).
         self.structure_bound_mobs = {
             # Overworld — structure-locked
@@ -331,6 +389,22 @@ class RuleHelper:
                 self.can_get_iron(include_iron_golem=False),
                 self.can_get_carved_pumpkin(),
             ),
+            # The Wither is built like a golem — 4 soul sand + 3 wither skeleton skulls — and both
+            # halves are Nether-only, the skulls specifically a Nether fortress drop. It was missing
+            # here, so summon() fell through to entity(); entities.json lists the Wither's region as
+            # Overworld (it is built wherever you stand) and it has no structure/parent/biome gate,
+            # which left "Withering Heights" as a bare Overworld check — green on a fresh world.
+            E_WITHER      : lambda: self.all_of(
+                self.acquire("minecraft:wither_skeleton_skull"),
+                self.acquire("minecraft:soul_sand"),
+            ),
+            # Respawning the dragon ("The End... Again...") means placing four End Crystals on the
+            # exit portal — which only exists once the first dragon is dead. summon() had no recipe
+            # for it and fell through to entity(), i.e. "be in the End".
+            E_ENDER_DRAGON: lambda: self.all_of(
+                self.outer_end(),
+                self.acquire("minecraft:end_crystal"),
+            ),
         }
         # How entity() *reaches* each constructed mob: the build recipe, plus any natural spawn. Snow
         # and Copper Golems never spawn naturally; an Iron Golem also spawns in villages, so for the
@@ -342,6 +416,26 @@ class RuleHelper:
                 self.any_village(),                   # natural village spawn
                 self.summon_recipes[E_IRON_GOLEM](),  # or built
             ),
+            # No natural spawn at all: if you did not build it, there is no Wither to meet.
+            E_WITHER      : self.summon_recipes[E_WITHER],
+        }
+        # A PREREQUISITE on top of locating one: something that must have happened before the
+        # structure is reachable at all. Thunks, deferred like the mob maps so the acquire()
+        # recursion happens at rule-build time rather than during construction.
+        self.structure_prerequisites = {
+            # An End City is on the outer islands, and the only way out there is an End gateway —
+            # which does not exist until the dragon is dead. Reaching the End was the whole gate, so
+            # the City, the elytra, the dragon head and the shulker were all free the moment you
+            # stepped through the portal.
+            S_END_CITY: lambda: self.outer_end(),
+        }
+        # A structure-specific way to LOCATE one, dependable enough that strict logic accepts it
+        # instead of the Finder. The stronghold's is the game's own answer: throw an Eye of Ender
+        # and follow where it goes. (The eyes are ALSO needed for the portal, but that is a separate
+        # requirement on the Overworld→End edge — being able to find the building is not the same as
+        # being able to open the gate in it.)
+        self.structure_locate_routes = {
+            S_STRONGHOLD: lambda: self.acquire("minecraft:ender_eye"),
         }
         # Mobs whose only natural spawn is a specific, searchable biome — gated on the Biome Finder
         # (when enabled), since that's how you locate the biome. The Dried Ghast (→ Happy Ghast) can
@@ -388,13 +482,48 @@ class RuleHelper:
         # unlock item — but the dimension gate still applies, so e.g. the Nether ruined portal is
         # not reachable from the Overworld just because its unlock item was received.
         region = self.access_region(STRUCTURES[struct_gid].region)
+        # A prerequisite and/or a structure-specific locate route can both recurse through acquire(),
+        # so they run under the finding guard; everything else needs no guard and must not pay the
+        # acquire-cache cost of one.
+        prereq_thunk = self.structure_prerequisites.get(struct_gid)
+        guarded = prereq_thunk is not None or struct_gid in self.structure_locate_routes
+        if guarded and struct_gid in self._finding_stack:
+            # Reached while working out how to FIND this very structure: its own loot cannot be what
+            # leads you to it. A stronghold chest holds Ender Pearls, so acquire("ender_eye") walks
+            # straight back here — cut the path (the Enderman drop is the route that survives).
+            return Const(False)
+        outer = self._finding_stack
+        if guarded:
+            self._finding_stack = outer | {struct_gid}
+        try:
+            prereq = prereq_thunk() if prereq_thunk is not None else Const(True)
+            located = self.structure_located(struct_gid)
+        finally:
+            self._finding_stack = outer
         if struct_gid in self.locked_structures:
-            return self.all_of(self.has(f"{STRUCT_UNLOCK_PREFIX}{STRUCTURES[struct_gid].label}"), region)
-        return region
+            return self.all_of(self.has(f"{STRUCT_UNLOCK_PREFIX}{STRUCTURES[struct_gid].label}"),
+                               region, prereq, located)
+        return self.all_of(region, prereq, located)
 
     def any_village(self):
         return self.any_of(*[self.structure(gid) for gid in
                              (S_VILLAGE_DESERT, S_VILLAGE_PLAINS, S_VILLAGE_SAVANNA, S_VILLAGE_SNOWY, S_VILLAGE_TAIGA)])
+
+    def can_win_raid(self):
+        """Win a raid, which is what makes villagers throw profession gifts.
+
+        Stated as the two things the game actually asks for — a pillager to take Bad Omen from, and a
+        village to carry it into — NOT as reaching 'Advancement: Hero of the Village'. The advancement
+        is only the game's acknowledgement that you did this; it is not a prerequisite, and whether it
+        exists as a location at all depends on challenge_sanity (it is challenge-framed). Naming it
+        made three gift routes vanish, or worse crash the fill with a KeyError, on every seed that left
+        challenge_sanity off — see reached().
+
+        This is the condition ``_gameplay_table`` already used for the fifteen ``*_gift`` loot tables;
+        the three hand-written gift routes now share it instead of expressing the same idea a second,
+        more fragile way.
+        """
+        return self.all_of(self.entity(E_PILLAGER), self.any_village())
 
     def any_portal(self, nether_allowed: bool = False):
         portals = [
@@ -418,6 +547,24 @@ class RuleHelper:
         return ReachRegion(self.player, region_name)
 
     def reached(self, location: str):
+        """Reaching another location. Resolves to Const(False) when this seed never created it.
+
+        Options decide which advancements become checks — challenge_sanity drops every challenge-frame
+        one, kill_sanity the mob kills, an inactive pack its whole tab — but a curated rule names its
+        source unconditionally. 'Hero of the Village' is the live example: it is challenge-framed, so
+        the default seed has no such location, while three villager-gift routes (fletcher, cleric,
+        fisherman) still ask for it. AP's can_reach_location looks the name up in a dict and raises
+        KeyError, which surfaced as an intermittent generation crash: the enclosing any_of short-
+        circuits, so whether fill ever evaluates that branch depends on the seed.
+
+        False, not "keep it", because the location genuinely isn't part of this seed's graph. The
+        advancement is still completable in game, so this UNDER-approximates: a route the player could
+        take is one logic won't count on. That is the safe direction — a route logic ignores can only
+        make fill more conservative, never deadlock it — and matches how the exporter and set_rules
+        already skip locations the seed didn't create.
+        """
+        if location not in self.active_locations:
+            return Const(False)
         return ReachLocation(self.player, location)
 
     # -----------------------------------------------------------------------
@@ -477,7 +624,7 @@ class RuleHelper:
             self.reached(f"{ADVANCEMENT_PREFIX}{A_TRIAL_EDITION}"),  # Entrance/Supply/Common chest | Also tipped arrow
             self.any_village(),  # Fletcher chest
             self.can_trade_villager(),  # Fletcher trade
-            self.reached(f"{ADVANCEMENT_PREFIX}{A_HERO_OF_THE_VILLAGE}"),  # Fletcher gift
+            self.can_win_raid(),  # Fletcher gift
             self.can_barter(),  # Spectral Arrow
         )
 
@@ -534,7 +681,7 @@ class RuleHelper:
                 self.any_village(),  # temple chest
                 self.structure(S_MANSION),  # chest
                 self.entity(E_WITCH),  # Witch drop
-                self.reached(f"{ADVANCEMENT_PREFIX}{A_HERO_OF_THE_VILLAGE}"),  # Cleric gift
+                self.can_win_raid(),  # Cleric gift
                 self.can_trade_villager(1),  # Cleric novice trade (cleric/1/emerald_redstone)
             ),
         )
@@ -748,6 +895,52 @@ class RuleHelper:
             if data.category != MCEntityCategory.BOSS
         ])
 
+    def outer_end(self):
+        """Being able to get to the End's OUTER islands — i.e. having beaten the Ender Dragon.
+
+        The End is really two places. The central island is what the portal drops you on: the
+        dragon, the exit portal, nothing else. Everything people mean by "the End" — End Cities,
+        elytra, shulkers, chorus fruit, the dragon egg, a second dragon — is on the outer islands,
+        and the only route there is an End gateway, which spawns when the dragon dies. Modeled as
+        the CAPABILITY to kill it (can_defeat) rather than a reference to the kill location, so it
+        is well defined whatever the goal is and adds no loc() node to the graph."""
+        return self.can_defeat(E_ENDER_DRAGON)
+
+    # Structure Finder tier strict logic will count on. A copy reveals the nearest 5, then 10, then
+    # HALF of everything findable, then three quarters, then all (StructureFinderService.cap). The
+    # first two are distance-ordered, so whether the structure you want is on the bar is down to
+    # your world; from half upward it is dependable. Mirrors MAX_TIER on the mod side.
+    _FINDER_TIER_DEPENDABLE = 3
+
+    def structure_located(self, struct_gid: str):
+        """How you FIND this structure — the Finder is the route strict logic counts on.
+
+        Wandering until you stumble on a mansion is a real way to play and a terrible thing for a
+        randomizer to require, so it is an alternate: kept in the glitch graph, dropped from strict.
+        One or two Finder copies sit on the same footing — they show the nearest few structures by
+        distance, which may or may not include the one you need. From tier 3 (half of everything
+        findable) up it is a promise, so that is what strict asks for.
+
+        Two structures do not follow that shape:
+
+        * A stronghold has NO surface trace, so wandering is not a route at all, not even an
+          unreliable one — which is why it gets no free glitch pass. What it gets instead is
+          structure_locate_routes: Eyes of Ender find one every time, so that is strict.
+        * With the Finder option off no such item exists this seed, and for anything you CAN stumble
+          on the requirement vanishes entirely (as needs_biome_finder does for biomes). A stronghold
+          still needs its eyes.
+        """
+        routes = []
+        special = self.structure_locate_routes.get(struct_gid)
+        if special is not None:
+            routes.append(special())
+        if self.structure_finder_enabled:
+            routes.append(self.has(ITEM_STRUCTURE_FINDER, self._FINDER_TIER_DEPENDABLE))
+        explorable = struct_gid not in _NO_SURFACE_TRACE
+        if explorable and (self.glitch or not self.structure_finder_enabled):
+            routes.append(Const(True))  # you can just go looking
+        return self.any_of(*routes) if routes else Const(False)
+
     def needs_biome_finder(self):
         # Advancements that require finding a specific biome depend on the Biome Finder when it is
         # enabled; with it disabled no such item exists, so the requirement vanishes.
@@ -774,7 +967,7 @@ class RuleHelper:
             self.knowledge(K_FISHING),                              # rod
             self.has_any_entities(E_GUARDIAN, E_ELDER_GUARDIAN, E_DOLPHIN, E_POLAR_BEAR),  # mob drops
             self.any_village(),                                     # village chest
-            self.reached(f"{ADVANCEMENT_PREFIX}{A_HERO_OF_THE_VILLAGE}"),  # Fisherman gift
+            self.can_win_raid(),  # Fisherman gift
         )
 
     def can_get_all_fish(self):
@@ -1043,7 +1236,11 @@ class RuleHelper:
     # AP Items
     # -----------------------------------------------------------------------
     def material(self, tier: int):
-        node = Has(self.player, ITEM_MATERIAL_HANDLING, tier)
+        # The tier count enforces the PICKUP lock (MaterialLockService): with that route opened the
+        # material can simply be taken, so the permissive graph drops the count and keeps only the
+        # dimension floor below — the ore still lives where it lives.
+        node = Const(True) if self.route_open("pickup") else Has(
+            self.player, ITEM_MATERIAL_HANDLING, tier)
         # A material tier carries the dimension its ore lives in, so a requirement gates on reaching
         # that dimension — not just the item count (single source of truth: every caller, curated or
         # compiled, inherits the floor). Copper/iron/diamond are Overworld-only ores; netherite is the
@@ -1060,7 +1257,12 @@ class RuleHelper:
         return node
 
     def knowledge(self, item: str):
-        return Has(self.player, f"Knowledge: {item}")
+        # A gate the seed switched off (knowledge_gates) has no item in the pool, so requiring it would
+        # be unsatisfiable — and the thing it guards is free from the start. Const(True) folds away in
+        # and_/or_, so those rules come out as if the gate had never been written.
+        if item not in self.active_knowledges:
+            return Const(True)
+        return Has(self.player, f"{KNOWLEDGE_PREFIX}{item}")
 
     # -----------------------------------------------------------------------
     # Item acquisition (used by the trigger compiler to resolve item criteria)
@@ -1090,7 +1292,7 @@ class RuleHelper:
             return self.material(tier) if tier is not None else None
         # Memoize on (base, stack): the result is pure for this helper, so the same item is computed
         # once and shared. Datapack compilation calls acquire ~9M times for far fewer distinct keys.
-        key = (base, _stack)
+        key = (base, _stack, self._finding_stack)
         cache = self._acquire_cache
         if key in cache:
             return cache[key]
@@ -1127,6 +1329,22 @@ class RuleHelper:
         if base == "dragon_head":
             return self.structure(S_END_CITY)
 
+        # The dragon egg appears on the exit portal only once the dragon has been killed, and it
+        # drops itself when mined — so the self-mine heuristic read it as a naturally occurring End
+        # block and "The Next Generation" needed nothing but standing in the End.
+        if base == "dragon_egg":
+            return self.outer_end()
+
+        # A sniffer egg is brushed out of the suspicious sand in a warm ocean ruin. Its table lists
+        # that structure, but at 6.7% it demotes to a glitch route, leaving strict logic with only
+        # `mining: [sniffer_egg]` — and the self-mine heuristic reads that as a naturally occurring
+        # block because the egg has no recipe. It has no recipe because it isn't crafted; the block
+        # never generates, you place one you already brushed. So the self-mine is as circular as a
+        # crafted block's, and taking it at face value made "Smells Interesting" (and the sniffer
+        # behind it) free in the Overworld. Model the real route: a brush, and the ruin to use it in.
+        if base == "sniffer_egg":
+            return self.all_of(self.has_brush(), self.structure(S_OCEAN_RUIN_WARM))
+
         # Tools / armor / gated craftables (bow, fishing rod, shears, …) need their Knowledge to be
         # USED however they were obtained — but they are still obtained via their real sources, each
         # carrying its own region. So gate on the Knowledge AND the obtainability (recipe ingredients,
@@ -1142,6 +1360,17 @@ class RuleHelper:
             # `obtain` (inside the Knowledge gate), not the whole node.
             return self.all_of(self.knowledge(knowledge_name), self._with_reward(base, obtain))
 
+        # A gated station/container block is the same shape as a tool: its Knowledge blocks crafting and
+        # picking it up (tool_locks), so obtaining the BLOCK ITEM needs the Knowledge on top of its
+        # ordinary sources. Its own recipe is additionally gated on the station that makes it, which
+        # _recipe_node already applies.
+        block_knowledge = BLOCK_KNOWLEDGE.get(f"minecraft:{base}")
+        if block_knowledge is not None:
+            sources = self._acquire_from_sources(base, _stack)
+            if sources is not None:
+                return self.all_of(self.knowledge(block_knowledge),
+                                   self._with_reward(base, self._coarsen(sources)))
+
         sources = self._acquire_from_sources(base, _stack)
         result = self._coarsen(sources if sources is not None else self._acquire_fallback(base))
         # Universal Material Handling pickup lock: obtaining a tier-gated raw material by ANY in-world
@@ -1152,7 +1381,10 @@ class RuleHelper:
         # reachable via a bare chest/region path (e.g. diamond looted from a structure). Gate the whole
         # obtain-it node on the tier count — no region floor, since each source carries its own region.
         tier = _MATERIAL_TIER_BY_ITEM.get(base)
-        if tier is not None and result is not None:
+        # route_open("pickup"): with the pickup route opened the material can just be taken, so the
+        # permissive graph drops the count here too — this is the second place the lock is applied
+        # (self.material is the other), and missing it would leave the relaxation half-done.
+        if tier is not None and result is not None and not self.route_open("pickup"):
             result = self.all_of(self.has(ITEM_MATERIAL_HANDLING, tier), result)
         # The BACAP reward grants the item via a /give, which adds straight to the inventory and so
         # bypasses both pickup mixins — a real, lock-free way to get it — so it joins OUTSIDE the
@@ -1160,15 +1392,22 @@ class RuleHelper:
         return self._with_reward(base, result)
 
     def _with_reward(self, base: str, node):
-        """OR a BACAP advancement reward (its event item) into an item's obtainability, when
-        bacap_rewards is on. ADDITIVE only — it never replaces the item's real sources or fallback,
-        so e.g. powder_snow_bucket keeps its bucket path (and the advancement that grants it stays
-        reachable instead of deadlocking on its own circular reward). Cycle-free: the event is a
-        has() leaf resolved by AP's event sweep, not a recursive reached(). reward_events is empty
-        unless the option is on, so this is a no-op otherwise."""
-        if base not in self.reward_events:
+        """OR a BACAP advancement reward into an item's obtainability — GLITCH GRAPH ONLY.
+
+        A reward is an alternate route that depends on finishing other advancements, so strict logic
+        ignores it: fill must not hand you a tool through a reward and call Pickaxe Handling
+        satisfied. That also means the cycle this used to have to dodge (``acquire -> reached -> rule
+        -> acquire``) can't arise, because the graph carrying rewards is never filled against.
+
+        Which is why the glitch graph states it as ``loc(<granting advancement>)`` rather than the
+        internal reward EVENT item: the mod resolves ``has()`` against items the slot actually
+        received, and an event item never is one, so a ``has`` form would evaluate false in the
+        tracker forever. ``loc`` is a node the mod's evaluator resolves by its own fixed point
+        (RuleNode/LogicEvaluation), cycles and all. reward_events is empty unless bacap_rewards is
+        on, so this is a no-op otherwise."""
+        if not self.glitch or base not in self.reward_events:
             return node
-        reward = self.has(f"{REWARD_EVENT_PREFIX}{base}")
+        reward = self.any_of(*[self.reached(name) for name in self.reward_events[base]])
         return reward if node is None else self.any_of(node, reward)
 
     def _acquire_from_sources(self, base: str, _stack: frozenset):
@@ -1179,18 +1418,31 @@ class RuleHelper:
         if record is None:
             return None
         inner = _stack | {base}
-        options = []
-        for recipe in record.get("recipes", ()):
-            node = self._recipe_node(recipe, inner)
+        chances = record.get("chances", {})
+        # Sources split in two: dependable ones, and alternates that lean on luck or on non-progression
+        # content. _demote decides which of the second list actually goes (see there — a sole source,
+        # or one closer to home than anything dependable, is kept whatever its odds).
+        options: list = []
+        loose: list = []
+
+        def add(node, glitchy: bool = False):
             if node is not None:
-                options.append(node)
+                (loose if glitchy else options).append(node)
+
+        def unreliable(kind: str, name: str) -> bool:
+            return chances.get(f"{kind}/{name}", 1.0) < self._GLITCH_CHANCE
+
+        for recipe in record.get("recipes", ()):
+            # A recipe is deterministic; whether its INGREDIENTS are is decided in their own acquire.
+            add(self._recipe_node(recipe, inner))
         for mob_file in record.get("drops", ()):
             name = _entity_by_gid().get(f"minecraft:{mob_file}")
             if name in MOBS_ALL:
                 # A drop needs the mob *defeated*, not merely reached: harmless for ordinary mobs
                 # (can_defeat == reachability) but correct for boss drops like the Wither's nether
                 # star, which must gate on the whole boss fight rather than just entering its arena.
-                options.append(self.can_defeat(name))
+                add(self.can_defeat(name),
+                    unreliable("drops", mob_file) or name not in self.progression_mobs)
         mining_blocks = record.get("mining", ())
         # Data-driven: when the item has a tier-gated ORE source, a same-item block carrying no tier
         # info is a circular placed form (e.g. ``redstone_wire`` beside ``redstone_ore`` [iron]) whose
@@ -1216,25 +1468,70 @@ class RuleHelper:
                 # structure's dimension) collapse in _unique_or / _coarsen.
                 for struct_name in _block_structures().get(base, ()):
                     if struct_name in self.active_structures:
-                        options.append(self.structure(struct_name))
+                        add(self.structure(struct_name),
+                            struct_name not in self.progression_structures)
                 continue
-            options.append(self._mining_node(block, base))
+            add(self._mining_node(block, base), unreliable("mining", block))
         for block in record.get("silk_mining", ()):
             # The block yields itself only to a Silk-Touch tool (bee_nest, ice, coral, …): same
             # region/tier as a normal mine PLUS the capability to silk-touch (enchant). Always behind
             # the silk gate, so it is never a free path even when the block is placed-only.
-            options.append(self._mining_node(block, base, silk=True))
-        if record.get("trades"):
-            options.append(self.can_trade_villager())
+            add(self._mining_node(block, base, silk=True), unreliable("silk_mining", block))
+        trades = record.get("trades", ())
+        professions = {entry[0] for entry in trades if entry}
+        if professions - {"wandering_trader"}:
+            # A profession villager stays strict: which offers it rolls is luck, but you can keep
+            # rerolling a villager you built a village around, and can_trade_villager already carries
+            # that cost. Revisit on measured offer weights rather than a guess.
+            add(self.can_trade_villager())
+        if "wandering_trader" in professions:
+            # The Wandering Trader is glitch: it has to spawn near you AND roll the offer you want,
+            # and you can't make either happen — the definition of a route AP shouldn't plan around.
+            add(self.can_trade_wandering_trader(), True)
         for structure_name in record.get("structures", ()):
             if structure_name in STRUCTURES:
-                options.append(self.structure(structure_name))
+                # Structure loot lives in containers, so reaching the structure isn't enough when the
+                # Chest gate is on — you also have to be able to open one. Chest stands in for the whole
+                # family here: a few tables put their loot in barrels or pots instead, and demanding the
+                # chest Knowledge for those is stricter than reality rather than looser, which is the
+                # safe direction for logic. Folds away entirely when the gate is off.
+                add(self.all_of(self.structure(structure_name), self._loot_container_node()),
+                    unreliable("structures", structure_name)
+                    or structure_name not in self.progression_structures)
         for table in record.get("gameplay", ()):
-            node = self._gameplay_node(table, inner)
-            if node is not None:
-                options.append(node)
-        options = [o for o in options if o is not None]  # mining/silk paths may yield None on a cycle
+            add(self._gameplay_node(table, inner), unreliable("gameplay", table))
+        options = self._demote(options, loose)
         return self._unique_or(options) if options else None
+
+    def _demote(self, strict: list, loose: list) -> list:
+        """The sources that survive into THIS graph, given the dependable ones and the flimsy ones.
+
+        In glitch mode everything survives — that graph exists to be permissive. In strict mode a
+        flimsy source is dropped, but only when the item is still obtainable without it:
+
+        * **Nothing dependable left** → keep the lot. A 2.5%-only skull is still the way you get a
+          skull, and dropping an item's last source makes it unreachable and the seed unfillable.
+        * **Nothing dependable that stays home** → keep the flimsy routes that do. On a Nether start
+          the surviving diamond route is Overworld mining, behind Dimension Unlock: Overworld, while
+          a bastion sits in the start region: demoting it would make strict logic harder than the
+          game and paint an ordinary route yellow.
+
+        Otherwise the flimsy source goes, and the dependable one carries the item — which is what
+        pushes Pickaxe Handling and Material Handling into the early spheres.
+        """
+        if self.glitch or not loose:
+            return strict + loose
+        if not strict:
+            return loose
+        if any(self._stays_home(node) for node in strict):
+            return strict
+        return strict + [node for node in loose if self._stays_home(node)]
+
+    def _stays_home(self, node) -> bool:
+        """True when a source never leaves the dimension the player starts in — no region leaf at
+        all (free anywhere) or only the start region."""
+        _gated, regions = node.gate_summary()
+        return not regions or regions <= {self.start_region}
 
     def _coarsen(self, node):
         """Bound the serialized tree: a recipe-combinatorial item (dyes, beds, stews) past
@@ -1274,14 +1571,59 @@ class RuleHelper:
         return or_(*keep)
 
     def _recipe_node(self, recipe: dict, stack: frozenset):
-        """A recipe is satisfied when every distinct ingredient is obtainable (AND)."""
+        """A recipe is satisfied when every distinct ingredient is obtainable (AND), and the station it
+        runs on is usable."""
         parts = []
+        station = self._station_node(recipe.get("station"))
+        if station is not None:
+            parts.append(station)
         for ingredient in recipe.get("ingredients", ()):
             node = self._ingredient_node(ingredient, stack)
             if node is None:
                 return None  # an unobtainable ingredient disqualifies the whole recipe
             parts.append(node)
         return and_(*parts) if parts else None
+
+    def route_open(self, route: str) -> bool:
+        """True when this graph should ignore ``route``'s gate: the seed turned the route off in
+        item_gate_behavior AND we are building the permissive graph. Strict logic always says False —
+        see gate_routes for why keeping the gate there is the safe direction."""
+        return self.glitch and not self.gate_routes.get(route, True)
+
+    def _loot_container_node(self):
+        """The Knowledge needed to open structure loot (the chest gate), or a free node when it's off.
+
+        Also free when the seed opened the ``container`` route, since then no Knowledge stands between
+        the player and a structure chest at all."""
+        if self.route_open("container"):
+            return Const(True)
+        return self.knowledge(BLOCK_KNOWLEDGE.get("minecraft:chest", ""))
+
+    def _station_node(self, station: str | None):
+        """The Knowledge a recipe's station demands, or None when nothing gates it.
+
+        ``station`` is the recipe type the pack dumped (``smelting``, ``stonecutting``,
+        ``crafting_shaped``, …); RECIPE_STATION_KNOWLEDGE maps it to the block(s) that run it, ORed
+        because either a Crafting Table or a Crafter does crafting. Gates the seed switched off fold
+        away in self.knowledge, so this costs nothing when they are.
+
+        Every ``crafting_*`` type is treated as needing the crafting station. That is deliberately
+        strict: the acquisition dump doesn't record a shaped recipe's grid size, so a 2x2 recipe you
+        could do in your own inventory is indistinguishable from a 3x3 one. Over-requiring only makes
+        logic more conservative, while under-requiring would hand out seeds that can't be finished.
+        """
+        if not station:
+            return None
+        key = "crafting" if station.startswith("crafting") else station
+        # item_gate_behavior splits the GUI gates: hand-crafting is the `crafting` route, everything
+        # that runs on a placed block (smelting, stonecutting, smithing …) is `station`. With the
+        # seed's route open the permissive graph asks for no Knowledge at all.
+        if self.route_open("crafting" if key == "crafting" else "station"):
+            return None
+        names = RECIPE_STATION_KNOWLEDGE.get(key)
+        if not names:
+            return None
+        return self.any_of(*(self.knowledge(name) for name in names))
 
     def _ingredient_node(self, ingredient: dict, stack: frozenset):
         if "any_of" in ingredient:
@@ -1352,7 +1694,7 @@ class RuleHelper:
         if mob is not None:
             return self.entity(mob)
         if table in _GAMEPLAY_VILLAGER_GIFTS:
-            return self.all_of(self.entity(E_PILLAGER), self.any_village())  # Hero of the Village
+            return self.can_win_raid()  # villagers throw gifts after a won raid
         harvest = _GAMEPLAY_HARVEST.get(table)
         if harvest is not None:
             region, needs_shears = harvest

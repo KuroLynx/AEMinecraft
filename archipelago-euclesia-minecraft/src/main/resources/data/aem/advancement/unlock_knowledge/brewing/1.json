@@ -1,5 +1,5 @@
 {
-  "parent": "aem:category/knowledge",
+  "parent": "aem:unlock_knowledge/armor_handling/1",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

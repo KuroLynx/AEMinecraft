@@ -2,7 +2,7 @@ package fr.euclesia.mcarchipelago.client.mixin;
 
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.client.connect.WorldLoadResume;
-import fr.euclesia.mcarchipelago.client.dump.HeadlessEntitiesDump;
+import fr.euclesia.mcarchipelago.client.dump.HeadlessWorldDump;
 import fr.euclesia.mcarchipelago.client.gui.ArchipelagoConnectingScreen;
 import fr.euclesia.mcarchipelago.server.connect.APWorldConnection;
 import net.minecraft.client.Minecraft;
@@ -54,7 +54,7 @@ public abstract class MinecraftWorldLoadMixin {
 
         // The headless entities dump spins up a throwaway, deliberately non-Archipelago world; it must
         // load without a slot, so exempt it before the credential gate below.
-        if (HeadlessEntitiesDump.isDumpWorld(storageAccess.getLevelId())) {
+        if (HeadlessWorldDump.isDumpWorld(storageAccess.getLevelId())) {
             return;
         }
 

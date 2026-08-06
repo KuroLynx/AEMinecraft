@@ -9,7 +9,7 @@ from .logic.ast import Const
 from .logic.constants import *
 from .logic.root import set_rules
 from .logic_export import build_logic_export
-from .options import MCOptions, StartDimension, StructureFinder
+from .options import ItemGateBehavior, MCOptions, StartDimension, StructureFinder
 from .regions import MCRegion
 from .trackers import build_trackers_export
 
@@ -116,7 +116,12 @@ class MCWorld(World):
 
         if name in ITEMS:
             item_data: MCItemData = ITEMS[name]
-            return MCItem(name, item_data.classification, item_data.id, self.player)
+            classification = item_data.classification
+            if name in KNOWLEDGE_ITEMS:
+                classification = self._knowledge_classification(name)
+            elif name == ITEM_STRUCTURE_FINDER:
+                classification = self._finder_classification()
+            return MCItem(name, classification, item_data.id, self.player)
 
         # Every Entity Unlock that enters the pool gates at least its own Kill Entity location, so it
         # must stay progression-flavoured. AP's CollectionState only collects progression items, so a
@@ -214,6 +219,43 @@ class MCWorld(World):
             elif entry in MOBS_ALL:  # the option also lists individual mob names
                 locked.add(entry)
         return locked
+
+    def _active_knowledges(self) -> set[str]:
+        """Knowledge gates switched on this seed, per the knowledge_gates option.
+
+        The option accepts category presets ("tool"/"armor"/"misc"/"station"/"container"), "All", and/or
+        individual knowledge names, any of them negated with a leading "-"; this resolves them to
+        concrete BARE names (KNOWLEDGES keys) — the knowledge-side mirror of _get_locked_mobs. A gate
+        that is off has no item in the pool, emits no lock in slot_data, and is dropped from the rules
+        (see RuleHelper.knowledge).
+
+        Negation is resolved in one pass at the end rather than in list order: a YAML list reads as a
+        set, so "All" then "-Chest" and "-Chest" then "All" both mean everything but the chest.
+        """
+        # Memoized: the option can't change once generation starts, and the lock maps in
+        # fill_slot_data ask per row (one call per tool/station, ~80 a seed).
+        cached = getattr(self, "_active_knowledge_cache", None)
+        if cached is not None:
+            return cached
+
+        selected = self.options.knowledge_gates.value
+        active = self._resolve_knowledges({entry for entry in selected if not entry.startswith("-")})
+        active -= self._resolve_knowledges({entry[1:] for entry in selected if entry.startswith("-")})
+        self._active_knowledge_cache = active
+        return active
+
+    @staticmethod
+    def _resolve_knowledges(entries: set[str]) -> set[str]:
+        """Expand knowledge_gates entries ("All", a category preset, a name) to bare knowledge names."""
+        names: set[str] = set()
+        for entry in entries:
+            if entry == "All":
+                names |= set(KNOWLEDGES)
+            elif entry in KNOWLEDGES_BY_CATEGORY:
+                names |= set(KNOWLEDGES_BY_CATEGORY[entry])
+            elif entry in KNOWLEDGES:  # the option also lists individual knowledge names
+                names.add(entry)
+        return names
 
     def _get_active_locations(self) -> dict[str, MCLocationData]:
         """Retourne les locations actives selon les options du joueur."""
@@ -313,11 +355,19 @@ class MCWorld(World):
             ))
 
         # The End is always entered from the Overworld — emitted last (see ordering note above).
+        # Three things, and it is worth being precise about which is which. You need the unlock item;
+        # you need to be in a stronghold, because that is where the portal is (stated as the
+        # structure rather than via `Advancement: Eye Spy`, which is only the advancement that fires
+        # when you walk in — same condition, one less location reference in an entrance rule); and
+        # you need Eyes of Ender, which go in the PORTAL FRAME. The eyes were previously attached to
+        # finding the stronghold, which is wrong in both directions: a stronghold can be dug into
+        # once the Finder points at it, and no amount of standing in one opens the portal.
         edges.append((
             MCRegion.OVERWORLD, MCRegion.THE_END,
             helper.all_of(
                 helper.has(ITEM_DIMENSION_END),
-                helper.reached(f"{ADVANCEMENT_PREFIX}{A_EYE_SPY}"),
+                helper.structure(S_STRONGHOLD),
+                helper.acquire("minecraft:ender_eye"),
             ),
         ))
 
@@ -360,11 +410,17 @@ class MCWorld(World):
             ITEM_BIOME_FINDER: self.options.biome_finder,
         }
 
+        # Knowledge items exist only for the gates this seed switched on (knowledge_gates); the rest are
+        # not in the pool at all, and their rules were dropped to match (see RuleHelper.knowledge).
+        active_knowledge_items = {KNOWLEDGES[name].item_name for name in self._active_knowledges()}
+
         # Progression + useful only — fillers and traps are derived later
         for name, item_data in ITEMS.items():
             if item_data.classification in (ItemClassification.filler, ItemClassification.trap):
                 continue
             if not self.options.villager_trust and name == ITEM_VILLAGER_TRUST:
+                continue
+            if name in KNOWLEDGE_ITEMS and name not in active_knowledge_items:
                 continue
             if name == start_dimension_item:
                 continue
@@ -437,6 +493,113 @@ class MCWorld(World):
             return list(MOBS_BOSS.keys())
         return [name for name in MOBS_BOSS.keys() if name in selected]
 
+    # A Knowledge gating fewer than this share of the seed's checks is real logic, but not worth
+    # front-loading. Deliberately a share rather than a count, so it means the same thing on a 104-check
+    # vanilla seed and a 1000-check BACAP one.
+    _KNOWLEDGE_BALANCE_SHARE = 0.05
+    # …but the heaviest gates are always balanced, however small their share works out. A seed with
+    # few gates switched on, or one diluted by a big pack, can leave every Knowledge under the share
+    # and nothing front-loaded at all; this guarantees the ones carrying the most weight still are.
+    _KNOWLEDGE_BALANCE_TOP = 7
+
+    def _goal_knowledges(self) -> set[str]:
+        """Knowledges standing anywhere between the player and a boss the goal requires.
+
+        Volume is the wrong measure for these. A gate can block a single check and still be the thing
+        holding up the whole run, because that check is on the critical path to the Ender Dragon — the
+        same reason _STRUCTURE_BOSS_GATES and _MOB_BOSS_GATES promote a structure or mob unlock that
+        gates a required boss. Balancing has to front-load those whatever their share works out at.
+
+        Walks out from each required boss kill through the rules it depends on, following ``loc``
+        nodes, and collects every Knowledge named on the way. Deliberately an OVER-approximation: a
+        Knowledge appearing in one branch of an OR isn't strictly necessary (another branch may avoid
+        it), but treating a maybe-critical gate as critical only front-loads it, while missing a real
+        one strands the run. Cycle-guarded, since advancement rules reference each other freely.
+        """
+        cached = getattr(self, "_goal_knowledge_cache", None)
+        if cached is not None:
+            return cached
+        rules = getattr(self, "_location_rules", {})
+        found: set[str] = set()
+        seen: set[str] = set()
+        pending = [f"{BOSS_KILL_PREFIX}{boss}" for boss in self.selected_bosses]
+        while pending:
+            name = pending.pop()
+            if name in seen or name not in rules:
+                continue
+            seen.add(name)
+            node = rules[name]
+            serialized = node.canonical_json()
+            found.update(k for k in KNOWLEDGE_ITEMS if f'"{k}"' in serialized)
+            pending.extend(self._referenced_locations(node.to_dict()))
+        self._goal_knowledge_cache = found
+        return found
+
+    @staticmethod
+    def _referenced_locations(node: dict) -> list[str]:
+        """Every location name a serialized rule reaches through a ``loc`` leaf."""
+        if node.get("k") == "loc":
+            return [node["l"]]
+        out: list[str] = []
+        for child in node.get("c", ()):
+            out.extend(MCWorld._referenced_locations(child))
+        return out
+
+    def _finder_classification(self) -> ItemClassification:
+        """The Structure Finder is only filler-ish while nothing depends on it.
+
+        Since RuleHelper.structure_located, the third copy is what strict logic counts on to find
+        ANY structure — villages, fortresses, mansions, trial chambers, the lot. An item that
+        gates that much has to be balanced, or the fill is free to leave the first three copies in
+        the last sphere and the player spends most of the seed staring at a red tab. Only when the
+        copies are in the pool: with `start` they are precollected and with `disabled` there is no
+        item, so the tail classification is left alone. Derived per seed, like the mob/structure
+        unlock rules, rather than pinned in items.csv."""
+        if self.options.structure_finder == StructureFinder.option_in_pool:
+            return ItemClassification.progression
+        return ITEMS[ITEM_STRUCTURE_FINDER].classification
+
+    def _knowledge_classification(self, item_name: str) -> ItemClassification:
+        """Full progression for a Knowledge the seed leans on, progression_skip_balancing for the tail.
+
+        Every Knowledge gates something, so all of them must stay progression-flavoured — AP's
+        CollectionState only collects progression items, and a useful one would be invisible to the
+        solver. What differs is whether progression balancing should fight to move it early. Pickaxe
+        Handling gates half the game and deserves that; Chiseled Bookshelf gates a check or two and
+        just displaces something that matters.
+
+        Derived per seed from the compiled rules rather than curated in knowledges.csv, like
+        _structure_classification and _mob_classification: which gates carry weight depends on the
+        options (knowledge_gates, challenge_sanity, blazeandcave), so a hand-kept column would be wrong
+        for most seeds. Counted on the STRICT rules, which are the ones fill actually plans against.
+        """
+        counts = getattr(self, "_knowledge_gate_counts", None)
+        if counts is None:
+            rules = getattr(self, "_location_rules", {})
+            counts = self._knowledge_gate_counts = {}
+            for rule in rules.values():
+                serialized = rule.canonical_json()
+                for knowledge in KNOWLEDGE_ITEMS:
+                    if f'"{knowledge}"' in serialized:
+                        counts[knowledge] = counts.get(knowledge, 0) + 1
+            self._knowledge_gate_total = len(rules)
+            # Heaviest first, name as tie-break so the ranking is reproducible for a given seed.
+            self._knowledge_gate_rank = [
+                name for name in sorted(KNOWLEDGE_ITEMS, key=lambda n: (-counts.get(n, 0), n))
+            ]
+        # On the critical path to a required boss: front-load it however little else it gates.
+        if item_name in self._goal_knowledges():
+            return ItemClassification.progression
+        threshold = self._knowledge_gate_total * self._KNOWLEDGE_BALANCE_SHARE
+        if counts.get(item_name, 0) >= threshold:
+            return ItemClassification.progression
+        # A gate under the share still counts when it is one of the heaviest this seed has — but never
+        # on the strength of gating nothing at all, which would balance an item that blocks no check.
+        rank = self._knowledge_gate_rank.index(item_name)
+        if rank < self._KNOWLEDGE_BALANCE_TOP and counts.get(item_name, 0) > 0:
+            return ItemClassification.progression
+        return ItemClassification.progression_skip_balancing
+
     def _structure_classification(self, struct_name: str) -> ItemClassification:
         """A Structure Unlock's classification, computed for this seed. It is at least
         progression_skip_balancing (it gates its structure's locations and must be collectable), and
@@ -490,6 +653,27 @@ class MCWorld(World):
     # Slot data (envoyé au mod Fabric)
     # -----------------------------------------------------------------------
 
+    def _item_gate_routes(self) -> dict:
+        """Every item_gate_behavior route as a plain bool (true = the route is gated).
+
+        Emitting all five keys keeps the fallback logic on this side: the mod only has to read them. The
+        'crafting' route predates 'station'/'container' (it used to cover every GUI take), so an explicit
+        'crafting' value carries over to those two when they are omitted — a config written before the
+        split still opens or gates every GUI the way it used to.
+        """
+        chosen = self.options.item_gate_behavior.value
+        crafting = ItemGateBehavior.as_bool(chosen.get("crafting", True))
+        return {
+            route: ItemGateBehavior.as_bool(chosen.get(route, fallback))
+            for route, fallback in (
+                ("crafting", crafting),
+                ("station", crafting),
+                ("container", crafting),
+                ("pickup", True),
+                ("given", False),
+            )
+        }
+
     def fill_slot_data(self) -> dict:
         return {
             # Slot-data schema version; the mod refuses to enter a world it can't read (see
@@ -511,6 +695,13 @@ class MCWorld(World):
             # The mod runs blazeandcave's reward-disable functions on first world load accordingly.
             "blazeandcave"         : bool(self.options.blazeandcave.value),
             "bacap_rewards"        : bool(self.options.bacap_rewards.value),
+
+            # Per-route handling of still-locked items (see ItemGateBehavior / the mod's
+            # MaterialLockService + Give/Slot/ItemEntity mixins). Each route is emitted as a bool (true =
+            # gated) so an omitted YAML key falls back to the historical default here, not in the mod.
+            # The two workstation/storage routes inherit an explicit 'crafting' when they are absent, so a
+            # config written before the GUI routes were split keeps meaning the same thing.
+            "item_gate_behavior"   : self._item_gate_routes(),
 
             # Datapacks/mods this seed REQUIRES to be installed at a matching version. The mod verifies
             # each against the loaded datapacks (pack repository) / Fabric mods on world load and refuses
@@ -573,17 +764,33 @@ class MCWorld(World):
             # --- Tool/armor locks : item MC → {knowledge AP requise, palier de matériau requis} ---
             # Le mod bloque le ramassage/craft tant que le joueur n'a pas reçu la Knowledge ET assez
             # de "Progressive Material Handling" (ex. épée diamant = Sword Handling + 5).
+            # Only the gates this seed switched on are emitted: a knowledge that is off has no item in
+            # the pool, so leaving its lock in would block the item forever.
             "tool_locks"           : {
-                f"minecraft:{path}": {"knowledge": f"Knowledge: {knowledge}", "material": tier}
-                for path, (knowledge, tier) in TOOL_LOCKS.items()
+                # The craft/pickup half of a station/container gate: a gated block can't be made or
+                # picked up either, the same way the enchanting table and brewing stand always worked.
+                # No material tier of their own — the recipe's ingredients carry that. Listed FIRST so
+                # the curated TOOL_LOCKS below win: the two blocks in both (enchanting table, brewing
+                # stand) have a hand-set tier that a blanket 0 would throw away.
+                **{
+                    block: {"knowledge": f"{KNOWLEDGE_PREFIX}{knowledge}", "material": 0}
+                    for block, knowledge in BLOCK_KNOWLEDGE.items()
+                    if knowledge in self._active_knowledges()
+                },
+                **{
+                    f"minecraft:{path}": {"knowledge": f"{KNOWLEDGE_PREFIX}{knowledge}", "material": tier}
+                    for path, (knowledge, tier) in TOOL_LOCKS.items()
+                    if knowledge in self._active_knowledges()
+                },
             },
 
             # --- Station locks : block MC → Knowledge AP requise pour l'utiliser (ouvrir le GUI) ---
             # Le mod bloque le clic-droit sur la table d'enchantement / l'alambic tant que la
             # Knowledge n'est pas reçue (même ceux trouvés dans les structures).
             "station_knowledge_locks": {
-                f"minecraft:{block}": f"Knowledge: {knowledge}"
+                block: f"{KNOWLEDGE_PREFIX}{knowledge}"
                 for block, knowledge in STATION_KNOWLEDGE_LOCKS.items()
+                if knowledge in self._active_knowledges()
             },
 
             # --- Dimension gating : dimension MC → item AP requis pour y entrer (portail) ---

@@ -1,0 +1,43 @@
+name,category,classification,count
+Sword Handling,tool,progression,1
+Spear Handling,tool,progression,1
+Shovel Handling,tool,progression,1
+Axe Handling,tool,progression,1
+Pickaxe Handling,tool,progression,1
+Fishing,tool,progression,1
+Hoe Handling,tool,progression,1
+Shear Handling,tool,progression,1
+Mace Handling,tool,progression,1
+Trident Handling,tool,progression,1
+Brush Handling,tool,progression,1
+Sharpshooter,tool,progression,1
+Pyromaniac,misc,progression,1
+Flying,misc,progression,1
+Shield Handling,armor,progression,1
+Armor Handling,armor,progression,1
+Brewing,station,progression,1
+Enchanting,station,progression,1
+Barrel,container,progression,1
+Chest,container,progression,1
+Chiseled Bookshelf,container,progression,1
+Dispenser,container,progression,1
+Dropper,container,progression,1
+Ender Chest,container,progression,1
+Hopper,container,progression,1
+Lectern,container,progression,1
+Shelf,container,progression,1
+Shulker Box,container,progression,1
+Trapped Chest,container,progression,1
+Anvil,station,progression,1
+Beacon,station,progression,1
+Blast Furnace,station,progression,1
+Campfire,station,progression,1
+Cartography Table,station,progression,1
+Crafter,station,progression,1
+Crafting Table,station,progression,1
+Furnace,station,progression,1
+Grindstone,station,progression,1
+Loom,station,progression,1
+Smithing Table,station,progression,1
+Smoker,station,progression,1
+Stonecutter,station,progression,1

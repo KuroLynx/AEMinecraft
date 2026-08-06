@@ -218,6 +218,9 @@ ITEM_BIOME_FINDER = "Biome Finder"
 # -----------------------------------------------------------------------
 
 ADVANCEMENT_PREFIX = "Advancement: "
+# The K_* names above are the BARE knowledge ("Sword Handling"); this makes the AP item name. Also how
+# content/knowledges.csv rows (bare names + a category) become items.
+KNOWLEDGE_PREFIX = "Knowledge: "
 ENTITY_UNLOCK_PREFIX = "Entity Unlock: "
 STRUCT_UNLOCK_PREFIX = "Structure Unlock: "
 ENTITY_KILL_PREFIX = "Kill Entity: "

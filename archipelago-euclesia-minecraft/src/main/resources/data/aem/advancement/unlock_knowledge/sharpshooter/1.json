@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_knowledge/enchanting/1",
+  "parent": "aem:unlock_knowledge/brush_handling/1",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

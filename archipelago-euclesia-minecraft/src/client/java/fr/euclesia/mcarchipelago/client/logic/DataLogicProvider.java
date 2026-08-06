@@ -23,7 +23,7 @@ import java.util.Optional;
  * whenever the received-item set changes (tracked by {@link APItemRegistry#receivedVersion()}).
  * All caching is touched only from the render thread that calls {@link #stateFor}.
  *
- * <p>{@code GLITCHABLE} is not computed here yet; locations are classified as
+ * <p>{@code GLITCHABLE} comes from the export's permissive twin rule (see stateFrom); otherwise
  * {@link LogicState#CHECKED}, {@link LogicState#IN_LOGIC} or {@link LogicState#OUT_OF_LOGIC}.
  */
 public final class DataLogicProvider implements LogicProvider {
@@ -31,6 +31,7 @@ public final class DataLogicProvider implements LogicProvider {
     private LogicGraph graph;             // parsed from parsedFrom (null if absent/invalid)
     private LogicEvaluation evaluation;   // memoized reachability pass
     private int evaluationVersion = -1;   // APItemRegistry version the pass was built for
+    private int evaluationChecked = -1;   // APLocationRegistry checked version the pass was built for
 
     @Override
     public LogicState stateFor(Identifier advancementId) {
@@ -79,8 +80,21 @@ public final class DataLogicProvider implements LogicProvider {
             return LogicState.CHECKED;
         }
 
-        return currentEvaluation(client, graph).canReachLocation(locationName)
-                ? LogicState.IN_LOGIC
+        return stateFrom(currentEvaluation(client, graph), locationName);
+    }
+
+    /**
+     * Green when strict logic reaches it, YELLOW when only a route the randomizer refused to count on
+     * does (a rare drop, a non-progression structure's chest, a Wandering Trader), red otherwise.
+     * The yellow tier is absent unless the seed enabled glitch_logic — with it off no permissive rule
+     * ships, isGlitchable is always false, and tiles read green/red exactly as before.
+     */
+    private static LogicState stateFrom(LogicEvaluation evaluation, String locationName) {
+        if (evaluation.canReachLocation(locationName)) {
+            return LogicState.IN_LOGIC;
+        }
+        return evaluation.isGlitchable(locationName)
+                ? LogicState.GLITCHABLE
                 : LogicState.OUT_OF_LOGIC;
     }
 
@@ -110,9 +124,7 @@ public final class DataLogicProvider implements LogicProvider {
         if (graph == null || locationName == null) {
             return LogicState.OUT_OF_LOGIC;
         }
-        return currentEvaluation(client, graph).canReachLocation(locationName)
-                ? LogicState.IN_LOGIC
-                : LogicState.OUT_OF_LOGIC;
+        return stateFrom(currentEvaluation(client, graph), locationName);
     }
 
     private static boolean isCategoryRoot(String gameId) {
@@ -231,10 +243,17 @@ public final class DataLogicProvider implements LogicProvider {
 
     private LogicEvaluation currentEvaluation(ArchipelagoClient client, LogicGraph graph) {
         APItemRegistry items = client.registries().apItems();
+        APLocationRegistry locations = client.registries().apLocations();
+        // Checked locations feed the pass (LogicEvaluation.solve), so a check invalidates it just as
+        // an item does. Watching receivedVersion alone left the tracker showing pre-check colours
+        // until the next item happened to land.
         int version = items.receivedVersion();
-        if (evaluation == null || version != evaluationVersion) {
-            evaluation = graph.newEvaluation(items::receivedCount);
+        int checked = locations.checkedVersion();
+        if (evaluation == null || version != evaluationVersion || checked != evaluationChecked) {
+            evaluation = graph.newEvaluation(items::receivedCount,
+                    name -> locations.idForName(name).map(locations::isChecked).orElse(false));
             evaluationVersion = version;
+            evaluationChecked = checked;
         }
         return evaluation;
     }

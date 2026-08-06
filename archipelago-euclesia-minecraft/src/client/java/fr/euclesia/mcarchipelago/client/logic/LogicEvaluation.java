@@ -24,8 +24,11 @@ import java.util.Set;
  * unreachable while the Nether is still resolving, and never recover. The fixed point below
  * resolves the cycle the same way Archipelago does.
  *
- * <p>Inputs are RECEIVED items only (counts); unchecked locations are never swept. A new pass
- * must be created whenever the received-item set changes (see {@link DataLogicProvider}).
+ * <p>Inputs are the RECEIVED items (counts) and the locations already CHECKED, which seed the pass as
+ * facts (see {@link #solve}). A new pass must be created whenever either changes — see
+ * {@link DataLogicProvider}, which watches both versions. With nothing checked yet the result is
+ * identical to a rules-only sweep, which is what keeps parity with {@code tools/logic_selfcheck.py}
+ * and Archipelago's own {@code CollectionState}.
  */
 public final class LogicEvaluation {
     /** Supplies the number of copies of an item the slot has received. */
@@ -34,13 +37,21 @@ public final class LogicEvaluation {
         int count(String itemName);
     }
 
+    /** Whether the slot has already checked an AP location, by location name. */
+    @FunctionalInterface
+    public interface CheckedLocations {
+        boolean isChecked(String locationName);
+    }
+
     private final LogicGraph graph;
     private final ItemAvailability items;
+    private final CheckedLocations checked;
     private final Map<String, Boolean> regionReach = new HashMap<>();
     private final Map<String, Boolean> locationReach = new HashMap<>();
     private final Set<Integer> resolvingRefs = new HashSet<>();
 
-    LogicEvaluation(LogicGraph graph, ItemAvailability items) {
+    LogicEvaluation(LogicGraph graph, ItemAvailability items, CheckedLocations checked) {
+        this.checked = checked;
         this.graph = graph;
         this.items = items;
         solve();
@@ -58,6 +69,32 @@ public final class LogicEvaluation {
     /** Reads the solved snapshot; {@link RuleNode.Loc} calls this during {@link #solve}. */
     public boolean canReachLocation(String name) {
         return Boolean.TRUE.equals(locationReach.get(name));
+    }
+
+    /**
+     * Whether {@code name} is reachable by a route the randomizer refused to count on — a rare drop,
+     * a chest in a structure the seed doesn't treat as progression, a Wandering Trader (see
+     * {@code RuleHelper._demote} in the apworld). False when the seed shipped no permissive rule for
+     * this location, which is the usual case: the two graphs agree almost everywhere.
+     *
+     * <p>Evaluated against the SOLVED strict snapshot rather than a second fixed point of its own.
+     * That is the definition of yellow, not a shortcut: yellow means doable RIGHT NOW if the game
+     * cooperates, so exactly one unreliable step is allowed. A glitch route may lean on any location
+     * strict logic already grants — those you can simply go and do — but never on another glitch
+     * route, because a check that needs an unreliable one done first is not doable right now. It goes
+     * red, and re-colours by itself the moment you actually pull the first one off: the check lands in
+     * the checked set and {@link #solve} seeds it as fact. Sequence is handled by time, not prediction.
+     */
+    public boolean isGlitchable(String name) {
+        RuleNode rule = graph.glitchRule(name);
+        if (rule == null) {
+            return false;
+        }
+        // Same two conditions solve() uses for a location, region included. Testing the rule alone
+        // would paint a Nether advancement yellow while the player has no way into the Nether at all,
+        // since a rule need not repeat the region its location already sits in.
+        LogicGraph.LocationEntry entry = graph.location(name);
+        return entry != null && canReachRegion(entry.region()) && rule.eval(this);
     }
 
     /**
@@ -82,6 +119,16 @@ public final class LogicEvaluation {
 
     private void solve() {
         regionReach.put(graph.origin(), true);
+        // A checked location is history, not a prediction: you completed it, so whatever it gates is
+        // open regardless of whether the rules can explain how. Seeding those in before the fixed
+        // point lets reality propagate — complete Ice Bucket Challenge by a route logic never modelled
+        // and the Nether edge (which asks for loc("Ice Bucket Challenge")) resolves the moment the
+        // Dimension Unlock arrives, instead of the whole dimension reading unreachable forever.
+        for (String name : graph.locations().keySet()) {
+            if (checked.isChecked(name)) {
+                locationReach.put(name, true);
+            }
+        }
         boolean changed = true;
         while (changed) { // monotone ⇒ terminates (a pass can only flip false → true)
             changed = false;

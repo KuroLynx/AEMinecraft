@@ -107,6 +107,50 @@ Minecraft [AEM]:
     'true': 50
 
   # -------------------------------------------------------------------------
+  # Knowledge Gates
+  # -------------------------------------------------------------------------
+
+  knowledge_gates:
+    # Choose which Knowledge gates your run uses.
+    #
+    # A Knowledge gate holds something back until its 'Knowledge: <name>' item arrives from the
+    # multiworld. Gates you do not list are OFF: that knowledge is not in the item pool at all and the
+    # thing it would have gated is free from the start. Leave the list empty for a run with no Knowledge
+    # gates whatsoever.
+    #
+    # Each gate blocks BOTH ways of getting at what it covers:
+    #     - tool / armor / misc gate an ITEM — you can neither craft nor pick up the tool, armor piece
+    #       or gear until the Knowledge arrives (a diamond sword also still needs its material tier).
+    #     - station / container gate a BLOCK — you can neither craft/pick it up NOR use it, so a locked
+    #       furnace can't be made and a furnace found in a village won't open either.
+    #
+    # Accepts category presets, the special value "All", and/or individual knowledge names (mix freely):
+    #     - Category presets: "tool", "armor", "misc", "station", "container".
+    #     - "All" — every gate this content version knows about.
+    #     - Any knowledge name, WITHOUT the "Knowledge: " prefix (e.g. "Pickaxe Handling", "Brewing").
+    #
+    # Any preset or name can also be written with a leading "-" to switch that gate back OFF, which is
+    # how you take a few gates out of a big preset. Order does not matter: everything listed is
+    # switched on first, then every "-" entry is removed from the result.
+    #
+    # The default is every gate this content version knows about except the three that reshape the
+    # whole run: the chest, the crafting table and the furnace.
+    #
+    # Examples:
+    #     Everything except the chest:
+    #         - All
+    #         - -Chest
+    #
+    #     Every gate, but no containers at all:
+    #         - All
+    #         - -container
+    #
+    #     Only mining and smelting matter:
+    #         - Pickaxe Handling
+    #         - Furnace
+    ["All", "-Chest", "-Crafting Table", "-Furnace"]
+
+  # -------------------------------------------------------------------------
   # Mob Spawn Lock
   # -------------------------------------------------------------------------
 
@@ -241,6 +285,26 @@ Minecraft [AEM]:
     disabled: 0
 
   # -------------------------------------------------------------------------
+  # Tracker
+  # -------------------------------------------------------------------------
+  glitch_logic:
+    # Show, in the advancement tracker, the checks you can only reach by an unreliable route.
+    #
+    # The randomizer deliberately ignores routes you cannot count on when it decides where items go: a
+    # 2% barter, a chest in a structure the seed doesn't treat as progression, a Wandering Trader who
+    # has to turn up and offer the right thing. That keeps the seed honest — it never expects you to
+    # get lucky — but it means the tracker would paint plenty of genuinely doable checks red.
+    #
+    # - true (default): such a check is drawn YELLOW. Not promised to you, but possible right now if
+    #   the game cooperates.
+    # - false: it stays red like anything else you can't reach yet.
+    #
+    # Display only. Item placement is identical either way, so turning this off never changes what a
+    # seed asks of you — only how much the tracker tells you.
+    'true': 50
+    'false': 0
+
+  # -------------------------------------------------------------------------
   # BlazeandCave's Advancements Pack (BACAP)
   # -------------------------------------------------------------------------
   blazeandcave:
@@ -268,6 +332,42 @@ Minecraft [AEM]:
     # Either way, BACAP trophies are always disabled. Only has an effect when blazeandcave is enabled.
     'false': 50
     'true': 0
+
+  # -------------------------------------------------------------------------
+  # Item Gate Behavior
+  # -------------------------------------------------------------------------
+
+  item_gate_behavior:
+    # Decide, per acquisition route, whether a still-locked item is blocked.
+    #
+    # A "locked" item is one the material/tool gates aren't satisfied for yet: a raw material you don't
+    # have enough Progressive Material Handling for, or a tool/armor piece missing its Knowledge item or
+    # material tier. This option chooses, for each route by which such an item could reach your
+    # inventory, whether that route is gated (blocked) or left open.
+    #
+    # Five routes are configurable, each set to true (gated) or false (allowed):
+    #     - crafting: taking a locked item out of a crafting grid — the crafting table or your own 2x2
+    #       inventory grid.
+    #     - station: taking a locked item out of a workstation that makes or transforms items — furnace,
+    #       blast furnace, smoker, anvil, smithing table, grindstone, stonecutter, loom, cartography
+    #       table, brewing stand, enchanting table, villager trade, crafter.
+    #     - container: taking a locked item out of plain storage — chest, barrel, shulker box, hopper,
+    #       dispenser, ender chest, minecart and mount inventories.
+    #     - pickup: picking a locked item up off the ground.
+    #     - given: the /give command handing you a locked item.
+    #
+    # Meaning of each value:
+    #     - true: the route is gated until the item unlocks (you get a red "requires ..." message).
+    #     - false: the route always lets the item through, even while it is still locked.
+    #
+    # Any route you omit keeps its default (everything gated except given), so you only need to list the
+    # routes you want to change. As a convenience for configs written before the GUI routes were split,
+    # an explicit 'crafting' value also becomes the default for 'station' and 'container'.
+    crafting: true
+    station: true
+    container: true
+    pickup: true
+    given: false
 
   # -------------------------------------------------------------------------
   # Standard item/location options

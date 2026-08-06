@@ -6,7 +6,8 @@ vanilla today, mods / datapacks / other MC versions later. ``entities.json`` (th
 ``structures.json`` are dumped from the running game (``/aem dump entities`` / ``structures``);
 advancement *locations* come from the manifest (the data-driven source the trigger compiler also
 reads), so vanilla, mods and datapacks are handled uniformly. (Item AP classifications/counts are the
-one apworld-design table that is not a pack file — ``minecraft/content/items.csv``.)
+one apworld-design table that is not a pack file — ``minecraft/content/items.csv``, plus its Knowledge
+sibling ``knowledges.csv``.)
 
 ``load_pack(name)`` returns a :class:`ContentRegistry` bundling the parsed records; ``data.py``
 re-exports them as the module-level globals the rest of the apworld already imports.
@@ -19,7 +20,13 @@ from BaseClasses import ItemClassification
 
 # Location-name prefixes live with the other rule constants; the loaders build AP location names
 # from them. logic.constants is import-cycle-safe (it imports nothing from this package).
-from ..logic.constants import ADVANCEMENT_PREFIX, BOSS_KILL_PREFIX, CONTENT_VERSION, ENTITY_KILL_PREFIX
+from ..logic.constants import (
+    ADVANCEMENT_PREFIX,
+    BOSS_KILL_PREFIX,
+    CONTENT_VERSION,
+    ENTITY_KILL_PREFIX,
+    KNOWLEDGE_PREFIX,
+)
 
 # Base IDs (unchanged from data.py — moving them here keeps every AP id identical).
 BASE_ID_ITEMS           = 0xEC0000
@@ -30,6 +37,10 @@ BASE_ID_LOC_BOSS_KILL   = 0xEC1100
 BASE_ID_LOC_MOB_KILL    = 0xEC1200
 BASE_ID_LOC_STRUCTURE   = 0xEC1300
 BASE_ID_LOC_BACAP       = 0xEC2000  # datapack advancement locations (manifest-only packs)
+# Knowledge items live in their own block (knowledges.csv), not in items.csv's: there is one row per
+# gate and the station/container rows are appended as packs are dumped, so a shared block would shift
+# every later item's id each time one is added. 0xEC3000 is filler.py's.
+BASE_ID_KNOWLEDGE       = 0xEC4000
 
 
 class MCLocationCategory:
@@ -45,11 +56,44 @@ class MCEntityCategory:
     BOSS    = "boss"
 
 
+class MCKnowledgeCategory:
+    """What a Knowledge gates, and the preset the ``knowledge_gates`` option groups it under.
+
+    TOOL/ARMOR/MISC gate an *item* (its craft/pickup, via ``TOOL_LOCKS``): a sword needs Sword
+    Handling, an elytra needs Flying. STATION/CONTAINER gate a *block* — both its craft/pickup and its
+    use, so a locked furnace can neither be made nor opened, including ones found in a village.
+    """
+    TOOL      = "tool"
+    ARMOR     = "armor"
+    MISC      = "misc"
+    STATION   = "station"
+    CONTAINER = "container"
+
+
 @dataclass
 class MCItemData:
     id: int
     classification: ItemClassification
     count: int
+
+
+@dataclass
+class MCKnowledgeData:
+    """One row of ``knowledges.csv``: a gate the player can switch on or off per seed.
+
+    ``name`` is the bare knowledge ("Sword Handling"); the AP item is ``KNOWLEDGE_PREFIX + name``.
+    ``category`` is an :class:`MCKnowledgeCategory` value, which is both what the knowledge gates and
+    the preset ``knowledge_gates`` groups it under.
+    """
+    id: int
+    name: str
+    category: str
+    classification: ItemClassification
+    count: int
+
+    @property
+    def item_name(self) -> str:
+        return f"{KNOWLEDGE_PREFIX}{self.name}"
 
 
 @dataclass
@@ -171,6 +215,135 @@ def _load_items() -> dict[str, MCItemData]:
             count=int(row["count"]),
         )
     return items
+
+
+def _load_knowledges() -> dict[str, MCKnowledgeData]:
+    """Read content/knowledges.csv — one row per Knowledge gate, keyed by the BARE name.
+
+    Like items.csv this is apworld design data, not pack data: the AP classification/count of a gate is
+    version-independent. What the station/container rows gate *is* pack data, and it comes from the
+    dumped containers.json (``/aem dump containers``) — the rows here only say the gate exists, what
+    category it belongs to, and how it is shuffled.
+
+    Row ORDER is the AP item id (id = index), so rows are only ever appended: inserting one in the
+    middle renumbers every gate after it.
+    """
+    knowledges = {}
+    for index, row in enumerate(_read_csv(files(__package__), "knowledges.csv")):
+        name = row["name"].strip()
+        knowledges[name] = MCKnowledgeData(
+            id=BASE_ID_KNOWLEDGE + index,
+            name=name,
+            category=row["category"].strip(),
+            classification=_CLASS_MAP.get(row["classification"], ItemClassification.filler),
+            count=int(row["count"]),
+        )
+    return knowledges
+
+
+def load_containers(pack_name: str) -> list[dict]:
+    """Read a pack's containers.json (``/aem dump containers``): every block that opens a GUI or holds
+    items, with the facts the gates are built from — ``kind`` (station/container), ``block_entity`` and
+    ``recipe_station``. Missing file -> no station/container gates from this pack.
+
+    Returned raw: which blocks share a Knowledge is a design decision made by
+    ``tools/build_knowledges.py`` (offline, into knowledges.csv) and by ``data.py`` (at load), not a
+    pack fact.
+    """
+    path = _pack_dir(pack_name).joinpath("containers.json")
+    if not path.is_file():
+        return []
+    with path.open(encoding="utf-8") as f:
+        return json.load(f)
+
+
+# Blocks that hold an item without being anything you would call storage. They are dumped (their block
+# entity really is a Container) but a gate on them is noise, so they mint no Knowledge.
+SKIP_GATE_BLOCKS = frozenset({"minecraft:jukebox", "minecraft:decorated_pot"})
+
+
+def _gate_signature(record: dict) -> tuple:
+    """What makes two blocks 'the same thing' for gating: same block entity, same recipe station."""
+    return (record.get("block_entity"), record.get("recipe_station"))
+
+
+def knowledge_groups(records: list[dict]) -> dict[str, list[str]]:
+    """Group dumped blocks into gates: group name -> the block ids sharing one Knowledge.
+
+    Grouping is derived from the dump's own facts, so a new MC version or a mod needs no hand-editing:
+
+    1. **Variant prefix** — strip a leading ``word_`` and adopt the remainder when that is itself a
+       dumped block with the same signature: ``chipped_anvil`` -> ``anvil``,
+       ``waxed_exposed_copper_chest`` -> ``exposed_copper_chest`` -> ``copper_chest``,
+       ``soul_campfire`` -> ``campfire``, the 16 dyed shulker boxes -> ``shulker_box``. Comparing the
+       signature is what stops ``blast_furnace`` collapsing into ``furnace``: they run different
+       recipes, and the logic has to tell them apart.
+    2. **Same block entity** — what is left groups by signature when one covers several bases, i.e. the
+       same block in several woods (the 12 shelves), named by the id segments they share (``shelf``).
+
+    Shared by ``tools/build_knowledges.py`` (which writes the rows) and ``data.py`` (which maps blocks
+    and recipe stations onto them), so the two can never drift.
+    """
+    by_id = {record["block"]: record for record in records if record["block"] not in SKIP_GATE_BLOCKS}
+
+    def reduce_once(block_id: str) -> str | None:
+        namespace, _, path = block_id.partition(":")
+        if "_" not in path:
+            return None
+        candidate = f"{namespace}:{path.split('_', 1)[1]}"
+        if candidate not in by_id or _gate_signature(by_id[candidate]) != _gate_signature(by_id[block_id]):
+            return None
+        return candidate
+
+    canonical: dict[str, str] = {}
+    for block_id in by_id:
+        seen, current = {block_id}, block_id
+        while (nxt := reduce_once(current)) is not None and nxt not in seen:
+            seen.add(nxt)
+            current = nxt
+        canonical[block_id] = current
+
+    by_signature: dict[tuple, set[str]] = {}
+    for block_id, base in canonical.items():
+        if by_id[block_id].get("block_entity") is None:
+            continue  # nothing to key on; rule 1 is all we have
+        by_signature.setdefault(_gate_signature(by_id[block_id]), set()).add(base)
+
+    groups: dict[str, list[str]] = {}
+    for block_id, base in canonical.items():
+        bases = by_signature.get(_gate_signature(by_id[block_id]), {base})
+        name = _common_suffix(sorted(bases)) if len(bases) > 1 else base
+        groups.setdefault(name, []).append(block_id)
+    return {name: sorted(blocks) for name, blocks in sorted(groups.items())}
+
+
+def _common_suffix(block_ids: list[str]) -> str:
+    """The trailing ``_``-separated segments every id shares (``*_shelf`` -> ``minecraft:shelf``)."""
+    namespace = block_ids[0].split(":", 1)[0]
+    parts = [block_id.split(":", 1)[1].split("_") for block_id in block_ids]
+    shared: list[str] = []
+    for index in range(1, min(len(p) for p in parts) + 1):
+        segment = {p[-index] for p in parts}
+        if len(segment) != 1:
+            break
+        shared.insert(0, segment.pop())
+    return f"{namespace}:{'_'.join(shared)}" if shared else block_ids[0]
+
+
+# Blocks whose gate predates the containers dump and is named after the ACTIVITY rather than the block.
+# Without this the generated rows would mint "Brewing Stand"/"Enchanting Table" beside the "Brewing"/
+# "Enchanting" gates that already cover those blocks — two Knowledges for one block, and the classic
+# ones silently stop gating the block's use.
+GATE_NAME_ALIASES = {
+    "minecraft:brewing_stand": "Brewing",
+    "minecraft:enchanting_table": "Enchanting",
+}
+
+
+def gate_knowledge_name(group: str) -> str:
+    """``minecraft:blast_furnace`` -> ``Blast Furnace`` (the bare name knowledges.csv stores)."""
+    alias = GATE_NAME_ALIASES.get(group)
+    return alias if alias else group.split(":", 1)[-1].replace("_", " ").title()
 
 
 def _load_entities(pack_dir) -> dict[str, MCMobData]:
@@ -347,6 +520,7 @@ def _load_boss_kill_locations(mobs: dict[str, MCMobData]) -> dict[str, MCLocatio
 class ContentRegistry:
     """Parsed records of one content pack (multi-pack merging arrives with the manifest work)."""
     items: dict[str, MCItemData]
+    knowledges: dict[str, MCKnowledgeData]
     mobs: dict[str, MCMobData]
     structures: dict[str, MCStructureData]
     advancements: dict[str, MCLocationData]
@@ -361,6 +535,7 @@ def load_pack(name: str) -> ContentRegistry:
     structures = _load_structures(pack_dir)
     return ContentRegistry(
         items=items,
+        knowledges=_load_knowledges(),
         mobs=mobs,
         structures=structures,
         # Advancements are loaded from the pack's manifest.json (the same data-driven source the

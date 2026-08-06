@@ -1,8 +1,16 @@
 from dataclasses import dataclass
 
-from Options import Choice, OptionSet, PerGameCommonOptions, Range, Toggle
+from Options import (Choice, DefaultOnToggle, OptionDict, OptionError, OptionSet,
+                     PerGameCommonOptions, Range, Toggle)
 
-from .data import ADVANCEMENT_LOCATIONS, MOBS_ALL, MOBS_BOSS, STRUCTURES
+from .data import (
+    ADVANCEMENT_LOCATIONS,
+    KNOWLEDGES,
+    KNOWLEDGES_BY_CATEGORY,
+    MOBS_ALL,
+    MOBS_BOSS,
+    STRUCTURES,
+)
 
 
 class BossList(OptionSet):
@@ -136,6 +144,58 @@ class StructureUnlock(OptionSet):
     default = frozenset({"Stronghold"})
 
 
+# What knowledge_gates accepts, plus the same entries negated with a leading "-". Only presets and
+# knowledge names are negatable: "-All" would just mean the empty list, which the player can write.
+_KNOWLEDGE_GATES = {category for category in KNOWLEDGES_BY_CATEGORY} | set(KNOWLEDGES.keys())
+
+
+class KnowledgeGates(OptionSet):
+    """Choose which Knowledge gates your run uses.
+
+    A Knowledge gate holds something back until its 'Knowledge: <name>' item arrives from the
+    multiworld. Gates you do not list are OFF: that knowledge is not in the item pool at all and the
+    thing it would have gated is free from the start. Leave the list empty for a run with no Knowledge
+    gates whatsoever.
+
+    Each gate blocks BOTH ways of getting at what it covers:
+        - tool / armor / misc gate an ITEM — you can neither craft nor pick up the tool, armor piece or
+          gear until the Knowledge arrives (a diamond sword also still needs its material tier).
+        - station / container gate a BLOCK — you can neither craft/pick it up NOR use it, so a locked
+          furnace can't be made and a furnace found in a village won't open either.
+
+    Accepts category presets, the special value "All", and/or individual knowledge names (mix freely):
+        - Category presets: "tool", "armor", "misc", "station", "container".
+        - "All" — every gate this content version knows about.
+        - Any knowledge name, WITHOUT the "Knowledge: " prefix (e.g. "Pickaxe Handling", "Brewing").
+
+    Any preset or name can also be written with a leading "-" to switch that gate back OFF, which is
+    how you take a few gates out of a big preset. Order does not matter: everything listed is switched
+    on first, then every "-" entry is removed from the result.
+
+    The default is every gate this content version knows about except the three that reshape the whole
+    run: the chest, the crafting table and the furnace.
+
+    Examples:
+        Everything except the chest:
+            - All
+            - -Chest
+
+        Every gate, but no containers at all:
+            - All
+            - -container
+
+        Only mining and smelting matter:
+            - Pickaxe Handling
+            - Furnace
+    """
+    display_name = "Knowledge Gates"
+    valid_keys = {"All"} | _KNOWLEDGE_GATES | {f"-{gate}" for gate in _KNOWLEDGE_GATES}
+    # Everything, minus the three whose gate changes how the whole run is played. Note that this is
+    # deliberately "All": dumping a new pack appends station/container rows, and those new gates DO
+    # turn on for a player on the default — the run stays as gated as this default promises.
+    default = frozenset({"All", "-Chest", "-Crafting Table", "-Furnace"})
+
+
 class TrapChance(Range):
     """The probability for each filler item to be replaced with a trap item.
     Set to 0 to disable traps entirely.
@@ -256,6 +316,89 @@ class BacapRewards(Toggle):
     default = 0
 
 
+class GlitchLogic(DefaultOnToggle):
+    """Show, in the advancement tracker, the checks you can only reach by an unreliable route.
+
+    The randomizer deliberately ignores routes you cannot count on when it decides where items go: a
+    2% barter, a chest in a structure the seed doesn't treat as progression, a Wandering Trader who
+    has to turn up and offer the right thing. That keeps the seed honest — it never expects you to
+    get lucky — but it means the tracker would paint plenty of genuinely doable checks red.
+
+    - enabled (default): such a check is drawn YELLOW. Not promised to you, but possible right now if
+      the game cooperates.
+    - disabled: it stays red like anything else you can't reach yet.
+
+    Display only. Item placement is identical either way, so turning this off never changes what a
+    seed asks of you — only how much the tracker tells you.
+    """
+    display_name = "Glitch Logic"
+
+
+class ItemGateBehavior(OptionDict):
+    """Decide, per acquisition route, whether a still-locked item is blocked.
+
+    A "locked" item is one the material/tool gates aren't satisfied for yet: a raw material you don't
+    have enough Progressive Material Handling for, or a tool/armor piece missing its Knowledge item or
+    material tier. This option chooses, for each route by which such an item could reach your
+    inventory, whether that route is gated (blocked) or left open.
+
+    Five routes are configurable, each set to true (gated) or false (allowed):
+        - crafting: taking a locked item out of a crafting grid — the crafting table or your own 2x2
+          inventory grid.
+        - station: taking a locked item out of a workstation that makes or transforms items — furnace,
+          blast furnace, smoker, anvil, smithing table, grindstone, stonecutter, loom, cartography
+          table, brewing stand, enchanting table, villager trade, crafter.
+        - container: taking a locked item out of plain storage — chest, barrel, shulker box, hopper,
+          dispenser, ender chest, minecart and mount inventories.
+        - pickup: picking a locked item up off the ground.
+        - given: the /give command handing you a locked item.
+
+    Meaning of each value:
+        - true: the route is gated until the item unlocks (you get a red "requires ..." message).
+        - false: the route always lets the item through, even while it is still locked.
+
+    Any route you omit keeps its default (everything gated except given), so you only need to list the
+    routes you want to change. As a convenience for configs written before the GUI routes were split,
+    an explicit 'crafting' value also becomes the default for 'station' and 'container'.
+
+    Example (block hand-crafting, but let chests, pickups and /give through):
+        item_gate_behavior:
+            crafting: true
+            station: true
+            container: false
+            pickup: false
+            given: false
+    """
+    display_name = "Item Gate Behavior"
+    valid_keys = {"crafting", "station", "container", "pickup", "given"}
+    # Preserves the historical behavior: every GUI take and floor pickup is gated, while /give (a newer
+    # route) is left open. Omitted keys fall back to these in fill_slot_data().
+    default = {"crafting": True, "station": True, "container": True, "pickup": True, "given": False}
+
+    # Accepted spellings of each truth value, so a YAML "yes"/"no"/1/0 works as well as true/false.
+    _TRUE = {True, 1, "true", "yes", "gated", "1"}
+    _FALSE = {False, 0, "false", "no", "allowed", "0"}
+
+    @classmethod
+    def as_bool(cls, value) -> bool:
+        key = value.lower() if isinstance(value, str) else value
+        if key in cls._TRUE:
+            return True
+        if key in cls._FALSE:
+            return False
+        raise OptionError(
+            f"item_gate_behavior values must be true (gated) or false (allowed), got '{value}'."
+        )
+
+    def verify(self, world, player_name: str, plando_options) -> None:
+        super().verify(world, player_name, plando_options)
+        for route, behavior in self.value.items():
+            try:
+                self.as_bool(behavior)
+            except OptionError as error:
+                raise OptionError(f"Player {player_name}: route '{route}' — {error}")
+
+
 @dataclass
 class MCOptions(PerGameCommonOptions):
     boss_list: BossList
@@ -264,6 +407,7 @@ class MCOptions(PerGameCommonOptions):
     death_link: DeathLink
     villager_trust: VillagerTrust
     kill_sanity: KillSanity
+    knowledge_gates: KnowledgeGates
     mob_spawn_lock: MobSpawnLock
     structure_unlock: StructureUnlock
     trap_chance: TrapChance
@@ -272,3 +416,5 @@ class MCOptions(PerGameCommonOptions):
     biome_finder: BiomeFinder
     blazeandcave: BlazeAndCave
     bacap_rewards: BacapRewards
+    item_gate_behavior: ItemGateBehavior
+    glitch_logic: GlitchLogic

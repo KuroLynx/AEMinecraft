@@ -37,7 +37,7 @@ public abstract class ItemEntityMixin {
             ci.cancel();
             return;
         }
-        Component reason = MaterialLockService.blockReason(getItem());
+        Component reason = MaterialLockService.blockReason(getItem(), MaterialLockService.Channel.PICKUP);
         if (reason != null) {
             ci.cancel();
             if (player instanceof ServerPlayer serverPlayer) {

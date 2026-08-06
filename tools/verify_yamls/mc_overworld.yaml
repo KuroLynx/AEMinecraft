@@ -24,3 +24,7 @@ Minecraft [AEM]:
   trap_chance: 0
   death_link: 'false'
   challenge_sanity: 'true'
+  # Every gate, including the three the option's default leaves off (chest, crafting table, furnace):
+  # a real fill under the strictest gating is the point of this yaml.
+  knowledge_gates:
+    - All
