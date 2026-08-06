@@ -392,6 +392,13 @@ class RuleHelper:
                 self.acquire("minecraft:wither_skeleton_skull"),
                 self.acquire("minecraft:soul_sand"),
             ),
+            # Respawning the dragon ("The End... Again...") means placing four End Crystals on the
+            # exit portal — which only exists once the first dragon is dead. summon() had no recipe
+            # for it and fell through to entity(), i.e. "be in the End".
+            E_ENDER_DRAGON: lambda: self.all_of(
+                self.outer_end(),
+                self.acquire("minecraft:end_crystal"),
+            ),
         }
         # How entity() *reaches* each constructed mob: the build recipe, plus any natural spawn. Snow
         # and Copper Golems never spawn naturally; an Iron Golem also spawns in villages, so for the
@@ -419,6 +426,11 @@ class RuleHelper:
                 self.acquire("minecraft:ender_eye"),
                 self.found_with_finder(),
             ),
+            # An End City is on the outer islands, and the only way out there is an End gateway —
+            # which does not exist until the dragon is dead. Reaching the End was the whole gate, so
+            # the City, the elytra, the dragon head and the shulker were all free the moment you
+            # stepped through the portal.
+            S_END_CITY: lambda: self.outer_end(),
         }
         # Mobs whose only natural spawn is a specific, searchable biome — gated on the Biome Finder
         # (when enabled), since that's how you locate the biome. The Dried Ghast (→ Happy Ghast) can
@@ -876,6 +888,17 @@ class RuleHelper:
             if data.category != MCEntityCategory.BOSS
         ])
 
+    def outer_end(self):
+        """Being able to get to the End's OUTER islands — i.e. having beaten the Ender Dragon.
+
+        The End is really two places. The central island is what the portal drops you on: the
+        dragon, the exit portal, nothing else. Everything people mean by "the End" — End Cities,
+        elytra, shulkers, chorus fruit, the dragon egg, a second dragon — is on the outer islands,
+        and the only route there is an End gateway, which spawns when the dragon dies. Modeled as
+        the CAPABILITY to kill it (can_defeat) rather than a reference to the kill location, so it
+        is well defined whatever the goal is and adds no loc() node to the graph."""
+        return self.can_defeat(E_ENDER_DRAGON)
+
     def found_with_finder(self):
         """The Progressive Structure Finder as a way to LOCATE a structure — GLITCH GRAPH ONLY.
 
@@ -1277,6 +1300,12 @@ class RuleHelper:
         # so it has no acquisition record — gate it on reaching an End City.
         if base == "dragon_head":
             return self.structure(S_END_CITY)
+
+        # The dragon egg appears on the exit portal only once the dragon has been killed, and it
+        # drops itself when mined — so the self-mine heuristic read it as a naturally occurring End
+        # block and "The Next Generation" needed nothing but standing in the End.
+        if base == "dragon_egg":
+            return self.outer_end()
 
         # A sniffer egg is brushed out of the suspicious sand in a warm ocean ruin. Its table lists
         # that structure, but at 6.7% it demotes to a glitch route, leaving strict logic with only
