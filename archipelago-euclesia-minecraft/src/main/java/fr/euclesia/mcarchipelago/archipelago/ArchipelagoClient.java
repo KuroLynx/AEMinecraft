@@ -152,15 +152,28 @@ public final class ArchipelagoClient {
         state.setTeam(payload.get("team").getAsInt());
         state.setSlot(payload.get("slot").getAsInt());
 
-        if (payload.has("slot_data") && payload.get("slot_data").isJsonObject()) {
-            state.setSlotData(payload.getAsJsonObject("slot_data"));
-            registries.apItems().loadSlotData(state.parsedSlotData());
-            registries.apLocations().loadSlotData(state.parsedSlotData());
-            registries.apMobs().loadSlotData(state.parsedSlotData());
-            registries.apStructures().loadSlotData(state.parsedSlotData());
-            registries.apMaterials().loadSlotData(state.parsedSlotData());
-            registries.apTrackers().loadFromSlotData(state.slotData());
-        }
+        // The registries are process-wide singletons, so a Connected packet is the one point where
+        // the previous slot's session has to be thrown away: connecting a second slot without
+        // restarting the game otherwise keeps its locations, checks and items and the advancement
+        // tracker still shows the old seed. Two things this depends on:
+        //  - load UNCONDITIONALLY: an absent slot_data means "this slot has none", not "keep the
+        //    last slot's", and each loadSlotData clears before it fills.
+        //  - drop the received items here rather than waiting for ReceivedItems index 0, which the
+        //    server only sends when the new slot actually has items — a slot with an empty start
+        //    inventory would otherwise inherit the previous slot's, colouring the tracker green.
+        // Deliberately not done on disconnect: the gameplay gates (mob/structure locks, material
+        // handling, Knowledge) read these registries, and wiping them on a transient drop would
+        // silently unlock the world mid-game.
+        state.setSlotData(payload.has("slot_data") && payload.get("slot_data").isJsonObject()
+                ? payload.getAsJsonObject("slot_data")
+                : new JsonObject());
+        registries.apItems().resetReceived();
+        registries.apItems().loadSlotData(state.parsedSlotData());
+        registries.apLocations().loadSlotData(state.parsedSlotData());
+        registries.apMobs().loadSlotData(state.parsedSlotData());
+        registries.apStructures().loadSlotData(state.parsedSlotData());
+        registries.apMaterials().loadSlotData(state.parsedSlotData());
+        registries.apTrackers().loadFromSlotData(state.slotData());
 
         state.playerNamesBySlot().clear();
         if (payload.has("players") && payload.get("players").isJsonArray()) {

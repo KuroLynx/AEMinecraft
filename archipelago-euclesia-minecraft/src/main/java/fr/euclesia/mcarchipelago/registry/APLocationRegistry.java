@@ -22,8 +22,21 @@ public final class APLocationRegistry {
     // leaving the tracker showing pre-check colours until the next item happened to land.
     private volatile int checkedVersion;
 
+    /**
+     * Installs the connected slot's locations, replacing any previous slot's. Everything here is
+     * session state: which game ids are checks at all differs per seed (challenge_sanity and friends
+     * drop some), and which of them are done is that slot's progress. Connecting a second slot
+     * without restarting the game used to inherit both, so the tracker still showed the old seed —
+     * extra tiles, and checks greyed out that this slot has not made.
+     *
+     * <p>The Connected packet re-sends missing/checked right after this, so clearing them is safe.
+     */
     public void loadSlotData(APSlotData slotData) {
+        idsByGameId.clear();
         idsByGameId.putAll(slotData.locationIdsByGameId());
+        missing.clear();
+        checked.clear();
+        checkedVersion++;
     }
 
     public void registerNameToId(Map<String, Long> locationIdsByName) {
