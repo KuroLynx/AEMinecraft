@@ -355,11 +355,19 @@ class MCWorld(World):
             ))
 
         # The End is always entered from the Overworld — emitted last (see ordering note above).
+        # Three things, and it is worth being precise about which is which. You need the unlock item;
+        # you need to be in a stronghold, because that is where the portal is (stated as the
+        # structure rather than via `Advancement: Eye Spy`, which is only the advancement that fires
+        # when you walk in — same condition, one less location reference in an entrance rule); and
+        # you need Eyes of Ender, which go in the PORTAL FRAME. The eyes were previously attached to
+        # finding the stronghold, which is wrong in both directions: a stronghold can be dug into
+        # once the Finder points at it, and no amount of standing in one opens the portal.
         edges.append((
             MCRegion.OVERWORLD, MCRegion.THE_END,
             helper.all_of(
                 helper.has(ITEM_DIMENSION_END),
-                helper.reached(f"{ADVANCEMENT_PREFIX}{A_EYE_SPY}"),
+                helper.structure(S_STRONGHOLD),
+                helper.acquire("minecraft:ender_eye"),
             ),
         ))
 

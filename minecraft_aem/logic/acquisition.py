@@ -228,8 +228,8 @@ class RuleHelper:
         # Biome Finder enabled (start or in_pool); disabled == 0. Biome-specific advancements require
         # it when on, since that's how you locate the biome.
         self.biome_finder_enabled = bool(world.options.biome_finder.value)
-        # Structure Finder enabled (start or in_pool). Only the glitch graph reads this — see
-        # found_with_finder — so with it off, or in strict logic, nothing changes.
+        # Structure Finder enabled (start or in_pool). Read by structure_located: with the option
+        # off there is no such item, so the requirement vanishes rather than blocking everything.
         self.structure_finder_enabled = (world.options.structure_finder.value
                                          != world.options.structure_finder.option_disabled)
         # BACAP advancement rewards, modeled as event items: base item -> active location names that
@@ -413,19 +413,12 @@ class RuleHelper:
             # No natural spawn at all: if you did not build it, there is no Wither to meet.
             E_WITHER      : self.summon_recipes[E_WITHER],
         }
-        # Structures you cannot find by exploring. Every other structure is modeled as "reachable
-        # once its dimension is", which is what wandering around actually gets you — but a
-        # stronghold is buried with no surface trace, and the game's own answer is to throw an Eye
-        # of Ender. Without this the whole End is free: the Overworld→End edge is gated on
-        # `Advancement: Eye Spy`, whose only requirement is entering a stronghold, so Eye Spy —
-        # and behind it the dragon and the goal — read reachable on a bare world with no Nether
-        # trip, no blaze rods and no pearls. A thunk, deferred like the mob maps so the acquire()
+        # Structures that need more than being located. A stronghold is NOT one of them: it is
+        # buried, but the Finder points at it and you can dig, and "Eye Spy" only asks you to stand
+        # inside one. The Eyes of Ender belong on the PORTAL, not on the building — see the
+        # Overworld→End edge in create_regions. A thunk, deferred like the mob maps so the acquire()
         # recursion happens at rule-build time rather than during construction.
         self.unfindable_structures = {
-            S_STRONGHOLD: lambda: self.any_of(
-                self.acquire("minecraft:ender_eye"),
-                self.found_with_finder(),
-            ),
             # An End City is on the outer islands, and the only way out there is an End gateway —
             # which does not exist until the dragon is dead. Reaching the End was the whole gate, so
             # the City, the elytra, the dragon head and the shulker were all free the moment you
@@ -921,20 +914,6 @@ class RuleHelper:
         if not self.structure_finder_enabled or self.glitch:
             return Const(True)
         return self.has(ITEM_STRUCTURE_FINDER, self._FINDER_TIER_DEPENDABLE)
-
-    def found_with_finder(self):
-        """The Progressive Structure Finder as a way to LOCATE a structure — GLITCH GRAPH ONLY.
-
-        "Eye Spy" does not ask you to throw an Eye of Ender; it asks you to be standing inside a
-        stronghold, and the eye is merely how the game intends you to find one. A finder copy
-        points at one too, and you can dig your way down. But a copy reveals the nearest few
-        structures by distance (StructureFinderService.cap), so whether a stronghold is among the
-        ones yours shows is down to your world — which is exactly the yellow contract: doable
-        right now if the game cooperates, never something fill may count on. Strict logic gets
-        Const(False), which or_ drops, so the strict rule stays the Eye of Ender alone."""
-        if not self.glitch or not self.structure_finder_enabled:
-            return Const(False)
-        return self.has(ITEM_STRUCTURE_FINDER)
 
     def needs_biome_finder(self):
         # Advancements that require finding a specific biome depend on the Biome Finder when it is
