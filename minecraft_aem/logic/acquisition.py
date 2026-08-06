@@ -493,10 +493,12 @@ class RuleHelper:
                 find = find_thunk()
             finally:
                 self._finding_stack = outer
+        # …and, in every case, a way to locate one (see structure_located).
+        located = self.structure_located()
         if struct_gid in self.locked_structures:
             return self.all_of(self.has(f"{STRUCT_UNLOCK_PREFIX}{STRUCTURES[struct_gid].label}"),
-                               region, find)
-        return self.all_of(region, find)
+                               region, find, located)
+        return self.all_of(region, find, located)
 
     def any_village(self):
         return self.any_of(*[self.structure(gid) for gid in
@@ -898,6 +900,27 @@ class RuleHelper:
         the CAPABILITY to kill it (can_defeat) rather than a reference to the kill location, so it
         is well defined whatever the goal is and adds no loc() node to the graph."""
         return self.can_defeat(E_ENDER_DRAGON)
+
+    # Structure Finder tier strict logic will count on. A copy reveals the nearest 5, then 10, then
+    # HALF of everything findable, then three quarters, then all (StructureFinderService.cap). The
+    # first two are distance-ordered, so whether the structure you want is on the bar is down to
+    # your world; from half upward it is dependable. Mirrors MAX_TIER on the mod side.
+    _FINDER_TIER_DEPENDABLE = 3
+
+    def structure_located(self):
+        """How you FIND a structure at all — the Finder is the route strict logic counts on.
+
+        Wandering until you stumble on a mansion is a real way to play and a terrible thing for a
+        randomizer to require, so it is an alternate: kept in the glitch graph, dropped from strict.
+        One or two Finder copies sit on the same footing — they show the nearest few structures by
+        distance, which may or may not include the one you need. From tier 3 (half of everything
+        findable) up it is a promise, so that is what strict asks for.
+
+        With the option off no such item exists this seed and the requirement vanishes entirely,
+        exactly as needs_biome_finder does for biomes."""
+        if not self.structure_finder_enabled or self.glitch:
+            return Const(True)
+        return self.has(ITEM_STRUCTURE_FINDER, self._FINDER_TIER_DEPENDABLE)
 
     def found_with_finder(self):
         """The Progressive Structure Finder as a way to LOCATE a structure — GLITCH GRAPH ONLY.
