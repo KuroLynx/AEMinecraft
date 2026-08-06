@@ -228,6 +228,10 @@ class RuleHelper:
         # Biome Finder enabled (start or in_pool); disabled == 0. Biome-specific advancements require
         # it when on, since that's how you locate the biome.
         self.biome_finder_enabled = bool(world.options.biome_finder.value)
+        # Structure Finder enabled (start or in_pool). Only the glitch graph reads this — see
+        # found_with_finder — so with it off, or in strict logic, nothing changes.
+        self.structure_finder_enabled = (world.options.structure_finder.value
+                                         != world.options.structure_finder.option_disabled)
         # BACAP advancement rewards, modeled as event items: base item -> active location names that
         # grant it (empty unless bacap_rewards is on). acquire() sources a rewarded item via
         # has(REWARD_EVENT_PREFIX + base); the event location carrying the reached() OR is created in
@@ -411,7 +415,10 @@ class RuleHelper:
         # trip, no blaze rods and no pearls. A thunk, deferred like the mob maps so the acquire()
         # recursion happens at rule-build time rather than during construction.
         self.unfindable_structures = {
-            S_STRONGHOLD: lambda: self.acquire("minecraft:ender_eye"),
+            S_STRONGHOLD: lambda: self.any_of(
+                self.acquire("minecraft:ender_eye"),
+                self.found_with_finder(),
+            ),
         }
         # Mobs whose only natural spawn is a specific, searchable biome — gated on the Biome Finder
         # (when enabled), since that's how you locate the biome. The Dried Ghast (→ Happy Ghast) can
@@ -868,6 +875,20 @@ class RuleHelper:
             self.entity(name) for name, data in MOBS_ALL.items()
             if data.category != MCEntityCategory.BOSS
         ])
+
+    def found_with_finder(self):
+        """The Progressive Structure Finder as a way to LOCATE a structure — GLITCH GRAPH ONLY.
+
+        "Eye Spy" does not ask you to throw an Eye of Ender; it asks you to be standing inside a
+        stronghold, and the eye is merely how the game intends you to find one. A finder copy
+        points at one too, and you can dig your way down. But a copy reveals the nearest few
+        structures by distance (StructureFinderService.cap), so whether a stronghold is among the
+        ones yours shows is down to your world — which is exactly the yellow contract: doable
+        right now if the game cooperates, never something fill may count on. Strict logic gets
+        Const(False), which or_ drops, so the strict rule stays the Eye of Ender alone."""
+        if not self.glitch or not self.structure_finder_enabled:
+            return Const(False)
+        return self.has(ITEM_STRUCTURE_FINDER)
 
     def needs_biome_finder(self):
         # Advancements that require finding a specific biome depend on the Biome Finder when it is
