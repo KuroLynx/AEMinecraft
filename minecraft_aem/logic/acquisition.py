@@ -148,6 +148,12 @@ _END_BLOCK_HINTS = ("end_stone", "chorus", "purpur", "dragon_egg")
 # circular. Only blocks that BOTH self-mine and have a recipe need listing (others keep self-mining
 # unconditionally). Missing one merely over-gates it to its recipe; wrongly adding a placed-only
 # block would under-gate it, so keep this conservative.
+# Structures with nothing above ground to see. Exploring finds every other structure eventually —
+# a village, a ruined portal, a mansion all sit on the surface — but a stronghold is buried with no
+# trace, so "wander until you trip over one" is not a route at all, not even an unreliable one. Read
+# by structure_located, which therefore gives these no free glitch pass.
+_NO_SURFACE_TRACE = frozenset({S_STRONGHOLD})
+
 _NATURAL_SELF_MINED = frozenset({
     "stone", "cobblestone", "granite", "diorite", "andesite", "tuff", "calcite", "deepslate",
     "cobbled_deepslate", "dripstone_block", "amethyst_block", "sandstone", "red_sandstone",
@@ -413,17 +419,23 @@ class RuleHelper:
             # No natural spawn at all: if you did not build it, there is no Wither to meet.
             E_WITHER      : self.summon_recipes[E_WITHER],
         }
-        # Structures that need more than being located. A stronghold is NOT one of them: it is
-        # buried, but the Finder points at it and you can dig, and "Eye Spy" only asks you to stand
-        # inside one. The Eyes of Ender belong on the PORTAL, not on the building — see the
-        # Overworld→End edge in create_regions. A thunk, deferred like the mob maps so the acquire()
+        # A PREREQUISITE on top of locating one: something that must have happened before the
+        # structure is reachable at all. Thunks, deferred like the mob maps so the acquire()
         # recursion happens at rule-build time rather than during construction.
-        self.unfindable_structures = {
+        self.structure_prerequisites = {
             # An End City is on the outer islands, and the only way out there is an End gateway —
             # which does not exist until the dragon is dead. Reaching the End was the whole gate, so
             # the City, the elytra, the dragon head and the shulker were all free the moment you
             # stepped through the portal.
             S_END_CITY: lambda: self.outer_end(),
+        }
+        # A structure-specific way to LOCATE one, dependable enough that strict logic accepts it
+        # instead of the Finder. The stronghold's is the game's own answer: throw an Eye of Ender
+        # and follow where it goes. (The eyes are ALSO needed for the portal, but that is a separate
+        # requirement on the Overworld→End edge — being able to find the building is not the same as
+        # being able to open the gate in it.)
+        self.structure_locate_routes = {
+            S_STRONGHOLD: lambda: self.acquire("minecraft:ender_eye"),
         }
         # Mobs whose only natural spawn is a specific, searchable biome — gated on the Biome Finder
         # (when enabled), since that's how you locate the biome. The Dried Ghast (→ Happy Ghast) can
@@ -470,28 +482,28 @@ class RuleHelper:
         # unlock item — but the dimension gate still applies, so e.g. the Nether ruined portal is
         # not reachable from the Overworld just because its unlock item was received.
         region = self.access_region(STRUCTURES[struct_gid].region)
-        # …and, for the few structures exploration alone never finds, whatever it takes to find one.
-        find_thunk = self.unfindable_structures.get(struct_gid)
-        if find_thunk is None:
-            find = Const(True)
-        elif struct_gid in self._finding_stack:
+        # A prerequisite and/or a structure-specific locate route can both recurse through acquire(),
+        # so they run under the finding guard; everything else needs no guard and must not pay the
+        # acquire-cache cost of one.
+        prereq_thunk = self.structure_prerequisites.get(struct_gid)
+        guarded = prereq_thunk is not None or struct_gid in self.structure_locate_routes
+        if guarded and struct_gid in self._finding_stack:
             # Reached while working out how to FIND this very structure: its own loot cannot be what
             # leads you to it. A stronghold chest holds Ender Pearls, so acquire("ender_eye") walks
             # straight back here — cut the path (the Enderman drop is the route that survives).
             return Const(False)
-        else:
-            outer = self._finding_stack
+        outer = self._finding_stack
+        if guarded:
             self._finding_stack = outer | {struct_gid}
-            try:
-                find = find_thunk()
-            finally:
-                self._finding_stack = outer
-        # …and, in every case, a way to locate one (see structure_located).
-        located = self.structure_located()
+        try:
+            prereq = prereq_thunk() if prereq_thunk is not None else Const(True)
+            located = self.structure_located(struct_gid)
+        finally:
+            self._finding_stack = outer
         if struct_gid in self.locked_structures:
             return self.all_of(self.has(f"{STRUCT_UNLOCK_PREFIX}{STRUCTURES[struct_gid].label}"),
-                               region, find, located)
-        return self.all_of(region, find, located)
+                               region, prereq, located)
+        return self.all_of(region, prereq, located)
 
     def any_village(self):
         return self.any_of(*[self.structure(gid) for gid in
@@ -900,8 +912,8 @@ class RuleHelper:
     # your world; from half upward it is dependable. Mirrors MAX_TIER on the mod side.
     _FINDER_TIER_DEPENDABLE = 3
 
-    def structure_located(self):
-        """How you FIND a structure at all — the Finder is the route strict logic counts on.
+    def structure_located(self, struct_gid: str):
+        """How you FIND this structure — the Finder is the route strict logic counts on.
 
         Wandering until you stumble on a mansion is a real way to play and a terrible thing for a
         randomizer to require, so it is an alternate: kept in the glitch graph, dropped from strict.
@@ -909,11 +921,25 @@ class RuleHelper:
         distance, which may or may not include the one you need. From tier 3 (half of everything
         findable) up it is a promise, so that is what strict asks for.
 
-        With the option off no such item exists this seed and the requirement vanishes entirely,
-        exactly as needs_biome_finder does for biomes."""
-        if not self.structure_finder_enabled or self.glitch:
-            return Const(True)
-        return self.has(ITEM_STRUCTURE_FINDER, self._FINDER_TIER_DEPENDABLE)
+        Two structures do not follow that shape:
+
+        * A stronghold has NO surface trace, so wandering is not a route at all, not even an
+          unreliable one — which is why it gets no free glitch pass. What it gets instead is
+          structure_locate_routes: Eyes of Ender find one every time, so that is strict.
+        * With the Finder option off no such item exists this seed, and for anything you CAN stumble
+          on the requirement vanishes entirely (as needs_biome_finder does for biomes). A stronghold
+          still needs its eyes.
+        """
+        routes = []
+        special = self.structure_locate_routes.get(struct_gid)
+        if special is not None:
+            routes.append(special())
+        if self.structure_finder_enabled:
+            routes.append(self.has(ITEM_STRUCTURE_FINDER, self._FINDER_TIER_DEPENDABLE))
+        explorable = struct_gid not in _NO_SURFACE_TRACE
+        if explorable and (self.glitch or not self.structure_finder_enabled):
+            routes.append(Const(True))  # you can just go looking
+        return self.any_of(*routes) if routes else Const(False)
 
     def needs_biome_finder(self):
         # Advancements that require finding a specific biome depend on the Biome Finder when it is
