@@ -228,6 +228,10 @@ class RuleHelper:
         # Biome Finder enabled (start or in_pool); disabled == 0. Biome-specific advancements require
         # it when on, since that's how you locate the biome.
         self.biome_finder_enabled = bool(world.options.biome_finder.value)
+        # Structure Finder enabled (start or in_pool). Only the glitch graph reads this — see
+        # found_with_finder — so with it off, or in strict logic, nothing changes.
+        self.structure_finder_enabled = (world.options.structure_finder.value
+                                         != world.options.structure_finder.option_disabled)
         # BACAP advancement rewards, modeled as event items: base item -> active location names that
         # grant it (empty unless bacap_rewards is on). acquire() sources a rewarded item via
         # has(REWARD_EVENT_PREFIX + base); the event location carrying the reached() OR is created in
@@ -270,7 +274,12 @@ class RuleHelper:
         # acquire(base, stack) is pure. Datapack-scale compilation calls it millions of times for the
         # same (base, stack) pairs (planks/sticks/ingots recur in every recipe); caching collapses
         # that. Returned nodes are shared read-only across rules, which is safe (eval + to_dict only).
-        self._acquire_cache: dict[tuple[str, frozenset], object] = {}
+        self._acquire_cache: dict[tuple[str, frozenset, frozenset], object] = {}
+        # Structures whose "how do you find one" gate is being computed right now (see structure()).
+        # It is part of the acquire() cache key because it changes the answer: while resolving the
+        # stronghold's gate, ender pearls must not be sourced from a stronghold chest, and that
+        # narrower result must not be cached over the ordinary one.
+        self._finding_stack: frozenset = frozenset()
         # Thunks (deferred so cross-referencing mobs don't recurse at construction).
         self.structure_bound_mobs = {
             # Overworld — structure-locked
@@ -374,6 +383,22 @@ class RuleHelper:
                 self.can_get_iron(include_iron_golem=False),
                 self.can_get_carved_pumpkin(),
             ),
+            # The Wither is built like a golem — 4 soul sand + 3 wither skeleton skulls — and both
+            # halves are Nether-only, the skulls specifically a Nether fortress drop. It was missing
+            # here, so summon() fell through to entity(); entities.json lists the Wither's region as
+            # Overworld (it is built wherever you stand) and it has no structure/parent/biome gate,
+            # which left "Withering Heights" as a bare Overworld check — green on a fresh world.
+            E_WITHER      : lambda: self.all_of(
+                self.acquire("minecraft:wither_skeleton_skull"),
+                self.acquire("minecraft:soul_sand"),
+            ),
+            # Respawning the dragon ("The End... Again...") means placing four End Crystals on the
+            # exit portal — which only exists once the first dragon is dead. summon() had no recipe
+            # for it and fell through to entity(), i.e. "be in the End".
+            E_ENDER_DRAGON: lambda: self.all_of(
+                self.outer_end(),
+                self.acquire("minecraft:end_crystal"),
+            ),
         }
         # How entity() *reaches* each constructed mob: the build recipe, plus any natural spawn. Snow
         # and Copper Golems never spawn naturally; an Iron Golem also spawns in villages, so for the
@@ -385,6 +410,27 @@ class RuleHelper:
                 self.any_village(),                   # natural village spawn
                 self.summon_recipes[E_IRON_GOLEM](),  # or built
             ),
+            # No natural spawn at all: if you did not build it, there is no Wither to meet.
+            E_WITHER      : self.summon_recipes[E_WITHER],
+        }
+        # Structures you cannot find by exploring. Every other structure is modeled as "reachable
+        # once its dimension is", which is what wandering around actually gets you — but a
+        # stronghold is buried with no surface trace, and the game's own answer is to throw an Eye
+        # of Ender. Without this the whole End is free: the Overworld→End edge is gated on
+        # `Advancement: Eye Spy`, whose only requirement is entering a stronghold, so Eye Spy —
+        # and behind it the dragon and the goal — read reachable on a bare world with no Nether
+        # trip, no blaze rods and no pearls. A thunk, deferred like the mob maps so the acquire()
+        # recursion happens at rule-build time rather than during construction.
+        self.unfindable_structures = {
+            S_STRONGHOLD: lambda: self.any_of(
+                self.acquire("minecraft:ender_eye"),
+                self.found_with_finder(),
+            ),
+            # An End City is on the outer islands, and the only way out there is an End gateway —
+            # which does not exist until the dragon is dead. Reaching the End was the whole gate, so
+            # the City, the elytra, the dragon head and the shulker were all free the moment you
+            # stepped through the portal.
+            S_END_CITY: lambda: self.outer_end(),
         }
         # Mobs whose only natural spawn is a specific, searchable biome — gated on the Biome Finder
         # (when enabled), since that's how you locate the biome. The Dried Ghast (→ Happy Ghast) can
@@ -431,9 +477,26 @@ class RuleHelper:
         # unlock item — but the dimension gate still applies, so e.g. the Nether ruined portal is
         # not reachable from the Overworld just because its unlock item was received.
         region = self.access_region(STRUCTURES[struct_gid].region)
+        # …and, for the few structures exploration alone never finds, whatever it takes to find one.
+        find_thunk = self.unfindable_structures.get(struct_gid)
+        if find_thunk is None:
+            find = Const(True)
+        elif struct_gid in self._finding_stack:
+            # Reached while working out how to FIND this very structure: its own loot cannot be what
+            # leads you to it. A stronghold chest holds Ender Pearls, so acquire("ender_eye") walks
+            # straight back here — cut the path (the Enderman drop is the route that survives).
+            return Const(False)
+        else:
+            outer = self._finding_stack
+            self._finding_stack = outer | {struct_gid}
+            try:
+                find = find_thunk()
+            finally:
+                self._finding_stack = outer
         if struct_gid in self.locked_structures:
-            return self.all_of(self.has(f"{STRUCT_UNLOCK_PREFIX}{STRUCTURES[struct_gid].label}"), region)
-        return region
+            return self.all_of(self.has(f"{STRUCT_UNLOCK_PREFIX}{STRUCTURES[struct_gid].label}"),
+                               region, find)
+        return self.all_of(region, find)
 
     def any_village(self):
         return self.any_of(*[self.structure(gid) for gid in
@@ -825,6 +888,31 @@ class RuleHelper:
             if data.category != MCEntityCategory.BOSS
         ])
 
+    def outer_end(self):
+        """Being able to get to the End's OUTER islands — i.e. having beaten the Ender Dragon.
+
+        The End is really two places. The central island is what the portal drops you on: the
+        dragon, the exit portal, nothing else. Everything people mean by "the End" — End Cities,
+        elytra, shulkers, chorus fruit, the dragon egg, a second dragon — is on the outer islands,
+        and the only route there is an End gateway, which spawns when the dragon dies. Modeled as
+        the CAPABILITY to kill it (can_defeat) rather than a reference to the kill location, so it
+        is well defined whatever the goal is and adds no loc() node to the graph."""
+        return self.can_defeat(E_ENDER_DRAGON)
+
+    def found_with_finder(self):
+        """The Progressive Structure Finder as a way to LOCATE a structure — GLITCH GRAPH ONLY.
+
+        "Eye Spy" does not ask you to throw an Eye of Ender; it asks you to be standing inside a
+        stronghold, and the eye is merely how the game intends you to find one. A finder copy
+        points at one too, and you can dig your way down. But a copy reveals the nearest few
+        structures by distance (StructureFinderService.cap), so whether a stronghold is among the
+        ones yours shows is down to your world — which is exactly the yellow contract: doable
+        right now if the game cooperates, never something fill may count on. Strict logic gets
+        Const(False), which or_ drops, so the strict rule stays the Eye of Ender alone."""
+        if not self.glitch or not self.structure_finder_enabled:
+            return Const(False)
+        return self.has(ITEM_STRUCTURE_FINDER)
+
     def needs_biome_finder(self):
         # Advancements that require finding a specific biome depend on the Biome Finder when it is
         # enabled; with it disabled no such item exists, so the requirement vanishes.
@@ -1176,7 +1264,7 @@ class RuleHelper:
             return self.material(tier) if tier is not None else None
         # Memoize on (base, stack): the result is pure for this helper, so the same item is computed
         # once and shared. Datapack compilation calls acquire ~9M times for far fewer distinct keys.
-        key = (base, _stack)
+        key = (base, _stack, self._finding_stack)
         cache = self._acquire_cache
         if key in cache:
             return cache[key]
@@ -1212,6 +1300,22 @@ class RuleHelper:
         # so it has no acquisition record — gate it on reaching an End City.
         if base == "dragon_head":
             return self.structure(S_END_CITY)
+
+        # The dragon egg appears on the exit portal only once the dragon has been killed, and it
+        # drops itself when mined — so the self-mine heuristic read it as a naturally occurring End
+        # block and "The Next Generation" needed nothing but standing in the End.
+        if base == "dragon_egg":
+            return self.outer_end()
+
+        # A sniffer egg is brushed out of the suspicious sand in a warm ocean ruin. Its table lists
+        # that structure, but at 6.7% it demotes to a glitch route, leaving strict logic with only
+        # `mining: [sniffer_egg]` — and the self-mine heuristic reads that as a naturally occurring
+        # block because the egg has no recipe. It has no recipe because it isn't crafted; the block
+        # never generates, you place one you already brushed. So the self-mine is as circular as a
+        # crafted block's, and taking it at face value made "Smells Interesting" (and the sniffer
+        # behind it) free in the Overworld. Model the real route: a brush, and the ruin to use it in.
+        if base == "sniffer_egg":
+            return self.all_of(self.has_brush(), self.structure(S_OCEAN_RUIN_WARM))
 
         # Tools / armor / gated craftables (bow, fishing rod, shears, …) need their Knowledge to be
         # USED however they were obtained — but they are still obtained via their real sources, each
