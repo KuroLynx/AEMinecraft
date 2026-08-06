@@ -119,6 +119,8 @@ class MCWorld(World):
             classification = item_data.classification
             if name in KNOWLEDGE_ITEMS:
                 classification = self._knowledge_classification(name)
+            elif name == ITEM_STRUCTURE_FINDER:
+                classification = self._finder_classification()
             return MCItem(name, classification, item_data.id, self.player)
 
         # Every Entity Unlock that enters the pool gates at least its own Kill Entity location, so it
@@ -534,6 +536,20 @@ class MCWorld(World):
         for child in node.get("c", ()):
             out.extend(MCWorld._referenced_locations(child))
         return out
+
+    def _finder_classification(self) -> ItemClassification:
+        """The Structure Finder is only filler-ish while nothing depends on it.
+
+        Since RuleHelper.structure_located, the third copy is what strict logic counts on to find
+        ANY structure — villages, fortresses, mansions, trial chambers, the lot. An item that
+        gates that much has to be balanced, or the fill is free to leave the first three copies in
+        the last sphere and the player spends most of the seed staring at a red tab. Only when the
+        copies are in the pool: with `start` they are precollected and with `disabled` there is no
+        item, so the tail classification is left alone. Derived per seed, like the mob/structure
+        unlock rules, rather than pinned in items.csv."""
+        if self.options.structure_finder == StructureFinder.option_in_pool:
+            return ItemClassification.progression
+        return ITEMS[ITEM_STRUCTURE_FINDER].classification
 
     def _knowledge_classification(self, item_name: str) -> ItemClassification:
         """Full progression for a Knowledge the seed leans on, progression_skip_balancing for the tail.

@@ -385,7 +385,11 @@ class TriggerCompiler:
         if trigger == "minecraft:kill_mob_near_sculk_catalyst":
             return self._sculk_kill_node(cond)
         if trigger == "minecraft:bee_nest_destroyed":
-            return self._entity_gid("minecraft:bee")
+            # Break a bee nest — with whatever tool the criterion demands. Total Beelocation wants
+            # Silk Touch (otherwise the nest just breaks and the bees are lost), and only the bee
+            # was being asked for, so it read green on a world with no way to enchant anything.
+            return self._all_opt(self._entity_gid("minecraft:bee"),
+                                 self._item_predicate(cond.get("item")))
         if trigger == "minecraft:allay_drop_item_on_block":
             return self._all_req(self._entity_gid("minecraft:allay"),
                                  self.h.acquire("minecraft:note_block"))
@@ -1010,8 +1014,13 @@ class TriggerCompiler:
         predicates = pred.get("predicates")
         if not isinstance(predicates, dict):
             return None
-        on_item = "enchantments" in predicates
-        on_book = "stored_enchantments" in predicates
+        # Component keys are namespaced in the data ("minecraft:enchantments"); accept the bare form
+        # too, the way _criterion normalises triggers and _trim_gate already reads its own key. Only
+        # the bare spelling was matched, so an enchantment requirement silently evaluated to "no
+        # enchantment needed" — Total Beelocation asks for Silk Touch and compiled to "reach a bee".
+        on_item = "enchantments" in predicates or "minecraft:enchantments" in predicates
+        on_book = ("stored_enchantments" in predicates
+                   or "minecraft:stored_enchantments" in predicates)
         if not on_item and not on_book:
             return None
         routes = [self.h.acquire("minecraft:enchanting_table")]
@@ -1272,6 +1281,15 @@ class TriggerCompiler:
         """AND of nodes that are ALL required — ``None`` (fall back) if any is unresolved, so a
         half-built gate never silently weakens to its resolvable half."""
         return None if any(n is None for n in nodes) else and_(*nodes)
+
+    @staticmethod
+    def _all_opt(*nodes) -> Rule | None:
+        """AND over the resolvable nodes; ``None`` only when nothing resolved. Unlike _all_req this
+        keeps a partly-resolved gate instead of discarding it — for criteria where each part is an
+        independent requirement, so dropping an unresolvable one still leaves a sound (if weaker)
+        rule, and falling back to the parent chain would be weaker still."""
+        present = [n for n in nodes if n is not None]
+        return and_(*present) if present else None
 
     @staticmethod
     def _any_opt(*nodes) -> Rule | None:
