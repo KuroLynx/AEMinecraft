@@ -149,6 +149,11 @@ _CUSTOM_STAT_ITEM = {
 # enough for phantoms (BACAP's "Insomniac") is just waiting, reachable anywhere.
 _CUSTOM_STAT_TRIVIAL = frozenset({"minecraft:time_since_rest", "minecraft:time_since_death"})
 
+# Equipment slots an entity predicate can constrain (vanilla EquipmentSlot names). Read by
+# _entity_equipment_node so "an entity wearing X" also requires being able to obtain X.
+_EQUIPMENT_SLOTS = frozenset({"head", "chest", "legs", "feet", "body", "saddle",
+                              "mainhand", "offhand"})
+
 # Non-item natural blocks whose mere presence pins the dimension(s) you can be in to interact with one
 # (entering / standing on / placing it). Each maps to the region(s) where that block exists — a block
 # carries no acquirable item, and every advancement is placed in the Overworld region, so without this
@@ -463,9 +468,31 @@ class TriggerCompiler:
         return self._entity_names_from_type(self._predicate_value(cond.get("entity"), "type"))
 
     def _entity_node(self, cond: dict) -> Rule | None:
-        """Reach the entity/entities a criterion's `entity` predicate pins (single id or ``#tag``)."""
+        """Reach the entity/entities a criterion's `entity` predicate pins (single id or ``#tag``),
+        and be able to put on it whatever that predicate says it is WEARING."""
         options = [self.h.entity(name) for name in self._entity_names(cond)]
-        return or_(*options) if options else None
+        if not options:
+            return None  # callers keep their own "any mob" fallbacks for an unpinned predicate
+        equipment = self._entity_equipment_node(cond)
+        node = or_(*options)
+        return node if equipment is None else and_(node, equipment)
+
+    def _entity_equipment_node(self, cond: dict) -> Rule | None:
+        """The gear an `entity` predicate demands the target be wearing, via its ``equipment`` map.
+
+        A predicate can pin more than a species: Good as New wants "a wolf whose body slot holds
+        undamaged wolf armor", and the wolf on its own is trivially reachable, so ignoring the
+        equipment collapsed the whole criterion to a bare Overworld check — no wolf armor, and so
+        no armadillo scutes and no crafting Knowledge either. Each slot resolves through the
+        ordinary item predicate, so an enchantment or trim on the gear comes along with it; a slot
+        that resolves to nothing is skipped rather than voiding the gate."""
+        equipment = self._predicate_value(cond.get("entity"), "equipment")
+        if not isinstance(equipment, dict):
+            return None
+        parts = [self._item_predicate(slot) for name, slot in equipment.items()
+                 if name in _EQUIPMENT_SLOTS]
+        parts = [part for part in parts if part is not None]
+        return and_(*parts) if parts else None
 
     def _entity_killed_player_node(self, cond: dict) -> Rule | None:
         """``entity_killed_player``: a non-player entity kills you. An armor stand (BACAP's Living
