@@ -194,7 +194,7 @@ public final class StructureFinderDriver {
     /** Derives a player's display from their current dimension's cache; cheap, so it runs every tick. */
     private static void publish(StructureFinderState state, ServerPlayer player) {
         UUID uuid = player.getUUID();
-        int tier = StructureFinderService.tier(player);
+        int tier = StructureFinderService.tier();
         Cache cache = CACHES.get(player.level().dimension());
         if (tier <= 0 || cache == null) {
             if (PUBLISHED.remove(uuid) != null) {

@@ -15,13 +15,15 @@ import java.util.List;
 /**
  * One player's Structure Finder bar, pushed from the server.
  *
- * <p>The search itself was always multiplayer-correct — the driver scans once per dimension and caps
- * the result per player by their own finder tier — but the result was published into a server-side
- * holder that the HUD read directly. That works only while client and server share a process; on a
- * dedicated server the client's copy of that holder is empty, so the bar simply never appeared.
+ * <p>The search itself was always multiplayer-correct — one scan per dimension, shared by everyone in
+ * it — but the result was published into a server-side holder that the HUD read directly. That works
+ * only while client and server share a process; on a dedicated server the client's copy of that
+ * holder is empty, so the bar simply never appeared.
  *
- * <p>Per player rather than broadcast, because the tier is per player: two people standing together
- * with different numbers of Structure Finders should see different numbers of structures.
+ * <p>Sent per player rather than broadcast, but NOT because the tier differs — a server is many
+ * people playing one slot, so the Finder belongs to the run and everybody has the same tier. It is
+ * per player because the targets are per DIMENSION: someone in the Nether must be sent the Nether's
+ * structures, not the Overworld's.
  *
  * <p>Only the located structures travel. Bearing, distance and icon size stay client-side, derived
  * from the live player position every frame — otherwise the bar would lag a walking player by
