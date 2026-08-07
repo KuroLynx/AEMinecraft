@@ -219,6 +219,20 @@ public final class StructureFinderDriver {
         PUBLISHED.put(uuid, new Published(tier, cache));
     }
 
+    /**
+     * Forgets what a leaving player was last sent.
+     *
+     * <p>{@link #PUBLISHED} exists to skip re-sending an unchanged bar, and it is keyed by uuid, so
+     * without this it outlives the player: they disconnect, their client wipes its copy of the
+     * snapshot, they reconnect — and the server still believes it has already told them. Tier and
+     * cache are both unchanged, publish returns early, and the bar stays empty until something
+     * unrelated moves the tier. Dropping the record here makes the next tick treat them as new.
+     */
+    public static void onPlayerLeave(ServerPlayer player) {
+        PUBLISHED.remove(player.getUUID());
+        StructureFinderState.get().remove(player.getUUID());
+    }
+
     private static int structureVersion() {
         return AEM.ARCHIPELAGO.client().registries().apStructures().unlockVersion();
     }

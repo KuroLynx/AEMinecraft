@@ -150,7 +150,12 @@ public final class MinecraftEventBridge {
 
         // A player who logs out between being link-killed and the death landing would otherwise keep
         // their suppression mark forever, silently swallowing their next real death's DeathLink.
-        ServerPlayerEvents.LEAVE.register(DeathLinkService::onPlayerDisconnect);
+        ServerPlayerEvents.LEAVE.register(player -> {
+            DeathLinkService.onPlayerDisconnect(player);
+            // Their client forgets the finder bar on disconnect, so the server has to forget having
+            // sent it — otherwise a reconnect gets nothing and the bar never comes back.
+            StructureFinderDriver.onPlayerLeave(player);
+        });
 
         // The Biome Finder is soulbound: restore the exact stack saved at death (keeping its tracked
         // biome), or grant a fresh one if none was saved.
