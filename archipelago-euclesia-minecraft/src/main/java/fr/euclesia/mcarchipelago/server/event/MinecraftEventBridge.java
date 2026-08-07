@@ -2,6 +2,7 @@ package fr.euclesia.mcarchipelago.server.event;
 
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.protocol.packet.outbound.SayPacket;
+import fr.euclesia.mcarchipelago.server.connect.AEMServerConfig;
 import fr.euclesia.mcarchipelago.server.connect.APWorldConnection;
 import fr.euclesia.mcarchipelago.server.connect.APWorldConnector;
 import fr.euclesia.mcarchipelago.server.gameplay.AdvancementBridge;
@@ -11,6 +12,7 @@ import fr.euclesia.mcarchipelago.server.gameplay.FillerTrapService;
 import fr.euclesia.mcarchipelago.server.gameplay.KnowledgeUseGate;
 import fr.euclesia.mcarchipelago.server.gameplay.MobKillBridge;
 import fr.euclesia.mcarchipelago.server.gameplay.RootAdvancementService;
+import fr.euclesia.mcarchipelago.server.gameplay.SharedAdvancementService;
 import fr.euclesia.mcarchipelago.server.gameplay.StartDimensionService;
 import fr.euclesia.mcarchipelago.server.gameplay.StructureFinderDriver;
 import fr.euclesia.mcarchipelago.server.gameplay.TrapMobService;
@@ -53,6 +55,28 @@ public final class MinecraftEventBridge {
             }
 
             APWorldConnection connection = APWorldConnection.read(worldDir);
+
+            // A dedicated server has no create-world screen to stage a connection, so fall back to
+            // config/aem.json and seed the world from it. Deliberately only when the world has none:
+            // once a world knows its slot, that file wins, so moving a save between hosts carries
+            // its slot along instead of silently adopting the new host's.
+            if ((connection == null || !connection.hasSlot()) && server.isDedicatedServer()) {
+                AEMServerConfig config = AEMServerConfig.load();
+                if (!config.hasSlot()) {
+                    AEM.LOGGER.warn("No Archipelago slot configured. Set \"slot\" in {} or run "
+                            + "/aem connect; the server will start without a session.", AEMServerConfig.path());
+                    return;
+                }
+                if (!config.connectOnStart) {
+                    AEM.LOGGER.info("connectOnStart is off; start the session with /aem connect.");
+                    return;
+                }
+                connection = config.toWorldConnection();
+                connection.write(worldDir);
+                AEM.LOGGER.info("Seeded this world's Archipelago slot '{}' from {}.",
+                        connection.slot, AEMServerConfig.path());
+            }
+
             if (connection == null || !connection.hasSlot()) {
                 return;
             }
@@ -60,13 +84,27 @@ public final class MinecraftEventBridge {
                 return;
             }
             if (!APWorldConnector.connectBlocking(connection, CONNECT_TIMEOUT_MS)) {
-                throw new IllegalStateException("Archipelago connection failed for " + connection.address
-                        + ":" + connection.port + " (slot " + connection.slot + "); cannot enter the world.");
+                // On a dedicated server, refusing to boot over a failed handshake would take the
+                // whole server down for a room that is merely not up yet. Log it and start; the
+                // operator can retry with /aem connect once the room is running.
+                String detail = connection.address + ":" + connection.port + " (slot " + connection.slot + ")";
+                if (server.isDedicatedServer()) {
+                    AEM.LOGGER.error("Archipelago connection failed for {}. Starting anyway - "
+                            + "retry with /aem connect.", detail);
+                    return;
+                }
+                throw new IllegalStateException("Archipelago connection failed for " + detail
+                        + "; cannot enter the world.");
             }
         });
 
-        ServerLifecycleEvents.SERVER_STARTED.register(AEMServerRuntime::setServer);
+        ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+            AEMServerRuntime.setServer(server);
+            // The run's shared advancement book, before any player can join and be caught up on it.
+            SharedAdvancementService.load(server);
+        });
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
+            SharedAdvancementService.save();
             AEMServerRuntime.clearServer(server);
             AEM.ARCHIPELAGO.client().close();
         });
@@ -80,6 +118,9 @@ public final class MinecraftEventBridge {
             // Rebuild + resync the tab root for this player before scanning, so the connect-before-join
             // path still gets the goal-count root (the connect-time reload ran with no players online).
             RootAdvancementService.applyOnJoin(player);
+            // Catch this player up on everything the RUN has completed before scanning them, so the
+            // scan sees the shared book rather than whatever this player personally happened to have.
+            SharedAdvancementService.onPlayerJoin(player);
             AdvancementBridge.scanPlayer(player);
             // Give back the soulbound Biome Finder if this slot owns it (covers first join and relog).
             BiomeFinderService.ensureGranted(player);

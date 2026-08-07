@@ -12,8 +12,17 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.random.RandomGenerator;
 
 public final class DeathLinkService {
+    private static final RandomGenerator RANDOM = RandomGenerator.getDefault();
+
+    /**
+     * Set while WE are killing someone in response to an incoming link, so their death does not
+     * bounce a fresh DeathLink straight back out. A player's own death still sends one — that is the
+     * point of the link — but a death we caused is not news.
+     */
     private static boolean suppressSend;
 
     private DeathLinkService() {}
@@ -40,14 +49,28 @@ public final class DeathLinkService {
 
         Component message = Component.translatable("message.aem.deathlink", describe(source, cause));
         server.execute(() -> {
+            // ONE player per incoming link, not the whole server. Killing everyone turns a single
+            // remote death into a server-wide wipe, which on a full server is a punishment wildly
+            // out of proportion to the event that caused it.
+            List<ServerPlayer> living = server.getPlayerList().getPlayers().stream()
+                    .filter(ServerPlayer::isAlive)
+                    .toList();
+            if (living.isEmpty()) {
+                AEMDebug.log("deathLink.remote no living player online; dropped");
+                return;
+            }
+            ServerPlayer victim = living.get(RANDOM.nextInt(living.size()));
+            AEMDebug.log("deathLink.remote killing {} (1 of {} living)",
+                    victim.getGameProfile().name(), living.size());
+
             suppressSend = true;
             try {
-                server.getPlayerList().broadcastSystemMessage(message, false);
-                for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                    if (player.isAlive()) {
-                        player.kill(player.level());
-                    }
-                }
+                // Everyone hears about it — the link is a shared event even though one player pays
+                // for it, and naming the victim stops the survivors wondering who died.
+                server.getPlayerList().broadcastSystemMessage(
+                        Component.translatable("message.aem.deathlink.victim",
+                                victim.getDisplayName(), message), false);
+                victim.kill(victim.level());
             } finally {
                 suppressSend = false;
             }

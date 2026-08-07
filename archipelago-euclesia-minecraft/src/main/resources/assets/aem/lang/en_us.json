@@ -103,6 +103,7 @@
   "message.aem.content.kind.mod": "mod",
 
   "message.aem.deathlink": "DeathLink: %s",
+  "message.aem.deathlink.victim": "%s was taken by the link. %s",
   "message.aem.deathlink.unknown": "%s died",
   "message.aem.deathlink.anonymous": "A linked player died",
 

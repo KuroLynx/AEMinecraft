@@ -25,6 +25,14 @@ public final class AdvancementBridge {
             return;
         }
 
+        // Everyone on the server shares one book, so hand this completion to the other players. The
+        // return value is what makes a location report exactly once: it is true only for the player
+        // who actually got there, false for the copies we then award to everybody else and for a
+        // late joiner catching up on a location the run sent hours ago.
+        if (!SharedAdvancementService.onCompleted(player, advancementId)) {
+            return;
+        }
+
         // The check result is reported back through Archipelago's PrintJSON (rendered to chat by
         // ArchipelagoChatListener), so no local confirmation message is needed here.
         boolean sent = AEM.ARCHIPELAGO.gateway().checkLocation(advancementId);
@@ -96,6 +104,15 @@ public final class AdvancementBridge {
 
         int sent = AEM.ARCHIPELAGO.gateway().checkLocationsByGameId(completed);
         AEM.LOGGER.info("[AEM-DIAG] scanPlayer sent {} checks from {} completed advancements", sent, completed.size());
+
+        // Fold whatever this player already held into the run's shared book, so the book is the
+        // UNION of everyone's progress rather than only what was earned since sharing began. This is
+        // the path that matters for an existing world going multiplayer, or for a player whose file
+        // carries progress the book never saw; anything already in the book is a no-op, and anything
+        // new propagates to the other players from here.
+        for (String advancementId : completed) {
+            SharedAdvancementService.onCompleted(player, advancementId);
+        }
 
         // Re-evaluate the advancement-count goal progress once after the batch (syncProgress is an
         // idempotent recompute, so a single call covers every advancement just folded in above).
