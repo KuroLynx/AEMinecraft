@@ -258,7 +258,7 @@ public final class ArchipelagoClient {
             biomeServer.execute(() -> {
                 BiomeFinderService.ensureGrantedToAll(biomeServer);
                 // Grant filler contents / fire trap effects for any newly received items.
-                FillerTrapService.applyPendingToAny(biomeServer);
+                FillerTrapService.applyPendingToAll(biomeServer);
             });
         }
 
