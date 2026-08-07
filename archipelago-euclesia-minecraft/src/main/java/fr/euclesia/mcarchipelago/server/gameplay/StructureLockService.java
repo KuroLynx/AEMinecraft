@@ -3,6 +3,7 @@ package fr.euclesia.mcarchipelago.server.gameplay;
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.registry.APStructureRegistry;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
+import fr.euclesia.mcarchipelago.server.runtime.APSlotGate;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
@@ -29,11 +30,20 @@ public final class StructureLockService {
      */
     public static String lockedStructureId(WorldGenLevel level, Structure structure) {
         APStructureRegistry registry = lockRegistry();
-        if (registry == null) {
+        if (registry == null && !APSlotGate.isAwaitingSlot()) {
             return null;
         }
         Identifier id = level.registryAccess().lookupOrThrow(Registries.STRUCTURE).getKey(structure);
-        return id != null && registry.isLocked(id.toString()) ? id.toString() : null;
+        if (id == null) {
+            return null;
+        }
+        // Awaiting the slot: capture EVERY structure. We cannot yet tell which ones this slot holds
+        // back, and a structure placed for real can never be un-placed. Capture is reversible — the
+        // ones the slot turns out not to lock are placed by SlotReleaseService the moment we know.
+        if (registry == null) {
+            return id.toString();
+        }
+        return registry.isLocked(id.toString()) ? id.toString() : null;
     }
 
     /**
@@ -43,11 +53,26 @@ public final class StructureLockService {
      */
     public static String lockedFeatureId(WorldGenLevel level, PlacedFeature feature) {
         APStructureRegistry registry = lockRegistry();
-        if (registry == null) {
+        if (registry == null && !APSlotGate.isAwaitingSlot()) {
             return null;
         }
         Identifier id = level.registryAccess().lookupOrThrow(Registries.PLACED_FEATURE).getKey(feature);
-        return id != null && registry.isLocked(id.toString()) ? id.toString() : null;
+        if (id == null) {
+            return null;
+        }
+        // Awaiting the slot, features are NOT captured, and deliberately so. Structures can be
+        // captured blind — there are a few dozen, they are rare, and capture is reversible — but
+        // every biome decoration in the game is a placed feature, so "capture everything" here would
+        // mean capturing the grass, the ores and the trees into the savefile to replay later. That
+        // is not a lock, it is a second worldgen.
+        //
+        // The blind window is closed at its source instead: a server that expects a slot refuses to
+        // start without one, and one told to start idle refuses player logins until /aem connect
+        // lands (see APSlotGate). With no players and no generation there is nothing to capture.
+        if (registry == null) {
+            return null;
+        }
+        return registry.isLocked(id.toString()) ? id.toString() : null;
     }
 
     /**
@@ -60,7 +85,9 @@ public final class StructureLockService {
     public static boolean isStructureLocked(RegistryAccess registryAccess, Structure structure) {
         APStructureRegistry registry = lockRegistry();
         if (registry == null) {
-            return false;
+            // Awaiting the slot, everything counts as locked — this is what stops an "inside
+            // structure" advancement firing off a structure we captured rather than placed.
+            return APSlotGate.isAwaitingSlot();
         }
         Identifier id = registryAccess.lookupOrThrow(Registries.STRUCTURE).getKey(structure);
         return id != null && registry.isLocked(id.toString());

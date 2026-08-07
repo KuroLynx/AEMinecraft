@@ -12,6 +12,7 @@ import fr.euclesia.mcarchipelago.protocol.APItemsHandling;
 import fr.euclesia.mcarchipelago.protocol.APJson;
 import fr.euclesia.mcarchipelago.protocol.APReceivedPacket;
 import fr.euclesia.mcarchipelago.protocol.packet.outbound.ConnectUpdatePacket;
+import fr.euclesia.mcarchipelago.server.gameplay.SlotReleaseService;
 import fr.euclesia.mcarchipelago.server.gameplay.AdvancementBridge;
 import fr.euclesia.mcarchipelago.server.gameplay.BacapConfigService;
 import fr.euclesia.mcarchipelago.server.gameplay.RootAdvancementService;
@@ -40,6 +41,11 @@ public final class ArchipelagoGameplayListener implements APEventListener {
         if (slotData.deathLink()) {
             client.send(new ConnectUpdatePacket(APBounceType.tags(APBounceType.DEATH_LINK), APItemsHandling.ALL));
         }
+
+        // The slot is known at last, so everything held back only because it was UNKNOWN can be let
+        // go: structures captured blind that this slot does not lock get placed for real, and mobs
+        // deferred blind get spawned. Without this the fail-closed gate would be a one-way door.
+        SlotReleaseService.releaseUnlockedContent();
 
         // Covers the connect-after-join path (/archipelago connect): now that the slot data is
         // known, relocate any online player who still needs their start dimension applied.

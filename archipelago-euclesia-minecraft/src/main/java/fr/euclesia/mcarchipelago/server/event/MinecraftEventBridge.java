@@ -18,11 +18,13 @@ import fr.euclesia.mcarchipelago.server.gameplay.StructureFinderDriver;
 import fr.euclesia.mcarchipelago.server.gameplay.TrapMobService;
 import fr.euclesia.mcarchipelago.server.gameplay.TrapPlatformService;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
+import fr.euclesia.mcarchipelago.server.runtime.APSlotGate;
 import fr.euclesia.mcarchipelago.server.service.DeathLinkService;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.storage.LevelResource;
 
@@ -68,7 +70,11 @@ public final class MinecraftEventBridge {
                     return;
                 }
                 if (!config.connectOnStart) {
-                    AEM.LOGGER.info("connectOnStart is off; start the session with /aem connect.");
+                    // Idle start is the case that needs the gate MOST, not least: the server is up
+                    // with no slot data at all, so close it here before returning or players could
+                    // walk in and generate the world blind.
+                    APSlotGate.expectSlot();
+                    AEM.LOGGER.info("connectOnStart is off; players are held out until /aem connect.");
                     return;
                 }
                 connection = config.toWorldConnection();
@@ -80,21 +86,24 @@ public final class MinecraftEventBridge {
             if (connection == null || !connection.hasSlot()) {
                 return;
             }
+
+            // From here on this world is an Archipelago run, so the locks hold shut until its slot
+            // data arrives rather than failing open (see APSlotGate).
+            APSlotGate.expectSlot();
             if (AEM.ARCHIPELAGO.client().state().isConnected()) {
                 return;
             }
             if (!APWorldConnector.connectBlocking(connection, CONNECT_TIMEOUT_MS)) {
-                // On a dedicated server, refusing to boot over a failed handshake would take the
-                // whole server down for a room that is merely not up yet. Log it and start; the
-                // operator can retry with /aem connect once the room is running.
-                String detail = connection.address + ":" + connection.port + " (slot " + connection.slot + ")";
-                if (server.isDedicatedServer()) {
-                    AEM.LOGGER.error("Archipelago connection failed for {}. Starting anyway - "
-                            + "retry with /aem connect.", detail);
-                    return;
-                }
-                throw new IllegalStateException("Archipelago connection failed for " + detail
-                        + "; cannot enter the world.");
+                // Refuse to start rather than run blind. A server that generates chunks without
+                // knowing its slot places structures the slot meant to hold back, permanently and
+                // invisibly — a dead server is recoverable, a spoiled world is not. The operator
+                // who wants to boot anyway has connectOnStart:false, which starts idle and keeps
+                // players out until /aem connect lands.
+                throw new IllegalStateException("Archipelago connection failed for " + connection.address
+                        + ":" + connection.port + " (slot " + connection.slot + "). Refusing to start: "
+                        + "generating without slot data would place locked content for real. "
+                        + "Set connectOnStart:false in " + AEMServerConfig.path()
+                        + " to start idle and connect with /aem connect.");
             }
         });
 
@@ -110,6 +119,13 @@ public final class MinecraftEventBridge {
         });
 
         ServerPlayerEvents.JOIN.register(player -> {
+            // A server told to start idle has no slot data, so it cannot tell locked content from
+            // free. Letting someone in would have them load chunks and generate the world blind,
+            // which is exactly the damage the gate exists to prevent — so they wait outside.
+            if (APSlotGate.isAwaitingSlot()) {
+                player.connection.disconnect(Component.translatable("message.aem.awaiting_slot"));
+                return;
+            }
             // Covers the connect-before-join path (e.g. main-menu connect): if the slot data is
             // already known, place the player in their start dimension before anything else.
             StartDimensionService.applyIfNeeded(player);

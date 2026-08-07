@@ -102,6 +102,7 @@
   "message.aem.content.kind.datapack": "datapack",
   "message.aem.content.kind.mod": "mod",
 
+  "message.aem.awaiting_slot": "This server has not connected to Archipelago yet.\nAn operator must run /aem connect before anyone can join.",
   "message.aem.deathlink": "DeathLink: %s",
   "message.aem.deathlink.victim": "%s was taken by the link. %s",
   "message.aem.deathlink.unknown": "%s died",

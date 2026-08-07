@@ -51,6 +51,16 @@ public final class StructureCaptureService {
         server.execute(() -> captureData(level).add(structureId, placement));
     }
 
+    /** Structure ids holding captured placements in this level (see SlotReleaseService). */
+    public static Set<String> capturedStructureIds(ServerLevel level) {
+        return captureData(level).capturedIds();
+    }
+
+    /** Mob ids holding deferred worldgen spawns in this level (see SlotReleaseService). */
+    public static Set<String> pendingMobIds(ServerLevel level) {
+        return pendingMobData(level).pendingIds();
+    }
+
     /** Applies every captured placement of the given structures into the live world. Server thread. */
     public static void applyUnlocked(MinecraftServer server, Set<String> structureIds) {
         if (structureIds.isEmpty()) {
