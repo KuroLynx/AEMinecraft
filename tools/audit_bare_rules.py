@@ -41,14 +41,18 @@ Run from anywhere:
     python tools/audit_bare_rules.py --all                 # every config in CASES
     python tools/audit_bare_rules.py --glitch              # the permissive display graph too
     python tools/audit_bare_rules.py --all --verbose       # include each serialized rule
-    python tools/audit_bare_rules.py --all --markdown      # regenerate docs/bare_rule_backlog.md
+    python tools/audit_bare_rules.py --all --markdown --out docs/bare_rule_backlog.md
 """
 import json
 import os
 import sys
 from collections import defaultdict
+from contextlib import redirect_stdout
 
 AP_ROOT = r"C:\Users\benja\PycharmProjects\ArchipelagoClone"
+# Captured BEFORE the chdir below: generation must run from the AP clone, so a relative --out would
+# otherwise resolve there instead of into this repo (which silently wrote the doc to the wrong tree).
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, AP_ROOT)
 os.chdir(AP_ROOT)
 
@@ -78,10 +82,16 @@ FREE_BY_DESIGN = {
     "Advancement: The Parrots and the Bats",
 }
 
-# Checks whose entire content IS "be in this dimension". The gate is real but lives on the region
-# EDGE, not on the location: Overworld->Nether and Overworld->The End both demand the Dimension
-# Unlock item (and, for the End, a stronghold plus Eyes of Ender) in create_regions. A region-only
-# rule is the correct compilation here, so flagging them is a false positive.
+# Checks whose entire content IS "get into this dimension". The gate is real but lives on the region
+# EDGE, not on the location: Overworld->Nether wants the Dimension Unlock item plus obsidian (via
+# Ice Bucket Challenge), Overworld->The End wants its unlock item, a stronghold and Eyes of Ender.
+# A region-only rule is the correct compilation, so flagging these is a false positive.
+#
+# This exemption is only sound because `RuleHelper.enter_dimension` handles the start dimension: on
+# a Nether start "We Need to Go Deeper" pins BOTH regions (you must leave and come back), so its
+# region set is still the whole gate. If that ever regresses to a single free region, the check
+# becomes genuinely ungated and this entry would hide it — the reason the audit prints the region
+# set for every finding rather than just the name.
 REGION_IS_THE_CHECK = {
     "Advancement: We Need to Go Deeper",
     "Advancement: The End?",
@@ -253,12 +263,17 @@ def report(label: str, findings: list[dict], *, verbose: bool, quiet: bool = Fal
 
 
 def main() -> int:
-    args = set(sys.argv[1:])
-    # The report carries em-dashes and mod titles with non-ASCII characters; the default Windows
-    # console encoding mangles both, and --markdown output is usually redirected into a file.
+    argv = sys.argv[1:]
+    args = set(argv)
+    # The report carries em-dashes and advancement titles with non-ASCII characters; the default
+    # Windows console encoding mangles both.
     sys.stdout.reconfigure(encoding="utf-8")
     verbose = "--verbose" in args or "-v" in args
     markdown = "--markdown" in args
+    out_path = next((argv[i + 1] for i, a in enumerate(argv)
+                     if a == "--out" and i + 1 < len(argv)), None)
+    if out_path and not os.path.isabs(out_path):
+        out_path = os.path.join(REPO_ROOT, out_path)
     graphs = [("strict", False)] + ([("glitch", True)] if "--glitch" in args else [])
     cases = CASES if "--all" in args else {"default (overworld start)": CASES["default (overworld start)"]}
 
@@ -275,7 +290,16 @@ def main() -> int:
     ordered = sorted(union.items(), key=lambda kv: (SUSPECT_BUCKETS.index(kv[1][0]["bucket"]),
                                                     kv[0]))
     if markdown:
-        _markdown(ordered, len(cases), len(graphs))
+        # Write through a file handle rather than shell redirection: importing AP can print a
+        # "Requirement ... press enter to install it" prompt on STDOUT before main() ever runs, and
+        # `> file` captures that too — it landed at the top of the generated document.
+        if out_path:
+            with open(out_path, "w", encoding="utf-8", newline="\n") as fh:
+                with redirect_stdout(fh):
+                    _markdown(ordered, len(cases), len(graphs))
+            print(f"wrote {out_path}")
+        else:
+            _markdown(ordered, len(cases), len(graphs))
         return 0
 
     print("=" * 78)

@@ -331,8 +331,14 @@ class MCWorld(World):
         # before the End edge or AP evaluates the End gate too early and never reaches the End.
         edges = []
 
+        # Neither portal edge asks for Pyromaniac, and that is deliberate. The Knowledge gates two
+        # ITEMS — flint_and_steel and fire_charge (see data.TOOL_LOCKS) — and nothing gates igniting
+        # a frame from lava, which lights a portal just as well: lava beside any flammable block in
+        # the Overworld, or beside netherrack in the Nether. Both edges already prove lava is in
+        # reach (forming obsidian needs lava + water; the Nether is made of it), so the alternate is
+        # always available and requiring the Knowledge only invented a lock the game does not have.
         if start_region == MCRegion.NETHER:
-            # Spawn in the Nether: build the return portal — obtain obsidian and light it (Pyromaniac).
+            # Spawn in the Nether: build the return portal — obtain obsidian and light it.
             # can_get_obsidian is region-gated, so from the Nether it resolves only to Nether sources
             # (Nether ruined portal / Bastion / Fortress / barter), exactly as the dimension allows.
             edges.append((
@@ -340,7 +346,6 @@ class MCWorld(World):
                 helper.all_of(
                     helper.has(ITEM_DIMENSION_OVERWORLD),
                     helper.can_get_obsidian(),
-                    helper.knowledge(K_PYRO),
                 ),
             ))
         else:
@@ -350,7 +355,6 @@ class MCWorld(World):
                 helper.all_of(
                     helper.has(ITEM_DIMENSION_NETHER),
                     helper.reached(f"{ADVANCEMENT_PREFIX}{A_ICE_BUCKET_CHALLENGE}"),
-                    helper.knowledge(K_PYRO),
                 ),
             ))
 

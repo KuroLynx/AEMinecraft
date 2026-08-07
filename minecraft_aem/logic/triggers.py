@@ -314,7 +314,9 @@ class TriggerCompiler:
             return self._any_mob(MOBS_BREEDABLE, self.h.can_breed) if not cond else None
         if trigger == "minecraft:changed_dimension":
             region = _DIMENSION_REGION.get(self._path(cond.get("to")))
-            return self.h.access_region(region) if region else None
+            # enter_dimension, not access_region: entering the dimension you START in means leaving
+            # and coming back, which spawning there does not satisfy.
+            return self.h.enter_dimension(region) if region else None
         if trigger == "minecraft:location":
             return self._location_node(cond)
         if trigger == "minecraft:inventory_changed":

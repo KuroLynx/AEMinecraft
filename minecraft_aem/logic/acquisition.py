@@ -546,6 +546,27 @@ class RuleHelper:
     def access_region(self, region_name: str):
         return ReachRegion(self.player, region_name)
 
+    # The two dimensions joined by a portal. Entering either one from the other is the round trip
+    # that `enter_dimension` needs; the End is never a start dimension, so it never appears here.
+    _PORTAL_PARTNER = {REGION_OVERWORLD: REGION_NETHER, REGION_NETHER: REGION_OVERWORLD}
+
+    def enter_dimension(self, region_name: str):
+        """``changed_dimension`` into ``region_name`` — CHANGING dimension, which is not the same as
+        being in one. Spawning somewhere never fires the trigger.
+
+        That distinction only bites on the start dimension, and it made 'We Need to Go Deeper' free
+        on a Nether start: the check reduced to "be in the Nether", which is where the player wakes
+        up, so both fill and the tracker called it done from turn one. In game it needs the whole
+        Overworld round trip — the unlock item and obsidian for the return portal — and then a walk
+        back through it. So a start-dimension entry additionally requires reaching the dimension on
+        the other side of the portal; coming back needs no second gate, because the portal used to
+        leave is still standing."""
+        node = self.access_region(region_name)
+        if region_name != self.start_region:
+            return node
+        partner = self._PORTAL_PARTNER.get(region_name)
+        return self.all_of(node, self.access_region(partner)) if partner else node
+
     def reached(self, location: str):
         """Reaching another location. Resolves to Const(False) when this seed never created it.
 
