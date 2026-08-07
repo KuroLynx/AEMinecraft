@@ -7,6 +7,7 @@ import fr.euclesia.mcarchipelago.server.ap.ArchipelagoGameplayListener;
 import fr.euclesia.mcarchipelago.server.command.AEMCommandRegistry;
 import fr.euclesia.mcarchipelago.server.command.ArchipelagoCommandModule;
 import fr.euclesia.mcarchipelago.server.command.DumpCommandModule;
+import fr.euclesia.mcarchipelago.server.command.StructuresCommandModule;
 import fr.euclesia.mcarchipelago.server.event.MinecraftEventBridge;
 import fr.euclesia.mcarchipelago.server.gameplay.StructurePlacementQueue;
 import fr.euclesia.mcarchipelago.server.gameplay.TrapMobService;
@@ -27,6 +28,7 @@ public final class AEMServerBridge {
         AEMCommandRegistry.create()
                 .module(new ArchipelagoCommandModule())
                 .module(new DumpCommandModule())
+                .module(new StructuresCommandModule())
                 .register();
 
         // Spread unlocked-structure placement across ticks (a mass unlock is otherwise one huge tick).
