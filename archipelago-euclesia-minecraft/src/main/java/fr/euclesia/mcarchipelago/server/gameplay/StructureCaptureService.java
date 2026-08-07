@@ -4,7 +4,6 @@ import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.server.gameplay.StructureCapture.CaptureSession;
 import fr.euclesia.mcarchipelago.server.gameplay.StructureCaptureData.CapturedBlock;
 import fr.euclesia.mcarchipelago.server.gameplay.StructureCaptureData.CapturedPlacement;
-import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
@@ -41,10 +40,13 @@ public final class StructureCaptureService {
         if (session == null || session.isEmpty()) {
             return;
         }
-        MinecraftServer server = AEMServerRuntime.server();
-        if (server == null) {
-            return;
-        }
+        // level.getServer(), NOT AEMServerRuntime.server(): the latter is only set on SERVER_STARTED,
+        // and spawn chunks generate during level load, BEFORE that. Reading it here returned null and
+        // dropped straight out — but StructureCapture.end() above has already consumed the session, so
+        // the structure's writes were diverted away from the world AND the capture thrown away. The
+        // structure was neither placed nor stored: gone, with nothing left to release. A ServerLevel
+        // always knows its server, whatever stage of startup we are in.
+        MinecraftServer server = level.getServer();
         HolderLookup.Provider provider = level.registryAccess();
         String structureId = session.structureId();
         CapturedPlacement placement = session.toPersistable(provider);
@@ -101,10 +103,9 @@ public final class StructureCaptureService {
         if (mobId.isEmpty()) {
             return;
         }
-        MinecraftServer server = AEMServerRuntime.server();
-        if (server == null) {
-            return;
-        }
+        // Same reasoning as finish(): the runtime reference is not set this early in startup, and a
+        // deferred mob dropped here is a mob that never spawns at all.
+        MinecraftServer server = level.getServer();
         server.execute(() -> pendingMobData(level).add(mobId, entityNbt));
     }
 
