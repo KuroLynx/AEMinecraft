@@ -190,7 +190,22 @@ public final class MinecraftEventBridge {
             if (!AEMServerRuntime.isArchipelagoReady()) {
                 return true;
             }
-            AEM.ARCHIPELAGO.client().send(new SayPacket(message.signedContent()));
+            String text = message.signedContent();
+
+            // Archipelago reads a Say beginning with '!' as a COMMAND. Forwarding chat verbatim
+            // therefore handed every player on this server a remote console: !alias renames the slot
+            // for the whole room, and !release hands out the entire slot's items. Chat is chat, so
+            // anything command-shaped is delivered locally and never sent onward. An operator who
+            // genuinely wants to run one has /aem say.
+            if (text.startsWith("!")) {
+                return true;  // let vanilla broadcast it locally; do not forward
+            }
+
+            // Name the speaker. One slot, several people: without this every player's chat reached
+            // Archipelago as the slot with no way to tell who was talking — and since the vanilla
+            // broadcast is suppressed below in favour of the echo, the name was missing in Minecraft
+            // chat too.
+            AEM.ARCHIPELAGO.client().send(new SayPacket(sender.getGameProfile().name() + ": " + text));
             return false;
         });
     }
