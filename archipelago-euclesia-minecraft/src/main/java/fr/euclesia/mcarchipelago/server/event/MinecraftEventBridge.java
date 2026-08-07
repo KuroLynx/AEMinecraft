@@ -148,6 +148,10 @@ public final class MinecraftEventBridge {
             APStateSync.sendTo(player);
         });
 
+        // A player who logs out between being link-killed and the death landing would otherwise keep
+        // their suppression mark forever, silently swallowing their next real death's DeathLink.
+        ServerPlayerEvents.LEAVE.register(DeathLinkService::onPlayerDisconnect);
+
         // The Biome Finder is soulbound: restore the exact stack saved at death (keeping its tracked
         // biome), or grant a fresh one if none was saved.
         ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) ->

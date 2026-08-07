@@ -108,6 +108,6 @@ public final class ArchipelagoGameplayListener implements APEventListener {
         JsonObject data = packet.payload().has("data") && packet.payload().get("data").isJsonObject()
                 ? packet.payload().getAsJsonObject("data")
                 : new JsonObject();
-        DeathLinkService.applyRemote(APJson.getString(data, "source", ""), APJson.getString(data, "cause", ""));
+        DeathLinkService.applyRemote(data);
     }
 }
