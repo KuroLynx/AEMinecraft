@@ -2,6 +2,7 @@ package fr.euclesia.mcarchipelago.server.event;
 
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.protocol.packet.outbound.SayPacket;
+import fr.euclesia.mcarchipelago.net.APStateSync;
 import fr.euclesia.mcarchipelago.server.connect.AEMServerConfig;
 import fr.euclesia.mcarchipelago.server.connect.APWorldConnection;
 import fr.euclesia.mcarchipelago.server.connect.APWorldConnector;
@@ -142,6 +143,9 @@ public final class MinecraftEventBridge {
             BiomeFinderService.ensureGranted(player);
             // Apply any filler/trap effects received while offline (and before this join).
             FillerTrapService.applyPending(player);
+            // Hand this client the session, so its advancement overlay and tracker tab have
+            // something to draw. Last, so it reflects everything the join just did.
+            APStateSync.sendTo(player);
         });
 
         // The Biome Finder is soulbound: restore the exact stack saved at death (keeping its tracked

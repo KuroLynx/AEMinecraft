@@ -11,6 +11,7 @@ import fr.euclesia.mcarchipelago.protocol.APBounceType;
 import fr.euclesia.mcarchipelago.protocol.APItemsHandling;
 import fr.euclesia.mcarchipelago.protocol.APJson;
 import fr.euclesia.mcarchipelago.protocol.APReceivedPacket;
+import fr.euclesia.mcarchipelago.net.APStateSync;
 import fr.euclesia.mcarchipelago.protocol.packet.outbound.ConnectUpdatePacket;
 import fr.euclesia.mcarchipelago.server.gameplay.SlotReleaseService;
 import fr.euclesia.mcarchipelago.server.gameplay.AdvancementBridge;
@@ -78,6 +79,23 @@ public final class ArchipelagoGameplayListener implements APEventListener {
         // Re-fire completion for already-done advancements: re-sends their checks and awards their
         // tab-root criteria.
         AdvancementBridge.scanOnlinePlayers();
+
+        // The client tracker runs on this data and has no session of its own on a dedicated
+        // server, so push the freshly-loaded slot down to everyone online.
+        APStateSync.broadcast();
+    }
+
+    @Override
+    public void onReceivedItems(ArchipelagoClient client, APReceivedPacket packet) {
+        // New items change what is reachable, which is most of what the tracker draws.
+        APStateSync.broadcast();
+    }
+
+    @Override
+    public void onRoomUpdate(ArchipelagoClient client, APReceivedPacket packet) {
+        // Checks land here, including OTHER players' - the whole point of a shared run is that
+        // their progress recolours your tab too.
+        APStateSync.broadcast();
     }
 
     @Override
