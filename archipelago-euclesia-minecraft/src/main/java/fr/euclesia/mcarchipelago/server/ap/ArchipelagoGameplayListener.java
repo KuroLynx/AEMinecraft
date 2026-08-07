@@ -87,15 +87,16 @@ public final class ArchipelagoGameplayListener implements APEventListener {
 
     @Override
     public void onReceivedItems(ArchipelagoClient client, APReceivedPacket packet) {
-        // New items change what is reachable, which is most of what the tracker draws.
-        APStateSync.broadcast();
+        // New items change what is reachable, which is most of what the tracker draws. Only the
+        // item list is sent, and only once per tick however many packets arrive.
+        APStateSync.markProgressDirty();
     }
 
     @Override
     public void onRoomUpdate(ArchipelagoClient client, APReceivedPacket packet) {
         // Checks land here, including OTHER players' - the whole point of a shared run is that
         // their progress recolours your tab too.
-        APStateSync.broadcast();
+        APStateSync.markProgressDirty();
     }
 
     @Override

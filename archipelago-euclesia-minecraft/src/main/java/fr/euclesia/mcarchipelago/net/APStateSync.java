@@ -8,6 +8,7 @@ import fr.euclesia.mcarchipelago.AEMDebug;
 import fr.euclesia.mcarchipelago.archipelago.ArchipelagoClient;
 import fr.euclesia.mcarchipelago.server.gameplay.FinderTarget;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.MinecraftServer;
@@ -23,10 +24,19 @@ import java.util.List;
  * another player's check is invisible to you otherwise, and the whole point of a shared run is that
  * their progress is your progress.
  *
- * <p>A snapshot rather than a diff, on purpose. The state is small once compressed, the events are
- * infrequent, and a diff stream has to be perfectly ordered and perfectly complete or the client
- * drifts out of sync with no way to notice. Re-sending the truth costs a few kilobytes and cannot
- * drift.
+ * <p>Two payloads, split by how often they change. Slot data is fixed for the session and enormous —
+ * a BACAP logic graph is ~2.6 MB of JSON — so it goes once, on join and on connect. Items and checks
+ * move constantly and are a few kilobytes, so they go on their own ({@link APProgressPayload}),
+ * coalesced to at most one send per server tick.
+ *
+ * <p>That split is not a micro-optimisation. The first version sent everything together on every
+ * ReceivedItems packet, from the WebSocket read thread. With items trickling in it merely wasted
+ * bandwidth; when a player finished their game and released, items arrived as a long stream of
+ * packets and the session thread spent it re-serializing and re-compressing a graph that had not
+ * changed since connect.
+ *
+ * <p>Still a snapshot rather than a diff: both payloads carry the full current list, so a dropped or
+ * reordered update cannot leave a client permanently out of step.
  */
 public final class APStateSync {
     private static final Gson GSON = new Gson();
@@ -44,6 +54,44 @@ public final class APStateSync {
         PayloadTypeRegistry.clientboundPlay()
                 .registerLarge(APStateSyncPayload.TYPE, APStateSyncPayload.CODEC, MAX_PAYLOAD_BYTES);
         PayloadTypeRegistry.clientboundPlay().register(FinderSyncPayload.TYPE, FinderSyncPayload.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(APProgressPayload.TYPE, APProgressPayload.CODEC);
+        // Progress updates are coalesced onto the tick; see markProgressDirty.
+        ServerTickEvents.END_SERVER_TICK.register(server -> flushProgress());
+    }
+
+    /**
+     * Note that items or checks moved. The send happens on the next server tick.
+     *
+     * <p>Called straight from the Archipelago packet handlers, which run on the WebSocket read
+     * thread and can fire many times in a row — a player finishing their game and releasing delivers
+     * items in a long stream. Sending from there meant one full rebuild and broadcast per packet;
+     * coalescing collapses a burst into a single update and moves the work onto the server thread
+     * where world state is safe to read.
+     */
+    public static void markProgressDirty() {
+        progressDirty = true;
+    }
+
+    private static volatile boolean progressDirty;
+
+    private static void flushProgress() {
+        if (!progressDirty) {
+            return;
+        }
+        progressDirty = false;
+        MinecraftServer server = AEMServerRuntime.server();
+        ArchipelagoClient client = AEM.ARCHIPELAGO.client();
+        if (server == null || !client.state().isConnected()) {
+            return;
+        }
+        APProgressPayload payload = new APProgressPayload(
+                List.copyOf(client.registries().apItems().receivedOrder()),
+                List.copyOf(client.state().checkedLocations()));
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            if (ServerPlayNetworking.canSend(player, APProgressPayload.TYPE)) {
+                ServerPlayNetworking.send(player, payload);
+            }
+        }
     }
 
     private static final int MAX_PAYLOAD_BYTES = 8 * 1024 * 1024;

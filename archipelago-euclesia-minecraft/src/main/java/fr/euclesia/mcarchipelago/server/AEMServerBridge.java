@@ -8,6 +8,7 @@ import fr.euclesia.mcarchipelago.server.command.AEMCommandRegistry;
 import fr.euclesia.mcarchipelago.server.command.ArchipelagoCommandModule;
 import fr.euclesia.mcarchipelago.server.command.DumpCommandModule;
 import fr.euclesia.mcarchipelago.server.event.MinecraftEventBridge;
+import fr.euclesia.mcarchipelago.server.gameplay.StructurePlacementQueue;
 import fr.euclesia.mcarchipelago.server.gameplay.TrapMobService;
 import fr.euclesia.mcarchipelago.server.gameplay.TrapPlatformService;
 
@@ -27,6 +28,9 @@ public final class AEMServerBridge {
                 .module(new ArchipelagoCommandModule())
                 .module(new DumpCommandModule())
                 .register();
+
+        // Spread unlocked-structure placement across ticks (a mass unlock is otherwise one huge tick).
+        StructurePlacementQueue.register();
 
         // Despawn trap-conjured mobs and tear down MLG-trap platforms after their lifetime.
         TrapMobService.register();

@@ -7,6 +7,7 @@ import com.google.gson.JsonParser;
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.AEMDebug;
 import fr.euclesia.mcarchipelago.archipelago.ArchipelagoClient;
+import fr.euclesia.mcarchipelago.net.APProgressPayload;
 import fr.euclesia.mcarchipelago.net.APStateSyncPayload;
 import fr.euclesia.mcarchipelago.net.FinderSyncPayload;
 import fr.euclesia.mcarchipelago.server.gameplay.StructureFinderState;
@@ -45,6 +46,12 @@ public final class APStateSyncClient {
                         context.client().execute(() -> apply(json));
                     }
                 });
+
+        // Progress: items and checks only, arriving far more often than slot data changes (never).
+        // Applied on top of whatever slot data we already hold; if none has arrived yet there is
+        // nothing to evaluate against, so it is ignored and the next full sync will carry it.
+        ClientPlayNetworking.registerGlobalReceiver(APProgressPayload.TYPE,
+                (payload, context) -> context.client().execute(() -> applyProgress(payload)));
 
         // The Structure Finder bar. The HUD reads the same server-side holder the driver publishes
         // into, which is empty in this JVM on a dedicated server — so the snapshot is poured into
@@ -124,6 +131,23 @@ public final class APStateSyncClient {
         mirrored = true;
         client.state().setConnected(true);
         AEMDebug.log("apStateSync applied: {} items, {} checks", items, checked.size());
+    }
+
+    private static void applyProgress(APProgressPayload payload) {
+        ArchipelagoClient client = AEM.ARCHIPELAGO.client();
+        if (!mirrored) {
+            return; // singleplayer, or slot data has not arrived yet
+        }
+        client.registries().apItems().resetReceived();
+        for (long itemId : payload.received()) {
+            client.registries().apItems().markReceived(
+                    new APNetworkItem(itemId, -1, -1, APItemClassification.NORMAL));
+        }
+        client.state().checkedLocations().clear();
+        client.state().checkedLocations().addAll(payload.checked());
+        client.registries().apLocations().markChecked(payload.checked());
+        AEMDebug.log("apProgress applied: {} items, {} checks",
+                payload.received().size(), payload.checked().size());
     }
 
     private static JsonArray array(JsonObject root, String key) {

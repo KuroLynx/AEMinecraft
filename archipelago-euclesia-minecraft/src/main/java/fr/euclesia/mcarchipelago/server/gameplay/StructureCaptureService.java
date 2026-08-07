@@ -63,19 +63,42 @@ public final class StructureCaptureService {
         return pendingMobData(level).pendingIds();
     }
 
-    /** Applies every captured placement of the given structures into the live world. Server thread. */
+    /**
+     * Queues every captured placement of the given structures for application. Server thread.
+     *
+     * <p>Queued rather than applied on the spot: one unlock is one structure type and would be fine,
+     * but a mass unlock — another player finishing their game and releasing — delivers dozens at once,
+     * and writing every placement of every type in a single tick stalls the server hard enough that
+     * the structures look like they never arrived. See {@link StructurePlacementQueue}.
+     */
     public static void applyUnlocked(MinecraftServer server, Set<String> structureIds) {
         if (structureIds.isEmpty()) {
             return;
         }
+        int queued = 0;
         for (ServerLevel level : server.getAllLevels()) {
             StructureCaptureData data = captureData(level);
             for (String structureId : structureIds) {
                 for (CapturedPlacement placement : data.drain(structureId)) {
-                    applyPlacement(level, placement);
+                    StructurePlacementQueue.enqueue(level, structureId, placement);
+                    queued++;
                 }
             }
         }
+        if (queued > 0) {
+            AEM.LOGGER.info("Unlocked {} structure type(s): {} placement(s) queued.",
+                    structureIds.size(), queued);
+        }
+    }
+
+    /** Applies one queued placement. Called only by {@link StructurePlacementQueue}. */
+    static void applyPlacementNow(ServerLevel level, CapturedPlacement placement) {
+        applyPlacement(level, placement);
+    }
+
+    /** Puts a placement back in storage when the server stops before it could be applied. */
+    static void restoreCaptured(ServerLevel level, String structureId, CapturedPlacement placement) {
+        captureData(level).add(structureId, placement);
     }
 
     /**
