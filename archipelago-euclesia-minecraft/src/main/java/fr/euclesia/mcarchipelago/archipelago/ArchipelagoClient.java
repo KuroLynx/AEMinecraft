@@ -418,6 +418,16 @@ public final class ArchipelagoClient {
 
         @Override
         public void onError(Throwable throwable) {
+            // A failure on a session that was never established is almost always the wss:// attempt
+            // being refused by a server that only speaks ws:// — the connector then falls back and
+            // connects. Logging that at ERROR with a stack trace made a routine, successful startup
+            // look like a crash, and buried the errors that do matter. One line, and the fallback
+            // reports its own success immediately after.
+            if (!state.isConnected()) {
+                AEM.LOGGER.info("Archipelago connect attempt failed ({}); trying the next address.",
+                        throwable.toString());
+                return;
+            }
             AEM.LOGGER.error("Archipelago transport error", throwable);
         }
 
