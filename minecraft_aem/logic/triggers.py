@@ -38,6 +38,8 @@ from .constants import (
     REGION_END,
     REGION_NETHER,
     REGION_OVERWORLD,
+    S_ANCIENT_CITY,
+    S_JUNGLE_PYRAMID,
 )
 from ..content.registry import base_pack, overlay_packs
 
@@ -171,8 +173,6 @@ _BLOCK_EXTRA_GATE = {
 _BLOCK_REGION = {
     "end_portal": (REGION_END,),
     "end_gateway": (REGION_END,),
-    "nether_portal": (REGION_NETHER,),
-    "soul_fire": (REGION_NETHER,),
     "twisting_vines": (REGION_NETHER,),
     "twisting_vines_plant": (REGION_NETHER,),
     "weeping_vines": (REGION_NETHER,),
@@ -182,7 +182,52 @@ _BLOCK_REGION = {
     "dirt_path": (REGION_OVERWORLD,),
     "water": (REGION_OVERWORLD, REGION_END),
     "bubble_column": (REGION_OVERWORLD, REGION_END),
-    "water_cauldron": (REGION_OVERWORLD, REGION_END),
+}
+
+# Blocks whose real cost is neither "a dimension" nor "acquire the item" — the two answers the
+# compiler reaches for by default, and both wrong here. Consulted FIRST by _block_source_node, so an
+# entry overrides _BLOCK_REGION entirely. Keyed by block path; the value takes the RuleHelper so the
+# gate is built lazily.
+_BLOCK_GATE = {
+    # A nether portal block is not Nether-only — you are standing in one the moment you light a
+    # frame in the Overworld, and restoring a ruined portal is the usual way to meet this. What it
+    # actually costs is the obsidian; can_get_obsidian is itself region-aware, so a Nether-side
+    # restoration still resolves to Nether sources.
+    "nether_portal": lambda h: h.can_get_obsidian(),
+
+    # Soul sand and soul fire are not Nether-exclusive: an Ancient City generates both down in the
+    # Deep Dark, so a player who never lights a portal can still stand in either.
+    "soul_sand": lambda h: h.any_of(h.access_region(REGION_NETHER), h.structure(S_ANCIENT_CITY)),
+    "soul_soil": lambda h: h.any_of(h.access_region(REGION_NETHER), h.structure(S_ANCIENT_CITY)),
+    "soul_fire": lambda h: h.any_of(h.access_region(REGION_NETHER), h.structure(S_ANCIENT_CITY)),
+
+    # Cobweb has no recipe and does not generate in the open: it comes out of a mineshaft or an
+    # abandoned village. (Strongholds and mansions have some too — left out deliberately, since
+    # extra routes only ever loosen the gate and these two are the dependable ones.)
+    "cobweb": lambda h: h.any_of(h.any_mineshaft(), h.any_village()),
+
+    # A filled cauldron is a PLACED block, never an item: the cauldron itself plus the bucket used
+    # to fill it — seven iron before you are standing in one.
+    "water_cauldron": lambda h: h.all_of(h.acquire("minecraft:cauldron"),
+                                         h.acquire("minecraft:water_bucket")),
+    "lava_cauldron": lambda h: h.all_of(h.acquire("minecraft:cauldron"),
+                                        h.acquire("minecraft:lava_bucket")),
+
+    # Tripwire is the strung block, which has no item form of its own: find it already strung in a
+    # jungle pyramid, or make it from the hooks and the string.
+    "tripwire": lambda h: h.any_of(
+        h.structure(S_JUNGLE_PYRAMID),
+        h.all_of(h.acquire("minecraft:tripwire_hook"), h.acquire("minecraft:string")),
+    ),
+}
+
+# Blocks that exist only where they generate and have to be CARRIED anywhere else. Applied when a
+# criterion pins a dimension the block is not native to: standing in powder snow in the Nether is
+# not a powder-snow gate, it is a bucket gate. Keyed by block path -> the item that moves it.
+_BLOCK_TRANSPORT = {
+    "powder_snow": "minecraft:powder_snow_bucket",
+    "water": "minecraft:water_bucket",
+    "lava": "minecraft:lava_bucket",
 }
 
 
@@ -357,14 +402,20 @@ class TriggerCompiler:
             return self._container_loot_node(cond)
         if trigger in ("minecraft:default_block_use", "minecraft:any_block_use",
                        "minecraft:enter_block"):
-            # Use / stand in a block. A block that pins a dimension (an end gateway / nether portal /
-            # Nether-only vine) gates on reaching that dimension — checked first, as that is the
-            # authoritative gate for these (the acquisition table even mis-models twisting_vines as
-            # Overworld-obtainable). Otherwise obtain it if craftable/obtainable; an Overworld-natural
-            # block carries no gate.
+            # Use / stand in a block. _block_source_node answers what the block itself costs (an
+            # authoritative gate, else the dimension it pins, else acquiring it).
+            #
+            # The `player` predicate is AND-ed on, and used to be dropped on the floor — which is
+            # what made this the largest ungated group in the audit. These criteria routinely pin
+            # WHERE you must be standing, and that is most of the requirement: 'Ancient Restoration'
+            # wants the nether portal block to be inside a ruined portal, 'Hot Spring' wants the
+            # water cauldron to be in the Nether. Without it they read as "stand in a block that
+            # costs nothing".
             blocks = self._blocks_in(cond)
-            node = self._block_region_node(blocks) or self._any_acquire(blocks)
-            return node if node is not None else and_()
+            parts = [n for n in (self._block_source_node(blocks),
+                                 self._location_node(cond),
+                                 self._transport_node(blocks, cond)) if n is not None]
+            return and_(*parts) if parts else and_()
         if trigger in ("minecraft:item_durability_changed", "minecraft:player_sheared_equipment"):
             # Wear an item down / shear with one → obtain that item (shears for shearing).
             item = self._item_predicate(cond.get("item"))
@@ -816,7 +867,7 @@ class TriggerCompiler:
         stepping = pred.get("stepping_on")
         if isinstance(stepping, dict):
             ids = self._block_ids(stepping.get("block"))
-            block = self._block_region_node(ids) or self._any_acquire(ids)
+            block = self._block_source_node(ids)
             if block is not None:
                 parts.append(block)
         effects = pred.get("effects")
@@ -1277,6 +1328,72 @@ class TriggerCompiler:
                 node = self.h.access_region(region)
                 options.append(node if extra is None else and_(node, extra(self.h)))
         return self._any_opt(*options) if options else None
+
+    def _block_source_node(self, blocks: list) -> Rule | None:
+        """What it costs to be at (or get hold of) one of ``blocks``. The listed blocks are
+        ALTERNATIVES, so this is an OR, and the per-block answer is the first of: an authoritative
+        gate (``_BLOCK_GATE``), the dimension it pins (``_BLOCK_REGION``), acquiring it.
+
+        A free block short-circuits the whole thing to ``None``: if one alternative costs nothing,
+        neither does the criterion, and returning the other branches' gates would invent a
+        requirement the player can walk around."""
+        gated, rest = [], []
+        for block in blocks:
+            gate = _BLOCK_GATE.get(self._path(block))
+            (gated.append(gate(self.h)) if gate is not None else rest.append(block))
+        if rest:
+            other = self._block_region_node(rest) or self._any_acquire(rest)
+            if other is None:
+                return None  # an alternative is free → so is the criterion
+            gated.append(other)
+        return self._any_opt(*gated) if gated else None
+
+    def _transport_node(self, blocks: list, cond: dict) -> Rule | None:
+        """The gate for having a block somewhere it does not generate.
+
+        'Polar Opposites' is the case: stand in powder snow *in the Nether*. Powder snow is an
+        Overworld block, so the criterion is really "carry some there", and the bucket is the only
+        way to move it — without this the rule reads as two region tests and asks for nothing."""
+        pinned = {_DIMENSION_REGION[d] for d in self._pinned_dimensions(cond.get("player"))
+                  if d in _DIMENSION_REGION}
+        if not pinned:
+            return None
+        parts = []
+        for block in blocks:
+            path = self._path(block)
+            item = _BLOCK_TRANSPORT.get(path)
+            # Native where it is pinned → nothing to carry.
+            if item is None or pinned & set(_BLOCK_REGION.get(path, ())):
+                continue
+            parts.append(self.h.acquire(item))
+        return self._any_opt(*parts)
+
+    @classmethod
+    def _pinned_dimensions(cls, player) -> set:
+        """Every dimension a `player` predicate positively requires. Inverted terms are skipped —
+        "NOT in the Nether" pins nothing."""
+        found: set = set()
+
+        def walk(node) -> None:
+            if isinstance(node, list):
+                for item in node:
+                    walk(item)
+                return
+            if not isinstance(node, dict):
+                return
+            if str(node.get("condition", "")).endswith("inverted"):
+                return
+            for term in node.get("terms") or ():
+                walk(term)
+            pred = node.get("predicate")
+            if isinstance(pred, dict):
+                location = pred.get("location")
+                if isinstance(location, dict) and isinstance(location.get("dimension"), str):
+                    found.add(cls._path(location["dimension"]))
+                walk(pred)
+
+        walk(player)
+        return found
 
     @staticmethod
     def _all_req(*nodes) -> Rule | None:
