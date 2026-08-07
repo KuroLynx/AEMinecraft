@@ -200,6 +200,20 @@ def _block_region(block: str) -> str:
     return REGION_OVERWORLD
 
 
+# Saplings whose tree grows in exactly one biome, so obtaining one IS finding that biome. Oak,
+# spruce and birch are left out on purpose: they are spread across so many common biomes that
+# nobody has to go looking, and gating them would put the Biome Finder in front of the whole tree.
+_BIOME_SAPLINGS = frozenset({
+    "jungle_sapling",       # jungle
+    "acacia_sapling",       # savanna
+    "dark_oak_sapling",     # dark forest
+    "cherry_sapling",       # cherry grove
+    "pale_oak_sapling",     # pale garden
+    "mangrove_propagule",   # mangrove swamp
+    "azalea", "flowering_azalea",  # lush caves
+})
+
+
 class RuleHelper:
     """Builds logic rules as serializable AST nodes (see ``ast.py``).
 
@@ -552,6 +566,14 @@ class RuleHelper:
         boat and an afternoon can walk. Waived in the glitch graph, so the tile reads yellow —
         possible now if you are willing, never something fill leans on."""
         return Const(True) if self.glitch else node
+
+    def glitch_only(self, node):
+        """The inverse of ``strict_only``: a ROUTE that exists only in the permissive graph.
+
+        ``strict_only`` waives a requirement for display; this offers an extra way in for display.
+        Written as ``any_of(dependable, glitch_only(flimsy))``, strict logic sees only the
+        dependable route while the tile still colours yellow for someone who knows the trick."""
+        return node if self.glitch else Const(False)
 
     def can_fly(self):
         """Sustained flight: an elytra and the rockets to drive it. ``acquire`` resolves the elytra
@@ -1360,6 +1382,42 @@ class RuleHelper:
         # (The table mis-models it as a plain magma-cube drop, which would drop the frog/Overworld.)
         if base in ("ochre_froglight", "pearlescent_froglight", "verdant_froglight"):
             return self.all_of(self.entity(E_FROG), self.entity(E_MAGMA_CUBE))
+
+        # Saplings that grow in exactly one biome. The tree is the only place the sapling exists, so
+        # the real cost is finding that biome — which is what the Biome Finder is for. strict_only,
+        # because wandering until you hit a cherry grove is slow but real; the display graph waives
+        # it. ('Ecologist' wants all twelve wood types, so it inherits every one of these.)
+        if base in _BIOME_SAPLINGS:
+            return self.all_of(self.strict_only(self.needs_biome_finder()),
+                               self.access_region(REGION_OVERWORLD))
+
+        # Chorus grows only on the OUTER End islands, which are behind a gateway — and a gateway
+        # does not exist until the dragon dies. The indexer has no record for these (a chorus flower
+        # drops itself when broken, so nothing links it to a source), leaving them free the moment
+        # you step through the End portal. That is what made 'Extrabiologist' — plant chorus back in
+        # the Overworld — ask for nothing but standing in the End.
+        if base in ("chorus_flower", "chorus_plant", "chorus_fruit", "popped_chorus_fruit"):
+            return self.outer_end()
+
+        # A grass block only comes up whole with Silk Touch; without it you get dirt. The one way
+        # round it is an enderman, which picks a grass block up and sets it down again — real, but
+        # not something strict logic should lean on, so it stays in the glitch graph.
+        if base == "grass_block":
+            return self.any_of(
+                self.all_of(self.knowledge(K_SHOVEL), self.can_silk_touch()),
+                self.glitch_only(self.entity(E_ENDERMAN)),
+            )
+
+        # Sniffer seeds are dug up by a sniffer, and a sniffer comes from an egg brushed out of a
+        # warm ocean ruin — the same gate 'Smells Interesting' carries. Without this the seeds have
+        # no record at all and 'Planting the Past' was free.
+        if base in ("torchflower_seeds", "pitcher_pod"):
+            return self.entity(E_SNIFFER)
+
+        # A creaking heart is cut out of a pale garden, and it is only a creaking heart while the
+        # creaking it spawns is around — the mob is the gate, not the log.
+        if base == "creaking_heart":
+            return self.entity(E_CREAKING)
 
         # An elytra exists only in an End City ship — placed in an item frame, not a loot table the
         # indexer reads — so it has no acquisition record and would fall back to its bare material

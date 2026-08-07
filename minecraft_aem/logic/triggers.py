@@ -34,6 +34,7 @@ from .ast import Rule, and_, or_
 from .constants import (
     K_ARMOR,
     K_BREWING,
+    K_HOE,
     K_PICKAXE,
     MAT_IRON,
     REGION_END,
@@ -183,8 +184,11 @@ _BLOCK_REGION = {
     "powder_snow": (REGION_OVERWORLD,),
     "sweet_berry_bush": (REGION_OVERWORLD,),
     "dirt_path": (REGION_OVERWORLD,),
-    "water": (REGION_OVERWORLD, REGION_END),
-    "bubble_column": (REGION_OVERWORLD, REGION_END),
+    # Water does NOT generate in the End — placing a bucket there is possible, but no advancement
+    # asks for that, and listing the End let 'Stay Hydrated!' satisfy its water half there instead
+    # of in the Overworld. Bubble columns need source water, so they follow.
+    "water": (REGION_OVERWORLD,),
+    "bubble_column": (REGION_OVERWORLD,),
 }
 
 # Blocks whose real cost is neither "a dimension" nor "acquire the item" — the two answers the
@@ -233,6 +237,14 @@ _EXTRA_REQUIREMENT = {
     # and the anchor is the only way to do it — the criteria only describe the two dimensions.
     "blazeandcave:end/unending_hell": lambda h: h.acquire("minecraft:respawn_anchor"),
 }
+
+# Crops that can only be planted in farmland, which only a hoe makes. (Cocoa goes on jungle logs,
+# nether wart in soul sand, bamboo/saplings/sweet berries on dirt — none of those need the tool.)
+_FARMLAND_CROPS = frozenset({
+    "minecraft:wheat", "minecraft:beetroots", "minecraft:carrots", "minecraft:potatoes",
+    "minecraft:pumpkin_stem", "minecraft:melon_stem",
+    "minecraft:torchflower_crop", "minecraft:pitcher_crop",
+})
 
 # Blocks that exist only where they generate and have to be CARRIED anywhere else. Applied when a
 # criterion pins a dimension the block is not native to: standing in powder snow in the Nether is
@@ -941,7 +953,11 @@ class TriggerCompiler:
             # on placement, which is uniformly Overworld); an Overworld biome gates on the Overworld.
             biomes = loc["biomes"]
             region = self._biome_region(biomes if isinstance(biomes, str) else "")
-            return self._all_req(self.h.needs_biome_finder(), self.h.access_region(region))
+            # strict_only: the Finder is how strict logic expects you to reach a named biome, but
+            # wandering until you hit one is a real (if slow) alternative, so the display graph
+            # waives it and the tile reads yellow instead of red.
+            return self._all_req(self.h.strict_only(self.h.needs_biome_finder()),
+                                 self.h.access_region(region))
         dim = loc.get("dimension")
         region = _DIMENSION_REGION.get(self._path(dim)) if isinstance(dim, str) else None
         # Dimension and position are AND-ed, never either/or: 'Limbo Walker' is the Nether AND above
@@ -1295,6 +1311,7 @@ class TriggerCompiler:
         entries = location if isinstance(location, list) else [location]
         placed_items: list = []   # the no-offset block being placed → its placing item(s)
         context: list = []        # required adjacent blocks (offset / grouped) → AND-ed in
+        crops: list = []          # the raw block ids placed, to spot the ones needing farmland
         for entry in entries:
             if not isinstance(entry, dict):
                 continue
@@ -1309,10 +1326,26 @@ class TriggerCompiler:
                 for block in self._entry_block_ids(entry):
                     mapped = self._PLANT_ITEM.get(block, block)
                     placed_items += mapped if isinstance(mapped, list) else [mapped]
-        if self._requires_water(entries):  # waterlogged placement needs water → Overworld|End
+                    crops.append(block)
+                # WHERE the block goes. The predicate carries dimension / biomes / position beside
+                # the block, and reading only the block threw all of that away: 'Hot Chocolate' is
+                # cocoa IN THE NETHER, 'A Mangrove Grove' is a propagule IN A GROVE, 'In Your Face,
+                # Neil Armstrong' is potatoes IN THE END. Each read as "obtain a thing you can
+                # already get". Same treatment the player predicate gets on enter_block.
+                pred = entry.get("predicate")
+                if isinstance(pred, dict):
+                    where = self._loc_value_node(pred)
+                    if where is not None:
+                        context.append(where)
+        if self._requires_water(entries):  # waterlogged placement needs water → Overworld
             water = self._block_region_node(["water"])
             if water is not None:
                 context.append(water)
+        if any(block in _FARMLAND_CROPS for block in crops):
+            # A crop only goes into farmland, and farmland only comes from a hoe. Placing the seed
+            # was the whole rule for 'Come to the countryside!' and the potato half of 'In Your
+            # Face, Neil Armstrong'; the tool it needs never appeared.
+            context.append(self.h.knowledge(K_HOE))
         parts = [n for n in (self._any_acquire(placed_items), *context) if n is not None]
         return and_(*parts) if parts else None
 
