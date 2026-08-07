@@ -15,7 +15,6 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.random.RandomGenerator;
 
 /**
  * Applies the one-shot effects of received filler and trap items (filler grants a temporary buff via
@@ -30,45 +29,42 @@ import java.util.random.RandomGenerator;
  * {@link fr.euclesia.mcarchipelago.registry.APItemRegistry} — and the mark advances. All work runs on
  * the server thread.
  *
- * <p>Two marks, because filler and traps want opposite answers on a shared server.
+ * <p>The mark is per player, and it governs filler and traps alike. The slot receives one Speed
+ * Boost, but the run is being played by several people, and handing it to whoever happened to be
+ * first in the player list means everyone else watches a teammate collect the reward — the same
+ * reasoning that gives every player their own BACAP reward for a shared advancement. Traps follow
+ * the same rule for the same reason: an item the slot received belongs to the run, and the run is
+ * everybody. So each player carries their own mark and gets every filler and every trap exactly
+ * once, including the ones that arrived while they were offline.
  *
- * <p><b>Filler is per player.</b> The slot receives one Speed Boost, but the run is being played by
- * several people, and handing it to whoever happened to be first in the player list means everyone
- * else watches a teammate collect the reward. Same reasoning that gives every player their own BACAP
- * reward for a shared advancement: each player carries their own mark and collects every filler
- * exactly once, including the ones that arrived while they were offline.
- *
- * <p><b>Traps are one player.</b> Applying a punishment to everybody multiplies it by the player
- * count, which is not what the trap was priced at — the same call DeathLink makes when it takes a
- * single victim rather than wiping the server. So traps keep a world-scoped mark and fire once, at a
- * randomly chosen online player.
+ * <p>(DeathLink is the deliberate exception, and a different thing entirely: a death arriving from
+ * ANOTHER world takes one victim rather than wiping the server. These are this slot's own items.)
  */
 public final class FillerTrapService {
     private static final String FILE_NAME = "archipelago_received.json";
     private static final Gson GSON = new Gson();
-    private static final RandomGenerator RANDOM = RandomGenerator.getDefault();
 
     /**
-     * On-disk persistence. {@code appliedItemCount} is the pre-split single mark, kept only so an
-     * existing world migrates without replaying its whole filler history at everyone.
+     * On-disk persistence. The two int fields are older shapes of this file, read but never written
+     * again: they seed a player's first mark so an existing world does not replay its whole item
+     * history at everyone the moment they next log in.
      */
     private static final class Progress {
-        int appliedItemCount;                  // legacy; seeds both marks below on first load
-        int appliedTrapCount = -1;             // world-scoped: traps fire once for the server
-        Map<String, Integer> appliedByPlayer;  // player uuid -> filler items already collected
+        int appliedItemCount;                  // pre-split single mark; seeds a player's first mark
+        int appliedTrapCount = -1;             // no longer used; read only so old files stay parseable
+        Map<String, Integer> appliedByPlayer;  // player uuid -> items already applied to them
     }
 
     private FillerTrapService() {}
 
-    /** Applies pending filler to every online player, and pending traps once. */
+    /** Applies every pending filler and trap to every online player. */
     public static void applyPendingToAll(MinecraftServer server) {
         for (ServerPlayer player : List.copyOf(server.getPlayerList().getPlayers())) {
             applyPending(player);
         }
-        applyPendingTraps(server);
     }
 
-    /** Applies every filler item this player has not yet collected. */
+    /** Applies every filler and trap this player has not yet had. */
     public static void applyPending(ServerPlayer player) {
         MinecraftServer server = AEMServerRuntime.server();
         if (server == null || !AEMServerRuntime.isArchipelagoReady()) {
@@ -84,49 +80,25 @@ public final class FillerTrapService {
         }
         APSlotData slot = AEM.ARCHIPELAGO.client().state().parsedSlotData();
         for (int i = applied; i < order.size(); i++) {
-            applyFiller(player, slot, order.get(i));
+            applyOne(player, slot, order.get(i));
         }
         progress.appliedByPlayer.put(key, order.size());
         write(server, progress);
     }
 
-    /** Fires every trap not yet fired, each at one randomly chosen online player. */
-    private static void applyPendingTraps(MinecraftServer server) {
-        List<Long> order = AEM.ARCHIPELAGO.client().registries().apItems().receivedOrder();
-        Progress progress = read(server);
-        int applied = Math.min(progress.appliedTrapCount, order.size());
-        if (applied >= order.size()) {
+    private static void applyOne(ServerPlayer player, APSlotData slot, long itemId) {
+        FillerGrant grant = slot.fillerItems().get(itemId);
+        if (grant != null) {
+            if (grant.isItem()) {
+                FillerItemService.give(player, grant.item(), grant.count());
+            } else if (grant.isBuff()) {
+                FillerBuffService.applyBuff(player, grant.buff(), grant.seconds());
+            }
             return;
         }
-        APSlotData slot = AEM.ARCHIPELAGO.client().state().parsedSlotData();
-        for (int i = applied; i < order.size(); i++) {
-            String trap = slot.trapItems().get(order.get(i));
-            if (trap == null) {
-                continue;
-            }
-            List<ServerPlayer> players = server.getPlayerList().getPlayers();
-            if (players.isEmpty()) {
-                // Nobody to spring it on. Leave the mark where it is so the trap still lands when
-                // somebody logs back in, rather than being quietly swallowed by an empty server.
-                progress.appliedTrapCount = i;
-                write(server, progress);
-                return;
-            }
-            TrapEffects.run(trap, players.get(RANDOM.nextInt(players.size())));
-        }
-        progress.appliedTrapCount = order.size();
-        write(server, progress);
-    }
-
-    private static void applyFiller(ServerPlayer player, APSlotData slot, long itemId) {
-        FillerGrant grant = slot.fillerItems().get(itemId);
-        if (grant == null) {
-            return; // not filler: a trap, or an item with no one-shot effect
-        }
-        if (grant.isItem()) {
-            FillerItemService.give(player, grant.item(), grant.count());
-        } else if (grant.isBuff()) {
-            FillerBuffService.applyBuff(player, grant.buff(), grant.seconds());
+        String trap = slot.trapItems().get(itemId);
+        if (trap != null) {
+            TrapEffects.run(trap, player);
         }
     }
 
@@ -146,12 +118,6 @@ public final class FillerTrapService {
         progress.appliedItemCount = Math.max(0, progress.appliedItemCount);
         if (progress.appliedByPlayer == null) {
             progress.appliedByPlayer = new HashMap<>();
-        }
-        if (progress.appliedTrapCount < 0) {
-            // Migrating a world written before the split: everything up to the old mark has already
-            // been dealt with, so start both marks there rather than replaying the run's entire
-            // filler history at every player the moment they next log in.
-            progress.appliedTrapCount = progress.appliedItemCount;
         }
         return progress;
     }
