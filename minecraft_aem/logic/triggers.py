@@ -220,6 +220,11 @@ _BLOCK_GATE = {
     "lava_cauldron": lambda h: h.all_of(h.acquire("minecraft:cauldron"),
                                         h.acquire("minecraft:lava_bucket")),
 
+    # A candle cake is not an item — it is a cake you have placed and stuck a candle in. Neither
+    # half is free: the cake is milk + sugar + egg + wheat (so a bucket and a cow), the candle is
+    # string and honeycomb. Keyed by the shared suffix, see _gate_key.
+    "candle_cake": lambda h: h.all_of(h.acquire("minecraft:cake"), h.acquire("minecraft:candle")),
+
     # Tripwire is the strung block, which has no item form of its own: find it already strung in a
     # jungle pyramid, or make it from the hooks and the string.
     "tripwire": lambda h: h.any_of(
@@ -445,7 +450,10 @@ class TriggerCompiler:
         if trigger == "minecraft:villager_trade":
             return self.h.can_trade_villager()
         if trigger == "minecraft:slept_in_bed":
-            return self.h.access_region(REGION_OVERWORLD)  # a bed needs wool + planks (overworld)
+            # This used to return the bare region on the reasoning "a bed needs wool + planks" — and
+            # then never asked for either, which is why 'Sweet Dreams' was green on a fresh world.
+            # Ask for the bed itself; acquire resolves the wool (shears or a sheep) and the planks.
+            return self.h.acquire("minecraft:white_bed")
         if trigger == "minecraft:used_totem":
             return self.h.acquire("minecraft:totem_of_undying")
         if trigger == "minecraft:player_generates_container_loot":
@@ -497,8 +505,12 @@ class TriggerCompiler:
             return self._all_req(self._entity_gid("minecraft:allay"),
                                  self.h.acquire("minecraft:note_block"))
         if trigger == "minecraft:ride_entity_in_lava":
-            return self._all_req(self._entity_gid("minecraft:strider"),
-                                 self.h.access_region(REGION_NETHER))
+            # A strider, from the Nether — plus wherever the criterion says you must be riding it.
+            # 'Feels Like Home' is ride one IN THE OVERWORLD, which means leading it back through a
+            # portal; the player predicate carrying that was ignored, so it asked only for the Nether.
+            return self._all_opt(self._entity_gid("minecraft:strider"),
+                                 self.h.access_region(REGION_NETHER),
+                                 self._location_node(cond))
         if trigger == "minecraft:started_riding":
             return self._started_riding_node(cond)
         if trigger in ("minecraft:voluntary_exile", "minecraft:hero_of_the_village"):
@@ -716,10 +728,12 @@ class TriggerCompiler:
             # weapon may instead sit on the player's mainhand equipment (Nice to Mace You! → a mace).
             weapon = self._mainhand_weapon(cond.get("player"))
         victim = self._entity_node(cond)
-        if victim is None and self._has_lava_fluid(cond):
-            # The victim is pinned only as "an entity in lava" (I'm in Lava With You names no type).
-            # Lava is not Nether-exclusive — an Overworld lava pool works too — so don't force a
-            # Strider/Nether; any reachable mob you can hit (bare-handed is fine) satisfies it.
+        if victim is None:
+            # No type pinned. That used to be treated as no gate at all ("any mob is trivially
+            # reachable") — true only while nothing locks mobs. With mob_spawn_lock on you need SOME
+            # mob unlocked before you can hurt anything, which is the whole of 'Expelliarmus' (hit
+            # something with a stick) and 'Snowball Fight'. Covers the lava case too (I'm in Lava
+            # With You pins only "an entity in lava"): any reachable mob satisfies it, bare-handed.
             victim = self.h.can_kill_any_mob()
         parts = [n for n in (weapon, victim) if n is not None]
         return and_(*parts) if parts else None
@@ -1464,6 +1478,28 @@ class TriggerCompiler:
                 options.append(node if extra is None else and_(node, extra(self.h)))
         return self._any_opt(*options) if options else None
 
+    def _expand_blocks(self, blocks: list) -> list:
+        """Block ids with any ``#tag`` replaced by its members. A tag in a block position means "any
+        of these", which is the same OR the caller already treats a block list as — and without this
+        the tag id itself (`candle_cakes`) never matches a per-block gate keyed on a real block."""
+        out = []
+        for block in blocks:
+            if isinstance(block, str) and block.startswith("#"):
+                members = self._block_tags.get(block.lstrip("#"))
+                if members:
+                    out.extend(members)
+                    continue
+            out.append(block)
+        return out
+
+    @classmethod
+    def _gate_key(cls, block) -> str:
+        """The _BLOCK_GATE key for a block id. Dyed variants of the same thing share one gate, so a
+        `*_candle_cake` (seventeen of them, one per candle colour) collapses to `candle_cake`
+        instead of needing seventeen identical rows."""
+        path = cls._path(block)
+        return "candle_cake" if path.endswith("candle_cake") else path
+
     def _block_source_node(self, blocks: list) -> Rule | None:
         """What it costs to be at (or get hold of) one of ``blocks``. The listed blocks are
         ALTERNATIVES, so this is an OR, and the per-block answer is the first of: an authoritative
@@ -1472,10 +1508,15 @@ class TriggerCompiler:
         A free block short-circuits the whole thing to ``None``: if one alternative costs nothing,
         neither does the criterion, and returning the other branches' gates would invent a
         requirement the player can walk around."""
-        gated, rest = [], []
-        for block in blocks:
-            gate = _BLOCK_GATE.get(self._path(block))
-            (gated.append(gate(self.h)) if gate is not None else rest.append(block))
+        gated, rest, seen = [], [], set()
+        for block in self._expand_blocks(blocks):
+            key = self._gate_key(block)
+            gate = _BLOCK_GATE.get(key)
+            if gate is None:
+                rest.append(block)
+            elif key not in seen:   # a tag's members share one gate — emit it once
+                seen.add(key)
+                gated.append(gate(self.h))
         if rest:
             other = self._block_region_node(rest) or self._any_acquire(rest)
             if other is None:
@@ -1667,7 +1708,7 @@ class TriggerCompiler:
                     item = self._any_acquire((sub.get("predicate") or {}).get("items"))
                     break
         blocks = self._blocks_in(cond)
-        block = self._block_region_node(blocks) or self._any_acquire(blocks)
+        block = self._block_source_node(blocks)
         parts = [n for n in (item, block) if n is not None]
         # A location_check can also pin the biome / dimension the block must be used IN — e.g. Sound
         # of Music needs the jukebox played in a meadow (Overworld). Gate on it so a Nether-craftable

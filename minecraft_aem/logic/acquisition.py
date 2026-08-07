@@ -213,6 +213,14 @@ _BIOME_SAPLINGS = frozenset({
     "azalea", "flowering_azalea",  # lush caves
 })
 
+# The Pale Garden's exclusive blocks. The biome generates nowhere else and nothing here has another
+# source, so obtaining any of them IS finding it.
+_PALE_GARDEN_BLOCKS = frozenset({
+    "pale_oak_log", "pale_oak_wood", "pale_oak_leaves", "pale_oak_planks",
+    "pale_moss_block", "pale_moss_carpet", "pale_hanging_moss",
+    "creaking_heart", "resin_clump", "resin_block", "resin_brick",
+})
+
 
 class RuleHelper:
     """Builds logic rules as serializable AST nodes (see ``ast.py``).
@@ -308,6 +316,10 @@ class RuleHelper:
             E_SILVERFISH     : lambda: self.structure(S_STRONGHOLD),
             E_WARDEN         : lambda: self.structure(S_ANCIENT_CITY),
             E_ENDERMITE      : lambda: self.entity(E_ENDERMAN),  # spawns from Ender Pearl throws
+            # A sniffer never spawns: every one in the world hatched from an egg you brushed out of
+            # a warm ocean ruin. Same gate the egg carries, so anything wanting the mob (feeding a
+            # snifflet, planting what it digs up) inherits the brush and the ruin.
+            E_SNIFFER        : lambda: self.acquire("minecraft:sniffer_egg"),
 
             # Ocean Monument
             E_ELDER_GUARDIAN : lambda: self.structure(S_OCEAN_MONUMENT),
@@ -458,6 +470,7 @@ class RuleHelper:
             E_AXOLOTL    : lambda: self.needs_biome_finder(),   # Lush Caves
             E_GOAT       : lambda: self.needs_biome_finder(),   # mountain biomes
             E_FROG       : lambda: self.needs_biome_finder(),   # temperate / warm / cold variants
+            E_CREAKING   : lambda: self.needs_biome_finder(),   # Pale Garden only
             E_HAPPY_GHAST: lambda: self.any_of(                 # Dried Ghast: Soul Sand Valley or bartering
                 self.can_barter(),
                 self.needs_biome_finder(),
@@ -1414,10 +1427,13 @@ class RuleHelper:
         if base in ("torchflower_seeds", "pitcher_pod"):
             return self.entity(E_SNIFFER)
 
-        # A creaking heart is cut out of a pale garden, and it is only a creaking heart while the
-        # creaking it spawns is around — the mob is the gate, not the log.
-        if base == "creaking_heart":
-            return self.entity(E_CREAKING)
+        # Everything the Pale Garden makes exists in that one biome and nowhere else, so obtaining
+        # any of it is finding the biome. The creaking heart carries the mob on top: it is only a
+        # creaking heart while the creaking it spawns is alive.
+        if base in _PALE_GARDEN_BLOCKS:
+            found = self.all_of(self.strict_only(self.needs_biome_finder()),
+                                self.access_region(REGION_OVERWORLD))
+            return self.all_of(found, self.entity(E_CREAKING)) if base == "creaking_heart" else found
 
         # An elytra exists only in an End City ship — placed in an item frame, not a loot table the
         # indexer reads — so it has no acquisition record and would fall back to its bare material
