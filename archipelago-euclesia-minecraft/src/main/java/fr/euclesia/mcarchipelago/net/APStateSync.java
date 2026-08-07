@@ -6,11 +6,14 @@ import com.google.gson.JsonObject;
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.AEMDebug;
 import fr.euclesia.mcarchipelago.archipelago.ArchipelagoClient;
+import fr.euclesia.mcarchipelago.server.gameplay.FinderTarget;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+
+import java.util.List;
 
 /**
  * Builds and pushes the session snapshot the client tracker runs on.
@@ -40,9 +43,18 @@ public final class APStateSync {
     public static void register() {
         PayloadTypeRegistry.clientboundPlay()
                 .registerLarge(APStateSyncPayload.TYPE, APStateSyncPayload.CODEC, MAX_PAYLOAD_BYTES);
+        PayloadTypeRegistry.clientboundPlay().register(FinderSyncPayload.TYPE, FinderSyncPayload.CODEC);
     }
 
     private static final int MAX_PAYLOAD_BYTES = 8 * 1024 * 1024;
+
+    /** Pushes one player's Structure Finder bar. Cheap and per player, so it is sent on change. */
+    public static void sendFinder(ServerPlayer player, int tier, List<FinderTarget> targets) {
+        if (!ServerPlayNetworking.canSend(player, FinderSyncPayload.TYPE)) {
+            return;
+        }
+        ServerPlayNetworking.send(player, new FinderSyncPayload(tier, targets));
+    }
 
     /** Pushes the current session to one player. */
     public static void sendTo(ServerPlayer player) {

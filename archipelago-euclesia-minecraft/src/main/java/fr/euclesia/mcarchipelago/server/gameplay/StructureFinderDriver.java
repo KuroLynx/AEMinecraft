@@ -1,6 +1,7 @@
 package fr.euclesia.mcarchipelago.server.gameplay;
 
 import fr.euclesia.mcarchipelago.AEM;
+import fr.euclesia.mcarchipelago.net.APStateSync;
 import fr.euclesia.mcarchipelago.server.gameplay.StructureFinderState.Snapshot;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -198,6 +199,8 @@ public final class StructureFinderDriver {
         if (tier <= 0 || cache == null) {
             if (PUBLISHED.remove(uuid) != null) {
                 state.remove(uuid);
+                // Tell the client too, or its bar keeps showing the last thing it was sent.
+                APStateSync.sendFinder(player, 0, List.of());
             }
             return;
         }
@@ -209,6 +212,10 @@ public final class StructureFinderDriver {
         int keep = StructureFinderService.cap(tier, full.size());
         List<FinderTarget> targets = keep >= full.size() ? full : List.copyOf(full.subList(0, keep));
         state.putSnapshot(uuid, new Snapshot(tier, targets));
+        // Singleplayer reads the snapshot above straight out of this holder; a remote client has no
+        // such holder to read, so the same snapshot goes down the wire. Sent here rather than every
+        // tick because this branch only runs when the tier or the scan actually changed.
+        APStateSync.sendFinder(player, tier, targets);
         PUBLISHED.put(uuid, new Published(tier, cache));
     }
 

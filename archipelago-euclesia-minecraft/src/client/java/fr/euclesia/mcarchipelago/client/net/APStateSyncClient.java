@@ -8,10 +8,13 @@ import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.AEMDebug;
 import fr.euclesia.mcarchipelago.archipelago.ArchipelagoClient;
 import fr.euclesia.mcarchipelago.net.APStateSyncPayload;
+import fr.euclesia.mcarchipelago.net.FinderSyncPayload;
+import fr.euclesia.mcarchipelago.server.gameplay.StructureFinderState;
 import fr.euclesia.mcarchipelago.protocol.APItemClassification;
 import fr.euclesia.mcarchipelago.protocol.packet.inbound.APNetworkItem;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.minecraft.client.player.LocalPlayer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,6 +45,23 @@ public final class APStateSyncClient {
                         context.client().execute(() -> apply(json));
                     }
                 });
+
+        // The Structure Finder bar. The HUD reads the same server-side holder the driver publishes
+        // into, which is empty in this JVM on a dedicated server — so the snapshot is poured into
+        // the local copy under our own uuid and the HUD finds it exactly where it expects.
+        ClientPlayNetworking.registerGlobalReceiver(FinderSyncPayload.TYPE,
+                (payload, context) -> context.client().execute(() -> {
+                    LocalPlayer player = context.client().player;
+                    if (player == null) {
+                        return;
+                    }
+                    if (payload.tier() <= 0 || payload.targets().isEmpty()) {
+                        StructureFinderState.get().remove(player.getUUID());
+                        return;
+                    }
+                    StructureFinderState.get().putSnapshot(player.getUUID(),
+                            new StructureFinderState.Snapshot(payload.tier(), payload.targets()));
+                }));
 
         // Leaving a server (or an integrated world) drops the mirror. In singleplayer this instance
         // is the REAL session, so only clear what we ourselves populated.
@@ -116,6 +136,8 @@ public final class APStateSyncClient {
         client.state().setSlotData(new JsonObject());
         client.state().checkedLocations().clear();
         client.registries().apItems().resetReceived();
+        // The finder bar too, or it hangs around pointing at the last server's structures.
+        StructureFinderState.get().clear();
         mirrored = false;
         AEMDebug.log("apStateSync cleared (left the server)");
     }

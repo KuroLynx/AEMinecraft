@@ -41,4 +41,9 @@ public final class StructureFinderState {
     public void remove(UUID player) {
         snapshots.remove(player);
     }
+
+    /** Drops every snapshot. Used client-side on leaving a server, so no bar survives into the next. */
+    public void clear() {
+        snapshots.clear();
+    }
 }
