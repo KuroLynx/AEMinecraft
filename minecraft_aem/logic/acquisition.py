@@ -543,6 +543,29 @@ class RuleHelper:
     # -----------------------------------------------------------------------
     # Locations
     # -----------------------------------------------------------------------
+    def strict_only(self, node):
+        """A requirement STRICT logic insists on but the display graph waives.
+
+        The mirror of ``_demote``, which drops flimsy *sources*; this drops a requirement that has a
+        tedious-but-real alternative. Travelling 10k blocks out is the case: an elytra is how anyone
+        actually does it, and fill should place items as if it were required, but a player with a
+        boat and an afternoon can walk. Waived in the glitch graph, so the tile reads yellow —
+        possible now if you are willing, never something fill leans on."""
+        return Const(True) if self.glitch else node
+
+    def can_fly(self):
+        """Sustained flight: an elytra and the rockets to drive it. ``acquire`` resolves the elytra
+        to Knowledge: Flying + an End City (it sits in an item frame, not a loot table)."""
+        return self.all_of(self.acquire("minecraft:elytra"),
+                           self.acquire("minecraft:firework_rocket"))
+
+    def can_break_bedrock(self):
+        """Break through a bedrock layer. Not a mining job at any material tier — the block has no
+        breaking time — so it is the piston/TNT trick, and a pearl to get through the hole."""
+        return self.all_of(self.acquire("minecraft:piston"),
+                           self.acquire("minecraft:tnt"),
+                           self.acquire("minecraft:ender_pearl"))
+
     def access_region(self, region_name: str):
         return ReachRegion(self.player, region_name)
 

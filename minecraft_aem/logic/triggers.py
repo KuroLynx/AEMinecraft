@@ -34,12 +34,15 @@ from .ast import Rule, and_, or_
 from .constants import (
     K_ARMOR,
     K_BREWING,
+    K_PICKAXE,
     MAT_IRON,
     REGION_END,
     REGION_NETHER,
     REGION_OVERWORLD,
     S_ANCIENT_CITY,
     S_JUNGLE_PYRAMID,
+    S_MANSION,
+    S_STRONGHOLD,
 )
 from ..content.registry import base_pack, overlay_packs
 
@@ -201,10 +204,10 @@ _BLOCK_GATE = {
     "soul_soil": lambda h: h.any_of(h.access_region(REGION_NETHER), h.structure(S_ANCIENT_CITY)),
     "soul_fire": lambda h: h.any_of(h.access_region(REGION_NETHER), h.structure(S_ANCIENT_CITY)),
 
-    # Cobweb has no recipe and does not generate in the open: it comes out of a mineshaft or an
-    # abandoned village. (Strongholds and mansions have some too — left out deliberately, since
-    # extra routes only ever loosen the gate and these two are the dependable ones.)
-    "cobweb": lambda h: h.any_of(h.any_mineshaft(), h.any_village()),
+    # Cobweb has no recipe and does not generate in the open: it comes out of a mineshaft, an
+    # abandoned village, a stronghold or a woodland mansion.
+    "cobweb": lambda h: h.any_of(h.any_mineshaft(), h.any_village(),
+                                 h.structure(S_STRONGHOLD), h.structure(S_MANSION)),
 
     # A filled cauldron is a PLACED block, never an item: the cauldron itself plus the bucket used
     # to fill it — seven iron before you are standing in one.
@@ -221,6 +224,16 @@ _BLOCK_GATE = {
     ),
 }
 
+# Requirements the game enforces that the criteria never state, AND-ed onto a compiled record by
+# game_id. Deliberately a short list: anything derivable from the criteria belongs in a handler, and
+# every entry here is a fact about how the advancement is actually done.
+_EXTRA_REQUIREMENT = {
+    # Unending Hell: be in the Nether having already been to the End, WITHOUT dying in between
+    # (an inverted death score). Surviving that round trip means setting spawn on the Nether side,
+    # and the anchor is the only way to do it — the criteria only describe the two dimensions.
+    "blazeandcave:end/unending_hell": lambda h: h.acquire("minecraft:respawn_anchor"),
+}
+
 # Blocks that exist only where they generate and have to be CARRIED anywhere else. Applied when a
 # criterion pins a dimension the block is not native to: standing in powder snow in the Nether is
 # not a powder-snow gate, it is a bucket gate. Keyed by block path -> the item that moves it.
@@ -234,8 +247,14 @@ _BLOCK_TRANSPORT = {
 class TriggerCompiler:
     """Compiles a manifest record into a :class:`Rule`, or ``None`` if not confidently derivable."""
 
-    def __init__(self, helper: RuleHelper, active_locations: frozenset | None = None):
+    def __init__(self, helper: RuleHelper, active_locations: frozenset | None = None,
+                 records: dict | None = None):
         self.h = helper
+        # The whole manifest, keyed by advancement game_id. Needed to follow a `type_specific`
+        # advancement prerequisite that is NOT an AP location (BACAP's `technical` tab) down to its
+        # own criteria. None = no such resolution available; the prerequisite falls back to None.
+        self._records = records or {}
+        self._record_stack: set = set()
         # Reverse lookups from Minecraft id -> our display-name key. The *_by_path variants are keyed
         # by the bare path so any namespace resolves (BACAP writes ids bare like "end_city" / "cow",
         # vanilla uses "minecraft:"): see _entity_name / _struct_name.
@@ -252,9 +271,25 @@ class TriggerCompiler:
         # AP's reachability sweep raise on an unknown location. None = don't restrict.
         self._active = active_locations
 
+    def _record_rule(self, gid: str) -> Rule | None:
+        """Compile another advancement's record by id, for a prerequisite that is not a check.
+        Guarded against cycles: a record already being compiled resolves to None (fall back) rather
+        than recursing forever."""
+        record = self._records.get(gid)
+        if record is None or gid in self._record_stack:
+            return None
+        self._record_stack.add(gid)
+        try:
+            return self.compile(record, gid)
+        finally:
+            self._record_stack.discard(gid)
+
     # -- public -------------------------------------------------------------
-    def compile(self, record: dict) -> Rule | None:
-        """AST for ``record``'s requirements, or ``None`` if any AND-group is uninterpretable."""
+    def compile(self, record: dict, gid: str | None = None) -> Rule | None:
+        """AST for ``record``'s requirements, or ``None`` if any AND-group is uninterpretable.
+
+        ``gid`` lets a record pick up an _EXTRA_REQUIREMENT — something the game demands that the
+        criteria simply do not state."""
         criteria = record.get("criteria", {})
         # Minecraft's default when `requirements` is absent/empty is "all criteria required" — each
         # criterion as its own AND-group (AdvancementRequirements.allOf). Datapacks (BACAP) usually
@@ -276,6 +311,9 @@ class TriggerCompiler:
             groups.append(or_(*options))
         if not groups:
             return None
+        extra = _EXTRA_REQUIREMENT.get(gid) if gid else None
+        if extra is not None:
+            groups.append(extra(self.h))
         return and_(*groups)
 
     def parent_rule(self, record: dict) -> Rule | None:
@@ -906,14 +944,69 @@ class TriggerCompiler:
             return self._all_req(self.h.needs_biome_finder(), self.h.access_region(region))
         dim = loc.get("dimension")
         region = _DIMENSION_REGION.get(self._path(dim)) if isinstance(dim, str) else None
+        # Dimension and position are AND-ed, never either/or: 'Limbo Walker' is the Nether AND above
+        # the roof, and returning on the dimension alone (as this used to) threw the position away —
+        # which is most of the check.
+        parts = []
         if region:
-            return self.h.access_region(region)
-        if "position" in loc or "light" in loc or "fluid" in loc:
-            # A coordinate / light-level / standing-in-fluid threshold isn't a logic gate (Heart of
-            # Darkness is just "be somewhere dark"; the fluid half of Marine Marauder / Stayin' Frosty
-            # pairs with an effect that is the real gate). Region placement still applies.
+            parts.append(self.h.access_region(region))
+        position = loc.get("position")
+        if isinstance(position, dict):
+            node = self._position_node(position, region)
+            if node is not None:
+                parts.append(node)
+        elif "light" in loc or "fluid" in loc:
+            # A light-level / standing-in-fluid threshold isn't a logic gate (Heart of Darkness is
+            # just "be somewhere dark"; the fluid half of Marine Marauder / Stayin' Frosty pairs
+            # with an effect that is the real gate). Region placement still applies.
             return and_()
+        if parts:
+            return and_(*parts)
         return None
+
+    # Coordinate thresholds that stop being "walk there" and start being a gate.
+    _SKY_LIMIT = 320          # the Overworld build ceiling: above it there is nothing to stand on
+    _NETHER_ROOF = 127        # the bedrock ceiling layer of the Nether
+    _NETHER_LAVA_SEA = 31     # below this you are under the lava, which means digging
+    _FAR_FROM_ORIGIN = 10000  # far enough out that walking stops being the intended route
+
+    def _position_node(self, position: dict, region: str | None) -> Rule | None:
+        """A coordinate threshold as a gate.
+
+        These used to compile to nothing at all, which is why a whole run of BACAP checks asked only
+        for their dimension. A position is a real requirement whenever the game gives you no way to
+        stand there without equipment."""
+        def bound(axis: str, key: str):
+            value = position.get(axis)
+            return value.get(key) if isinstance(value, dict) else None
+
+        parts = []
+        min_y, max_y = bound("y", "min"), bound("y", "max")
+
+        if min_y is not None and min_y >= self._SKY_LIMIT:
+            # Above the build limit there is no block to pillar up on — it is flight or nothing.
+            parts.append(self.h.can_fly())
+        elif region == REGION_NETHER and min_y is not None and min_y >= self._NETHER_ROOF:
+            if max_y is not None and max_y < self._NETHER_ROOF + 1:
+                # Pinned INSIDE the roof layer rather than on top of it ('Inception'): you have to
+                # open the bedrock itself.
+                parts.append(self.h.can_break_bedrock())
+            else:
+                # On top of the roof ('Limbo Walker') — pearl up through the gaps.
+                parts.append(self.h.acquire("minecraft:ender_pearl"))
+
+        if (region == REGION_NETHER and max_y is not None and min_y is None
+                and max_y <= self._NETHER_LAVA_SEA):
+            # Under the Nether's lava sea ('The Descent'): the only way down is through it.
+            parts.append(self.h.knowledge(K_PICKAXE))
+
+        if any((bound(axis, key) or 0) and abs(bound(axis, key)) >= self._FAR_FROM_ORIGIN
+               for axis in ("x", "z") for key in ("min", "max")):
+            # Tens of thousands of blocks out. Strict logic buys the elytra; the glitch graph lets a
+            # patient player boat it, so the tile reads yellow rather than red.
+            parts.append(self.h.strict_only(self.h.can_fly()))
+
+        return and_(*parts) if parts else None
 
     # Biomes that only exist in the Nether / the End; everything else is an Overworld biome.
     _NETHER_BIOMES = frozenset({
@@ -942,9 +1035,18 @@ class TriggerCompiler:
                 if required is False:
                     continue
                 loc = self._adv_loc_by_gid.get(gid)
-                if loc is None or (self._active is not None and loc not in self._active):
-                    return None  # depends on an advancement not present this seed
-                parts.append(self.h.reached(loc))
+                if loc is not None and (self._active is None or loc in self._active):
+                    parts.append(self.h.reached(loc))
+                    continue
+                # Not an AP location. BACAP's `technical` tab is hidden plumbing — no tile, no
+                # check — but it still carries real criteria, and bailing here threw them away:
+                # 'Unending Hell' depends on `technical/unending_hell_end`, which is what makes it
+                # need the End at all, so the rule came out as "be in the Nether". Compile the
+                # referenced advancement's own criteria instead of giving up on the whole predicate.
+                node = self._record_rule(gid)
+                if node is None:
+                    return None  # depends on an advancement we cannot derive
+                parts.append(node)
         for stat in (ts.get("stats") or []):
             if not isinstance(stat, dict):
                 continue

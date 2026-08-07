@@ -259,6 +259,11 @@ LOCATIONS_BACAP: dict[str, MCLocationData] = load_manifest_advancements(
 
 ADVANCEMENT_LOCATIONS: dict[str, MCLocationData] = {**LOCATIONS_ADVANCEMENT, **LOCATIONS_BACAP}
 
+# BACAP's "Super Challenges" tab. Every entry on it is frame=challenge, so challenge_sanity's middle
+# level (`frames`) has to name the tab to keep it out while still taking the challenge tiles BACAP
+# scatters across mining/monsters/adventure/…
+BACAP_CHALLENGES_TAB = "challenges"
+
 # Vanilla advancement locations BACAP *rewrites* (its `minecraft:` files reuse them). BACAP can
 # give the advancement a different frame than vanilla, promoting a goal/task to a challenge or
 # demoting a challenge, so when blazeandcave is on the challenge_sanity gate must follow BACAP's

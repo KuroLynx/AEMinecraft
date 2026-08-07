@@ -9,7 +9,7 @@ from .logic.ast import Const
 from .logic.constants import *
 from .logic.root import set_rules
 from .logic_export import build_logic_export
-from .options import ItemGateBehavior, MCOptions, StartDimension, StructureFinder
+from .options import ChallengeSanity, ItemGateBehavior, MCOptions, StartDimension, StructureFinder
 from .regions import MCRegion
 from .trackers import build_trackers_export
 
@@ -272,7 +272,7 @@ class MCWorld(World):
         if self.options.blazeandcave:
             locations.update(LOCATIONS_BACAP)
 
-        if not self.options.challenge_sanity:
+        if self.options.challenge_sanity == ChallengeSanity.option_none:
             # A reused vanilla location's challenge-ness follows the active manifest: BACAP's frame
             # when blazeandcave is on (it can promote/demote a vanilla advancement), else the
             # vanilla flag baked into the location.
@@ -280,6 +280,14 @@ class MCWorld(World):
             locations = {
                 name: loc_data for name, loc_data in locations.items()
                 if not rewrites.get(loc_data.game_id, loc_data.challenge)
+            }
+        elif self.options.challenge_sanity == ChallengeSanity.option_frames:
+            # Challenge frames yes, BACAP's "Super Challenges" tab no. Those 41 are all
+            # frame=challenge, so the frame alone cannot separate them — the tab can. Addressed by
+            # tab rather than by a hand-kept id list so BACAP can add to it without us following.
+            locations = {
+                name: loc_data for name, loc_data in locations.items()
+                if loc_data.tab != BACAP_CHALLENGES_TAB
             }
 
         return locations
