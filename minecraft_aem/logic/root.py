@@ -32,9 +32,9 @@ def build_location_rules(world, glitch: bool = False) -> dict:
     helper = RuleHelper(world, glitch=glitch)
     existing = set(world._get_active_locations())
     curated = collect_advancement_rules(helper)              # by display name
-    compiler = TriggerCompiler(helper, frozenset(existing))
     _bacap = overlay_packs().get("blazeandcave")
     manifest = _manifest(_bacap if (world.options.blazeandcave and _bacap) else base_pack())
+    compiler = TriggerCompiler(helper, frozenset(existing), records=manifest)
 
     rules: dict = {}
     for location_name, loc_data in ADVANCEMENT_LOCATIONS.items():
@@ -42,7 +42,7 @@ def build_location_rules(world, glitch: bool = False) -> dict:
             continue
         record = manifest.get(loc_data.game_id)
         name = location_name.removeprefix(ADVANCEMENT_PREFIX)
-        condition = compiler.compile(record) if record is not None else None
+        condition = compiler.compile(record, loc_data.game_id) if record is not None else None
         if condition is None:
             condition = curated.get(name)
         if condition is None and record is not None:

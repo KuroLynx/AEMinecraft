@@ -26,7 +26,10 @@ WORLD = AutoWorldRegister.world_types["Minecraft [AEM]"]
 MAX_OPTIONS = {
     "villager_trust": 1,
     "kill_sanity": 1,
-    "challenge_sanity": 1,
+    # 2 = "all", not 1 = "frames": this sweep exists to cover the MOST locations, and `frames` holds
+    # back BACAP's challenges tab. Only bites in the BACAP pass below — with blazeandcave off there
+    # is no such tab and 1 and 2 are the same seed.
+    "challenge_sanity": 2,
     "mob_spawn_lock": {"passive", "neutral", "hostile", "boss"},
     "structure_unlock": {"All"},
     "boss_list": {"All"},
@@ -45,8 +48,10 @@ def full_state(world) -> CollectionState:
     return state
 
 
-def check(start_dimension: str) -> int:
+def check(start_dimension: str, bacap: bool = False) -> int:
     opts = dict(MAX_OPTIONS, start_dimension=start_dimension)
+    if bacap:
+        opts["blazeandcave"] = 1
     mw = setup_multiworld(WORLD, options=opts)
     world = mw.worlds[1]
     p = world.player
@@ -54,7 +59,8 @@ def check(start_dimension: str) -> int:
     locs = list(mw.get_locations(p))
     unreachable = sorted(l.name for l in locs if not state.can_reach_location(l.name, p))
     goal = mw.completion_condition[p](state)
-    print(f"[max-options | start={start_dimension}] {len(locs)} locations, "
+    label = "max-options+BACAP" if bacap else "max-options"
+    print(f"[{label} | start={start_dimension}] {len(locs)} locations, "
           f"goal={'OK' if goal else 'FAIL'}")
     if unreachable:
         print(f"  {len(unreachable)} DEAD (unreachable with FULL pool + all locks unlocked):")
@@ -69,6 +75,11 @@ def main() -> int:
     problems = 0
     for start in ("overworld", "nether"):
         problems += check(start)
+        print()
+    # BACAP separately: it is where the challenges tab, and most of the derived position/enter_block
+    # logic, actually exist. Without this pass a dead BACAP advancement is invisible here.
+    for start in ("overworld", "nether"):
+        problems += check(start, bacap=True)
         print()
     print("RESULT:", "PASS" if problems == 0 else f"FAIL ({problems} dead/goal problems)")
     return 0 if problems == 0 else 1

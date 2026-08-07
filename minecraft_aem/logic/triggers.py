@@ -34,10 +34,16 @@ from .ast import Rule, and_, or_
 from .constants import (
     K_ARMOR,
     K_BREWING,
+    K_HOE,
+    K_PICKAXE,
     MAT_IRON,
     REGION_END,
     REGION_NETHER,
     REGION_OVERWORLD,
+    S_ANCIENT_CITY,
+    S_JUNGLE_PYRAMID,
+    S_MANSION,
+    S_STRONGHOLD,
 )
 from ..content.registry import base_pack, overlay_packs
 
@@ -171,8 +177,6 @@ _BLOCK_EXTRA_GATE = {
 _BLOCK_REGION = {
     "end_portal": (REGION_END,),
     "end_gateway": (REGION_END,),
-    "nether_portal": (REGION_NETHER,),
-    "soul_fire": (REGION_NETHER,),
     "twisting_vines": (REGION_NETHER,),
     "twisting_vines_plant": (REGION_NETHER,),
     "weeping_vines": (REGION_NETHER,),
@@ -180,17 +184,94 @@ _BLOCK_REGION = {
     "powder_snow": (REGION_OVERWORLD,),
     "sweet_berry_bush": (REGION_OVERWORLD,),
     "dirt_path": (REGION_OVERWORLD,),
-    "water": (REGION_OVERWORLD, REGION_END),
-    "bubble_column": (REGION_OVERWORLD, REGION_END),
-    "water_cauldron": (REGION_OVERWORLD, REGION_END),
+    # Water does NOT generate in the End — placing a bucket there is possible, but no advancement
+    # asks for that, and listing the End let 'Stay Hydrated!' satisfy its water half there instead
+    # of in the Overworld. Bubble columns need source water, so they follow.
+    "water": (REGION_OVERWORLD,),
+    "bubble_column": (REGION_OVERWORLD,),
+}
+
+# Blocks whose real cost is neither "a dimension" nor "acquire the item" — the two answers the
+# compiler reaches for by default, and both wrong here. Consulted FIRST by _block_source_node, so an
+# entry overrides _BLOCK_REGION entirely. Keyed by block path; the value takes the RuleHelper so the
+# gate is built lazily.
+_BLOCK_GATE = {
+    # A nether portal block is not Nether-only — you are standing in one the moment you light a
+    # frame in the Overworld, and restoring a ruined portal is the usual way to meet this. What it
+    # actually costs is the obsidian; can_get_obsidian is itself region-aware, so a Nether-side
+    # restoration still resolves to Nether sources.
+    "nether_portal": lambda h: h.can_get_obsidian(),
+
+    # Soul sand and soul fire are not Nether-exclusive: an Ancient City generates both down in the
+    # Deep Dark, so a player who never lights a portal can still stand in either.
+    "soul_sand": lambda h: h.any_of(h.access_region(REGION_NETHER), h.structure(S_ANCIENT_CITY)),
+    "soul_soil": lambda h: h.any_of(h.access_region(REGION_NETHER), h.structure(S_ANCIENT_CITY)),
+    "soul_fire": lambda h: h.any_of(h.access_region(REGION_NETHER), h.structure(S_ANCIENT_CITY)),
+
+    # Cobweb has no recipe and does not generate in the open: it comes out of a mineshaft, an
+    # abandoned village, a stronghold or a woodland mansion.
+    "cobweb": lambda h: h.any_of(h.any_mineshaft(), h.any_village(),
+                                 h.structure(S_STRONGHOLD), h.structure(S_MANSION)),
+
+    # A filled cauldron is a PLACED block, never an item: the cauldron itself plus the bucket used
+    # to fill it — seven iron before you are standing in one.
+    "water_cauldron": lambda h: h.all_of(h.acquire("minecraft:cauldron"),
+                                         h.acquire("minecraft:water_bucket")),
+    "lava_cauldron": lambda h: h.all_of(h.acquire("minecraft:cauldron"),
+                                        h.acquire("minecraft:lava_bucket")),
+
+    # A candle cake is not an item — it is a cake you have placed and stuck a candle in. Neither
+    # half is free: the cake is milk + sugar + egg + wheat (so a bucket and a cow), the candle is
+    # string and honeycomb. Keyed by the shared suffix, see _gate_key.
+    "candle_cake": lambda h: h.all_of(h.acquire("minecraft:cake"), h.acquire("minecraft:candle")),
+
+    # Tripwire is the strung block, which has no item form of its own: find it already strung in a
+    # jungle pyramid, or make it from the hooks and the string.
+    "tripwire": lambda h: h.any_of(
+        h.structure(S_JUNGLE_PYRAMID),
+        h.all_of(h.acquire("minecraft:tripwire_hook"), h.acquire("minecraft:string")),
+    ),
+}
+
+# Requirements the game enforces that the criteria never state, AND-ed onto a compiled record by
+# game_id. Deliberately a short list: anything derivable from the criteria belongs in a handler, and
+# every entry here is a fact about how the advancement is actually done.
+_EXTRA_REQUIREMENT = {
+    # Unending Hell: be in the Nether having already been to the End, WITHOUT dying in between
+    # (an inverted death score). Surviving that round trip means setting spawn on the Nether side,
+    # and the anchor is the only way to do it — the criteria only describe the two dimensions.
+    "blazeandcave:end/unending_hell": lambda h: h.acquire("minecraft:respawn_anchor"),
+}
+
+# Crops that can only be planted in farmland, which only a hoe makes. (Cocoa goes on jungle logs,
+# nether wart in soul sand, bamboo/saplings/sweet berries on dirt — none of those need the tool.)
+_FARMLAND_CROPS = frozenset({
+    "minecraft:wheat", "minecraft:beetroots", "minecraft:carrots", "minecraft:potatoes",
+    "minecraft:pumpkin_stem", "minecraft:melon_stem",
+    "minecraft:torchflower_crop", "minecraft:pitcher_crop",
+})
+
+# Blocks that exist only where they generate and have to be CARRIED anywhere else. Applied when a
+# criterion pins a dimension the block is not native to: standing in powder snow in the Nether is
+# not a powder-snow gate, it is a bucket gate. Keyed by block path -> the item that moves it.
+_BLOCK_TRANSPORT = {
+    "powder_snow": "minecraft:powder_snow_bucket",
+    "water": "minecraft:water_bucket",
+    "lava": "minecraft:lava_bucket",
 }
 
 
 class TriggerCompiler:
     """Compiles a manifest record into a :class:`Rule`, or ``None`` if not confidently derivable."""
 
-    def __init__(self, helper: RuleHelper, active_locations: frozenset | None = None):
+    def __init__(self, helper: RuleHelper, active_locations: frozenset | None = None,
+                 records: dict | None = None):
         self.h = helper
+        # The whole manifest, keyed by advancement game_id. Needed to follow a `type_specific`
+        # advancement prerequisite that is NOT an AP location (BACAP's `technical` tab) down to its
+        # own criteria. None = no such resolution available; the prerequisite falls back to None.
+        self._records = records or {}
+        self._record_stack: set = set()
         # Reverse lookups from Minecraft id -> our display-name key. The *_by_path variants are keyed
         # by the bare path so any namespace resolves (BACAP writes ids bare like "end_city" / "cow",
         # vanilla uses "minecraft:"): see _entity_name / _struct_name.
@@ -207,9 +288,25 @@ class TriggerCompiler:
         # AP's reachability sweep raise on an unknown location. None = don't restrict.
         self._active = active_locations
 
+    def _record_rule(self, gid: str) -> Rule | None:
+        """Compile another advancement's record by id, for a prerequisite that is not a check.
+        Guarded against cycles: a record already being compiled resolves to None (fall back) rather
+        than recursing forever."""
+        record = self._records.get(gid)
+        if record is None or gid in self._record_stack:
+            return None
+        self._record_stack.add(gid)
+        try:
+            return self.compile(record, gid)
+        finally:
+            self._record_stack.discard(gid)
+
     # -- public -------------------------------------------------------------
-    def compile(self, record: dict) -> Rule | None:
-        """AST for ``record``'s requirements, or ``None`` if any AND-group is uninterpretable."""
+    def compile(self, record: dict, gid: str | None = None) -> Rule | None:
+        """AST for ``record``'s requirements, or ``None`` if any AND-group is uninterpretable.
+
+        ``gid`` lets a record pick up an _EXTRA_REQUIREMENT — something the game demands that the
+        criteria simply do not state."""
         criteria = record.get("criteria", {})
         # Minecraft's default when `requirements` is absent/empty is "all criteria required" — each
         # criterion as its own AND-group (AdvancementRequirements.allOf). Datapacks (BACAP) usually
@@ -231,6 +328,9 @@ class TriggerCompiler:
             groups.append(or_(*options))
         if not groups:
             return None
+        extra = _EXTRA_REQUIREMENT.get(gid) if gid else None
+        if extra is not None:
+            groups.append(extra(self.h))
         return and_(*groups)
 
     def parent_rule(self, record: dict) -> Rule | None:
@@ -314,7 +414,9 @@ class TriggerCompiler:
             return self._any_mob(MOBS_BREEDABLE, self.h.can_breed) if not cond else None
         if trigger == "minecraft:changed_dimension":
             region = _DIMENSION_REGION.get(self._path(cond.get("to")))
-            return self.h.access_region(region) if region else None
+            # enter_dimension, not access_region: entering the dimension you START in means leaving
+            # and coming back, which spawning there does not satisfy.
+            return self.h.enter_dimension(region) if region else None
         if trigger == "minecraft:location":
             return self._location_node(cond)
         if trigger == "minecraft:inventory_changed":
@@ -348,21 +450,30 @@ class TriggerCompiler:
         if trigger == "minecraft:villager_trade":
             return self.h.can_trade_villager()
         if trigger == "minecraft:slept_in_bed":
-            return self.h.access_region(REGION_OVERWORLD)  # a bed needs wool + planks (overworld)
+            # This used to return the bare region on the reasoning "a bed needs wool + planks" — and
+            # then never asked for either, which is why 'Sweet Dreams' was green on a fresh world.
+            # Ask for the bed itself; acquire resolves the wool (shears or a sheep) and the planks.
+            return self.h.acquire("minecraft:white_bed")
         if trigger == "minecraft:used_totem":
             return self.h.acquire("minecraft:totem_of_undying")
         if trigger == "minecraft:player_generates_container_loot":
             return self._container_loot_node(cond)
         if trigger in ("minecraft:default_block_use", "minecraft:any_block_use",
                        "minecraft:enter_block"):
-            # Use / stand in a block. A block that pins a dimension (an end gateway / nether portal /
-            # Nether-only vine) gates on reaching that dimension — checked first, as that is the
-            # authoritative gate for these (the acquisition table even mis-models twisting_vines as
-            # Overworld-obtainable). Otherwise obtain it if craftable/obtainable; an Overworld-natural
-            # block carries no gate.
+            # Use / stand in a block. _block_source_node answers what the block itself costs (an
+            # authoritative gate, else the dimension it pins, else acquiring it).
+            #
+            # The `player` predicate is AND-ed on, and used to be dropped on the floor — which is
+            # what made this the largest ungated group in the audit. These criteria routinely pin
+            # WHERE you must be standing, and that is most of the requirement: 'Ancient Restoration'
+            # wants the nether portal block to be inside a ruined portal, 'Hot Spring' wants the
+            # water cauldron to be in the Nether. Without it they read as "stand in a block that
+            # costs nothing".
             blocks = self._blocks_in(cond)
-            node = self._block_region_node(blocks) or self._any_acquire(blocks)
-            return node if node is not None else and_()
+            parts = [n for n in (self._block_source_node(blocks),
+                                 self._location_node(cond),
+                                 self._transport_node(blocks, cond)) if n is not None]
+            return and_(*parts) if parts else and_()
         if trigger in ("minecraft:item_durability_changed", "minecraft:player_sheared_equipment"):
             # Wear an item down / shear with one → obtain that item (shears for shearing).
             item = self._item_predicate(cond.get("item"))
@@ -394,8 +505,12 @@ class TriggerCompiler:
             return self._all_req(self._entity_gid("minecraft:allay"),
                                  self.h.acquire("minecraft:note_block"))
         if trigger == "minecraft:ride_entity_in_lava":
-            return self._all_req(self._entity_gid("minecraft:strider"),
-                                 self.h.access_region(REGION_NETHER))
+            # A strider, from the Nether — plus wherever the criterion says you must be riding it.
+            # 'Feels Like Home' is ride one IN THE OVERWORLD, which means leading it back through a
+            # portal; the player predicate carrying that was ignored, so it asked only for the Nether.
+            return self._all_opt(self._entity_gid("minecraft:strider"),
+                                 self.h.access_region(REGION_NETHER),
+                                 self._location_node(cond))
         if trigger == "minecraft:started_riding":
             return self._started_riding_node(cond)
         if trigger in ("minecraft:voluntary_exile", "minecraft:hero_of_the_village"):
@@ -613,10 +728,12 @@ class TriggerCompiler:
             # weapon may instead sit on the player's mainhand equipment (Nice to Mace You! → a mace).
             weapon = self._mainhand_weapon(cond.get("player"))
         victim = self._entity_node(cond)
-        if victim is None and self._has_lava_fluid(cond):
-            # The victim is pinned only as "an entity in lava" (I'm in Lava With You names no type).
-            # Lava is not Nether-exclusive — an Overworld lava pool works too — so don't force a
-            # Strider/Nether; any reachable mob you can hit (bare-handed is fine) satisfies it.
+        if victim is None:
+            # No type pinned. That used to be treated as no gate at all ("any mob is trivially
+            # reachable") — true only while nothing locks mobs. With mob_spawn_lock on you need SOME
+            # mob unlocked before you can hurt anything, which is the whole of 'Expelliarmus' (hit
+            # something with a stick) and 'Snowball Fight'. Covers the lava case too (I'm in Lava
+            # With You pins only "an entity in lava"): any reachable mob satisfies it, bare-handed.
             victim = self.h.can_kill_any_mob()
         parts = [n for n in (weapon, victim) if n is not None]
         return and_(*parts) if parts else None
@@ -814,7 +931,7 @@ class TriggerCompiler:
         stepping = pred.get("stepping_on")
         if isinstance(stepping, dict):
             ids = self._block_ids(stepping.get("block"))
-            block = self._block_region_node(ids) or self._any_acquire(ids)
+            block = self._block_source_node(ids)
             if block is not None:
                 parts.append(block)
         effects = pred.get("effects")
@@ -850,17 +967,76 @@ class TriggerCompiler:
             # on placement, which is uniformly Overworld); an Overworld biome gates on the Overworld.
             biomes = loc["biomes"]
             region = self._biome_region(biomes if isinstance(biomes, str) else "")
-            return self._all_req(self.h.needs_biome_finder(), self.h.access_region(region))
+            # strict_only: the Finder is how strict logic expects you to reach a named biome, but
+            # wandering until you hit one is a real (if slow) alternative, so the display graph
+            # waives it and the tile reads yellow instead of red.
+            return self._all_req(self.h.strict_only(self.h.needs_biome_finder()),
+                                 self.h.access_region(region))
         dim = loc.get("dimension")
         region = _DIMENSION_REGION.get(self._path(dim)) if isinstance(dim, str) else None
+        # Dimension and position are AND-ed, never either/or: 'Limbo Walker' is the Nether AND above
+        # the roof, and returning on the dimension alone (as this used to) threw the position away —
+        # which is most of the check.
+        parts = []
         if region:
-            return self.h.access_region(region)
-        if "position" in loc or "light" in loc or "fluid" in loc:
-            # A coordinate / light-level / standing-in-fluid threshold isn't a logic gate (Heart of
-            # Darkness is just "be somewhere dark"; the fluid half of Marine Marauder / Stayin' Frosty
-            # pairs with an effect that is the real gate). Region placement still applies.
+            parts.append(self.h.access_region(region))
+        position = loc.get("position")
+        if isinstance(position, dict):
+            node = self._position_node(position, region)
+            if node is not None:
+                parts.append(node)
+        elif "light" in loc or "fluid" in loc:
+            # A light-level / standing-in-fluid threshold isn't a logic gate (Heart of Darkness is
+            # just "be somewhere dark"; the fluid half of Marine Marauder / Stayin' Frosty pairs
+            # with an effect that is the real gate). Region placement still applies.
             return and_()
+        if parts:
+            return and_(*parts)
         return None
+
+    # Coordinate thresholds that stop being "walk there" and start being a gate.
+    _SKY_LIMIT = 320          # the Overworld build ceiling: above it there is nothing to stand on
+    _NETHER_ROOF = 127        # the bedrock ceiling layer of the Nether
+    _NETHER_LAVA_SEA = 31     # below this you are under the lava, which means digging
+    _FAR_FROM_ORIGIN = 10000  # far enough out that walking stops being the intended route
+
+    def _position_node(self, position: dict, region: str | None) -> Rule | None:
+        """A coordinate threshold as a gate.
+
+        These used to compile to nothing at all, which is why a whole run of BACAP checks asked only
+        for their dimension. A position is a real requirement whenever the game gives you no way to
+        stand there without equipment."""
+        def bound(axis: str, key: str):
+            value = position.get(axis)
+            return value.get(key) if isinstance(value, dict) else None
+
+        parts = []
+        min_y, max_y = bound("y", "min"), bound("y", "max")
+
+        if min_y is not None and min_y >= self._SKY_LIMIT:
+            # Above the build limit there is no block to pillar up on — it is flight or nothing.
+            parts.append(self.h.can_fly())
+        elif region == REGION_NETHER and min_y is not None and min_y >= self._NETHER_ROOF:
+            if max_y is not None and max_y < self._NETHER_ROOF + 1:
+                # Pinned INSIDE the roof layer rather than on top of it ('Inception'): you have to
+                # open the bedrock itself.
+                parts.append(self.h.can_break_bedrock())
+            else:
+                # On top of the roof ('Limbo Walker') — pearl up through the gaps.
+                parts.append(self.h.acquire("minecraft:ender_pearl"))
+
+        if (region == REGION_NETHER and max_y is not None and min_y is None
+                and max_y <= self._NETHER_LAVA_SEA):
+            # Under the Nether's lava sea ('The Descent'): the only way down is through it.
+            parts.append(self.h.knowledge(K_PICKAXE))
+
+        if any((bound(axis, key) or 0) and abs(bound(axis, key)) >= self._FAR_FROM_ORIGIN
+               for axis in ("x", "z") for key in ("min", "max")):
+            # Tens of thousands of blocks out. Strict logic buys the elytra; the glitch graph lets a
+            # patient player boat it, so the tile reads yellow rather than red.
+            parts.append(self.h.strict_only(self.h.can_fly()))
+
+        return and_(*parts) if parts else None
 
     # Biomes that only exist in the Nether / the End; everything else is an Overworld biome.
     _NETHER_BIOMES = frozenset({
@@ -889,9 +1065,18 @@ class TriggerCompiler:
                 if required is False:
                     continue
                 loc = self._adv_loc_by_gid.get(gid)
-                if loc is None or (self._active is not None and loc not in self._active):
-                    return None  # depends on an advancement not present this seed
-                parts.append(self.h.reached(loc))
+                if loc is not None and (self._active is None or loc in self._active):
+                    parts.append(self.h.reached(loc))
+                    continue
+                # Not an AP location. BACAP's `technical` tab is hidden plumbing — no tile, no
+                # check — but it still carries real criteria, and bailing here threw them away:
+                # 'Unending Hell' depends on `technical/unending_hell_end`, which is what makes it
+                # need the End at all, so the rule came out as "be in the Nether". Compile the
+                # referenced advancement's own criteria instead of giving up on the whole predicate.
+                node = self._record_rule(gid)
+                if node is None:
+                    return None  # depends on an advancement we cannot derive
+                parts.append(node)
         for stat in (ts.get("stats") or []):
             if not isinstance(stat, dict):
                 continue
@@ -1140,6 +1325,7 @@ class TriggerCompiler:
         entries = location if isinstance(location, list) else [location]
         placed_items: list = []   # the no-offset block being placed → its placing item(s)
         context: list = []        # required adjacent blocks (offset / grouped) → AND-ed in
+        crops: list = []          # the raw block ids placed, to spot the ones needing farmland
         for entry in entries:
             if not isinstance(entry, dict):
                 continue
@@ -1154,10 +1340,26 @@ class TriggerCompiler:
                 for block in self._entry_block_ids(entry):
                     mapped = self._PLANT_ITEM.get(block, block)
                     placed_items += mapped if isinstance(mapped, list) else [mapped]
-        if self._requires_water(entries):  # waterlogged placement needs water → Overworld|End
+                    crops.append(block)
+                # WHERE the block goes. The predicate carries dimension / biomes / position beside
+                # the block, and reading only the block threw all of that away: 'Hot Chocolate' is
+                # cocoa IN THE NETHER, 'A Mangrove Grove' is a propagule IN A GROVE, 'In Your Face,
+                # Neil Armstrong' is potatoes IN THE END. Each read as "obtain a thing you can
+                # already get". Same treatment the player predicate gets on enter_block.
+                pred = entry.get("predicate")
+                if isinstance(pred, dict):
+                    where = self._loc_value_node(pred)
+                    if where is not None:
+                        context.append(where)
+        if self._requires_water(entries):  # waterlogged placement needs water → Overworld
             water = self._block_region_node(["water"])
             if water is not None:
                 context.append(water)
+        if any(block in _FARMLAND_CROPS for block in crops):
+            # A crop only goes into farmland, and farmland only comes from a hoe. Placing the seed
+            # was the whole rule for 'Come to the countryside!' and the potato half of 'In Your
+            # Face, Neil Armstrong'; the tool it needs never appeared.
+            context.append(self.h.knowledge(K_HOE))
         parts = [n for n in (self._any_acquire(placed_items), *context) if n is not None]
         return and_(*parts) if parts else None
 
@@ -1275,6 +1477,99 @@ class TriggerCompiler:
                 node = self.h.access_region(region)
                 options.append(node if extra is None else and_(node, extra(self.h)))
         return self._any_opt(*options) if options else None
+
+    def _expand_blocks(self, blocks: list) -> list:
+        """Block ids with any ``#tag`` replaced by its members. A tag in a block position means "any
+        of these", which is the same OR the caller already treats a block list as — and without this
+        the tag id itself (`candle_cakes`) never matches a per-block gate keyed on a real block."""
+        out = []
+        for block in blocks:
+            if isinstance(block, str) and block.startswith("#"):
+                members = self._block_tags.get(block.lstrip("#"))
+                if members:
+                    out.extend(members)
+                    continue
+            out.append(block)
+        return out
+
+    @classmethod
+    def _gate_key(cls, block) -> str:
+        """The _BLOCK_GATE key for a block id. Dyed variants of the same thing share one gate, so a
+        `*_candle_cake` (seventeen of them, one per candle colour) collapses to `candle_cake`
+        instead of needing seventeen identical rows."""
+        path = cls._path(block)
+        return "candle_cake" if path.endswith("candle_cake") else path
+
+    def _block_source_node(self, blocks: list) -> Rule | None:
+        """What it costs to be at (or get hold of) one of ``blocks``. The listed blocks are
+        ALTERNATIVES, so this is an OR, and the per-block answer is the first of: an authoritative
+        gate (``_BLOCK_GATE``), the dimension it pins (``_BLOCK_REGION``), acquiring it.
+
+        A free block short-circuits the whole thing to ``None``: if one alternative costs nothing,
+        neither does the criterion, and returning the other branches' gates would invent a
+        requirement the player can walk around."""
+        gated, rest, seen = [], [], set()
+        for block in self._expand_blocks(blocks):
+            key = self._gate_key(block)
+            gate = _BLOCK_GATE.get(key)
+            if gate is None:
+                rest.append(block)
+            elif key not in seen:   # a tag's members share one gate — emit it once
+                seen.add(key)
+                gated.append(gate(self.h))
+        if rest:
+            other = self._block_region_node(rest) or self._any_acquire(rest)
+            if other is None:
+                return None  # an alternative is free → so is the criterion
+            gated.append(other)
+        return self._any_opt(*gated) if gated else None
+
+    def _transport_node(self, blocks: list, cond: dict) -> Rule | None:
+        """The gate for having a block somewhere it does not generate.
+
+        'Polar Opposites' is the case: stand in powder snow *in the Nether*. Powder snow is an
+        Overworld block, so the criterion is really "carry some there", and the bucket is the only
+        way to move it — without this the rule reads as two region tests and asks for nothing."""
+        pinned = {_DIMENSION_REGION[d] for d in self._pinned_dimensions(cond.get("player"))
+                  if d in _DIMENSION_REGION}
+        if not pinned:
+            return None
+        parts = []
+        for block in blocks:
+            path = self._path(block)
+            item = _BLOCK_TRANSPORT.get(path)
+            # Native where it is pinned → nothing to carry.
+            if item is None or pinned & set(_BLOCK_REGION.get(path, ())):
+                continue
+            parts.append(self.h.acquire(item))
+        return self._any_opt(*parts)
+
+    @classmethod
+    def _pinned_dimensions(cls, player) -> set:
+        """Every dimension a `player` predicate positively requires. Inverted terms are skipped —
+        "NOT in the Nether" pins nothing."""
+        found: set = set()
+
+        def walk(node) -> None:
+            if isinstance(node, list):
+                for item in node:
+                    walk(item)
+                return
+            if not isinstance(node, dict):
+                return
+            if str(node.get("condition", "")).endswith("inverted"):
+                return
+            for term in node.get("terms") or ():
+                walk(term)
+            pred = node.get("predicate")
+            if isinstance(pred, dict):
+                location = pred.get("location")
+                if isinstance(location, dict) and isinstance(location.get("dimension"), str):
+                    found.add(cls._path(location["dimension"]))
+                walk(pred)
+
+        walk(player)
+        return found
 
     @staticmethod
     def _all_req(*nodes) -> Rule | None:
@@ -1413,7 +1708,7 @@ class TriggerCompiler:
                     item = self._any_acquire((sub.get("predicate") or {}).get("items"))
                     break
         blocks = self._blocks_in(cond)
-        block = self._block_region_node(blocks) or self._any_acquire(blocks)
+        block = self._block_source_node(blocks)
         parts = [n for n in (item, block) if n is not None]
         # A location_check can also pin the biome / dimension the block must be used IN — e.g. Sound
         # of Music needs the jukebox played in a meadow (Overworld). Gate on it so a Nether-craftable

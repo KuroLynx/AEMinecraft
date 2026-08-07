@@ -103,6 +103,10 @@ class MCLocationData:
     region: str = "Overworld"
     game_id: str = ""
     challenge: bool = False
+    # The pack tab this advancement lives on ("nether", "challenges", …). Empty for non-advancement
+    # locations. Lets an option address a whole tab — challenge_sanity uses it to keep BACAP's
+    # "Super Challenges" tab out while still taking the challenge frames scattered elsewhere.
+    tab: str = ""
 
 
 @dataclass
@@ -472,6 +476,7 @@ def load_manifest_advancements(pack_name: str, id_base: int, region: str = "Over
             region=region,
             game_id=advancement_id,
             challenge=frame == "challenge" or tab in challenge_tabs,
+            tab=tab or "",
         )
     return locations
 

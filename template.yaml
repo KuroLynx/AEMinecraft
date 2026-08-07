@@ -240,17 +240,24 @@ Minecraft [AEM]:
   challenge_sanity:
     # Add the hardest advancements as checks.
     #
-    # When enabled, every advancement with the challenge frame (the spiky border) becomes a location
-    # check, for example:
+    # A challenge advancement is one with the spiky border, for example:
     # - A Furious Cocktail (have all potion effects at once)
     # - How Did We Get Here? (have all status effects at once)
     # - Arbalistic (kill 5 unique mobs with one arrow)
     # - A Balanced Diet (eat every food item)
     #
-    # If you also enabled blazeandcave, its challenge advancements are included too. These are very
-    # demanding to complete, so they are left out by default.
-    'false': 50
-    'true': 0
+    # - none (default): no challenge advancements become checks.
+    # - frames: every challenge-frame advancement becomes a check, EXCEPT BlazeandCave's
+    #   "Super Challenges" tab. BACAP scatters ordinary challenge tiles across most of its tabs;
+    #   the challenges tab itself is a different order of grind (travel a million blocks, build to
+    #   the world height in every dimension) and is the usual reason a seed stops being fun.
+    # - all: the above plus BACAP's challenges tab. Only worth it for a very long game.
+    #
+    # 'true' maps to 'frames' and 'false' to 'none', so an existing YAML keeps working — note that
+    # 'true' no longer pulls in the challenges tab; ask for 'all' if you want it.
+    none: 50
+    frames: 0
+    all: 0
 
   # -------------------------------------------------------------------------
   # Finders

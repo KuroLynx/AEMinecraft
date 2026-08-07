@@ -200,6 +200,28 @@ def _block_region(block: str) -> str:
     return REGION_OVERWORLD
 
 
+# Saplings whose tree grows in exactly one biome, so obtaining one IS finding that biome. Oak,
+# spruce and birch are left out on purpose: they are spread across so many common biomes that
+# nobody has to go looking, and gating them would put the Biome Finder in front of the whole tree.
+_BIOME_SAPLINGS = frozenset({
+    "jungle_sapling",       # jungle
+    "acacia_sapling",       # savanna
+    "dark_oak_sapling",     # dark forest
+    "cherry_sapling",       # cherry grove
+    "pale_oak_sapling",     # pale garden
+    "mangrove_propagule",   # mangrove swamp
+    "azalea", "flowering_azalea",  # lush caves
+})
+
+# The Pale Garden's exclusive blocks. The biome generates nowhere else and nothing here has another
+# source, so obtaining any of them IS finding it.
+_PALE_GARDEN_BLOCKS = frozenset({
+    "pale_oak_log", "pale_oak_wood", "pale_oak_leaves", "pale_oak_planks",
+    "pale_moss_block", "pale_moss_carpet", "pale_hanging_moss",
+    "creaking_heart", "resin_clump", "resin_block", "resin_brick",
+})
+
+
 class RuleHelper:
     """Builds logic rules as serializable AST nodes (see ``ast.py``).
 
@@ -294,6 +316,10 @@ class RuleHelper:
             E_SILVERFISH     : lambda: self.structure(S_STRONGHOLD),
             E_WARDEN         : lambda: self.structure(S_ANCIENT_CITY),
             E_ENDERMITE      : lambda: self.entity(E_ENDERMAN),  # spawns from Ender Pearl throws
+            # A sniffer never spawns: every one in the world hatched from an egg you brushed out of
+            # a warm ocean ruin. Same gate the egg carries, so anything wanting the mob (feeding a
+            # snifflet, planting what it digs up) inherits the brush and the ruin.
+            E_SNIFFER        : lambda: self.acquire("minecraft:sniffer_egg"),
 
             # Ocean Monument
             E_ELDER_GUARDIAN : lambda: self.structure(S_OCEAN_MONUMENT),
@@ -444,6 +470,7 @@ class RuleHelper:
             E_AXOLOTL    : lambda: self.needs_biome_finder(),   # Lush Caves
             E_GOAT       : lambda: self.needs_biome_finder(),   # mountain biomes
             E_FROG       : lambda: self.needs_biome_finder(),   # temperate / warm / cold variants
+            E_CREAKING   : lambda: self.needs_biome_finder(),   # Pale Garden only
             E_HAPPY_GHAST: lambda: self.any_of(                 # Dried Ghast: Soul Sand Valley or bartering
                 self.can_barter(),
                 self.needs_biome_finder(),
@@ -543,8 +570,60 @@ class RuleHelper:
     # -----------------------------------------------------------------------
     # Locations
     # -----------------------------------------------------------------------
+    def strict_only(self, node):
+        """A requirement STRICT logic insists on but the display graph waives.
+
+        The mirror of ``_demote``, which drops flimsy *sources*; this drops a requirement that has a
+        tedious-but-real alternative. Travelling 10k blocks out is the case: an elytra is how anyone
+        actually does it, and fill should place items as if it were required, but a player with a
+        boat and an afternoon can walk. Waived in the glitch graph, so the tile reads yellow —
+        possible now if you are willing, never something fill leans on."""
+        return Const(True) if self.glitch else node
+
+    def glitch_only(self, node):
+        """The inverse of ``strict_only``: a ROUTE that exists only in the permissive graph.
+
+        ``strict_only`` waives a requirement for display; this offers an extra way in for display.
+        Written as ``any_of(dependable, glitch_only(flimsy))``, strict logic sees only the
+        dependable route while the tile still colours yellow for someone who knows the trick."""
+        return node if self.glitch else Const(False)
+
+    def can_fly(self):
+        """Sustained flight: an elytra and the rockets to drive it. ``acquire`` resolves the elytra
+        to Knowledge: Flying + an End City (it sits in an item frame, not a loot table)."""
+        return self.all_of(self.acquire("minecraft:elytra"),
+                           self.acquire("minecraft:firework_rocket"))
+
+    def can_break_bedrock(self):
+        """Break through a bedrock layer. Not a mining job at any material tier — the block has no
+        breaking time — so it is the piston/TNT trick, and a pearl to get through the hole."""
+        return self.all_of(self.acquire("minecraft:piston"),
+                           self.acquire("minecraft:tnt"),
+                           self.acquire("minecraft:ender_pearl"))
+
     def access_region(self, region_name: str):
         return ReachRegion(self.player, region_name)
+
+    # The two dimensions joined by a portal. Entering either one from the other is the round trip
+    # that `enter_dimension` needs; the End is never a start dimension, so it never appears here.
+    _PORTAL_PARTNER = {REGION_OVERWORLD: REGION_NETHER, REGION_NETHER: REGION_OVERWORLD}
+
+    def enter_dimension(self, region_name: str):
+        """``changed_dimension`` into ``region_name`` — CHANGING dimension, which is not the same as
+        being in one. Spawning somewhere never fires the trigger.
+
+        That distinction only bites on the start dimension, and it made 'We Need to Go Deeper' free
+        on a Nether start: the check reduced to "be in the Nether", which is where the player wakes
+        up, so both fill and the tracker called it done from turn one. In game it needs the whole
+        Overworld round trip — the unlock item and obsidian for the return portal — and then a walk
+        back through it. So a start-dimension entry additionally requires reaching the dimension on
+        the other side of the portal; coming back needs no second gate, because the portal used to
+        leave is still standing."""
+        node = self.access_region(region_name)
+        if region_name != self.start_region:
+            return node
+        partner = self._PORTAL_PARTNER.get(region_name)
+        return self.all_of(node, self.access_region(partner)) if partner else node
 
     def reached(self, location: str):
         """Reaching another location. Resolves to Const(False) when this seed never created it.
@@ -1316,6 +1395,45 @@ class RuleHelper:
         # (The table mis-models it as a plain magma-cube drop, which would drop the frog/Overworld.)
         if base in ("ochre_froglight", "pearlescent_froglight", "verdant_froglight"):
             return self.all_of(self.entity(E_FROG), self.entity(E_MAGMA_CUBE))
+
+        # Saplings that grow in exactly one biome. The tree is the only place the sapling exists, so
+        # the real cost is finding that biome — which is what the Biome Finder is for. strict_only,
+        # because wandering until you hit a cherry grove is slow but real; the display graph waives
+        # it. ('Ecologist' wants all twelve wood types, so it inherits every one of these.)
+        if base in _BIOME_SAPLINGS:
+            return self.all_of(self.strict_only(self.needs_biome_finder()),
+                               self.access_region(REGION_OVERWORLD))
+
+        # Chorus grows only on the OUTER End islands, which are behind a gateway — and a gateway
+        # does not exist until the dragon dies. The indexer has no record for these (a chorus flower
+        # drops itself when broken, so nothing links it to a source), leaving them free the moment
+        # you step through the End portal. That is what made 'Extrabiologist' — plant chorus back in
+        # the Overworld — ask for nothing but standing in the End.
+        if base in ("chorus_flower", "chorus_plant", "chorus_fruit", "popped_chorus_fruit"):
+            return self.outer_end()
+
+        # A grass block only comes up whole with Silk Touch; without it you get dirt. The one way
+        # round it is an enderman, which picks a grass block up and sets it down again — real, but
+        # not something strict logic should lean on, so it stays in the glitch graph.
+        if base == "grass_block":
+            return self.any_of(
+                self.all_of(self.knowledge(K_SHOVEL), self.can_silk_touch()),
+                self.glitch_only(self.entity(E_ENDERMAN)),
+            )
+
+        # Sniffer seeds are dug up by a sniffer, and a sniffer comes from an egg brushed out of a
+        # warm ocean ruin — the same gate 'Smells Interesting' carries. Without this the seeds have
+        # no record at all and 'Planting the Past' was free.
+        if base in ("torchflower_seeds", "pitcher_pod"):
+            return self.entity(E_SNIFFER)
+
+        # Everything the Pale Garden makes exists in that one biome and nowhere else, so obtaining
+        # any of it is finding the biome. The creaking heart carries the mob on top: it is only a
+        # creaking heart while the creaking it spawns is alive.
+        if base in _PALE_GARDEN_BLOCKS:
+            found = self.all_of(self.strict_only(self.needs_biome_finder()),
+                                self.access_region(REGION_OVERWORLD))
+            return self.all_of(found, self.entity(E_CREAKING)) if base == "creaking_heart" else found
 
         # An elytra exists only in an End City ship — placed in an item frame, not a loot table the
         # indexer reads — so it has no acquisition record and would fall back to its bare material
