@@ -190,16 +190,10 @@ public final class MinecraftEventBridge {
             if (!AEMServerRuntime.isArchipelagoReady()) {
                 return true;
             }
+            // Command-shaped messages are forwarded like any other: the Archipelago server refuses
+            // the dangerous ones itself, so filtering here would only stop players using the
+            // commands they are allowed to use.
             String text = message.signedContent();
-
-            // Archipelago reads a Say beginning with '!' as a COMMAND. Forwarding chat verbatim
-            // therefore handed every player on this server a remote console: !alias renames the slot
-            // for the whole room, and !release hands out the entire slot's items. Chat is chat, so
-            // anything command-shaped is delivered locally and never sent onward. An operator who
-            // genuinely wants to run one has /aem say.
-            if (text.startsWith("!")) {
-                return true;  // let vanilla broadcast it locally; do not forward
-            }
 
             // Name the speaker. One slot, several people: without this every player's chat reached
             // Archipelago as the slot with no way to tell who was talking — and since the vanilla
