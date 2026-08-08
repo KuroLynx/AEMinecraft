@@ -24,10 +24,6 @@ public final class AdvancementBridge {
         if (!AEMServerRuntime.isArchipelagoReady()) {
             return;
         }
-        String advancementId = holder.id().toString();
-        if (advancementId.startsWith("minecraft:recipes/") || advancementId.startsWith(AEM.MOD_ID + ":")) {
-            return;
-        }
         SharedAdvancementService.onCriterion(player, holder, criterion);
     }
 
@@ -134,6 +130,8 @@ public final class AdvancementBridge {
         for (String advancementId : completed) {
             SharedAdvancementService.onCompleted(player, advancementId);
         }
+        // …and the same for what they have only part-done, which no completion would ever surface.
+        SharedAdvancementService.foldIn(player);
 
         // Re-evaluate the advancement-count goal progress once after the batch (syncProgress is an
         // idempotent recompute, so a single call covers every advancement just folded in above).
