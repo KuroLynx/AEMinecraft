@@ -14,8 +14,10 @@ import fr.euclesia.mcarchipelago.server.gameplay.KnowledgeUseGate;
 import fr.euclesia.mcarchipelago.server.gameplay.MobKillBridge;
 import fr.euclesia.mcarchipelago.server.gameplay.RootAdvancementService;
 import fr.euclesia.mcarchipelago.server.gameplay.SharedAdvancementService;
+import fr.euclesia.mcarchipelago.server.gameplay.SpawnGraceService;
 import fr.euclesia.mcarchipelago.server.gameplay.StartDimensionService;
 import fr.euclesia.mcarchipelago.server.gameplay.StructureFinderDriver;
+import fr.euclesia.mcarchipelago.server.gameplay.TrapScheduler;
 import fr.euclesia.mcarchipelago.server.gameplay.TrapMobService;
 import fr.euclesia.mcarchipelago.server.gameplay.TrapPlatformService;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
@@ -42,6 +44,12 @@ public final class MinecraftEventBridge {
         // Station/container Knowledge gates: refuse right-clicking a block whose Knowledge is
         // still missing (see KnowledgeUseGate).
         KnowledgeUseGate.register();
+
+        // Arrival grace: a minute of protection on entering the world.
+        SpawnGraceService.register();
+
+        // Trap pacing: one at a time, half a minute or so apart, never during the arrival grace.
+        TrapScheduler.register();
 
         // Connect-on-join gate. A world created via the Archipelago tab stages its connection here;
         // persist it into the new world's folder, then require a live Archipelago session before the
@@ -141,8 +149,11 @@ public final class MinecraftEventBridge {
             AdvancementBridge.scanPlayer(player);
             // Give back the soulbound Biome Finder if this slot owns it (covers first join and relog).
             BiomeFinderService.ensureGranted(player);
-            // Apply any filler/trap effects received while offline (and before this join).
-            FillerTrapService.applyPending(player);
+            // A minute of safety on the way in, before anything is allowed to hit them.
+            SpawnGraceService.begin(player);
+            // Collect the filler banked while they were away. CATCH_UP: the traps in that backlog
+            // went off for whoever was in the world at the time and are not re-run at a latecomer.
+            FillerTrapService.applyPending(player, FillerTrapService.Mode.CATCH_UP);
             // Hand this client the session, so its advancement overlay and tracker tab have
             // something to draw. Last, so it reflects everything the join just did.
             APStateSync.sendTo(player);
@@ -152,6 +163,8 @@ public final class MinecraftEventBridge {
         // their suppression mark forever, silently swallowing their next real death's DeathLink.
         ServerPlayerEvents.LEAVE.register(player -> {
             DeathLinkService.onPlayerDisconnect(player);
+            SpawnGraceService.onPlayerLeave(player);
+            TrapScheduler.onPlayerLeave(player);
             // Their client forgets the finder bar on disconnect, so the server has to forget having
             // sent it — otherwise a reconnect gets nothing and the bar never comes back.
             StructureFinderDriver.onPlayerLeave(player);
@@ -159,8 +172,12 @@ public final class MinecraftEventBridge {
 
         // The Biome Finder is soulbound: restore the exact stack saved at death (keeping its tracked
         // biome), or grant a fresh one if none was saved.
-        ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) ->
-                BiomeFinderService.restoreOnRespawn(newPlayer));
+        ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
+            BiomeFinderService.restoreOnRespawn(newPlayer);
+            // Coming back from a death is entering the world too, and the thing that killed you is
+            // often still standing on your bed.
+            SpawnGraceService.begin(newPlayer);
+        });
 
         // Before death drops are computed, save the finder (with its tracking) and strip it from the
         // inventory so it isn't dropped; AFTER_RESPAWN restores it. Always allow the death itself.
