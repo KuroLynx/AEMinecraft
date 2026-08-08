@@ -36,7 +36,9 @@ import java.util.UUID;
  *       scan) per eligible structure, and a single rare structure can scan the whole radius on its own.
  *       So it runs as a <em>sweep</em>: the structure types are searched a few per tick under a shared
  *       budget ({@link #TICK_BUDGET_NANOS}), and the previous result stays on screen until the new one
- *       is complete. A sweep is per player, anchored where that player stood when it started.</li>
+ *       is complete. A sweep is per player, anchored where that player stood when it started — but a
+ *       player standing near someone whose sweep already finished adopts that result rather than
+ *       re-searching the same ground, so a party costs about what one player costs.</li>
  *   <li><b>Choosing what to show</b> is cheap — sort the located structures by how far they are from
  *       the player <em>right now</em> and keep as many as the finder tier reveals. This runs off the
  *       sweep entirely, every {@link #SELECT_INTERVAL_TICKS} ticks, so at tier 1 the bar holds the five
@@ -189,7 +191,36 @@ public final class StructureFinderDriver {
         } else if (result.structureVersion() == structureVersion && withinResweep(result.origin(), at)) {
             return;  // still fresh, and anchored close enough to where the player is
         }
+        Result shared = nearbyResult(player.getUUID(), dimension, structureVersion, at);
+        if (shared != null) {
+            finder.results.put(dimension, shared);
+            return;
+        }
         finder.sweep = startSweep(structureVersion, level, at, result);
+    }
+
+    /**
+     * A sweep another player already finished that is just as good for this one: same dimension, same
+     * unlock version, anchored close enough that it passes the freshness test they are about to fail.
+     *
+     * <p>Two players exploring together were each paying a full worldgen sweep over the same ground,
+     * out of one shared tick budget — so a party halved its own refresh rate for identical results, and
+     * a group on elytras could re-trigger sweeps faster than the budget could finish them. Sharing the
+     * finished one costs nothing: it is the same anchor either of them would have searched from.
+     */
+    private static Result nearbyResult(UUID self, ResourceKey<Level> dimension, int structureVersion,
+                                       BlockPos at) {
+        for (Map.Entry<UUID, PlayerFinder> entry : FINDERS.entrySet()) {
+            if (entry.getKey().equals(self)) {
+                continue;
+            }
+            Result other = entry.getValue().results.get(dimension);
+            if (other != null && other.structureVersion() == structureVersion
+                    && withinResweep(other.origin(), at)) {
+                return other;
+            }
+        }
+        return null;
     }
 
     private static boolean withinResweep(BlockPos anchor, BlockPos at) {
