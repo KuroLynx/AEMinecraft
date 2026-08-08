@@ -12,6 +12,7 @@
     "ItemEntityMixin",
     "KilledTriggerMixin",
     "LivingEntityMixin",
+    "NaturalSpawnerMixin",
     "PlacedFeatureMixin",
     "PlayerAdvancementsMixin",
     "ServerAdvancementManagerAccessor",
