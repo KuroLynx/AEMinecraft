@@ -31,6 +31,8 @@ public final class TrapPlatformService {
     private static final int DROP_HEIGHT = 70;
     /** How far to the side the water lands — far enough that you must move to reach it. */
     private static final int HORIZONTAL_OFFSET = 5;
+    /** How far out {@link #platformSpot} will keep looking when nearer sides hold containers. */
+    private static final int MAX_HORIZONTAL_OFFSET = 8;
     /** Perpendicular half-width of the cleared fall corridor (1 => 3 wide). */
     private static final int CORRIDOR_HALF_WIDTH = 1;
     private static final Direction[] HORIZONTAL = {Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST};
@@ -80,6 +82,9 @@ public final class TrapPlatformService {
     public static void mlg(ServerPlayer player, ServerLevel level) {
         BlockPos origin = player.blockPosition();
         BlockPos water = platformSpot(level, origin);
+        if (water == null) {
+            return;  // nowhere to build that wouldn't destroy a container; see platformSpot
+        }
         Map<BlockPos, BlockState> snapshot = new HashMap<>();
 
         // Offset water platform: a bedrock plus-frame holding a single central water source.
@@ -118,21 +123,33 @@ public final class TrapPlatformService {
     }
 
     /**
-     * Where to put the water platform: a random side, preferring one whose footprint would not pave
-     * over a chest or a furnace (see {@link #holdsContents}). Falls back to the random pick when the
-     * victim has managed to surround themselves with containers.
+     * Where to put the water platform: a random side, at the first distance whose whole footprint is
+     * clear of containers (see {@link #holdsContents}). {@code null} if there is nowhere to put it.
+     *
+     * <p>There is no fallback onto a dirty spot on purpose. The platform is written with
+     * {@code setBlockAndUpdate} and restored from a {@link BlockState}, so paving over a chest empties
+     * it permanently — the exact loss this check exists to prevent. A player who has walled themselves
+     * in with storage on all sides at every distance simply does not get the trap; a trap that fails to
+     * fire costs the run nothing, and one that eats a shulker box cannot be undone.
      */
     private static BlockPos platformSpot(ServerLevel level, BlockPos origin) {
         int first = level.getRandom().nextInt(HORIZONTAL.length);
-        BlockPos fallback = origin.relative(HORIZONTAL[first], HORIZONTAL_OFFSET);
-        for (int i = 0; i < HORIZONTAL.length; i++) {
-            BlockPos spot = origin.relative(HORIZONTAL[(first + i) % HORIZONTAL.length], HORIZONTAL_OFFSET);
-            if (!holdsContents(level, spot) && !holdsContents(level, spot.north()) && !holdsContents(level, spot.south())
-                    && !holdsContents(level, spot.east()) && !holdsContents(level, spot.west())) {
-                return spot;
+        for (int distance = HORIZONTAL_OFFSET; distance <= MAX_HORIZONTAL_OFFSET; distance++) {
+            for (int i = 0; i < HORIZONTAL.length; i++) {
+                BlockPos spot = origin.relative(HORIZONTAL[(first + i) % HORIZONTAL.length], distance);
+                if (isClear(level, spot)) {
+                    return spot;
+                }
             }
         }
-        return fallback;
+        return null;
+    }
+
+    /** Whether the plus-shaped platform footprint at {@code spot} would destroy nothing. */
+    private static boolean isClear(ServerLevel level, BlockPos spot) {
+        return !holdsContents(level, spot)
+                && !holdsContents(level, spot.north()) && !holdsContents(level, spot.south())
+                && !holdsContents(level, spot.east()) && !holdsContents(level, spot.west());
     }
 
     /**

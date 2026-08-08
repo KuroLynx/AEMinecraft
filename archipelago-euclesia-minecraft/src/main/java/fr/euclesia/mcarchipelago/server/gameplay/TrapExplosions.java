@@ -42,7 +42,9 @@ public final class TrapExplosions {
 
         @Override
         public boolean shouldDamageEntity(Explosion explosion, Entity entity) {
-            return entity instanceof Player || entity instanceof Mob;
+            // Narrows the vanilla rule rather than replacing it: anything that opts out of
+            // explosions upstream still opts out here.
+            return (entity instanceof Player || entity instanceof Mob) && !entity.ignoreExplosion(explosion);
         }
     };
 
