@@ -149,6 +149,9 @@ public final class RootAdvancementService {
         if (server == null || !AEMServerRuntime.isArchipelagoReady()) {
             return;
         }
+        // Same reason, for the tracker tabs: the connect-time compaction ran with nobody online, so
+        // do it here too — before the reload below, which is what hands this client the tree.
+        TrackerLayoutService.compact(server);
         rebuild(server, AEM.ARCHIPELAGO.client().state().parsedSlotData());
         player.getAdvancements().reload(server.getAdvancements());
         syncProgress(player);

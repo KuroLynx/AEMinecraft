@@ -18,6 +18,7 @@ import fr.euclesia.mcarchipelago.server.gameplay.AdvancementBridge;
 import fr.euclesia.mcarchipelago.server.gameplay.BacapConfigService;
 import fr.euclesia.mcarchipelago.server.gameplay.RootAdvancementService;
 import fr.euclesia.mcarchipelago.server.gameplay.StartDimensionService;
+import fr.euclesia.mcarchipelago.server.gameplay.TrackerLayoutService;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
 import fr.euclesia.mcarchipelago.server.service.DeathLinkService;
 import net.minecraft.server.MinecraftServer;
@@ -66,6 +67,9 @@ public final class ArchipelagoGameplayListener implements APEventListener {
                 AEM.LOGGER.error("[AEM] Missing/incompatible required content: {}", content.message().getString());
             }
 
+            // Close the gaps the seed leaves in the tracker rows before the reload below sends them:
+            // a row's chain breaks at the first tile this seed doesn't use, hiding the rest.
+            server.execute(() -> TrackerLayoutService.compact(server));
             server.execute(() -> RootAdvancementService.rebuild(server, slotData));
             // One-time BACAP reward/trophy config, now that the slot data is known (covers
             // connect-after-join). Scheduled on the server thread; no-op if already applied.
