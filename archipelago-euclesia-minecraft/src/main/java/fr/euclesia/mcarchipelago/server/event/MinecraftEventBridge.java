@@ -45,7 +45,7 @@ public final class MinecraftEventBridge {
         // still missing (see KnowledgeUseGate).
         KnowledgeUseGate.register();
 
-        // Arrival grace: a minute of protection on entering the world.
+        // Arrival grace: a short window of protection on entering the world.
         SpawnGraceService.register();
 
         // Trap pacing: one at a time, half a minute or so apart, never during the arrival grace.
@@ -149,7 +149,7 @@ public final class MinecraftEventBridge {
             AdvancementBridge.scanPlayer(player);
             // Give back the soulbound Biome Finder if this slot owns it (covers first join and relog).
             BiomeFinderService.ensureGranted(player);
-            // A minute of safety on the way in, before anything is allowed to hit them.
+            // A moment of safety on the way in, before anything is allowed to hit them.
             SpawnGraceService.begin(player);
             // Collect the filler banked while they were away. CATCH_UP: the traps in that backlog
             // went off for whoever was in the world at the time and are not re-run at a latecomer.
@@ -175,8 +175,11 @@ public final class MinecraftEventBridge {
         ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
             BiomeFinderService.restoreOnRespawn(newPlayer);
             // Coming back from a death is entering the world too, and the thing that killed you is
-            // often still standing on your bed.
-            SpawnGraceService.begin(newPlayer);
+            // often still standing on your bed. Only from a death, though: this event also fires for
+            // the End exit portal (alive == true), where "spawn protection" would be nonsense.
+            if (!alive) {
+                SpawnGraceService.begin(newPlayer);
+            }
         });
 
         // Before death drops are computed, save the finder (with its tracking) and strip it from the

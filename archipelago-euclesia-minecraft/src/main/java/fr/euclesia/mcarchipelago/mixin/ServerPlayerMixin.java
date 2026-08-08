@@ -55,7 +55,7 @@ public abstract class ServerPlayerMixin {
     }
 
     /**
-     * Arrival grace ({@link SpawnGraceService}): for the first minute in the world a player takes no
+     * Arrival grace ({@link SpawnGraceService}): for the first few seconds in the world a player takes no
      * damage, so nothing that was already waiting for them — a mob on the bed, last session's lava —
      * can kill them before they have had a chance to look around.
      *
