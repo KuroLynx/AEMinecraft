@@ -14,6 +14,23 @@ import java.util.List;
 public final class AdvancementBridge {
     private AdvancementBridge() {}
 
+    /**
+     * One criterion of an advancement that is NOT finished yet: hand it to the rest of the server so
+     * partial progress pools like completions do (see {@link SharedAdvancementService}). Recipe
+     * unlocks are skipped — they fire constantly and mean nothing — as are our own tracker tiles,
+     * whose criteria are per-player bookkeeping that {@link RootAdvancementService} reconciles.
+     */
+    public static void onCriterion(ServerPlayer player, AdvancementHolder holder, String criterion) {
+        if (!AEMServerRuntime.isArchipelagoReady()) {
+            return;
+        }
+        String advancementId = holder.id().toString();
+        if (advancementId.startsWith("minecraft:recipes/") || advancementId.startsWith(AEM.MOD_ID + ":")) {
+            return;
+        }
+        SharedAdvancementService.onCriterion(player, holder, criterion);
+    }
+
     public static void onCompleted(ServerPlayer player, String advancementId) {
         if (!AEMServerRuntime.isArchipelagoReady()) {
             return;
@@ -48,7 +65,11 @@ public final class AdvancementBridge {
         // but only for real advancement checks this seed — not the root tile itself.
         if (!APTrackerRegistry.TAB_ROOT_ID.equals(advancementId)
                 && AEM.ARCHIPELAGO.client().registries().apLocations().isActiveLocation(advancementId)) {
-            RootAdvancementService.syncProgress(player);
+            // Everyone, not just the earner. The others were handed this advancement a moment ago by
+            // SharedAdvancementService, but their own completion came back through here while the
+            // propagation guard was up and returned early — so nothing recounted their goal tile and
+            // it sat one behind until they next logged in.
+            RootAdvancementService.syncProgressToAll();
             // The advancement count is part of the win condition, so re-check the goal here too — not
             // just on boss kills — or completing the last required advancement wouldn't trigger the win.
             GoalTracker.evaluate();

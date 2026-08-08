@@ -1,6 +1,8 @@
 package fr.euclesia.mcarchipelago.server.gameplay;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 import fr.euclesia.mcarchipelago.AEM;
@@ -17,9 +19,12 @@ import net.minecraft.server.level.ServerPlayer;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -38,9 +43,16 @@ import java.util.Set;
  * completion, so each player's own completion pays them their own reward, exactly as if they had
  * done it themselves. Anything else would have one player collect the loot for everyone.
  *
- * <p>The set is persisted per world, so a player who logs in tomorrow — or the first player back
- * after a restart — catches up on everything the run has done rather than starting from the empty
- * book their player file remembers.
+ * <p><b>Half-finished advancements count too.</b> Sharing only whole completions left every
+ * multi-criterion advancement — Adventuring Time, Monsters Hunted, Balanced Diet, most of BACAP's
+ * counting goals — quietly unsharable: one player visits thirty biomes, another visits ten, neither
+ * finishes, and because nothing ever completes there is nothing to propagate. The run stalls on a
+ * goal it has collectively already done. So individual criteria are shared as they are earned, the
+ * same way completions are, and the book records both.
+ *
+ * <p>Both are persisted per world, so a player who logs in tomorrow — or the first player back after
+ * a restart — catches up on everything the run has done, part-done included, rather than starting
+ * from the empty book their player file remembers.
  */
 public final class SharedAdvancementService {
     private static final String FILE_NAME = "shared_advancements.json";
@@ -48,6 +60,13 @@ public final class SharedAdvancementService {
 
     /** Every advancement the RUN has completed, by id, in completion order. */
     private static final Set<String> completed = Collections.synchronizedSet(new LinkedHashSet<>());
+
+    /**
+     * Every criterion the RUN has earned but not yet turned into a completion, by advancement id.
+     * A completed advancement needs no entry here — {@link #completed} implies all of them — so this
+     * holds exactly the partial progress that would otherwise be stranded in one player's file.
+     */
+    private static final Map<String, Set<String>> partial = Collections.synchronizedMap(new LinkedHashMap<>());
 
     /**
      * Set while we are propagating one completion outward. Awarding an advancement to another player
@@ -78,6 +97,7 @@ public final class SharedAdvancementService {
         if (!completed.add(advancementId)) {
             return false; // the run already had this; another player simply caught up
         }
+        partial.remove(advancementId); // done is done: the criteria are implied from here on
         dirty = true;
         save();
 
@@ -105,18 +125,73 @@ public final class SharedAdvancementService {
     }
 
     /**
-     * Bring a joining player up to the run's current state. Runs inside the propagation guard, so a
-     * player catching up on two hundred advancements does not fire two hundred Archipelago checks
-     * for locations the run sent long ago.
+     * Record one earned criterion and give it to everyone else — the partial-progress twin of
+     * {@link #onCompleted}. Called for criteria that did NOT finish their advancement; the one that
+     * does goes through {@code onCompleted}, which shares the whole thing.
+     */
+    public static void onCriterion(ServerPlayer source, AdvancementHolder holder, String criterion) {
+        if (propagating) {
+            return; // a copy we just handed out
+        }
+        String advancementId = holder.id().toString();
+        if (completed.contains(advancementId)) {
+            return; // the run already finished this; nothing partial left to track
+        }
+        Set<String> earned = partial.computeIfAbsent(advancementId,
+                key -> Collections.synchronizedSet(new LinkedHashSet<>()));
+        if (!earned.add(criterion)) {
+            return; // the run already had this step; another player simply caught up
+        }
+        dirty = true;
+        save();
+
+        MinecraftServer server = AEMServerRuntime.server();
+        if (server == null) {
+            return;
+        }
+        AEMDebug.log("sharedAdvancement criterion '{}' of '{}' earned by {} -> sharing",
+                criterion, advancementId, source != null ? source.getGameProfile().name() : "?");
+        List<ServerPlayer> finishers = new ArrayList<>();
+        propagating = true;
+        try {
+            for (ServerPlayer other : server.getPlayerList().getPlayers()) {
+                if (other == source) {
+                    continue;
+                }
+                if (other.getAdvancements().award(holder, criterion)
+                        && other.getAdvancements().getOrStartProgress(holder).isDone()) {
+                    finishers.add(other);
+                }
+            }
+        } finally {
+            propagating = false;
+        }
+        // A player further along than the book — an existing world's progress the sharing never saw —
+        // can be finished off by a criterion that merely advanced everyone else. That is the RUN
+        // finishing it, so let it take the normal path outside the guard: recorded once, shared to
+        // everybody, check sent once.
+        if (!finishers.isEmpty()) {
+            AdvancementBridge.onCompleted(finishers.get(0), advancementId);
+        }
+    }
+
+    /**
+     * Bring a joining player up to the run's current state, part-done advancements included. Runs
+     * inside the propagation guard, so a player catching up on two hundred advancements does not fire
+     * two hundred Archipelago checks for locations the run sent long ago.
      */
     public static void onPlayerJoin(ServerPlayer player) {
         MinecraftServer server = AEMServerRuntime.server();
-        if (server == null || completed.isEmpty()) {
+        if (server == null || (completed.isEmpty() && partial.isEmpty())) {
             return;
         }
         List<String> snapshot;
         synchronized (completed) {
             snapshot = List.copyOf(completed);
+        }
+        Map<String, List<String>> partialSnapshot = new LinkedHashMap<>();
+        synchronized (partial) {
+            partial.forEach((id, criteria) -> partialSnapshot.put(id, List.copyOf(criteria)));
         }
         propagating = true;
         try {
@@ -127,11 +202,26 @@ public final class SharedAdvancementService {
                     granted++;
                 }
             }
-            AEMDebug.log("sharedAdvancement caught {} up on {} advancement(s)",
-                    player.getGameProfile().name(), granted);
+            int steps = 0;
+            for (Map.Entry<String, List<String>> entry : partialSnapshot.entrySet()) {
+                AdvancementHolder holder = find(server, entry.getKey());
+                if (holder == null) {
+                    continue;
+                }
+                for (String criterion : entry.getValue()) {
+                    if (player.getAdvancements().award(holder, criterion)) {
+                        steps++;
+                    }
+                }
+            }
+            AEMDebug.log("sharedAdvancement caught {} up on {} advancement(s) and {} part-step(s)",
+                    player.getGameProfile().name(), granted, steps);
         } finally {
             propagating = false;
         }
+        // The catch-up can finish an advancement the book only had partly done; scanPlayer runs right
+        // after this on join and folds any such completion back in (recording it and sending the
+        // check), so nothing needs doing here.
     }
 
     /**
@@ -162,39 +252,64 @@ public final class SharedAdvancementService {
 
     // -- persistence ---------------------------------------------------------
 
-    /** Loads the run's advancement set for this world. Called as the server starts. */
+    /**
+     * Loads the run's book for this world. Called as the server starts.
+     *
+     * <p>Reads both shapes of the file: the current object ({@code completed} plus {@code partial}),
+     * and the bare array of ids every world written before partial progress existed. An old world
+     * therefore keeps its completions and simply starts tracking part-steps from now on.
+     */
     public static void load(MinecraftServer server) {
         completed.clear();
+        partial.clear();
         dirty = false;
         Path path = APWorldPaths.dir(server).resolve(FILE_NAME);
         if (!Files.exists(path)) {
             return;
         }
         try {
-            List<String> stored = GSON.fromJson(Files.readString(path),
-                    new TypeToken<List<String>>() {}.getType());
-            if (stored != null) {
-                completed.addAll(stored);
+            JsonElement root = JsonParser.parseString(Files.readString(path));
+            if (root.isJsonArray()) {
+                List<String> stored = GSON.fromJson(root, new TypeToken<List<String>>() {}.getType());
+                if (stored != null) {
+                    completed.addAll(stored);
+                }
+            } else if (root.isJsonObject()) {
+                Book book = GSON.fromJson(root, Book.class);
+                if (book != null) {
+                    if (book.completed != null) {
+                        completed.addAll(book.completed);
+                    }
+                    if (book.partial != null) {
+                        book.partial.forEach((id, criteria) -> partial.put(id,
+                                Collections.synchronizedSet(new LinkedHashSet<>(criteria))));
+                    }
+                }
             }
-            AEM.LOGGER.info("Loaded {} shared advancement(s) for this run.", completed.size());
+            AEM.LOGGER.info("Loaded {} shared advancement(s) and {} part-done for this run.",
+                    completed.size(), partial.size());
         } catch (IOException | JsonSyntaxException exception) {
             AEM.LOGGER.warn("Could not read {} ({}); starting from an empty shared book.",
                     path, exception.toString());
         }
     }
 
-    /** Writes the set if it changed. Cheap enough to call on every completion. */
+    /** Writes the book if it changed. Cheap enough to call on every completion. */
     public static void save() {
         MinecraftServer server = AEMServerRuntime.server();
         if (server == null || !dirty) {
             return;
         }
-        List<String> snapshot;
+        Book book = new Book();
         synchronized (completed) {
-            snapshot = List.copyOf(completed);
+            book.completed = List.copyOf(completed);
+        }
+        book.partial = new LinkedHashMap<>();
+        synchronized (partial) {
+            partial.forEach((id, criteria) -> book.partial.put(id, List.copyOf(criteria)));
         }
         try {
-            Files.writeString(APWorldPaths.writePath(server, FILE_NAME), GSON.toJson(snapshot));
+            Files.writeString(APWorldPaths.writePath(server, FILE_NAME), GSON.toJson(book));
             dirty = false;
         } catch (IOException exception) {
             AEM.LOGGER.warn("Could not save shared advancements ({}).", exception.toString());
@@ -203,6 +318,13 @@ public final class SharedAdvancementService {
 
     public static void clear() {
         completed.clear();
+        partial.clear();
         dirty = false;
+    }
+
+    /** On-disk shape: what the run has finished, and how far it has got on what it hasn't. */
+    private static final class Book {
+        List<String> completed;
+        Map<String, List<String>> partial;
     }
 }

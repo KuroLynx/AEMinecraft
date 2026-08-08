@@ -187,6 +187,22 @@ public final class RootAdvancementService {
     }
 
     /**
+     * Reconciles every online player's advancements tile. The run shares its advancements, so the
+     * count is the run's, not one person's — and one player earning something moves everybody's
+     * tile. Each call is an idempotent recompute, so doing the whole list costs a comparison per
+     * player and cannot drift.
+     */
+    public static void syncProgressToAll() {
+        MinecraftServer server = AEMServerRuntime.server();
+        if (server == null) {
+            return;
+        }
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            syncProgress(player);
+        }
+    }
+
+    /**
      * Awards the bosses tile's criterion for a killed boss to every online player. A no-op when the
      * killed mob isn't one of the goal's bosses (no matching criterion). Granting by identity makes
      * this idempotent and rejoin-safe.
