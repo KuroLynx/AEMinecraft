@@ -15,6 +15,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  *
  * <p>Unlike the TNT, the vanilla method is what discards the creeper, so cancelling it means doing that
  * here; otherwise the swell completes again on the very next tick and it detonates forever.
+ *
+ * <p>The two other things the vanilla method does before discarding — {@code spawnLingeringCloud} and
+ * {@code triggerOnDeathMobEffects} — are deliberately not reproduced: both are no-ops for a creeper
+ * with no effects, which is every creeper {@code TrapEffects.awwMan} conjures. Give the trap creeper an
+ * effect (or charge it) and that behaviour would need adding here.
  */
 @Mixin(Creeper.class)
 public abstract class CreeperMixin {
