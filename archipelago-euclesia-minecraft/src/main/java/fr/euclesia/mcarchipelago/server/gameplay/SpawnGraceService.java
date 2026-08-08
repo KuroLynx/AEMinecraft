@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * A minute of safety on arriving in the world.
+ * A moment of safety on arriving in the world.
  *
  * <p>Walking in should not be fatal. A player entering the world has no idea what is around them —
  * the mob that wandered onto their bed while they were away, the lava the last session left burning,
@@ -25,11 +25,11 @@ import java.util.UUID;
  *
  * <p>Traps are held rather than wasted. A trap that lands while the victim is still protected would
  * otherwise pop harmlessly against the shield and be gone, so {@link TrapScheduler} keeps it queued
- * until the grace runs out — the player gets their minute, and the run still gets to spring the trap.
+ * until the grace runs out — the player gets their moment, and the run still gets to spring the trap.
  */
 public final class SpawnGraceService {
     /** How long a player is protected after entering the world. */
-    public static final int GRACE_SECONDS = 60;
+    public static final int GRACE_SECONDS = 15;
     private static final long GRACE_MS = GRACE_SECONDS * 1000L;
 
     /** Player uuid -> when their protection ends. Server-thread only. */
