@@ -6,6 +6,7 @@
     "AdvancementRewardsMixin",
     "AdvancementVisibilityEvaluatorMixin",
     "BeehiveBlockEntityMixin",
+    "CreeperMixin",
     "EnderDragonFightMixin",
     "EntityMixin",
     "GiveCommandMixin",
@@ -14,6 +15,7 @@
     "LivingEntityMixin",
     "PlacedFeatureMixin",
     "PlayerAdvancementsMixin",
+    "PrimedTntMixin",
     "ServerAdvancementManagerAccessor",
     "ServerLevelMixin",
     "ServerPlayerMixin",
@@ -27,5 +29,5 @@
   },
   "overwrites": {
     "requireAnnotations": true
-	}
+  }
 }

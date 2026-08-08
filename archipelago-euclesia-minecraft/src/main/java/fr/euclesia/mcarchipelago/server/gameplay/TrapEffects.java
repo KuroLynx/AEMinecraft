@@ -24,7 +24,12 @@ import java.util.List;
  * deliberately nasty-but-survivable; meme-named traps map to the closest sensible disruption.
  */
 public final class TrapEffects {
-    private static final int TNT_COUNT = 3;
+    /**
+     * TNT dropped per victim. One, not a pile: a trap fires once for every player (see
+     * {@link FillerTrapService}), so a party standing together stacks its whole roster's worth in the
+     * one spot — three each was a guaranteed group wipe the moment two people played side by side.
+     */
+    private static final int TNT_COUNT = 1;
     /** TNT fuse in ticks (half the vanilla 80-tick default). */
     private static final int TNT_FUSE = 40;
     /** Number of mobs in the {@code paris_games_week} crowd, spread in a ring around the victim. */
@@ -54,11 +59,13 @@ public final class TrapEffects {
         }
     }
 
-    /** Drops a few lit TNT on the player's head. */
+    /** Drops lit TNT on the player's head. It blasts the victim but not the world (see
+     * {@link TrapExplosions}). */
     private static void primedTnt(ServerPlayer player, ServerLevel level) {
         for (int i = 0; i < TNT_COUNT; i++) {
             PrimedTnt tnt = new PrimedTnt(level, player.getX(), player.getY(), player.getZ(), null);
             tnt.setFuse(TNT_FUSE);
+            TrapExplosions.markHarmless(tnt);
             level.addFreshEntity(tnt);
         }
     }
