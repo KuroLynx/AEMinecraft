@@ -110,6 +110,9 @@
 
   "message.aem.disconnect.required": "Disconnected from Archipelago — you must stay connected to play.",
 
+  "message.aem.grace.start": "Spawn protection: nothing can hurt you for %s seconds.",
+  "message.aem.grace.end": "Spawn protection has ended.",
+
   "message.aem.compat.mod_too_old": "This world needs a newer mod (slot data v%s; this mod supports up to v%s). Update the Archipelago mod.",
   "message.aem.compat.apworld_too_old": "This world was made with an older apworld (slot data v%s; this mod needs at least v%s). Regenerate with an updated apworld.",
 

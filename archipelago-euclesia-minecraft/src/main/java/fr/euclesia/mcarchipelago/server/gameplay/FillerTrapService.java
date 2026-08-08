@@ -29,16 +29,24 @@ import java.util.Map;
  * {@link fr.euclesia.mcarchipelago.registry.APItemRegistry} — and the mark advances. All work runs on
  * the server thread.
  *
- * <p>The mark is per player, and it governs filler and traps alike. The slot receives one Speed
- * Boost, but the run is being played by several people, and handing it to whoever happened to be
- * first in the player list means everyone else watches a teammate collect the reward — the same
- * reasoning that gives every player their own BACAP reward for a shared advancement. Traps follow
- * the same rule for the same reason: an item the slot received belongs to the run, and the run is
- * everybody. So each player carries their own mark and gets every filler and every trap exactly
- * once, including the ones that arrived while they were offline.
+ * <p>The mark is per player. The slot receives one Speed Boost, but the run is being played by
+ * several people, and handing it to whoever happened to be first in the player list means everyone
+ * else watches a teammate collect the reward — the same reasoning that gives every player their own
+ * BACAP reward for a shared advancement. So each player carries their own mark and gets every filler
+ * exactly once, including the ones that arrived while they were offline.
  *
- * <p>(DeathLink is the deliberate exception, and a different thing entirely: a death arriving from
- * ANOTHER world takes one victim rather than wiping the server. These are this slot's own items.)
+ * <p><b>Traps do not catch up.</b> Filler is a gift and keeps: collect it whenever you next log in.
+ * A trap is an event — it happens to the people who are in the world when it lands. Firing a week of
+ * banked traps at whoever logs in next punishes them for having been away, and lands as an
+ * unsurvivable pile rather than the moment of chaos each one was meant to be. So a catch-up pass
+ * ({@link Mode#CATCH_UP}) applies the filler it finds and walks the traps past without firing them;
+ * only a live pass ({@link Mode#LIVE}), for players who were actually present, springs them.
+ *
+ * <p>Live traps still wait out {@link SpawnGraceService}: a trap that went off against a player's
+ * arrival shield would be spent for nothing, so it is left pending and fired when their grace ends.
+ *
+ * <p>(DeathLink is a different thing entirely: a death arriving from ANOTHER world takes one victim
+ * rather than wiping the server. These are this slot's own items.)
  */
 public final class FillerTrapService {
     private static final String FILE_NAME = "archipelago_received.json";
@@ -55,17 +63,25 @@ public final class FillerTrapService {
         Map<String, Integer> appliedByPlayer;  // player uuid -> items already applied to them
     }
 
+    /** Whether a pass may spring the traps it finds, or only collect the filler. */
+    public enum Mode {
+        /** The player was here when these arrived: filler and traps both. */
+        LIVE,
+        /** The player was not: filler only, traps marked as spent without firing. */
+        CATCH_UP
+    }
+
     private FillerTrapService() {}
 
-    /** Applies every pending filler and trap to every online player. */
+    /** Applies what just arrived to the players who are actually in the world for it. */
     public static void applyPendingToAll(MinecraftServer server) {
         for (ServerPlayer player : List.copyOf(server.getPlayerList().getPlayers())) {
-            applyPending(player);
+            applyPending(player, Mode.LIVE);
         }
     }
 
-    /** Applies every filler and trap this player has not yet had. */
-    public static void applyPending(ServerPlayer player) {
+    /** Applies every filler this player has not yet had, and their traps if {@code mode} is LIVE. */
+    public static void applyPending(ServerPlayer player, Mode mode) {
         MinecraftServer server = AEMServerRuntime.server();
         if (server == null || !AEMServerRuntime.isArchipelagoReady()) {
             return;
@@ -80,13 +96,13 @@ public final class FillerTrapService {
         }
         APSlotData slot = AEM.ARCHIPELAGO.client().state().parsedSlotData();
         for (int i = applied; i < order.size(); i++) {
-            applyOne(player, slot, order.get(i));
+            applyOne(player, slot, order.get(i), mode);
         }
         progress.appliedByPlayer.put(key, order.size());
         write(server, progress);
     }
 
-    private static void applyOne(ServerPlayer player, APSlotData slot, long itemId) {
+    private static void applyOne(ServerPlayer player, APSlotData slot, long itemId, Mode mode) {
         FillerGrant grant = slot.fillerItems().get(itemId);
         if (grant != null) {
             if (grant.isItem()) {
@@ -97,8 +113,10 @@ public final class FillerTrapService {
             return;
         }
         String trap = slot.trapItems().get(itemId);
-        if (trap != null) {
-            TrapEffects.run(trap, player);
+        if (trap != null && mode == Mode.LIVE) {
+            // Queued rather than fired: traps are spaced out, and none goes off during the arrival
+            // grace (see TrapScheduler).
+            TrapScheduler.submit(player, trap);
         }
     }
 
