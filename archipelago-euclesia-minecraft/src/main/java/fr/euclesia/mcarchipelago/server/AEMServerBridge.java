@@ -5,6 +5,7 @@ import fr.euclesia.mcarchipelago.server.ap.ArchipelagoChatListener;
 import fr.euclesia.mcarchipelago.server.ap.ArchipelagoConnectionListener;
 import fr.euclesia.mcarchipelago.server.ap.ArchipelagoGameplayListener;
 import fr.euclesia.mcarchipelago.server.command.AEMCommandRegistry;
+import fr.euclesia.mcarchipelago.server.command.AdvancementsCommandModule;
 import fr.euclesia.mcarchipelago.server.command.ArchipelagoCommandModule;
 import fr.euclesia.mcarchipelago.server.command.DumpCommandModule;
 import fr.euclesia.mcarchipelago.server.command.StructuresCommandModule;
@@ -26,6 +27,7 @@ public final class AEMServerBridge {
         registered = true;
 
         AEMCommandRegistry.create()
+                .module(new AdvancementsCommandModule())
                 .module(new ArchipelagoCommandModule())
                 .module(new DumpCommandModule())
                 .module(new StructuresCommandModule())

@@ -76,6 +76,9 @@ public final class SharedAdvancementService {
      */
     private static boolean propagating;
 
+    /** Set while folding a whole player in, so the book is written once rather than per criterion. */
+    private static boolean bulk;
+
     private static boolean dirty;
 
     private SharedAdvancementService() {}
@@ -129,25 +132,27 @@ public final class SharedAdvancementService {
      * {@link #onCompleted}. Called for criteria that did NOT finish their advancement; the one that
      * does goes through {@code onCompleted}, which shares the whole thing.
      */
-    public static void onCriterion(ServerPlayer source, AdvancementHolder holder, String criterion) {
+    public static boolean onCriterion(ServerPlayer source, AdvancementHolder holder, String criterion) {
         if (propagating) {
-            return; // a copy we just handed out
+            return false; // a copy we just handed out
         }
         String advancementId = holder.id().toString();
-        if (completed.contains(advancementId)) {
-            return; // the run already finished this; nothing partial left to track
+        if (!shareable(advancementId) || completed.contains(advancementId)) {
+            return false; // not ours to share, or the run already finished it
         }
         Set<String> earned = partial.computeIfAbsent(advancementId,
                 key -> Collections.synchronizedSet(new LinkedHashSet<>()));
         if (!earned.add(criterion)) {
-            return; // the run already had this step; another player simply caught up
+            return false; // the run already had this step; another player simply caught up
         }
         dirty = true;
-        save();
+        if (!bulk) {
+            save();
+        }
 
         MinecraftServer server = AEMServerRuntime.server();
         if (server == null) {
-            return;
+            return true;
         }
         AEMDebug.log("sharedAdvancement criterion '{}' of '{}' earned by {} -> sharing",
                 criterion, advancementId, source != null ? source.getGameProfile().name() : "?");
@@ -173,6 +178,63 @@ public final class SharedAdvancementService {
         if (!finishers.isEmpty()) {
             AdvancementBridge.onCompleted(finishers.get(0), advancementId);
         }
+        return true;
+    }
+
+    /**
+     * Folds a player's own half-finished advancements into the run's book and hands them to everyone
+     * else — the partial-progress counterpart of the completion fold in {@code scanPlayer}.
+     *
+     * <p>Sharing only starts recording when a criterion is <em>earned</em>, so progress banked before
+     * that (an existing world, or anything sitting in a player file from before this feature) stays
+     * invisible to the run until its owner happens to earn the next step. This is what pulls it in:
+     * run on every join, and on demand from {@code /aem advancements sync} for a server that has
+     * years of it lying around.
+     *
+     * @return how many part-steps were new to the run
+     */
+    public static int foldIn(ServerPlayer player) {
+        MinecraftServer server = AEMServerRuntime.server();
+        if (server == null) {
+            return 0;
+        }
+        int added = 0;
+        bulk = true;  // one write at the end, not one per criterion
+        try {
+            for (AdvancementHolder holder : server.getAdvancements().getAllAdvancements()) {
+                if (!shareable(holder.id().toString()) || completed.contains(holder.id().toString())) {
+                    continue;
+                }
+                AdvancementProgress progress = player.getAdvancements().getOrStartProgress(holder);
+                if (progress.isDone()) {
+                    continue;  // completions are folded in by AdvancementBridge.scanPlayer
+                }
+                for (String criterion : holder.value().criteria().keySet()) {
+                    CriterionProgress state = progress.getCriterion(criterion);
+                    if (state != null && state.isDone() && onCriterion(player, holder, criterion)) {
+                        added++;
+                    }
+                }
+            }
+        } finally {
+            bulk = false;
+        }
+        save();
+        if (added > 0) {
+            AEMDebug.log("sharedAdvancement folded {} part-step(s) in from {}",
+                    added, player.getGameProfile().name());
+        }
+        return added;
+    }
+
+    /**
+     * Whether an advancement's criteria belong to the run. Recipe unlocks fire constantly and mean
+     * nothing; our own tracker tiles are per-player bookkeeping that {@link RootAdvancementService}
+     * reconciles, and sharing their criteria would fight it.
+     */
+    private static boolean shareable(String advancementId) {
+        return !advancementId.startsWith("minecraft:recipes/")
+                && !advancementId.startsWith(AEM.MOD_ID + ":");
     }
 
     /**
