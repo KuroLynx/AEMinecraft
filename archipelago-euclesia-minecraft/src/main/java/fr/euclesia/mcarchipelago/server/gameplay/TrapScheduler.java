@@ -84,6 +84,7 @@ public final class TrapScheduler {
             Deque<String> queue = entry.getValue();
             if (queue.isEmpty()) {
                 it.remove();
+                NEXT_ALLOWED.remove(entry.getKey());  // the two maps live and die together
                 continue;
             }
             ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());

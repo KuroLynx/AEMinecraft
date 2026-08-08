@@ -73,10 +73,17 @@ public final class FillerTrapService {
 
     private FillerTrapService() {}
 
-    /** Applies what just arrived to the players who are actually in the world for it. */
-    public static void applyPendingToAll(MinecraftServer server) {
+    /**
+     * Applies a batch to everyone online.
+     *
+     * <p>{@code mode} is the caller's answer to "did this just happen?". A live batch is
+     * {@link Mode#LIVE}; the index-0 resync Archipelago sends on every (re)connect is history and must
+     * be {@link Mode#CATCH_UP}, or a player whose mark never advanced — one who was already in the
+     * world before the session connected — has the run's entire trap list sprung on them at once.
+     */
+    public static void applyPendingToAll(MinecraftServer server, Mode mode) {
         for (ServerPlayer player : List.copyOf(server.getPlayerList().getPlayers())) {
-            applyPending(player, Mode.LIVE);
+            applyPending(player, mode);
         }
     }
 
