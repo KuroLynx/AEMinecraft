@@ -23,6 +23,7 @@ import fr.euclesia.mcarchipelago.server.gameplay.TrapPlatformService;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
 import fr.euclesia.mcarchipelago.server.runtime.APSlotGate;
 import fr.euclesia.mcarchipelago.server.service.DeathLinkService;
+import fr.euclesia.mcarchipelago.server.service.DeathLinkSetting;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -59,6 +60,11 @@ public final class MinecraftEventBridge {
         // a dedicated server), where there is no client UI to fall back to.
         ServerLifecycleEvents.SERVER_STARTING.register(server -> {
             java.nio.file.Path worldDir = server.getWorldPath(LevelResource.ROOT);
+
+            // Before the connect below, not after: the tag sent on connect is what makes the room
+            // route other worlds' deaths here, so an operator's /aem deathlink off has to be known
+            // by then or the run comes back up receiving the deaths they switched off.
+            DeathLinkSetting.load(worldDir);
 
             APWorldConnection pending = APWorldConnection.takePending();
             if (pending != null) {
