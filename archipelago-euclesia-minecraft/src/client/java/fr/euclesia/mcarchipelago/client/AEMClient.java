@@ -9,6 +9,7 @@ import fr.euclesia.mcarchipelago.client.gui.AEMScreenButtons;
 import fr.euclesia.mcarchipelago.client.gui.BiomeFinderScreen;
 import fr.euclesia.mcarchipelago.client.logic.DataLogicProvider;
 import fr.euclesia.mcarchipelago.client.net.APStateSyncClient;
+import fr.euclesia.mcarchipelago.client.net.BiomeFinderClient;
 import fr.euclesia.mcarchipelago.client.logic.LogicProviders;
 import fr.euclesia.mcarchipelago.client.render.ConnectionStatusHud;
 import fr.euclesia.mcarchipelago.content.BiomeFinderItem;
@@ -33,6 +34,8 @@ public class AEMClient implements ClientModInitializer {
 		LogicProviders.set(new DataLogicProvider());
 		// Receives the server's session on a dedicated server, where this client has none of its own.
 		APStateSyncClient.register();
+		// The Biome Finder's pick screen: the biome list and the pick both travel over the wire.
+		BiomeFinderClient.register();
 
 		// Listen for Archipelago connect results and add the connect button to the menus.
 		APConnectController.init();
