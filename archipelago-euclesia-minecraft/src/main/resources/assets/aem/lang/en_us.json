@@ -78,6 +78,8 @@
 
   "gui.aem.biome_finder.search": "Search",
   "gui.aem.biome_finder.search_hint": "Search biomes…",
+  "gui.aem.biome_finder.loading": "Asking the server…",
+  "gui.aem.biome_finder.empty": "No biomes available here.",
 
   "gui.aem.common.close": "Close",
 
