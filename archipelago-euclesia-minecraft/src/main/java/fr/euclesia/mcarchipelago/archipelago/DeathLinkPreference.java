@@ -19,6 +19,10 @@ import java.util.List;
  * {@code /aem deathlink} ({@link fr.euclesia.mcarchipelago.server.command.ArchipelagoCommandModule}),
  * which runs in the JVM that actually holds the connection and the death send-gate
  * ({@link fr.euclesia.mcarchipelago.server.service.DeathLinkService}).
+ *
+ * <p>The command's setting is remembered in the world and restored before the next connect
+ * ({@link fr.euclesia.mcarchipelago.server.service.DeathLinkSetting}); the screen's toggle is not,
+ * and lasts the session.
  */
 public final class DeathLinkPreference {
     /** {@code null} = follow the slot's configured default; otherwise the session override. */
@@ -40,11 +44,20 @@ public final class DeathLinkPreference {
         return override != null;
     }
 
-    /** Sets the session override and, when connected, tells the server via the DeathLink tag. */
+    /** Sets the session override and, when connected, tells the room via the DeathLink tag. */
     public static void setEnabled(boolean enabled) {
         override = enabled;
+        syncTag();
+    }
+
+    /**
+     * Tells the room what our current state is. Called for you by {@link #setEnabled}; call it after
+     * {@link #reset()} when the change should take effect on a live session rather than wait for the
+     * next connect.
+     */
+    public static void syncTag() {
         if (AEM.ARCHIPELAGO.client().state().isConnected()) {
-            List<String> tags = enabled ? List.of("DeathLink") : List.of();
+            List<String> tags = enabled() ? List.of("DeathLink") : List.of();
             AEM.ARCHIPELAGO.client().send(new ConnectUpdatePacket(tags, APItemsHandling.ALL));
         }
     }
@@ -52,5 +65,14 @@ public final class DeathLinkPreference {
     /** Clears the override so a freshly (re)connected session follows its own slot data again. */
     public static void reset() {
         override = null;
+    }
+
+    /**
+     * Puts back an override loaded from the world
+     * ({@link fr.euclesia.mcarchipelago.server.service.DeathLinkSetting}), {@code null} for none.
+     * Quiet: the tag is sent when the session connects, which has not happened yet at load time.
+     */
+    public static void restore(Boolean stored) {
+        override = stored;
     }
 }
