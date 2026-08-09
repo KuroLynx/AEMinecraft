@@ -3,6 +3,7 @@ package fr.euclesia.mcarchipelago.server.ap;
 import com.google.gson.JsonObject;
 import fr.euclesia.mcarchipelago.archipelago.APEventListener;
 import fr.euclesia.mcarchipelago.archipelago.ArchipelagoClient;
+import fr.euclesia.mcarchipelago.archipelago.DeathLinkPreference;
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.archipelago.slot.APSlotData;
 import fr.euclesia.mcarchipelago.archipelago.slot.CompatibilityService;
@@ -40,7 +41,11 @@ public final class ArchipelagoGameplayListener implements APEventListener {
                     CompatibilityService.MIN_SUPPORTED, CompatibilityService.MAX_SUPPORTED);
         }
 
-        if (slotData.deathLink()) {
+        // The tag is what makes the room send us other worlds' deaths, so it follows the live setting
+        // rather than the slot's option directly: with no override the two are the same thing, and
+        // with one (an operator ran /aem deathlink off) a reconnect must not quietly switch receiving
+        // back on while sending stays off.
+        if (DeathLinkPreference.enabled()) {
             client.send(new ConnectUpdatePacket(APBounceType.tags(APBounceType.DEATH_LINK), APItemsHandling.ALL));
         }
 
