@@ -231,10 +231,11 @@ class RuleHelper:
     time, so the resulting tree contains only the primitive node kinds.
     """
 
-    # A source you can't count on: worse than one attempt in four. Real tables cluster well clear of
-    # this line (a 70% buried-treasure diamond against a 2% barter), so the exact cut matters less
-    # than having one at all.
-    _GLITCH_CHANCE = 0.25
+    # A source you can't count on: worse than three attempts in ten. Note this cut sits just above a
+    # dense cluster of exactly-0.25 sources (village/bastion/ruined-portal chest pools, witch drops,
+    # villager gifts), so it is deliberately strict — those routes are glitch, not logic. _demote
+    # still keeps any of them that is an item's only source, or its only one in the start dimension.
+    _GLITCH_CHANCE = 0.30
 
     def __init__(self, world: World, glitch: bool = False):
         self.world = world
