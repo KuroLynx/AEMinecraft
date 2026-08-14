@@ -70,8 +70,20 @@ public abstract class WorldGenRegionMixin {
         // are one-time worldgen placements, so we defer rather than discard them: the mob is stored and
         // spawned at its generated position when its unlock item arrives. Returning false is vanilla's
         // "add refused" signal, keeping it out of the world for now.
-        if (MobSpawnLockService.shouldBlockSpawn(entity)) {
-            StructureCaptureService.deferWorldgenMob(((WorldGenRegion) (Object) this).getLevel(), entity);
+        //
+        // Judged per RIDER STACK, not per entity. A jockey (a Parched on a Camel Husk) is handed to this
+        // method one member at a time, so an individual verdict splits the pair: the unlocked member is
+        // let through while the locked one is refused, which stranded a rider whose mount never came and
+        // — because deferWorldgenMob ignores passengers — dropped a locked rider entirely instead of
+        // saving it for its unlock. The root carries the whole stack in its NBT, so deferring the root
+        // once preserves mount and rider together.
+        Entity root = entity.getRootVehicle();
+        if (MobSpawnLockService.shouldBlockStack(root)) {
+            if (entity == root) {
+                // Only on the root: this method is called again for each passenger, and deferring per
+                // member would store (and later spawn) the same stack several times over.
+                StructureCaptureService.deferWorldgenMob(((WorldGenRegion) (Object) this).getLevel(), root);
+            }
             cir.setReturnValue(false);
         }
     }

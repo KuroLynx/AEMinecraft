@@ -171,19 +171,32 @@ public final class StructureCaptureService {
     }
 
     private static void spawnOrDeferMob(ServerLevel level, CompoundTag entityNbt) {
-        String mobId = entityNbt.getStringOr("id", "");
-        if (!mobId.isEmpty() && AEM.ARCHIPELAGO.client().registries().apMobs().isSpawnLocked(mobId)) {
-            pendingMobData(level).add(mobId, entityNbt);
-            return;
-        }
+        // spawnEntity parks the mob itself when anything in its rider stack is locked, so the old
+        // id-only pre-check here would only duplicate it — and it read the ROOT's id alone, which
+        // missed a locked passenger entirely.
         spawnEntity(level, entityNbt);
     }
 
+    /**
+     * Spawns a stored mob, or parks it again when its rider stack is not clear to spawn yet.
+     *
+     * <p>The re-check matters because a stack is deferred under ONE mob's id (the root's, since the
+     * root's NBT is what carries the whole stack). A Parched riding a Camel Husk deferred for the
+     * camel therefore comes due the moment the camel unlocks — while the Parched may still be locked.
+     * Vanilla's add refuses that stack and the NBT has already been drained, so without parking it
+     * again under whichever member is still locked, the mob would be lost for the rest of the run.
+     */
     private static void spawnEntity(ServerLevel level, CompoundTag entityNbt) {
         Entity entity = EntityType.loadEntityRecursive(entityNbt, level, EntitySpawnReason.STRUCTURE, EntityProcessor.NOP);
-        if (entity != null) {
-            level.tryAddFreshEntityWithPassengers(entity);
+        if (entity == null) {
+            return;
         }
+        String stillLocked = MobSpawnLockService.firstLockedInStack(entity);
+        if (stillLocked != null) {
+            pendingMobData(level).add(stillLocked, entityNbt);
+            return;
+        }
+        level.tryAddFreshEntityWithPassengers(entity);
     }
 
     private static StructureCaptureData captureData(ServerLevel level) {

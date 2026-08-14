@@ -36,7 +36,11 @@ public abstract class ServerLevelMixin {
      */
     @Inject(method = "tryAddFreshEntityWithPassengers", at = @At("HEAD"), cancellable = true)
     private void archipelago_euclesia$blockLockedSpawnWithPassengers(Entity entity, CallbackInfoReturnable<Boolean> cir) {
-        if (MobSpawnLockService.shouldBlockSpawn(entity)) {
+        // The whole rider stack, not just the mount: this method spawns a jockey (a Parched on a Camel
+        // Husk) as one unit, and vanilla's add is all-or-nothing per member. Checking only the mount
+        // would let it enter while addEntity separately refuses the locked rider, leaving a riderless
+        // mount the spawner still counts as delivered.
+        if (MobSpawnLockService.shouldBlockStack(entity)) {
             cir.setReturnValue(false);
         }
     }
