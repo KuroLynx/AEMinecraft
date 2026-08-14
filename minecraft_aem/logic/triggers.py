@@ -513,8 +513,14 @@ class TriggerCompiler:
                                  self._location_node(cond))
         if trigger == "minecraft:started_riding":
             return self._started_riding_node(cond)
-        if trigger in ("minecraft:voluntary_exile", "minecraft:hero_of_the_village"):
-            # A raid: trigger / win it → reach a Pillager and a village.
+        if trigger == "minecraft:hero_of_the_village":
+            # WIN a raid — which needs every raid mob unlocked, not merely a pillager and a village:
+            # a locked raider stalls a wave forever, so the mod will not even start the raid. See
+            # can_raid.
+            return self.h.can_win_raid()
+        if trigger == "minecraft:voluntary_exile":
+            # Only KILL a raid captain, which does not involve a raid at all — so this keeps the
+            # plain pillager gate rather than sharing hero_of_the_village's.
             return self._all_req(self._entity_gid("minecraft:pillager"), self.h.any_village())
         if trigger == "minecraft:avoid_vibration":
             # Sneak past a sculk sensor → the Deep Dark (Ancient City).

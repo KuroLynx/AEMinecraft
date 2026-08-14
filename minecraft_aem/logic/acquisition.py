@@ -326,20 +326,22 @@ class RuleHelper:
             E_ELDER_GUARDIAN : lambda: self.structure(S_OCEAN_MONUMENT),
             E_GUARDIAN       : lambda: self.structure(S_OCEAN_MONUMENT),
 
-            # Mansion + raid mobs (Mansion direct, or raid via Pillager Captain + Village)
+            # Mansion + raid mobs (Mansion direct, or a raid — see can_raid, which requires every
+            # raid mob unlocked because one locked raider stalls the whole raid).
             E_EVOKER         : lambda: self.any_of(
                 self.structure(S_MANSION),
-                self.all_of(self.entity(E_PILLAGER), self.any_village()),
+                self.can_raid(),
             ),
             E_VINDICATOR     : lambda: self.any_of(
                 self.structure(S_MANSION),
-                self.all_of(self.entity(E_PILLAGER), self.any_village()),
+                self.can_raid(),
             ),
-            E_VEX            : lambda: self.any_of(
-                self.structure(S_MANSION),
-                self.all_of(self.entity(E_PILLAGER), self.any_village()),
-            ),
-            E_RAVAGER        : lambda: self.all_of(self.entity(E_PILLAGER), self.any_village()),
+            # A vex is never spawned by the world — an evoker summons it — so it is exactly as
+            # reachable as an evoker. Stating it as the evoker inherits both of that mob's routes
+            # AND its spawn-lock: with the Evoker locked no evoker exists to summon anything, which
+            # a hand-copied "mansion or raid" pair silently got wrong.
+            E_VEX            : lambda: self.entity(E_EVOKER),
+            E_RAVAGER        : lambda: self.can_raid(),
 
             # Nether — structure-locked (delegates to canonical advancement)
             E_BLAZE          : lambda: self.reached(f"{ADVANCEMENT_PREFIX}{A_A_TERRIBLE_FORTRESS}"),
@@ -537,21 +539,50 @@ class RuleHelper:
         return self.any_of(*[self.structure(gid) for gid in
                              (S_VILLAGE_DESERT, S_VILLAGE_PLAINS, S_VILLAGE_SAVANNA, S_VILLAGE_SNOWY, S_VILLAGE_TAIGA)])
 
+    def mob_unlocked(self, entity_name: str):
+        """Just the spawn-lock gate for a mob — 'its unlock item is held' — with none of the
+        reachability ``entity()`` also demands.
+
+        This is deliberately a bare has-leaf. Anything that must ask 'can this mob spawn at all?'
+        about a mob whose own spawn route runs through the very thing being gated has to use this,
+        or the rule recurses: a ravager's only route IS a raid, so a raid asking for ``entity()`` of
+        its own raiders would never terminate."""
+        if entity_name not in self.locked_mobs:
+            return Const(True)
+        return self.has(f"{ENTITY_UNLOCK_PREFIX}{entity_name}")
+
+    def can_raid(self):
+        """A raid can happen at all: a pillager to take Bad Omen from, a village to carry it into,
+        and every raid mob unlocked.
+
+        That last clause is the mob-lock talking. A raid wave spawns each ``MOBS_RAID`` type and only
+        clears once its raiders are dead, so one locked member stalls the raid forever — the mod
+        therefore refuses to convert Bad Omen into Raid Omen until all of them are unlocked
+        (MobSpawnLockService#isAnyRaidMobLocked). Logic has to ask for the same thing or it would
+        promise raids the game will not start.
+
+        The raiders are required via mob_unlocked (a has-leaf), NOT entity(): evoker, vindicator and
+        ravager all list the raid itself as a spawn route, so entity() here would recurse."""
+        return self.all_of(
+            self.entity(E_PILLAGER),
+            self.any_village(),
+            *[self.mob_unlocked(mob) for mob in MOBS_RAID],
+        )
+
     def can_win_raid(self):
         """Win a raid, which is what makes villagers throw profession gifts.
 
-        Stated as the two things the game actually asks for — a pillager to take Bad Omen from, and a
-        village to carry it into — NOT as reaching 'Advancement: Hero of the Village'. The advancement
-        is only the game's acknowledgement that you did this; it is not a prerequisite, and whether it
-        exists as a location at all depends on challenge_sanity (it is challenge-framed). Naming it
-        made three gift routes vanish, or worse crash the fill with a KeyError, on every seed that left
-        challenge_sanity off — see reached().
+        Stated as what the game actually asks for — see can_raid — NOT as reaching 'Advancement:
+        Hero of the Village'. The advancement is only the game's acknowledgement that you did this;
+        it is not a prerequisite, and whether it exists as a location at all depends on
+        challenge_sanity (it is challenge-framed). Naming it made three gift routes vanish, or worse
+        crash the fill with a KeyError, on every seed that left challenge_sanity off — see reached().
 
         This is the condition ``_gameplay_table`` already used for the fifteen ``*_gift`` loot tables;
         the three hand-written gift routes now share it instead of expressing the same idea a second,
         more fragile way.
         """
-        return self.all_of(self.entity(E_PILLAGER), self.any_village())
+        return self.can_raid()
 
     def any_portal(self, nether_allowed: bool = False):
         portals = [

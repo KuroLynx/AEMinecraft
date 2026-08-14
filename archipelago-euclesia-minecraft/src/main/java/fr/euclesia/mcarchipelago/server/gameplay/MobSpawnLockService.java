@@ -5,6 +5,8 @@ import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
 import fr.euclesia.mcarchipelago.server.runtime.APSlotGate;
 import net.minecraft.world.entity.Entity;
 
+import java.util.List;
+
 /**
  * Decides whether an entity is forbidden from spawning by the Archipelago mob-spawn-lock option:
  * a locked mob may not enter the world until its unlock item has been received.
@@ -15,7 +17,36 @@ import net.minecraft.world.entity.Entity;
  * have appeared. Entities loaded from disk bypass {@code addEntity}, so existing mobs are untouched.
  */
 public final class MobSpawnLockService {
+    /**
+     * The mobs a raid wave spawns, mirroring vanilla's {@code Raid.RaiderType} enum — the table the
+     * waves actually draw from.
+     *
+     * <p>Deliberately NOT the {@code #minecraft:raiders} tag, which also carries the Illusioner: it
+     * is a member of that tag but never spawns in a raid, so requiring it would gate raids behind a
+     * mob the raid never asks for. Hard-coded rather than read from {@code Raid.RaiderType} because
+     * that enum is package-private with a private entity type — and the wave table is hard-coded in
+     * {@code Raid} too, so no datapack can change this set.
+     */
+    private static final List<String> RAID_MOB_IDS = List.of(
+            "minecraft:pillager",
+            "minecraft:vindicator",
+            "minecraft:evoker",
+            "minecraft:witch",
+            "minecraft:ravager");
+
     private MobSpawnLockService() {}
+
+    /**
+     * Whether any raid mob is still spawn-locked, i.e. a raid could not play out if it started.
+     *
+     * <p>A raid wave only clears once its raiders are dead, so a single locked member leaves a wave
+     * that can never be completed and a raid that can never be won — the village siege just hangs.
+     * {@code BadOmenMobEffectMixin} uses this to hold the Bad Omen -> Raid Omen conversion back
+     * until every raider is unlocked.
+     */
+    public static boolean isAnyRaidMobLocked() {
+        return RAID_MOB_IDS.stream().anyMatch(MobSpawnLockService::isMobLocked);
+    }
 
     public static boolean shouldBlockSpawn(Entity entity) {
         // Trap-conjured mobs are exempt: a trap can summon an otherwise-locked mob on purpose.
