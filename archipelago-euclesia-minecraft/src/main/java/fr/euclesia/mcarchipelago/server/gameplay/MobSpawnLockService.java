@@ -56,6 +56,30 @@ public final class MobSpawnLockService {
         return isMobLocked(AEMServerRuntime.entityGameId(entity));
     }
 
+    /**
+     * The game id of the first still-locked mob anywhere in this entity's rider stack, or {@code null}
+     * when the whole stack may spawn.
+     *
+     * <p>A jockey is one spawn wearing two entities: a Parched riding a Camel Husk arrives as a mount
+     * plus a passenger, and every add path hands them over one at a time. Judged individually the pair
+     * gets split — the unlocked half enters the world while the locked half is refused, leaving a
+     * riderless mount (or, on the worldgen path, a rider whose vehicle never came). Judged as a stack,
+     * a single locked member holds the whole thing back, which is the only answer that keeps the spawn
+     * intact for later.
+     */
+    public static String firstLockedInStack(Entity entity) {
+        return entity.getSelfAndPassengers()
+                .filter(MobSpawnLockService::shouldBlockSpawn)
+                .findFirst()
+                .map(AEMServerRuntime::entityGameId)
+                .orElse(null);
+    }
+
+    /** Whether any mob in this entity's rider stack is still spawn-locked. */
+    public static boolean shouldBlockStack(Entity entity) {
+        return firstLockedInStack(entity) != null;
+    }
+
     /** Id-based variant, for callers that gate on a specific mob (e.g. the Ender Dragon fight). */
     public static boolean isMobLocked(String mobGameId) {
         if (!AEMServerRuntime.isArchipelagoReady()) {

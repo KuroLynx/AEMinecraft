@@ -158,7 +158,12 @@ MATERIAL_HANDLING_ITEMS: dict[int, list[str]] = {
 # where these are gated by helper.knowledge(...) plus the relevant material tier. Tune freely.
 _TOOL_TIERS = {"wooden": MAT_WOOD, "stone": MAT_STONE, "copper": MAT_COPPER, "iron": MAT_IRON,
                "golden": MAT_GOLD, "diamond": MAT_DIAMOND, "netherite": MAT_NETHERITE}
-_TOOL_KINDS = {"sword": K_SWORD, "pickaxe": K_PICKAXE, "axe": K_AXE, "shovel": K_SHOVEL, "hoe": K_HOE}
+# Every kind that exists in all seven _TOOL_TIERS. The spear is one of them (wooden..netherite, same
+# as a sword): it was missing here, so nothing gated it — the mod let any spear be crafted and picked
+# up freely, and acquire() never asked for the Knowledge, even though Spear Handling ships as a
+# progression item and can_kill() counts it as a real melee weapon.
+_TOOL_KINDS = {"sword": K_SWORD, "pickaxe": K_PICKAXE, "axe": K_AXE, "shovel": K_SHOVEL,
+               "hoe": K_HOE, "spear": K_SPEAR}
 _ARMOR_TIERS = {"leather": MAT_WOOD, "chainmail": MAT_IRON, "copper": MAT_COPPER, "iron": MAT_IRON,
                 "golden": MAT_GOLD, "diamond": MAT_DIAMOND, "netherite": MAT_NETHERITE}
 _ARMOR_PIECES = ["helmet", "chestplate", "leggings", "boots"]
