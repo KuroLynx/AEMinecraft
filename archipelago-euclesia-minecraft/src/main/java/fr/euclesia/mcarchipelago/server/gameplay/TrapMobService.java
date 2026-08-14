@@ -9,6 +9,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.monster.zombie.Zombie;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -86,20 +87,43 @@ public final class TrapMobService {
     public static <T extends Mob> T spawn(EntityType<T> type, ServerLevel level, BlockPos pos, Consumer<T> extra) {
         T mob = type.spawn(level, configured -> {
             configured.addTag(TRAP_TAG);
+            TrapExplosions.markHarmless(configured);
             configured.skipDropExperience();
             configured.setPersistenceRequired();
-            // Stop zombies from calling in untracked reinforcements that would outlive the trap.
-            AttributeInstance reinforcements = configured.getAttribute(Attributes.SPAWN_REINFORCEMENTS_CHANCE);
-            if (reinforcements != null) {
-                reinforcements.setBaseValue(0.0);
-            }
             if (extra != null) {
                 extra.accept(configured);
             }
         }, pos, EntitySpawnReason.EVENT, true, false);
         if (mob != null) {
+            declaw(mob);
             TRACKED.add(new Tracked(mob, System.currentTimeMillis() + LIFETIME_MS));
         }
         return mob;
+    }
+
+    /**
+     * Strips a freshly-spawned trap mob of everything it could take from the player permanently.
+     *
+     * <p>Runs after the spawn rather than in the configurator above, because {@code finalizeSpawn} —
+     * which is what rolls these on difficulty — happens between the two and would undo it:
+     * <ul>
+     *   <li><b>Picking up loot.</b> A trap zombie that pockets your dropped diamonds is force-despawned
+     *       thirty seconds later, and they go with it. Nothing a trap does may be unrecoverable.</li>
+     *   <li><b>Breaking doors.</b> The mob is gone in half a minute; the hole in your house is not.</li>
+     *   <li><b>Calling reinforcements.</b> Those spawn outside {@link #TRACKED}, so they outlive the
+     *       trap, keep their loot and are never cleaned up. The chance is a permanent modifier added at
+     *       finalize time, so it has to be removed, not zeroed.</li>
+     * </ul>
+     */
+    private static void declaw(Mob mob) {
+        mob.setCanPickUpLoot(false);
+        if (mob instanceof Zombie zombie) {
+            zombie.setCanBreakDoors(false);
+        }
+        AttributeInstance reinforcements = mob.getAttribute(Attributes.SPAWN_REINFORCEMENTS_CHANCE);
+        if (reinforcements != null) {
+            reinforcements.removeModifiers();
+            reinforcements.setBaseValue(0.0);
+        }
     }
 }

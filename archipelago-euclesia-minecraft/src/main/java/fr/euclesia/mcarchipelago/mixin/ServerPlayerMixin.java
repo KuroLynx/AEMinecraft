@@ -1,8 +1,11 @@
 package fr.euclesia.mcarchipelago.mixin;
 
 import fr.euclesia.mcarchipelago.content.BiomeFinderItem;
+import fr.euclesia.mcarchipelago.server.gameplay.SpawnGraceService;
 import fr.euclesia.mcarchipelago.server.gameplay.TrapMobService;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -48,6 +51,27 @@ public abstract class ServerPlayerMixin {
     private void archipelago_euclesia$noTrapMobKillCredit(Entity killed, DamageSource source, CallbackInfo ci) {
         if (TrapMobService.isTrapMob(killed)) {
             ci.cancel();
+        }
+    }
+
+    /**
+     * Arrival grace ({@link SpawnGraceService}): for the first few seconds in the world a player takes no
+     * damage, so nothing that was already waiting for them — a mob on the bed, last session's lava —
+     * can kill them before they have had a chance to look around.
+     *
+     * <p>Damage tagged {@code bypasses_invulnerability} still lands: {@code /kill}, the void, and the
+     * DeathLink kill that rides on it. Those are decisions, not hazards, and grace does not overrule
+     * them — nor should it swallow a death another world already paid for.
+     */
+    @Inject(method = "hurtServer", at = @At("HEAD"), cancellable = true)
+    private void archipelago_euclesia$spawnGrace(ServerLevel level, DamageSource source, float amount,
+                                                 CallbackInfoReturnable<Boolean> cir) {
+        if (source.is(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
+            return;
+        }
+        ServerPlayer player = (ServerPlayer) (Object) this;
+        if (SpawnGraceService.isProtected(player)) {
+            cir.setReturnValue(false);
         }
     }
 }

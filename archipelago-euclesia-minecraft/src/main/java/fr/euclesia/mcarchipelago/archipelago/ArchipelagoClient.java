@@ -255,10 +255,17 @@ public final class ArchipelagoClient {
         // we run it on every batch rather than diffing for the specific item.
         MinecraftServer biomeServer = AEMServerRuntime.server();
         if (biomeServer != null) {
+            // The index-0 batch is the whole item history replayed on (re)connect, not something that
+            // just happened, so its traps are not sprung — see FillerTrapService.Mode. Usually moot
+            // (the persisted mark is already caught up), but a player who was in the world before the
+            // session connected has a mark of 0 and would otherwise eat the run's entire trap list.
+            FillerTrapService.Mode mode = receivedItems.index() == 0
+                    ? FillerTrapService.Mode.CATCH_UP
+                    : FillerTrapService.Mode.LIVE;
             biomeServer.execute(() -> {
                 BiomeFinderService.ensureGrantedToAll(biomeServer);
                 // Grant filler contents / fire trap effects for any newly received items.
-                FillerTrapService.applyPendingToAny(biomeServer);
+                FillerTrapService.applyPendingToAll(biomeServer, mode);
             });
         }
 
@@ -418,6 +425,16 @@ public final class ArchipelagoClient {
 
         @Override
         public void onError(Throwable throwable) {
+            // A failure on a session that was never established is almost always the wss:// attempt
+            // being refused by a server that only speaks ws:// — the connector then falls back and
+            // connects. Logging that at ERROR with a stack trace made a routine, successful startup
+            // look like a crash, and buried the errors that do matter. One line, and the fallback
+            // reports its own success immediately after.
+            if (!state.isConnected()) {
+                AEM.LOGGER.info("Archipelago connect attempt failed ({}); trying the next address.",
+                        throwable.toString());
+                return;
+            }
             AEM.LOGGER.error("Archipelago transport error", throwable);
         }
 

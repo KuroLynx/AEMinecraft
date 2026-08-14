@@ -13,13 +13,11 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.LodestoneTracker;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 
 import java.util.ArrayList;
@@ -36,9 +34,9 @@ import java.util.function.Predicate;
  * owned, lists the biomes searchable in a dimension (for the pick screen), and on a pick runs one
  * worldgen biome search and points the compass's vanilla lodestone needle at the nearest instance.
  *
- * <p>Like the Structure Finder, this relies on the integrated-server shared JVM: the client pick
- * screen reads {@link #availableBiomes} and submits picks through {@link #requestSearch} directly,
- * with no custom network packet.
+ * <p>Everything here is server-side. The pick screen talks to it over the wire
+ * ({@link fr.euclesia.mcarchipelago.net.BiomeFinderNet}) — it used to call in directly, which quietly
+ * did nothing on a dedicated server, where the client's JVM holds no world at all.
  */
 public final class BiomeFinderService {
     /** Search reach for {@code findClosestBiome3d}; matches the vanilla {@code /locate biome} command. */
@@ -108,18 +106,11 @@ public final class BiomeFinderService {
     }
 
     /**
-     * The biome ids that can generate in {@code dimension}, sorted by id. Read from the integrated
-     * server's level for the pick screen; empty if there is no server or no such level.
+     * The biome ids {@code level} can generate, sorted by id — what the pick screen offers. Server
+     * thread only: it reads the level's chunk generator, which is why the client has to ask for it
+     * (see {@link fr.euclesia.mcarchipelago.net.BiomeFinderNet}) rather than work it out itself.
      */
-    public static List<Identifier> availableBiomes(ResourceKey<Level> dimension) {
-        MinecraftServer server = AEMServerRuntime.server();
-        if (server == null) {
-            return List.of();
-        }
-        ServerLevel level = server.getLevel(dimension);
-        if (level == null) {
-            return List.of();
-        }
+    public static List<Identifier> availableBiomes(ServerLevel level) {
         Registry<Biome> registry = level.registryAccess().lookupOrThrow(Registries.BIOME);
         List<Identifier> ids = new ArrayList<>();
         for (Holder<Biome> holder : level.getChunkSource().getGenerator().getBiomeSource().possibleBiomes()) {
@@ -130,23 +121,6 @@ public final class BiomeFinderService {
         }
         ids.sort(Comparator.comparing(Identifier::toString));
         return ids;
-    }
-
-    /**
-     * Schedules a biome search for the player with {@code playerId} on the server thread (the pick
-     * screen runs on the client thread). No-op if there is no integrated server or the player is gone.
-     */
-    public static void requestSearch(UUID playerId, Identifier biomeId) {
-        MinecraftServer server = AEMServerRuntime.server();
-        if (server == null) {
-            return;
-        }
-        server.execute(() -> {
-            ServerPlayer player = server.getPlayerList().getPlayer(playerId);
-            if (player != null) {
-                search(player, biomeId);
-            }
-        });
     }
 
     /**

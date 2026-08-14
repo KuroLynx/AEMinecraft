@@ -7,15 +7,22 @@ import fr.euclesia.mcarchipelago.protocol.packet.outbound.ConnectUpdatePacket;
 import java.util.List;
 
 /**
- * Runtime DeathLink on/off, toggleable from the Archipelago screen. Until the player toggles it this
- * session it follows the slot's configured {@code death_link} (slot data); after a toggle the override
- * wins. Toggling also notifies the server with a {@link ConnectUpdatePacket}: adding the
- * {@code "DeathLink"} tag makes the server route DeathLink bounces to this slot, removing it stops
- * them — so the toggle governs both sending (gated here) and receiving (gated by the tag server-side).
+ * Runtime DeathLink on/off. Until something sets it this session it follows the slot's configured
+ * {@code death_link} (slot data); after that the override wins. Setting it also notifies Archipelago
+ * with a {@link ConnectUpdatePacket}: adding the {@code "DeathLink"} tag makes the room route
+ * DeathLink bounces to this slot, removing it stops them — so this governs both sending (gated here)
+ * and receiving (gated by the tag, room-side).
  *
- * <p>Shared (not client-only) because the death send-gate runs on the integrated server thread
- * ({@link fr.euclesia.mcarchipelago.server.service.DeathLinkService}); in single player the client and
- * server share this JVM, so a static override is visible to both.
+ * <p>Set from two places, and which one works depends on where the Archipelago session lives. The
+ * Archipelago screen's toggle sets it in the client's JVM, which is the same JVM in single player.
+ * On a dedicated server it is not: the session is the server's, so the switch there is
+ * {@code /aem deathlink} ({@link fr.euclesia.mcarchipelago.server.command.ArchipelagoCommandModule}),
+ * which runs in the JVM that actually holds the connection and the death send-gate
+ * ({@link fr.euclesia.mcarchipelago.server.service.DeathLinkService}).
+ *
+ * <p>The command's setting is remembered in the world and restored before the next connect
+ * ({@link fr.euclesia.mcarchipelago.server.service.DeathLinkSetting}); the screen's toggle is not,
+ * and lasts the session.
  */
 public final class DeathLinkPreference {
     /** {@code null} = follow the slot's configured default; otherwise the session override. */
@@ -32,11 +39,25 @@ public final class DeathLinkPreference {
         return AEM.ARCHIPELAGO.client().state().parsedSlotData().deathLink();
     }
 
-    /** Sets the session override and, when connected, tells the server via the DeathLink tag. */
+    /** Whether an override is in force, i.e. {@link #enabled()} is not just the slot's own setting. */
+    public static boolean overridden() {
+        return override != null;
+    }
+
+    /** Sets the session override and, when connected, tells the room via the DeathLink tag. */
     public static void setEnabled(boolean enabled) {
         override = enabled;
+        syncTag();
+    }
+
+    /**
+     * Tells the room what our current state is. Called for you by {@link #setEnabled}; call it after
+     * {@link #reset()} when the change should take effect on a live session rather than wait for the
+     * next connect.
+     */
+    public static void syncTag() {
         if (AEM.ARCHIPELAGO.client().state().isConnected()) {
-            List<String> tags = enabled ? List.of("DeathLink") : List.of();
+            List<String> tags = enabled() ? List.of("DeathLink") : List.of();
             AEM.ARCHIPELAGO.client().send(new ConnectUpdatePacket(tags, APItemsHandling.ALL));
         }
     }
@@ -44,5 +65,14 @@ public final class DeathLinkPreference {
     /** Clears the override so a freshly (re)connected session follows its own slot data again. */
     public static void reset() {
         override = null;
+    }
+
+    /**
+     * Puts back an override loaded from the world
+     * ({@link fr.euclesia.mcarchipelago.server.service.DeathLinkSetting}), {@code null} for none.
+     * Quiet: the tag is sent when the session connects, which has not happened yet at load time.
+     */
+    public static void restore(Boolean stored) {
+        override = stored;
     }
 }

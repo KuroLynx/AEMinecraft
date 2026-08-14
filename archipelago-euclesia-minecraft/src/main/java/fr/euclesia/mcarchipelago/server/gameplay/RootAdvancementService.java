@@ -149,6 +149,9 @@ public final class RootAdvancementService {
         if (server == null || !AEMServerRuntime.isArchipelagoReady()) {
             return;
         }
+        // Same reason, for the tracker tabs: the connect-time compaction ran with nobody online, so
+        // do it here too — before the reload below, which is what hands this client the tree.
+        TrackerLayoutService.compact(server);
         rebuild(server, AEM.ARCHIPELAGO.client().state().parsedSlotData());
         player.getAdvancements().reload(server.getAdvancements());
         syncProgress(player);
@@ -180,6 +183,22 @@ public final class RootAdvancementService {
             } else if (i >= target && granted) {
                 player.getAdvancements().revoke(holder, names.get(i));
             }
+        }
+    }
+
+    /**
+     * Reconciles every online player's advancements tile. The run shares its advancements, so the
+     * count is the run's, not one person's — and one player earning something moves everybody's
+     * tile. Each call is an idempotent recompute, so doing the whole list costs a comparison per
+     * player and cannot drift.
+     */
+    public static void syncProgressToAll() {
+        MinecraftServer server = AEMServerRuntime.server();
+        if (server == null) {
+            return;
+        }
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            syncProgress(player);
         }
     }
 

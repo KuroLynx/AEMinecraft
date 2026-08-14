@@ -4,7 +4,6 @@ import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.server.gameplay.StructureCapture.CaptureSession;
 import fr.euclesia.mcarchipelago.server.gameplay.StructureCaptureData.CapturedBlock;
 import fr.euclesia.mcarchipelago.server.gameplay.StructureCaptureData.CapturedPlacement;
-import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
@@ -41,29 +40,65 @@ public final class StructureCaptureService {
         if (session == null || session.isEmpty()) {
             return;
         }
-        MinecraftServer server = AEMServerRuntime.server();
-        if (server == null) {
-            return;
-        }
+        // level.getServer(), NOT AEMServerRuntime.server(): the latter is only set on SERVER_STARTED,
+        // and spawn chunks generate during level load, BEFORE that. Reading it here returned null and
+        // dropped straight out — but StructureCapture.end() above has already consumed the session, so
+        // the structure's writes were diverted away from the world AND the capture thrown away. The
+        // structure was neither placed nor stored: gone, with nothing left to release. A ServerLevel
+        // always knows its server, whatever stage of startup we are in.
+        MinecraftServer server = level.getServer();
         HolderLookup.Provider provider = level.registryAccess();
         String structureId = session.structureId();
         CapturedPlacement placement = session.toPersistable(provider);
         server.execute(() -> captureData(level).add(structureId, placement));
     }
 
-    /** Applies every captured placement of the given structures into the live world. Server thread. */
+    /** Structure ids holding captured placements in this level (see SlotReleaseService). */
+    public static Set<String> capturedStructureIds(ServerLevel level) {
+        return captureData(level).capturedIds();
+    }
+
+    /** Mob ids holding deferred worldgen spawns in this level (see SlotReleaseService). */
+    public static Set<String> pendingMobIds(ServerLevel level) {
+        return pendingMobData(level).pendingIds();
+    }
+
+    /**
+     * Queues every captured placement of the given structures for application. Server thread.
+     *
+     * <p>Queued rather than applied on the spot: one unlock is one structure type and would be fine,
+     * but a mass unlock — another player finishing their game and releasing — delivers dozens at once,
+     * and writing every placement of every type in a single tick stalls the server hard enough that
+     * the structures look like they never arrived. See {@link StructurePlacementQueue}.
+     */
     public static void applyUnlocked(MinecraftServer server, Set<String> structureIds) {
         if (structureIds.isEmpty()) {
             return;
         }
+        int queued = 0;
         for (ServerLevel level : server.getAllLevels()) {
             StructureCaptureData data = captureData(level);
             for (String structureId : structureIds) {
                 for (CapturedPlacement placement : data.drain(structureId)) {
-                    applyPlacement(level, placement);
+                    StructurePlacementQueue.enqueue(level, structureId, placement);
+                    queued++;
                 }
             }
         }
+        if (queued > 0) {
+            AEM.LOGGER.info("Unlocked {} structure type(s): {} placement(s) queued.",
+                    structureIds.size(), queued);
+        }
+    }
+
+    /** Applies one queued placement. Called only by {@link StructurePlacementQueue}. */
+    static void applyPlacementNow(ServerLevel level, CapturedPlacement placement) {
+        applyPlacement(level, placement);
+    }
+
+    /** Puts a placement back in storage when the server stops before it could be applied. */
+    static void restoreCaptured(ServerLevel level, String structureId, CapturedPlacement placement) {
+        captureData(level).add(structureId, placement);
     }
 
     /**
@@ -91,10 +126,9 @@ public final class StructureCaptureService {
         if (mobId.isEmpty()) {
             return;
         }
-        MinecraftServer server = AEMServerRuntime.server();
-        if (server == null) {
-            return;
-        }
+        // Same reasoning as finish(): the runtime reference is not set this early in startup, and a
+        // deferred mob dropped here is a mob that never spawns at all.
+        MinecraftServer server = level.getServer();
         server.execute(() -> pendingMobData(level).add(mobId, entityNbt));
     }
 
