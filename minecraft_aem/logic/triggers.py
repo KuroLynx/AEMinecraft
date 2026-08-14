@@ -1224,36 +1224,74 @@ class TriggerCompiler:
         ids = items if isinstance(items, list) else [items]
         if not any(item in _POTION_ITEMS for item in ids):
             return None
-        contents = self._component(pred, "minecraft:potion_contents")
-        potion_type = contents.get("potion") if isinstance(contents, dict) else None
-        if not isinstance(potion_type, str):
-            return None
-        potion_type = potion_type.split(":")[-1]
-        for prefix in ("long_", "strong_"):
-            potion_type = potion_type.removeprefix(prefix)
-        reagents = _brewing().get(potion_type)
-        if reagents is None:
-            return None
-        parts = [self._can_brew()]
-        parts += [self.h.acquire(f"minecraft:{reagent}") for reagent in reagents]
-        parts = [node for node in parts if node is not None]
-        return and_(*parts) if parts else None
+        routes: list[Rule] = []
+        for potion_type in self._potion_types(pred):
+            reagents = _brewing().get(potion_type)
+            if reagents is None:
+                # An alternative we can't price (a water bottle is free, and `mundane`/unknown types
+                # have no chain) makes the whole OR unpriceable — fall through to the item's own
+                # sources rather than invent a gate the player can dodge.
+                return None
+            parts = [self._can_brew()]
+            parts += [self.h.acquire(f"minecraft:{reagent}") for reagent in reagents]
+            parts = [node for node in parts if node is not None]
+            if parts:
+                routes.append(and_(*parts))
+        return or_(*routes) if routes else None
+
+    @staticmethod
+    def _potion_types(pred: dict) -> list[str]:
+        """The potion types an item predicate accepts, as bare names with the tier prefix stripped.
+
+        Two shapes reach here and both are valid Minecraft: the exact-component form
+        ``components: {minecraft:potion_contents: {potion: "minecraft:x"}}``, and the sub-predicate
+        form ``predicates: {potion_contents: "minecraft:x" | ["minecraft:x", ...]}`` that BACAP's
+        potion tab uses. Multiple ids are ALTERNATIVES (any one satisfies the predicate)."""
+        contents = TriggerCompiler._component(pred, "minecraft:potion_contents")
+        if isinstance(contents, dict):
+            contents = contents.get("potion")
+        ids = contents if isinstance(contents, list) else [contents]
+        types = []
+        for potion_id in ids:
+            if not isinstance(potion_id, str):
+                continue
+            name = potion_id.split(":")[-1]
+            for prefix in ("long_", "strong_"):
+                name = name.removeprefix(prefix)
+            types.append(name)
+        return types
 
     def _can_brew(self) -> Rule | None:
-        """Capability to brew a potion: a brewing stand, Knowledge: Brewing, and a water bottle — a
-        glass bottle (glass = sand) filled with water. Both sand and water are Overworld-only, so
-        brewing gates on the Overworld even though the stand itself is buildable from Nether
-        blackstone + a blaze rod."""
-        return self.h.all_of(self.h.acquire("minecraft:brewing_stand"), self.h.knowledge(K_BREWING),
+        """Capability to brew a potion: a brewing stand, its FUEL, Knowledge: Brewing, and a water
+        bottle — a glass bottle (glass = sand) filled with water. Both sand and water are
+        Overworld-only, so brewing gates on the Overworld too.
+
+        Blaze powder is listed explicitly because it is the only unavoidable blaze requirement here.
+        The stand itself is a bad proxy: one stands in every village church and igloo basement ready
+        to be mined, and with `bacap_rewards` on it also arrives as an advancement reward — so
+        `acquire(brewing_stand)` resolves without ever meeting a blaze. Fuel has no such loophole
+        (blaze powder comes only from a blaze rod), and without it the stand does nothing. Omitting
+        it let the whole BACAP potion tab read as free, so fill could park `Entity Unlock: Blaze`
+        behind a potion advancement that needs a blaze to earn."""
+        return self.h.all_of(self.h.acquire("minecraft:brewing_stand"),
+                             self.h.acquire("minecraft:blaze_powder"),
+                             self.h.knowledge(K_BREWING),
                              self.h.acquire("minecraft:glass_bottle"))
 
     @staticmethod
     def _component(pred: dict, key: str):
-        """A component value from an item predicate's ``components`` / ``predicates`` block."""
+        """A component value from an item predicate's ``components`` / ``predicates`` block.
+
+        Minecraft treats an unnamespaced component key as ``minecraft:``, and BACAP writes them bare
+        (``predicates: {potion_contents: ...}``), so match on the bare name rather than the literal
+        key — the same normalisation ``_criterion`` does for trigger names."""
+        bare = key.split(":")[-1]
         for holder in ("components", "predicates"):
             block = pred.get(holder)
-            if isinstance(block, dict) and key in block:
-                return block[key]
+            if isinstance(block, dict):
+                for name, value in block.items():
+                    if name.split(":")[-1] == bare:
+                        return value
         return None
 
     def _any_acquire(self, ids) -> Rule | None:
