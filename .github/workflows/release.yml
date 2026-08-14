@@ -113,7 +113,16 @@ jobs:
           set -euo pipefail
           mkdir -p dist
           cp "archipelago-euclesia-minecraft/build/libs/aem-${VERSION}+${MC}.jar" "dist/aem-${VERSION}+${MC}.jar"
-          cp minecraft_aem.apworld "dist/minecraft_aem-${VERSION}.apworld"
+          # NOT versioned in the filename. Archipelago derives the Python module name from the
+          # apworld's filename stem (worlds/__init__.py: world_name = Path(path).stem, then
+          # zipimporter.find_spec(f"worlds.{world_name}")), so the stem MUST equal the package
+          # inside the zip. Shipping minecraft_aem-0.4.0.apworld made it look for
+          # worlds.minecraft_aem-0.4.0 — which is neither a valid module name nor present — and the
+          # world silently "failed to initialize", surfacing to players as
+          # "No functional world found to handle game Minecraft [AEM]".
+          # The version is already inside, in archipelago.json's world_version, which is what AP
+          # reads and displays.
+          cp minecraft_aem.apworld "dist/minecraft_aem.apworld"
           # The player YAML template lives in the repo and is kept current; ship it alongside the build.
           cp template.yaml "dist/minecraft_aem-${VERSION}.yaml"
           ls -l dist
