@@ -273,6 +273,20 @@ def and_(*rules: Rule) -> Rule:
             children.extend(rule.children)  # flatten
         else:
             children.append(rule)
+    # Idempotence: X AND X == X. Free correctness-wise, and it means a requirement can be AND-ed on
+    # from more than one place without bloating the tree — the player predicate is now applied
+    # centrally in TriggerCompiler._criterion while several handlers still fold it in themselves.
+    # Dedup AFTER flattening so a repeat nested inside an And is caught too. Order is preserved
+    # (first occurrence wins) to keep serialized output stable across runs.
+    if len(children) > 1:
+        seen = set()
+        deduped = []
+        for child in children:
+            k = child.key()
+            if k not in seen:
+                seen.add(k)
+                deduped.append(child)
+        children = deduped
     if not children:
         return Const(True)
     if len(children) == 1:

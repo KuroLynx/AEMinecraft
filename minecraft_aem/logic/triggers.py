@@ -345,6 +345,26 @@ class TriggerCompiler:
 
     # -- per-criterion dispatch --------------------------------------------
     def _criterion(self, crit: dict) -> Rule | None:
+        """One criterion's rule: what its trigger demands, AND the `player` predicate beside it.
+
+        The player predicate is applied here rather than in each handler because it means the same
+        thing under every trigger — where you must be standing, what you must be wearing, riding, or
+        have already earned — and only a handful of handlers ever remembered to ask for it. The rest
+        silently dropped it: 'Rock, Paper, Shears!' is killing a mob with SHEARS in your mainhand,
+        "We're in the endgame now" is winning a raid in the END, 'Star Trader' is trading in another
+        dimension. Each compiled to the trigger's half alone.
+
+        A handler that returns ``None`` still returns ``None``: an unreadable trigger means the whole
+        criterion is unpriced, and answering with the player predicate by itself would claim the
+        criterion costs only "be somewhere", which is weaker than falling back to the parent chain.
+        (``and_`` is idempotent, so handlers that do fold the predicate in themselves cost nothing.)"""
+        rule = self._criterion_trigger(crit)
+        if rule is None:
+            return None
+        where = self._location_node(crit.get("conditions") or {})
+        return rule if where is None else and_(rule, where)
+
+    def _criterion_trigger(self, crit: dict) -> Rule | None:
         trigger = crit.get("trigger")
         cond = crit.get("conditions") or {}
         # Minecraft treats an unnamespaced trigger as `minecraft:` (BACAP writes some criteria as
@@ -909,14 +929,21 @@ class TriggerCompiler:
         return self.h.acquire(recipe_id)
 
     def _location_node(self, cond: dict) -> Rule | None:
-        """The `player` predicate, in any of its forms: a dict with `type_specific` (advancement/stat
-        prerequisites — BACAP's Milestones), or a list of entity_properties / any_of / inverted
-        conditions pinning a location, worn equipment, or the block stood on."""
+        """The `player` predicate, in either of its forms: a bare dict, or a list of
+        entity_properties / any_of / inverted conditions. Both can pin a location, worn equipment,
+        the block stood on, a vehicle, an effect, or `type_specific` advancement/stat prerequisites
+        (BACAP's Milestones)."""
         return self._player_node(cond.get("player"))
 
     def _player_node(self, player) -> Rule | None:
         if isinstance(player, dict):
-            return self._type_specific_node(player.get("type_specific"))
+            # The dict form carries exactly the same fields as a list entry — sometimes behind a
+            # `predicate` wrapper — so it goes through the same reader. It used to be mined for
+            # `type_specific` and nothing else, which silently dropped every other field the dict
+            # form can hold: the mainhand weapon of 'Rock, Paper, Shears!' and 'Axeolotl', the
+            # dimension of "We're in the endgame now", the structure of 'Thanks a lotl', the boat of
+            # "It's High Noon". Each read as a criterion with no equipment or place requirement.
+            return self._predicate_loc_node(player.get("predicate", player))
         if isinstance(player, list):
             parts = [self._condition_node(sub) for sub in player]
             parts = [p for p in parts if p is not None]
@@ -976,13 +1003,21 @@ class TriggerCompiler:
         return self._all_req(*parts) if parts else None
 
     def _loc_value_node(self, loc: dict) -> Rule | None:
+        """A ``location`` predicate as a gate: every facet it pins, AND-ed.
+
+        Each facet used to ``return`` as soon as it matched, so a location that pinned two of them
+        kept only the first. That is how 'From Whence It Came!' lost the Nether — it wants a ruined
+        portal ON THE NETHER SIDE, and the structure branch returned before the dimension was read,
+        leaving a gate an Overworld ruined portal satisfies."""
+        struct_node = None
         struct = loc.get("structures")
         if isinstance(struct, str):
             if struct.startswith("#"):
                 # A structure #tag — the village tag is the only common one we can map.
-                return self.h.any_village() if "village" in struct else None
-            name = self._struct_name(struct)
-            return self.h.structure(name) if name else None
+                struct_node = self.h.any_village() if "village" in struct else None
+            else:
+                name = self._struct_name(struct)
+                struct_node = self.h.structure(name) if name else None
         biome_node = None
         region = None
         if "biomes" in loc:
@@ -1002,6 +1037,8 @@ class TriggerCompiler:
         # the roof, and returning on the dimension alone (as this used to) threw the position away —
         # which is most of the check.
         parts = []
+        if struct_node is not None:
+            parts.append(struct_node)
         if biome_node is not None:
             # AND-ed rather than returned: a criterion can pin a biome AND a height ('Freezing' is
             # ice_spikes above y=56, 'Warden Frostbite' the same above 64), and returning on the biome
