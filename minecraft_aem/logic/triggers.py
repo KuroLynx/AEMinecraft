@@ -93,6 +93,28 @@ _ENCHANT_LOOT_SOURCE = {
     "wind_burst": lambda c: c._struct_gid("minecraft:trial_chambers"),       # trial_chambers/reward_ominous_rare
 }
 
+# Damage-type #tags, as gates. BACAP reaches for one of these whenever it wants "kill it WITH
+# something" without naming the item — the tag is then the only thing the criterion says about how
+# the blow must land, so it IS the requirement. Six occur across the pack; they are tried in this
+# order because it runs most specific first (a mace smash is also a player attack, and the mace is
+# the answer). A value that resolves to None (an item this content version lacks) falls through to
+# the next matching tag rather than voiding the gate.
+_DAMAGE_TAG_GATE = {
+    "minecraft:mace_smash": lambda c: c.h.acquire("minecraft:mace"),
+    "minecraft:spear": lambda c: c.h.acquire("minecraft:spear"),
+    "blazeandcave:spear": lambda c: c.h.acquire("minecraft:spear"),
+    # Something had to explode: your own TNT or end crystal, a bed/anchor detonated where it cannot
+    # be slept in, or a creeper you led into the victim.
+    "minecraft:is_explosion": lambda c: c._any_opt(
+        c.h.acquire("minecraft:tnt"), c._entity_gid("minecraft:creeper"),
+        c.h.acquire("minecraft:end_crystal"), c.h.acquire("minecraft:respawn_anchor")),
+    # Kept as bow/crossbow + arrow, matching what _killing_blow_weapon already demanded here.
+    "minecraft:is_projectile": lambda c: c._all_req(
+        c._any_opt(c.h.acquire("minecraft:bow"), c.h.acquire("minecraft:crossbow")),
+        c.h.can_get_arrow()),
+    "minecraft:is_player_attack": lambda c: c.h.can_kill(),
+}
+
 _TAGS: dict | None = None
 _BREWING: dict | None = None
 
@@ -776,9 +798,7 @@ class TriggerCompiler:
             return self._projectile_item(proj)
         if isinstance(proj, list):
             return self._any_opt(*[self._projectile_item(p) for p in proj if isinstance(p, str)])
-        if self._has_tag(dtype, "minecraft:is_player_attack"):
-            return self.h.can_kill()
-        return None
+        return self._damage_tag_node(dtype)
 
     def _player_hurt_node(self, cond: dict) -> Rule | None:
         """``player_hurt_entity``: the player damages an entity. Require the pinned weapon AND, when a
@@ -858,14 +878,17 @@ class TriggerCompiler:
         held = self._item_predicate(mainhand) if isinstance(mainhand, dict) else None
         if held is not None:
             return held
-        if self._has_tag(kb, "minecraft:is_player_attack"):
-            return self.h.can_kill()
-        if self._has_tag(kb, "minecraft:is_projectile"):
-            # Killed by an unspecified projectile (There it goes…) → a bow/crossbow + arrow.
-            return self._all_req(
-                self._any_opt(self.h.acquire("minecraft:bow"), self.h.acquire("minecraft:crossbow")),
-                self.h.can_get_arrow(),
-            )
+        return self._damage_tag_node(kb)
+
+    def _damage_tag_node(self, holder: dict) -> Rule | None:
+        """The weapon a damage-type ``#tag`` implies, when the criterion names no item: 'Nice to Mace
+        You!' is a mace smash, 'Over-Overkill' a spear, 'Demolitions Expert' an explosion, 'There it
+        goes…' a projectile. ``None`` when it carries no tag we can price."""
+        for tag_id, build in _DAMAGE_TAG_GATE.items():
+            if self._has_tag(holder, tag_id):
+                node = build(self)
+                if node is not None:
+                    return node
         return None
 
     def _entity_hurt_player_node(self, cond: dict) -> Rule | None:
