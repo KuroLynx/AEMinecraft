@@ -157,6 +157,17 @@ class _TrackedDict(dict):
             self._mark(key, "get")
             yield value
 
+    def __iter__(self):
+        # `for k in d` and `d.keys()` both land here. Reading the key names IS how a handler decides
+        # a branch applies (_entity_variant_node looks for any key ending in "/variant"), so without
+        # this the audit reported a gate it had itself failed to observe.
+        for key in super().__iter__():
+            self._mark(key, "contains")
+            yield key
+
+    def keys(self):
+        return iter(self)
+
 
 class _TrackedList(list):
     def __init__(self, data, path, seen):

@@ -455,7 +455,10 @@ class TriggerCompiler:
                 names = [species] if species else []
             options = [self.h.can_tame(n) for n in names if n in MOBS_TAMEABLE]
             if options:
-                return or_(*options)
+                # A pinned variant is the whole point of 'A Complete Catalogue' / 'The Whole Pack' /
+                # 'Birdkeeper': taming any cat is easy, taming EVERY variant means finding each one's
+                # biome. Without it they asked only for a cat.
+                return self._all_opt(or_(*options), self._entity_variant_node(cond))
             return self._any_mob(MOBS_TAMEABLE, self.h.can_tame) if not cond else None
         if trigger == "minecraft:bred_animals":
             # The bred species is pinned on `child` (vanilla bred_all_animals) or directly on
@@ -713,9 +716,48 @@ class TriggerCompiler:
             # No species pinned. A location on its own is still a real gate, so don't lose it —
             # callers keep their own "any mob" fallbacks for the fully unpinned predicate.
             return where
-        # _all_opt, not _all_req: species / gear / place are independent requirements, so an
+        # _all_opt, not _all_req: species / gear / place / mount are independent requirements, so an
         # unresolvable one leaves a sound-but-weaker rule rather than voiding the whole gate.
-        return self._all_opt(or_(*options), self._entity_equipment_node(cond), where)
+        # An entity predicate can carry `type_specific` too (has_raid — "…while a raid is on"), and
+        # it prices the same way as the player's.
+        specific = self._type_specific_node(self._predicate_value(cond.get("entity"), "type_specific"))
+        return self._all_opt(or_(*options), self._entity_equipment_node(cond), where,
+                             self._entity_variant_node(cond), self._entity_mount_node(cond),
+                             specific)
+
+    def _entity_variant_node(self, cond: dict) -> Rule | None:
+        """A pinned mob VARIANT means finding a particular biome: each cat / wolf / frog / parrot
+        variant generates in its own one ('A Complete Catalogue', 'The Whole Pack', 'Birdkeeper',
+        'When the Squad Hops into Town' each want the full set). Priced as the same strict_only
+        Biome-Finder gate a named biome gets, rather than the exact biome — every variant biome is in
+        the Overworld, so the region half adds nothing, and the exact mapping lives in the jar's
+        wolf_variant/cat_variant data which the packs do not carry. Promote it to a real per-variant
+        biome if that data is ever dumped."""
+        entity = cond.get("entity")
+        preds = entity if isinstance(entity, list) else [entity]
+        for sub in preds:
+            if not isinstance(sub, dict):
+                continue
+            pred = sub.get("predicate", sub)
+            if not isinstance(pred, dict):
+                continue
+            for holder in ("components", "predicates"):
+                block = pred.get(holder)
+                if isinstance(block, dict) and any(str(k).endswith("/variant") for k in block):
+                    return self.h.strict_only(self.h.needs_biome_finder())
+        return None
+
+    def _entity_mount_node(self, cond: dict) -> Rule | None:
+        """What the entity must be riding or carrying. A jockey is two mobs, not one — 'Legend of
+        Hell Chicken Riders' pins the chicken on `passenger` and the rider on `vehicle`, and reading
+        only the top-level type asked for half of it."""
+        parts = []
+        for key in ("vehicle", "passenger"):
+            gid = self._predicate_value(cond.get("entity"), key)
+            names = self._entity_names_from_type(gid.get("type")) if isinstance(gid, dict) else []
+            if names:
+                parts.append(or_(*[self.h.entity(name) for name in names]))
+        return self._all_opt(*parts)
 
     def _entity_location_node(self, cond: dict) -> Rule | None:
         """Where an `entity` predicate says the entity has to be, or ``None`` if it doesn't say."""
@@ -1213,6 +1255,11 @@ class TriggerCompiler:
         if not isinstance(ts, dict):
             return None
         parts = []
+        if ts.get("has_raid") is True:
+            # "…while a raid is happening" (Feeling Ill). A raid has to be started, which can_raid
+            # prices (a pillager plus a village). `has_raid: false` asks for the ordinary case and
+            # gates nothing.
+            parts.append(self.h.can_raid())
         advancements = ts.get("advancements")
         if isinstance(advancements, dict):
             for gid, required in advancements.items():
