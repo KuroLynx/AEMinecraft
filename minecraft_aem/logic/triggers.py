@@ -472,13 +472,24 @@ class TriggerCompiler:
             # hoglin) is the real gate. The flag-derived MOBS_BREEDABLE is only for the "breed any" case.
             names = self._entity_names_from_type(gid)
             if names:
-                return or_(*[self.h.can_breed(n) for n in names])
+                bred = or_(*[self.h.can_breed(n) for n in names])
+                # BOTH sides when the criterion names them separately. `parent` was read and
+                # `partner` ignored, which is exactly wrong for a cross-species pairing: a mule is a
+                # horse AND a donkey, and only the horse was being asked for.
+                other = self._entity_names_from_type(self._predicate_value(cond.get("partner"), "type"))
+                if other and set(other) != set(names):
+                    bred = and_(bred, or_(*[self.h.can_breed(n) for n in other]))
+                return bred
             return self._any_mob(MOBS_BREEDABLE, self.h.can_breed) if not cond else None
         if trigger == "minecraft:changed_dimension":
             region = _DIMENSION_REGION.get(self._path(cond.get("to")))
             # enter_dimension, not access_region: entering the dimension you START in means leaving
             # and coming back, which spawning there does not satisfy.
-            return self.h.enter_dimension(region) if region else None
+            node = self.h.enter_dimension(region) if region else None
+            # `from` is the other half of a crossing and was ignored: BACAP's 'Nether' wants the trip
+            # to START in the Overworld, which on a Nether start is not free.
+            origin = _DIMENSION_REGION.get(self._path(cond.get("from")))
+            return self._all_opt(node, self.h.access_region(origin) if origin else None)
         if trigger == "minecraft:location":
             return self._location_node(cond)
         if trigger == "minecraft:inventory_changed":
@@ -510,7 +521,13 @@ class TriggerCompiler:
                 node = self._all_req(node, self.h.can_get_beacon_base())
             return node
         if trigger == "minecraft:villager_trade":
-            return self.h.can_trade_villager()
+            # Trading, plus WHERE the villager has to be: 'Star Trader' wants the trade done in
+            # another dimension, which means hauling a villager through a portal. The traded `item`
+            # is deliberately NOT gated — it is the trade's OUTPUT, so demanding it separately would
+            # price the reward as a prerequisite for earning it.
+            villager = self._predicate_value(cond.get("villager"), "location")
+            where = self._loc_value_node(villager) if isinstance(villager, dict) else None
+            return self._all_opt(self.h.can_trade_villager(), where)
         if trigger == "minecraft:slept_in_bed":
             # This used to return the bare region on the reasoning "a bed needs wool + planks" — and
             # then never asked for either, which is why 'Sweet Dreams' was green on a fresh world.
@@ -589,8 +606,10 @@ class TriggerCompiler:
             return self._struct_gid("minecraft:ancient_city")
         if trigger in ("minecraft:channeled_lightning", "minecraft:lightning_strike",
                        "minecraft:spear_mobs"):
-            # Channel lightning with a trident / spear mobs with one → obtain a trident.
-            return self.h.acquire("minecraft:trident")
+            # Channel lightning with a trident / spear mobs with one → obtain a trident, AND reach
+            # whatever the criterion says you must hit: 'Electrifying Alliance' names its victims, and
+            # asking only for the trident let it pass without them.
+            return self._all_opt(self.h.acquire("minecraft:trident"), self._victims_node(cond))
         if trigger == "minecraft:nether_travel":
             return self.h.access_region(REGION_NETHER)
         if trigger == "minecraft:levitation":
@@ -605,7 +624,10 @@ class TriggerCompiler:
         if trigger == "minecraft:brewed_potion":
             # Brewing anything (Local Brewery) needs the full capability — a water bottle in
             # particular (glass + water = Overworld) — not just the stand (blackstone + blaze rod).
-            return self._can_brew()
+            # When the criterion names WHICH potion, its reagents are the real cost on top: 'A Weak
+            # Brew' is a fermented spider eye, 'Medic!' a ghast tear from the Nether. That name was
+            # being dropped, so every potion cost the same as a water bottle.
+            return self._all_opt(self._can_brew(), self._brewed_reagents_node(cond.get("potion")))
         if trigger == "minecraft:effects_changed":
             return self._effects_node(cond)
         if trigger == "minecraft:used_ender_eye":
@@ -622,7 +644,14 @@ class TriggerCompiler:
             # Neither's real prerequisite is in the criterion, so defer to the parent-chain fallback.
             return None
         if trigger in _IMPLIED_ITEM:
-            return self.h.acquire(_IMPLIED_ITEM[trigger])
+            # The item the trigger implies (a target block, a fishing rod), AND anything the criterion
+            # pins beside it: WHAT you must hit the target with ('Bullseye' / 'Target Practise' name
+            # the projectile) or WHAT you must hook ('Hot Reels!', 'Pig Fishing Tournament'). Both were
+            # dropped, leaving "own a target" and "own a rod".
+            projectile = self._predicate_value(cond.get("projectile"), "type")
+            extra = self._projectile_item(self._ns(projectile)) if isinstance(projectile, str) else None
+            return self._all_opt(self.h.acquire(_IMPLIED_ITEM[trigger]),
+                                 extra, self._entity_node(cond))
         return None
 
     # -- condition extractors ----------------------------------------------
@@ -936,11 +965,23 @@ class TriggerCompiler:
                 self._any_opt(self.h.acquire("minecraft:bow"), self.h.acquire("minecraft:crossbow")),
                 self.h.can_get_arrow(),
             )
-        parts = [weapon] if weapon is not None else []
+        return self._all_opt(weapon, self._victims_node(cond))
+
+    def _victims_node(self, cond: dict) -> Rule | None:
+        """The ``victims`` list as a gate: an AND over the groups, each an OR over the species it
+        pins, each of which must be DEFEATED. ``None`` when nothing resolvable is pinned."""
+        parts = []
         for group in cond.get("victims") or []:
             options = [self.h.can_defeat(name) for name in self._victim_names(group)]
             if options:
                 parts.append(or_(*options))
+            # A victim can carry a location the same way an `entity` predicate does ("kill these,
+            # in the End"), so price it the same way.
+            for sub in (group if isinstance(group, list) else [group]):
+                loc = (sub.get("predicate") or sub).get("location") if isinstance(sub, dict) else None
+                where = self._loc_value_node(loc) if isinstance(loc, dict) else None
+                if where is not None:
+                    parts.append(where)
         return and_(*parts) if parts else None
 
     def _victim_names(self, group) -> list:
@@ -949,7 +990,10 @@ class TriggerCompiler:
         entries = group if isinstance(group, list) else [group]
         names = []
         for sub in entries:
-            gid = (sub.get("predicate") or {}).get("type") if isinstance(sub, dict) else None
+            # Either spelling: wrapped in an entity_properties `predicate`, or the bare `{type: ...}`
+            # BACAP also writes. Only the wrapped form was read, so a bare victim list pinned nothing
+            # and 'Mushroom Scientist' / 'Justice' asked for the bow and no particular victim.
+            gid = (sub.get("predicate") or sub).get("type") if isinstance(sub, dict) else None
             if not isinstance(gid, str):
                 continue
             members = (self._entity_tags.get(self._ns(gid[1:]), [])
@@ -1431,6 +1475,20 @@ class TriggerCompiler:
                 name = name.removeprefix(prefix)
             types.append(name)
         return types
+
+    def _brewed_reagents_node(self, potion_id) -> Rule | None:
+        """Every reagent a named potion type needs (brewing.json), AND-ed. ``None`` for an unnamed or
+        unknown potion, or one whose chain we can't price — falling back to the plain brew capability
+        rather than inventing a gate."""
+        if not isinstance(potion_id, str):
+            return None
+        name = potion_id.split(":")[-1]
+        for prefix in ("long_", "strong_"):
+            name = name.removeprefix(prefix)
+        reagents = _brewing().get(name)
+        if not reagents:
+            return None
+        return self._all_req(*[self.h.acquire(f"minecraft:{item}") for item in reagents])
 
     def _can_brew(self) -> Rule | None:
         """Capability to brew a potion: a brewing stand, its FUEL, Knowledge: Brewing, and a water
