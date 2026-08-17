@@ -551,6 +551,7 @@ class TriggerCompiler:
             blocks = self._blocks_in(cond)
             parts = [n for n in (self._block_source_node(blocks),
                                  self._location_node(cond),
+                                 self._block_where_node(cond),
                                  self._transport_node(blocks, cond)) if n is not None]
             return and_(*parts) if parts else and_()
         if trigger in ("minecraft:item_durability_changed", "minecraft:player_sheared_equipment"):
@@ -1325,9 +1326,33 @@ class TriggerCompiler:
             return potion
         # The base item (when named) AND any capability its predicate demands: being enchanted, or
         # carrying an armor trim of a specific material (Chromatic Armory / Coordinated Flair).
-        parts = [self._any_acquire(pred.get("items")), self._enchant_gate(pred), self._trim_gate(pred)]
+        parts = [self._any_acquire(pred.get("items")), self._enchant_gate(pred), self._trim_gate(pred),
+                 self._contents_gate(pred)]
         parts = [p for p in parts if p is not None]
         return and_(*parts) if parts else None
+
+    def _contents_gate(self, pred: dict) -> Rule | None:
+        """What a container item must be HOLDING. A shulker box full of specific items ('Sculker
+        Box') or a bundle with specific contents ('Fractal', 'Flamboyant Range') costs those items on
+        top of the container itself, and only the container was being asked for."""
+        parts = []
+        container = self._component(pred, "minecraft:container")
+        for slot in (container if isinstance(container, list) else []):
+            item = slot.get("item") if isinstance(slot, dict) else None
+            gid = item.get("id") if isinstance(item, dict) else None
+            if isinstance(gid, str):
+                parts.append(self.h.acquire(self._ns(gid)))
+        bundle = self._component(pred, "minecraft:bundle_contents")
+        contains = (bundle.get("items") or {}).get("contains") if isinstance(bundle, dict) else None
+        for entry in (contains if isinstance(contains, list) else []):
+            if isinstance(entry, dict):
+                # Each entry is itself a full item predicate, so recurse rather than reading `items`:
+                # 'Fractal' is a bundle inside a bundle inside a bundle, and one level of unwrapping
+                # priced only the outermost.
+                parts.append(self._item_predicate(entry))
+        # _all_req: a content we can't price means the gate is incomplete, and a partial one would
+        # claim the box is cheaper than it is — fall back to the container alone instead.
+        return self._all_req(*parts) if parts else None
 
     def _trim_gate(self, pred: dict) -> Rule | None:
         """The capability behind a ``trim`` item predicate: a smithing table plus the named trim
@@ -1727,6 +1752,33 @@ class TriggerCompiler:
         add({"blocks": cond.get("blocks")})  # BACAP slide_down_block: top-level `blocks` list
         return blocks
 
+    def _block_where_node(self, cond: dict) -> Rule | None:
+        """WHERE the block interaction has to happen, from the criterion's ``location`` list.
+
+        That list carries a biome / dimension / structure beside the block, and only the block half
+        was ever read — so 'Travelling Bard' (play a jukebox in each of many biomes) asked for a
+        jukebox and nothing else. Mirrors what ``placed_block`` already does with its own predicate;
+        recurses ``any_of``/``all_of`` groups, and skips ``inverted`` terms because "NOT there" adds
+        no positive requirement."""
+        def walk(entry) -> Rule | None:
+            if not isinstance(entry, dict):
+                return None
+            ctype = str(entry.get("condition", ""))
+            if ctype.endswith("inverted"):
+                return None
+            if ctype.endswith(("any_of", "all_of")):
+                opts = [walk(term) for term in entry.get("terms") or []]
+                opts = [o for o in opts if o is not None]
+                if not opts:
+                    return None
+                return or_(*opts) if ctype.endswith("any_of") else and_(*opts)
+            pred = entry.get("predicate", entry)
+            return self._loc_value_node(pred) if isinstance(pred, dict) else None
+
+        location = cond.get("location")
+        parts = [walk(entry) for entry in (location if isinstance(location, list) else [location])]
+        return self._all_opt(*parts)
+
     def _block_region_node(self, blocks: list) -> Rule | None:
         """Reach a dimension a non-item natural block pins (``_BLOCK_REGION``), OR-ed over every region
         any listed block can be in (blocks in a criterion are alternatives). ``None`` when no listed
@@ -1979,12 +2031,12 @@ class TriggerCompiler:
         parts = [n for n in (item, block) if n is not None]
         # A location_check can also pin the biome / dimension the block must be used IN — e.g. Sound
         # of Music needs the jukebox played in a meadow (Overworld). Gate on it so a Nether-craftable
-        # jukebox alone doesn't satisfy the criterion anywhere.
-        for sub in locs:
-            if isinstance(sub, dict) and str(sub.get("condition", "")).endswith("location_check"):
-                node = self._loc_value_node(sub.get("predicate") or {})
-                if node is not None:
-                    parts.append(node)
+        # jukebox alone doesn't satisfy the criterion anywhere. _block_where_node generalises what
+        # used to be a flat scan for `location_check`: it takes either spelling and recurses the
+        # any_of/all_of groups BACAP nests these in.
+        where = self._block_where_node(cond)
+        if where is not None:
+            parts.append(where)
         return and_(*parts) if parts else None
 
     def _any_mob(self, mobs, build) -> Rule | None:
