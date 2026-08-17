@@ -73,6 +73,26 @@ _TRIM_MATERIAL_ITEM = {
     "resin": "resin_brick",
 }
 
+# Enchantments an enchanting table cannot produce. Derived from the 26.1.2 jar's enchantment tags:
+# of 43 enchantments, #minecraft:in_enchanting_table holds 36 and #minecraft:tradeable holds 40, so
+# these seven are the ones "go enchant something" is the wrong price for. Four remain tradeable, i.e.
+# a librarian's enchanted book is the entire route.
+_NOT_IN_ENCHANTING_TABLE = frozenset({
+    "mending", "frost_walker", "binding_curse", "vanishing_curse",   # tradeable / loot only
+    "swift_sneak", "soul_speed", "wind_burst",                       # in neither tag — see below
+})
+
+# The three in neither tag: exactly one place in the world generates each, so no amount of enchanting
+# or trading substitutes. Loot tables verified in the same jar (paths under data/minecraft/loot_table).
+# Each value takes the compiler so the gate builds lazily through _struct_gid (which yields None when
+# the active packs lack that structure, rather than inventing a gate).
+_ENCHANT_LOOT_SOURCE = {
+    "swift_sneak": lambda c: c._struct_gid("minecraft:ancient_city"),        # chests/ancient_city
+    "soul_speed": lambda c: c._any_opt(                                      # chests/bastion_other
+        c._struct_gid("minecraft:bastion_remnant"), c.h.can_barter()),       # + gameplay/piglin_bartering
+    "wind_burst": lambda c: c._struct_gid("minecraft:trial_chambers"),       # trial_chambers/reward_ominous_rare
+}
+
 _TAGS: dict | None = None
 _BREWING: dict | None = None
 
@@ -1257,11 +1277,16 @@ class TriggerCompiler:
                              self.h.acquire(f"minecraft:{item}"))
 
     def _enchant_gate(self, pred: dict) -> Rule | None:
-        """The capability to get an ENCHANTED item, or ``None`` when the predicate names no
-        enchantment. Two routes: the enchanting table (``acquire`` gates it behind Knowledge:
-        Enchanting + its tier), OR an enchanted book — a librarian's trade gives one with no
-        Knowledge needed, applied to the item with an anvil (when the item itself, not the book,
-        must carry the enchantment, i.e. ``enchantments`` predicate vs ``stored_enchantments``)."""
+        """The capability to get the ENCHANTED item this predicate describes, or ``None`` when it
+        names no enchantment.
+
+        The enchantment is resolved BY NAME, because the routes are not interchangeable. This used to
+        answer "enchanting table OR an enchanted book + anvil" for all 43 enchantments, which is
+        right for the 36 an enchanting table actually offers and wrong for the rest: Swift Sneak
+        exists only in an Ancient City, Soul Speed only in a bastion or a piglin barter, Wind Burst
+        only in a trial chamber's ominous vault, and Mending / Frost Walker / the two curses only
+        through a trade or loot. 'Silent But Deadly' and 'Like a Ninja' therefore read as reachable
+        with nothing but an enchanting table."""
         predicates = pred.get("predicates")
         if not isinstance(predicates, dict):
             return None
@@ -1269,17 +1294,74 @@ class TriggerCompiler:
         # too, the way _criterion normalises triggers and _trim_gate already reads its own key. Only
         # the bare spelling was matched, so an enchantment requirement silently evaluated to "no
         # enchantment needed" — Total Beelocation asks for Silk Touch and compiled to "reach a bee".
-        on_item = "enchantments" in predicates or "minecraft:enchantments" in predicates
-        on_book = ("stored_enchantments" in predicates
-                   or "minecraft:stored_enchantments" in predicates)
-        if not on_item and not on_book:
+        on_item = self._first_key(predicates, "enchantments")
+        on_book = self._first_key(predicates, "stored_enchantments")
+        if on_item is None and on_book is None:
             return None
-        routes = [self.h.acquire("minecraft:enchanting_table")]
+        # Several enchantment predicates side by side must ALL hold; the enchantment(s) named inside
+        # one of them are alternatives. A `stored_enchantments` target IS the book, so it needs no
+        # anvil; an `enchantments` target needs the enchantment moved onto the item.
+        parts = []
+        for entries, on_the_item in ((on_item, True), (on_book, False)):
+            if entries is None:
+                continue
+            for entry in (entries if isinstance(entries, list) else [entries]):
+                parts.append(self._one_enchant_node(entry, on_the_item))
+        if any(part is None for part in parts):
+            # Something unpriceable (an enchantment #tag, an unknown id): fall back to the generic
+            # capability rather than over-gate on the alternatives we happened to resolve.
+            return self._generic_enchant_node(on_item is not None)
+        return self._all_opt(*parts)
+
+    @staticmethod
+    def _first_key(holder: dict, key: str):
+        """``holder[key]`` accepting the bare or ``minecraft:``-namespaced spelling; ``None`` if
+        neither is present (as opposed to present-but-empty, which stays distinguishable)."""
+        for spelling in (key, f"minecraft:{key}"):
+            if spelling in holder:
+                return holder[spelling]
+        return None
+
+    def _one_enchant_node(self, entry, on_the_item: bool) -> Rule | None:
+        """One enchantment predicate: any of the enchantment(s) it names, obtained by a route that
+        actually offers it. ``None`` when the entry names nothing resolvable."""
+        names = entry.get("enchantments") if isinstance(entry, dict) else entry
+        ids = names if isinstance(names, list) else [names]
+        routes = []
+        for gid in ids:
+            if not isinstance(gid, str) or gid.startswith("#"):
+                return None  # a tag covers many enchantments with different sources — unpriceable
+            node = self._enchant_source_node(self._path(gid), on_the_item)
+            if node is None:
+                return None
+            routes.append(node)
+        return self._any_opt(*routes) if routes else None
+
+    def _enchant_source_node(self, name: str, on_the_item: bool) -> Rule | None:
+        """Every way to end up holding ``name``, as a rule. Loot-only enchantments arrive as a BOOK,
+        so putting one on an item costs an anvil on top of finding it."""
+        anvil = self.h.acquire("minecraft:anvil")
+        loot = _ENCHANT_LOOT_SOURCE.get(name)
+        if loot is not None:
+            found = loot(self)
+            if found is None:
+                return None
+            return found if not on_the_item else self._all_req(found, anvil)
+        routes = []
+        if name not in _NOT_IN_ENCHANTING_TABLE:
+            # acquire(enchanting_table) gates Knowledge: Enchanting + its material tier.
+            routes.append(self.h.acquire("minecraft:enchanting_table"))
         book = self.h.acquire("minecraft:enchanted_book")  # librarian trades; no Knowledge needed
         if book is not None:
-            # A stored_enchantments target *is* the book; an enchantments target needs it applied
-            # with an anvil. (A librarian's book has a random enchant — a trade path, as elsewhere.)
-            routes.append(and_(book, self.h.acquire("minecraft:anvil")) if on_item else book)
+            routes.append(self._all_req(book, anvil) if on_the_item else book)
+        return self._any_opt(*routes)
+
+    def _generic_enchant_node(self, on_the_item: bool) -> Rule:
+        """"Some enchantment, we can't tell which" — the capability to enchant at all."""
+        routes = [self.h.acquire("minecraft:enchanting_table")]
+        book = self.h.acquire("minecraft:enchanted_book")
+        if book is not None:
+            routes.append(and_(book, self.h.acquire("minecraft:anvil")) if on_the_item else book)
         return or_(*routes)
 
     def _potion_node(self, pred: dict) -> Rule | None:
