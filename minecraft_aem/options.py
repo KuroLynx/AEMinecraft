@@ -360,7 +360,12 @@ class ItemGateBehavior(OptionDict):
         - container: taking a locked item out of plain storage — chest, barrel, shulker box, hopper,
           dispenser, ender chest, minecart and mount inventories.
         - pickup: picking a locked item up off the ground.
-        - given: the /give command handing you a locked item.
+        - given: the /give command handing you a locked item. Note that BlazeandCave's item rewards
+          travel this route too — the pack hands them out with plain /give commands — so leaving
+          'given' open lets a BACAP reward drop a still-locked item into your inventory, which can
+          award the advancement for obtaining it (an iron ingot reward completing Acquire Hardware,
+          say). The mod does pull such reward items back out of your inventory, but that happens after
+          the advancement has already fired, so set 'given' to true if you run with bacap_rewards on.
 
     Meaning of each value:
         - true: the route is gated until the item unlocks (you get a red "requires ..." message).
@@ -381,7 +386,9 @@ class ItemGateBehavior(OptionDict):
     display_name = "Item Gate Behavior"
     valid_keys = {"crafting", "station", "container", "pickup", "given"}
     # Preserves the historical behavior: every GUI take and floor pickup is gated, while /give (a newer
-    # route) is left open. Omitted keys fall back to these in fill_slot_data().
+    # route) is left open. Omitted keys fall back to these in fill_slot_data(). Beware that an open
+    # 'given' route also lets BACAP's /give-based item rewards through; BacapRewardService only pulls
+    # them back out after the reward ran, by which point an inventory_changed advancement has fired.
     default = {"crafting": True, "station": True, "container": True, "pickup": True, "given": False}
 
     # Accepted spellings of each truth value, so a YAML "yes"/"no"/1/0 works as well as true/false.
