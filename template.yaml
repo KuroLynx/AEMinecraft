@@ -366,7 +366,8 @@ Minecraft [AEM]:
     #       'given' open lets a BACAP reward drop a still-locked item into your inventory, which can
     #       award the advancement for obtaining it (an iron ingot reward completing Acquire Hardware,
     #       say). The mod does pull such reward items back out of your inventory, but that happens after
-    #       the advancement has already fired, so set 'given' to true if you run with bacap_rewards on.
+    #       the advancement has already fired, so set 'given' to true if you would rather BACAP's rewards
+    #       were gated as well.
     #
     # Meaning of each value:
     #     - true: the route is gated until the item unlocks (you get a red "requires ..." message).

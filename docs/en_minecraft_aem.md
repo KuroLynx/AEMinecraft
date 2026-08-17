@@ -50,7 +50,7 @@ include:
   received enough copies. The `item_gate_behavior` option decides which routes that blocks: taking it
   from a crafting grid, from a workstation (furnace, anvil, trade, …), from storage (chest, barrel, …),
   picking it off the ground, and `/give`. By default every route is blocked except `/give` — note that
-  BlazeandCave's item rewards ride that `/give` route, so gate it if you play with `bacap_rewards` on.
+  BlazeandCave's item rewards ride that `/give` route, so gate it if you want those gated too.
 - **Knowledge** and **Tool/Armor** gates — some crafting stations (enchanting table, brewing stand)
   and some tools/armor require a Knowledge item, and better tools also require enough Material
   Handling. These obey the same `item_gate_behavior` routes. The `knowledge_gates` option picks which

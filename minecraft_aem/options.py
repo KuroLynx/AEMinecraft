@@ -365,7 +365,8 @@ class ItemGateBehavior(OptionDict):
           'given' open lets a BACAP reward drop a still-locked item into your inventory, which can
           award the advancement for obtaining it (an iron ingot reward completing Acquire Hardware,
           say). The mod does pull such reward items back out of your inventory, but that happens after
-          the advancement has already fired, so set 'given' to true if you run with bacap_rewards on.
+          the advancement has already fired, so set 'given' to true if you would rather BACAP's rewards
+          were gated as well.
 
     Meaning of each value:
         - true: the route is gated until the item unlocks (you get a red "requires ..." message).
@@ -386,9 +387,10 @@ class ItemGateBehavior(OptionDict):
     display_name = "Item Gate Behavior"
     valid_keys = {"crafting", "station", "container", "pickup", "given"}
     # Preserves the historical behavior: every GUI take and floor pickup is gated, while /give (a newer
-    # route) is left open. Omitted keys fall back to these in fill_slot_data(). Beware that an open
-    # 'given' route also lets BACAP's /give-based item rewards through; BacapRewardService only pulls
-    # them back out after the reward ran, by which point an inventory_changed advancement has fired.
+    # route) is left open. Omitted keys fall back to these in fill_slot_data(). Note that this also
+    # means BACAP's /give-based item rewards travel an open route by default: BacapRewardService pulls
+    # them back out only once the reward has run, after any inventory_changed advancement has fired.
+    # That is the intended default — a player who wants those rewards gated sets 'given' to true.
     default = {"crafting": True, "station": True, "container": True, "pickup": True, "given": False}
 
     # Accepted spellings of each truth value, so a YAML "yes"/"no"/1/0 works as well as true/false.
