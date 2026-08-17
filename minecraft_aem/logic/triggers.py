@@ -601,18 +601,34 @@ class TriggerCompiler:
 
     def _entity_node(self, cond: dict, gate=None) -> Rule | None:
         """Reach the entity/entities a criterion's `entity` predicate pins (single id or ``#tag``),
-        and be able to put on it whatever that predicate says it is WEARING.
+        be able to put on it whatever that predicate says it is WEARING, and be WHERE the predicate
+        says it must be.
 
         ``gate`` is what each pinned species must satisfy, defaulting to plain reachability
         (``RuleHelper.entity``). A kill criterion passes ``can_defeat`` instead — see
-        _player_killed_node."""
+        _player_killed_node.
+
+        The predicate's own ``location`` used to be dropped on the floor, and it is most of the
+        requirement wherever it appears: 'The Actual End' is an enderman killing you IN THE END, and
+        endermen spawn in the Overworld, so it compiled to a gate you satisfy on day one. Same shape
+        for 'The Beginning' (a wither in the End), 'Hell Hunter' (the Nether) and 'Wololo!' (inside a
+        mansion). It goes through the same _loc_value_node the player predicate uses, so a dimension,
+        structure, biome or Y-bound all price the same way on either side."""
         gate = gate or self.h.entity
+        where = self._entity_location_node(cond)
         options = [gate(name) for name in self._entity_names(cond)]
         if not options:
-            return None  # callers keep their own "any mob" fallbacks for an unpinned predicate
-        equipment = self._entity_equipment_node(cond)
-        node = or_(*options)
-        return node if equipment is None else and_(node, equipment)
+            # No species pinned. A location on its own is still a real gate, so don't lose it —
+            # callers keep their own "any mob" fallbacks for the fully unpinned predicate.
+            return where
+        # _all_opt, not _all_req: species / gear / place are independent requirements, so an
+        # unresolvable one leaves a sound-but-weaker rule rather than voiding the whole gate.
+        return self._all_opt(or_(*options), self._entity_equipment_node(cond), where)
+
+    def _entity_location_node(self, cond: dict) -> Rule | None:
+        """Where an `entity` predicate says the entity has to be, or ``None`` if it doesn't say."""
+        loc = self._predicate_value(cond.get("entity"), "location")
+        return self._loc_value_node(loc) if isinstance(loc, dict) else None
 
     def _entity_equipment_node(self, cond: dict) -> Rule | None:
         """The gear an `entity` predicate demands the target be wearing, via its ``equipment`` map.
@@ -967,6 +983,8 @@ class TriggerCompiler:
                 return self.h.any_village() if "village" in struct else None
             name = self._struct_name(struct)
             return self.h.structure(name) if name else None
+        biome_node = None
+        region = None
         if "biomes" in loc:
             # Locating a specific biome needs the Biome Finder (when enabled) AND being in that biome's
             # dimension — a Nether/End biome (basalt_deltas, the_end) carries its region (do NOT rely
@@ -976,14 +994,19 @@ class TriggerCompiler:
             # strict_only: the Finder is how strict logic expects you to reach a named biome, but
             # wandering until you hit one is a real (if slow) alternative, so the display graph
             # waives it and the tile reads yellow instead of red.
-            return self._all_req(self.h.strict_only(self.h.needs_biome_finder()),
-                                 self.h.access_region(region))
+            biome_node = self.h.strict_only(self.h.needs_biome_finder())
         dim = loc.get("dimension")
-        region = _DIMENSION_REGION.get(self._path(dim)) if isinstance(dim, str) else None
+        if isinstance(dim, str):
+            region = _DIMENSION_REGION.get(self._path(dim)) or region
         # Dimension and position are AND-ed, never either/or: 'Limbo Walker' is the Nether AND above
         # the roof, and returning on the dimension alone (as this used to) threw the position away —
         # which is most of the check.
         parts = []
+        if biome_node is not None:
+            # AND-ed rather than returned: a criterion can pin a biome AND a height ('Freezing' is
+            # ice_spikes above y=56, 'Warden Frostbite' the same above 64), and returning on the biome
+            # alone dropped the height, which is the harder half.
+            parts.append(biome_node)
         if region:
             parts.append(self.h.access_region(region))
         position = loc.get("position")
