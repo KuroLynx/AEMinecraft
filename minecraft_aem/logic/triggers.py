@@ -710,20 +710,22 @@ class TriggerCompiler:
         mansion). It goes through the same _loc_value_node the player predicate uses, so a dimension,
         structure, biome or Y-bound all price the same way on either side."""
         gate = gate or self.h.entity
-        where = self._entity_location_node(cond)
+        # Everything the predicate demands BESIDES the species. Collected first so it survives an
+        # unpinned `type`: the "any entity except …" shape (Lead the Way!, Oh, Shiny!) names no
+        # species but still says what the target wears or where it is, and returning early on the
+        # missing species threw all of that away.
+        extras = (self._entity_equipment_node(cond), self._entity_location_node(cond),
+                  self._entity_variant_node(cond), self._entity_mount_node(cond),
+                  self._type_specific_node(self._predicate_value(cond.get("entity"), "type_specific")))
         options = [gate(name) for name in self._entity_names(cond)]
         if not options:
-            # No species pinned. A location on its own is still a real gate, so don't lose it —
-            # callers keep their own "any mob" fallbacks for the fully unpinned predicate.
-            return where
+            # Callers keep their own "any mob" fallbacks for the fully unpinned predicate.
+            return self._all_opt(*extras)
         # _all_opt, not _all_req: species / gear / place / mount are independent requirements, so an
         # unresolvable one leaves a sound-but-weaker rule rather than voiding the whole gate.
-        # An entity predicate can carry `type_specific` too (has_raid — "…while a raid is on"), and
-        # it prices the same way as the player's.
-        specific = self._type_specific_node(self._predicate_value(cond.get("entity"), "type_specific"))
-        return self._all_opt(or_(*options), self._entity_equipment_node(cond), where,
-                             self._entity_variant_node(cond), self._entity_mount_node(cond),
-                             specific)
+        # _all_opt, not _all_req: species / gear / place / mount are independent requirements, so an
+        # unresolvable one leaves a sound-but-weaker rule rather than voiding the whole gate.
+        return self._all_opt(or_(*options), *extras)
 
     def _entity_variant_node(self, cond: dict) -> Rule | None:
         """A pinned mob VARIANT means finding a particular biome: each cat / wolf / frog / parrot
