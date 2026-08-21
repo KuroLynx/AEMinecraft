@@ -42,9 +42,6 @@ import java.util.Map;
  * ({@link Mode#CATCH_UP}) applies the filler it finds and walks the traps past without firing them;
  * only a live pass ({@link Mode#LIVE}), for players who were actually present, springs them.
  *
- * <p>Live traps still wait out {@link SpawnGraceService}: a trap that went off against a player's
- * arrival shield would be spent for nothing, so it is left pending and fired when their grace ends.
- *
  * <p>(DeathLink is a different thing entirely: a death arriving from ANOTHER world takes one victim
  * rather than wiping the server. These are this slot's own items.)
  */

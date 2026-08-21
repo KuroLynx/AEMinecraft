@@ -14,7 +14,6 @@ import fr.euclesia.mcarchipelago.server.gameplay.KnowledgeUseGate;
 import fr.euclesia.mcarchipelago.server.gameplay.MobKillBridge;
 import fr.euclesia.mcarchipelago.server.gameplay.RootAdvancementService;
 import fr.euclesia.mcarchipelago.server.gameplay.SharedAdvancementService;
-import fr.euclesia.mcarchipelago.server.gameplay.SpawnGraceService;
 import fr.euclesia.mcarchipelago.server.gameplay.StartDimensionService;
 import fr.euclesia.mcarchipelago.server.gameplay.StructureFinderDriver;
 import fr.euclesia.mcarchipelago.server.gameplay.TrapScheduler;
@@ -46,10 +45,7 @@ public final class MinecraftEventBridge {
         // still missing (see KnowledgeUseGate).
         KnowledgeUseGate.register();
 
-        // Arrival grace: a short window of protection on entering the world.
-        SpawnGraceService.register();
-
-        // Trap pacing: one at a time, half a minute or so apart, never during the arrival grace.
+        // Trap pacing: one at a time, half a minute or so apart.
         TrapScheduler.register();
 
         // Connect-on-join gate. A world created via the Archipelago tab stages its connection here;
@@ -155,8 +151,6 @@ public final class MinecraftEventBridge {
             AdvancementBridge.scanPlayer(player);
             // Give back the soulbound Biome Finder if this slot owns it (covers first join and relog).
             BiomeFinderService.ensureGranted(player);
-            // A moment of safety on the way in, before anything is allowed to hit them.
-            SpawnGraceService.begin(player);
             // Collect the filler banked while they were away. CATCH_UP: the traps in that backlog
             // went off for whoever was in the world at the time and are not re-run at a latecomer.
             FillerTrapService.applyPending(player, FillerTrapService.Mode.CATCH_UP);
@@ -169,7 +163,6 @@ public final class MinecraftEventBridge {
         // their suppression mark forever, silently swallowing their next real death's DeathLink.
         ServerPlayerEvents.LEAVE.register(player -> {
             DeathLinkService.onPlayerDisconnect(player);
-            SpawnGraceService.onPlayerLeave(player);
             TrapScheduler.onPlayerLeave(player);
             // Their client forgets the finder bar on disconnect, so the server has to forget having
             // sent it — otherwise a reconnect gets nothing and the bar never comes back.
@@ -180,12 +173,6 @@ public final class MinecraftEventBridge {
         // biome), or grant a fresh one if none was saved.
         ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
             BiomeFinderService.restoreOnRespawn(newPlayer);
-            // Coming back from a death is entering the world too, and the thing that killed you is
-            // often still standing on your bed. Only from a death, though: this event also fires for
-            // the End exit portal (alive == true), where "spawn protection" would be nonsense.
-            if (!alive) {
-                SpawnGraceService.begin(newPlayer);
-            }
         });
 
         // Before death drops are computed, save the finder (with its tracking) and strip it from the

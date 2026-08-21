@@ -24,9 +24,6 @@ import java.util.UUID;
  * #MAX_SPACING_SECONDS} seconds apart (rolled per trap, so the run does not tick like a metronome).
  * Each one lands on a player who has had time to recover from the last.
  *
- * <p>Nothing is released while the victim is inside their {@link SpawnGraceService} grace: a trap that
- * went off against the arrival shield would be spent for nothing, so it simply waits its turn.
- *
  * <p>A player who logs out drops their queue. They were present when those traps landed, which is why
  * they were queued at all, but a trap is a moment in the world — banking it for a session they have
  * not started yet turns it back into the ambush-on-arrival that {@link FillerTrapService} refuses to
@@ -94,7 +91,7 @@ public final class TrapScheduler {
                 continue;
             }
             Long allowedAt = NEXT_ALLOWED.get(entry.getKey());
-            if ((allowedAt != null && now < allowedAt) || SpawnGraceService.isProtected(player)) {
+            if (allowedAt != null && now < allowedAt) {
                 continue;
             }
             TrapEffects.run(queue.removeFirst(), player);
