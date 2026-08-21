@@ -3,6 +3,7 @@ package fr.euclesia.mcarchipelago.server;
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.server.ap.ArchipelagoChatListener;
 import fr.euclesia.mcarchipelago.server.ap.ArchipelagoConnectionListener;
+import fr.euclesia.mcarchipelago.server.session.APOfflineSyncListener;
 import fr.euclesia.mcarchipelago.server.ap.ArchipelagoGameplayListener;
 import fr.euclesia.mcarchipelago.server.command.AEMCommandRegistry;
 import fr.euclesia.mcarchipelago.server.command.AdvancementsCommandModule;
@@ -44,5 +45,7 @@ public final class AEMServerBridge {
         AEM.ARCHIPELAGO.client().addListener(new ArchipelagoGameplayListener());
         AEM.ARCHIPELAGO.client().addListener(new ArchipelagoChatListener());
         AEM.ARCHIPELAGO.client().addListener(new ArchipelagoConnectionListener());
+        // Mirrors the live session into the world and settles the offline queue on reconnect.
+        AEM.ARCHIPELAGO.client().addListener(new APOfflineSyncListener());
     }
 }

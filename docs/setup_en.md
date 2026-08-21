@@ -74,8 +74,10 @@ Use the **options / template generator** in your Archipelago Launcher to produce
 6. *(Optional)* Adjust any game rules you want under the **More** tab.
 7. Click **Create New World**.
 
-> **Note:** if the connection to the Archipelago server is lost, you'll be returned to the main
-> title screen.
+> **Note:** the **first** time you open a world it must reach the Archipelago room, because that is
+> when the room hands over everything the world needs to know (which advancements are checks, what is
+> locked, and so on). If it cannot connect, you are returned to the title screen. Every load after
+> that can fall back to the saved copy — see [Playing offline](#playing-offline).
 
 ### After the first time (rejoining)
 
@@ -85,3 +87,37 @@ Use the **options / template generator** in your Archipelago Launcher to produce
 
 > Each Archipelago world is tied to the slot it was created with. The most recently created world is
 > the one at the top of your Singleplayer list.
+
+## Playing offline
+
+Once a world has connected successfully **even once**, it keeps a copy of its slot data and can be
+played without the room. If Archipelago is unreachable when you load the world — or the link drops
+while you are playing — the run simply continues on that saved copy instead of ending the session.
+
+**What still works:** everything the world decides for itself. Locks stay exactly as strict as they
+were (mobs, structures, dimensions, materials, Knowledge), advancements complete normally, and the
+tracker and in-logic indicator keep working.
+
+**What waits for the link:** the two things that need the room.
+
+| | Offline | On reconnect |
+|---|---|---|
+| **Checks you earn** | Saved in the world | Sent automatically |
+| **Items other worlds send you** | Cannot arrive | Delivered |
+| **Archipelago chat** (`/aem say`) | Unavailable | Works again |
+
+So an offline run can make progress but cannot *receive* it — you will keep earning checks, and
+nothing new will unlock until you are back online. Finishing your goal offline is recorded too, and
+reported the next time you connect.
+
+### Getting back online
+
+Run **`/aem reconnect`** (operator/gamemaster level). It retries the world's own saved slot, and on
+success everything you earned offline is sent to the room. Nothing is lost if it fails — the queue is
+saved in the world, so it survives restarts and crashes and goes out whenever the link next returns.
+
+Run **`/aem status`** to see whether you are online or offline and how many checks are waiting.
+
+> **The one exception:** a world that has *never* completed a connection has nothing saved to fall
+> back on. It cannot tell locked content from unlocked, and generating terrain in that state would
+> place locked structures for real, permanently. Those worlds still refuse to load without a room.

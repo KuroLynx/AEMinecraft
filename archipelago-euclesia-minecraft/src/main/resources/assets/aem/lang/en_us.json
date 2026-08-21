@@ -110,7 +110,10 @@
   "message.aem.deathlink.unknown": "%s died",
   "message.aem.deathlink.anonymous": "A linked player died",
 
-  "message.aem.disconnect.required": "Disconnected from Archipelago — you must stay connected to play.",
+  "message.aem.disconnect.required": "Disconnected from Archipelago — this world has no cached slot data yet, so it cannot be played offline.",
+  "message.aem.offline.entered": "Lost the Archipelago link. Playing on offline — checks are being saved and will be sent on /aem reconnect. No new items can arrive until then.",
+  "gui.aem.offline.title": "Archipelago unreachable",
+  "gui.aem.offline.subtitle": "Loading offline from this world's saved data.",
 
 
   "message.aem.compat.mod_too_old": "This world needs a newer mod (slot data v%s; this mod supports up to v%s). Update the Archipelago mod.",

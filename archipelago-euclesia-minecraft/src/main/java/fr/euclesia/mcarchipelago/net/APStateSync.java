@@ -8,6 +8,7 @@ import fr.euclesia.mcarchipelago.AEMDebug;
 import fr.euclesia.mcarchipelago.archipelago.ArchipelagoClient;
 import fr.euclesia.mcarchipelago.server.gameplay.FinderTarget;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
+import fr.euclesia.mcarchipelago.server.runtime.APSlotGate;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -81,7 +82,9 @@ public final class APStateSync {
         progressDirty = false;
         MinecraftServer server = AEMServerRuntime.server();
         ArchipelagoClient client = AEM.ARCHIPELAGO.client();
-        if (server == null || !client.state().isConnected()) {
+        // APSlotGate, not the socket: an offline run still has slot data and still makes checks, so
+        // its clients still need the progress that colours their tracker.
+        if (server == null || !APSlotGate.isReady()) {
             return;
         }
         APProgressPayload payload = new APProgressPayload(
@@ -146,7 +149,7 @@ public final class APStateSync {
      */
     private static String snapshot() {
         ArchipelagoClient client = AEM.ARCHIPELAGO.client();
-        if (!client.state().isConnected() || client.state().slotData() == null) {
+        if (!APSlotGate.isReady() || client.state().slotData() == null) {
             return null;
         }
         JsonObject root = new JsonObject();

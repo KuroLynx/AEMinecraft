@@ -14,12 +14,15 @@ import fr.euclesia.mcarchipelago.server.gameplay.KnowledgeUseGate;
 import fr.euclesia.mcarchipelago.server.gameplay.MobKillBridge;
 import fr.euclesia.mcarchipelago.server.gameplay.RootAdvancementService;
 import fr.euclesia.mcarchipelago.server.gameplay.SharedAdvancementService;
+import fr.euclesia.mcarchipelago.server.gameplay.SlotReleaseService;
 import fr.euclesia.mcarchipelago.server.gameplay.StartDimensionService;
 import fr.euclesia.mcarchipelago.server.gameplay.StructureFinderDriver;
 import fr.euclesia.mcarchipelago.server.gameplay.TrapScheduler;
 import fr.euclesia.mcarchipelago.server.gameplay.TrapMobService;
 import fr.euclesia.mcarchipelago.server.gameplay.TrapPlatformService;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
+import fr.euclesia.mcarchipelago.server.session.APSessionCache;
+import fr.euclesia.mcarchipelago.server.session.PendingChecks;
 import fr.euclesia.mcarchipelago.server.runtime.APSlotGate;
 import fr.euclesia.mcarchipelago.server.service.DeathLinkService;
 import fr.euclesia.mcarchipelago.server.service.DeathLinkSetting;
@@ -85,7 +88,16 @@ public final class MinecraftEventBridge {
                     // with no slot data at all, so close it here before returning or players could
                     // walk in and generate the world blind.
                     APSlotGate.expectSlot();
-                    AEM.LOGGER.info("connectOnStart is off; players are held out until /aem connect.");
+                    PendingChecks.load(worldDir);
+                    // Unless the world already has its data, in which case an idle start is simply an
+                    // offline one and there is nothing to hold anybody out of.
+                    if (APSessionCache.restore(worldDir)) {
+                        APSlotGate.trustCache();
+                        AEM.LOGGER.info("connectOnStart is off; running OFFLINE on cached slot data. "
+                                + "Use /aem reconnect to restore the link.");
+                    } else {
+                        AEM.LOGGER.info("connectOnStart is off; players are held out until /aem connect.");
+                    }
                     return;
                 }
                 connection = config.toWorldConnection();
@@ -101,30 +113,61 @@ public final class MinecraftEventBridge {
             // From here on this world is an Archipelago run, so the locks hold shut until its slot
             // data arrives rather than failing open (see APSlotGate).
             APSlotGate.expectSlot();
+            // Checks earned offline last session are still owed; load them before anything can run.
+            PendingChecks.load(worldDir);
             if (AEM.ARCHIPELAGO.client().state().isConnected()) {
                 return;
             }
-            if (!APWorldConnector.connectBlocking(connection, CONNECT_TIMEOUT_MS)) {
-                // Refuse to start rather than run blind. A server that generates chunks without
-                // knowing its slot places structures the slot meant to hold back, permanently and
-                // invisibly — a dead server is recoverable, a spoiled world is not. The operator
-                // who wants to boot anyway has connectOnStart:false, which starts idle and keeps
-                // players out until /aem connect lands.
-                throw new IllegalStateException("Archipelago connection failed for " + connection.address
-                        + ":" + connection.port + " (slot " + connection.slot + "). Refusing to start: "
-                        + "generating without slot data would place locked content for real. "
-                        + "Set connectOnStart:false in " + AEMServerConfig.path()
-                        + " to start idle and connect with /aem connect.");
+            // The client pre-flight may have already failed at this address; do not pay the timeout
+            // a second time to learn the same thing.
+            boolean skipConnect = APSessionCache.consumeOfflineStart();
+            if (!skipConnect && APWorldConnector.connectBlocking(connection, CONNECT_TIMEOUT_MS)) {
+                return;
             }
+
+            // The link is down. Whether that is fatal depends entirely on whether this world has
+            // ever had its slot data — the locks need the data, not the socket.
+            if (APSessionCache.restore(worldDir)) {
+                APSlotGate.trustCache();
+                AEM.LOGGER.warn("Could not reach Archipelago at {}:{} (slot {}). Starting OFFLINE on "
+                                + "this world's cached slot data: the run plays normally and checks are "
+                                + "queued, but no new items can arrive until /aem reconnect succeeds.",
+                        connection.address, connection.port, connection.slot);
+                return;
+            }
+
+            // No cache: this world has never completed a connection, so nothing knows what its slot
+            // wants. Refuse to start rather than run blind. A server that generates chunks without
+            // knowing its slot places structures the slot meant to hold back, permanently and
+            // invisibly — a dead server is recoverable, a spoiled world is not. The operator
+            // who wants to boot anyway has connectOnStart:false, which starts idle and keeps
+            // players out until /aem connect lands.
+            throw new IllegalStateException("Archipelago connection failed for " + connection.address
+                    + ":" + connection.port + " (slot " + connection.slot + "), and this world has no "
+                    + "cached slot data because it has never connected successfully. Refusing to start: "
+                    + "generating without slot data would place locked content for real. "
+                    + "Set connectOnStart:false in " + AEMServerConfig.path()
+                    + " to start idle and connect with /aem connect.");
         });
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             AEMServerRuntime.setServer(server);
             // The run's shared advancement book, before any player can join and be caught up on it.
             SharedAdvancementService.load(server);
+            // An offline start knows the slot without ever firing onConnected, which is where the
+            // release normally hangs. Anything captured during an earlier blind window would
+            // otherwise stay captured until the next real session — the fail-closed gate has to
+            // stay a door, not become a one-way one, whichever way the data arrived.
+            if (APSlotGate.isOffline()) {
+                SlotReleaseService.releaseUnlockedContent();
+            }
         });
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
             SharedAdvancementService.save();
+            // The queue is per world and already on disk; drop the in-memory copy so the next world
+            // opened in this process does not inherit checks that belong to this one.
+            PendingChecks.unload();
+            APSlotGate.clear();
             AEMServerRuntime.clearServer(server);
             AEM.ARCHIPELAGO.client().close();
         });

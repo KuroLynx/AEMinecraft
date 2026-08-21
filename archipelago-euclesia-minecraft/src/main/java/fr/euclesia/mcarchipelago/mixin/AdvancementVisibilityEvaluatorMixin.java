@@ -40,8 +40,11 @@ public class AdvancementVisibilityEvaluatorMixin {
     @Unique
     private static boolean archipelago_euclesia$shouldShow(AdvancementNode node) {
         ArchipelagoClient client = AEM.ARCHIPELAGO.client();
-        if (!client.state().isConnected() || !client.registries().apLocations().hasLocations()) {
-            return true; // not connected / no data yet: reveal all (re-evaluated on connect)
+        if (!client.registries().apLocations().hasLocations()) {
+            // No data yet: reveal all (re-evaluated once there is some). Loaded locations are the
+            // whole test — they arrive from a live session, from a dedicated server's mirror, or
+            // from this world's offline cache, and all three are equally usable here.
+            return true;
         }
         String id = node.holder().id().toString();
         // Real advancement checks this seed.
