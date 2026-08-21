@@ -108,7 +108,7 @@ _DAMAGE_TAG_GATE = {
     "minecraft:is_explosion": lambda c: c._any_opt(
         c.h.acquire("minecraft:tnt"), c._entity_gid("minecraft:creeper"),
         c.h.acquire("minecraft:end_crystal"), c.h.acquire("minecraft:respawn_anchor")),
-    # Kept as bow/crossbow + arrow, matching what _killing_blow_weapon already demanded here.
+    # Kept as bow/crossbow + arrow, matching what _killing_blow_gear already demanded here.
     "minecraft:is_projectile": lambda c: c._all_req(
         c._any_opt(c.h.acquire("minecraft:bow"), c.h.acquire("minecraft:crossbow")),
         c.h.can_get_arrow()),
@@ -923,7 +923,7 @@ class TriggerCompiler:
         should. "Free the End" compiled to a bare Region(The End): no bow, no gear, no fight. It also
         puts the kill ADVANCEMENTS on the same footing as the Kill/Boss Kill LOCATIONS, which have
         always used can_defeat (engine.collect_entity_rules)."""
-        weapon = self._killing_blow_weapon(cond.get("killing_blow"))
+        weapon = self._killing_blow_gear(cond.get("killing_blow"))
         victim = self._entity_node(cond, gate=self.h.can_defeat)
         parts = [n for n in (weapon, victim) if n is not None]
         if victim is None and cond.get("entity"):
@@ -939,20 +939,29 @@ class TriggerCompiler:
         # NOT trivially true: under mob_spawn_lock every mob is gated behind its unlock item.
         return self.h.can_kill_any_mob() if not cond else None
 
-    def _killing_blow_weapon(self, kb) -> Rule | None:
+    def _killing_blow_gear(self, kb) -> Rule | None:
+        """What the killer had to be carrying for this `killing_blow`: the projectile that struck,
+        the items worn or held in its `source_entity`'s equipment slots, or — when the criterion
+        names neither — the weapon its damage-type tag implies.
+
+        Held is not the only slot a criterion pins. 'Camouflage' names no weapon at all: it asks for
+        the matching mob head on the killer's HEAD slot, so reading `mainhand` alone priced the five
+        kills and left the five heads free. Every slot is read now; `and_` folds the mainhand node
+        back together with the weapon when both describe the same item."""
         if not isinstance(kb, dict):
             return None
         direct = kb.get("direct_entity")
         proj = direct.get("type") if isinstance(direct, dict) else None
-        if isinstance(proj, str):
-            return self._projectile_item(proj)
         source = kb.get("source_entity")
-        mainhand = ((source.get("equipment") or {}).get("mainhand")
-                    if isinstance(source, dict) else None)
-        held = self._item_predicate(mainhand) if isinstance(mainhand, dict) else None
-        if held is not None:
-            return held
-        return self._damage_tag_node(kb)
+        worn = self._equipment_nodes(source.get("equipment") if isinstance(source, dict) else None)
+        if isinstance(proj, str):
+            weapon = self._projectile_item(proj)
+        else:
+            # No projectile named: _equipment_nodes has already priced the mainhand weapon, so the
+            # damage tag is consulted only when the slots yielded nothing — as before.
+            weapon = self._damage_tag_node(kb) if not worn else None
+        parts = [part for part in (weapon, *worn) if part is not None]
+        return and_(*parts) if parts else None
 
     def _damage_tag_node(self, holder: dict) -> Rule | None:
         """The weapon a damage-type ``#tag`` implies, when the criterion names no item: 'Nice to Mace
@@ -1376,7 +1385,7 @@ class TriggerCompiler:
         # The base item (when named) AND any capability its predicate demands: being enchanted, or
         # carrying an armor trim of a specific material (Chromatic Armory / Coordinated Flair).
         parts = [self._any_acquire(pred.get("items")), self._enchant_gate(pred), self._trim_gate(pred),
-                 self._contents_gate(pred)]
+                 self._contents_gate(pred), self._jukebox_gate(pred)]
         parts = [p for p in parts if p is not None]
         return and_(*parts) if parts else None
 
@@ -1402,6 +1411,22 @@ class TriggerCompiler:
         # _all_req: a content we can't price means the gate is incomplete, and a partial one would
         # claim the box is cheaper than it is — fall back to the container alone instead.
         return self._all_req(*parts) if parts else None
+
+    def _jukebox_gate(self, pred: dict) -> Rule | None:
+        """The disc behind a ``jukebox_playable`` item predicate.
+
+        This is the one item predicate that names no item: it says "whatever you are holding must be
+        playable in a jukebox", which is how BACAP spells "a music disc". Nothing else in the
+        criterion mentions one, so 'Music To My Ears' and 'The Sound of Music' priced the jukebox and
+        read as free for a player who can never obtain a disc — every route to one is a creeper
+        killed by a skeleton, a deflected fireball, or structure loot (``can_get_disc``).
+
+        Every use in the packs today is the empty ``{}`` form — any disc. A predicate that pinned a
+        specific ``song`` would still need *a* disc, so this generic gate stays a correct (if then
+        slightly cheap) price rather than nothing at all."""
+        if self._component(pred, "minecraft:jukebox_playable") is None:
+            return None
+        return self.h.can_get_disc()
 
     def _trim_gate(self, pred: dict) -> Rule | None:
         """The capability behind a ``trim`` item predicate: a smithing table plus the named trim
@@ -2072,9 +2097,16 @@ class TriggerCompiler:
         item = self._item_predicate(cond.get("item")) if "item" in cond else None
         if item is None:
             for sub in locs:
-                if isinstance(sub, dict) and sub.get("condition") == "minecraft:match_tool":
-                    item = self._any_acquire((sub.get("predicate") or {}).get("items"))
-                    break
+                if isinstance(sub, dict) and str(sub.get("condition", "")).endswith("match_tool"):
+                    # The whole predicate, not just its `items` list: a match_tool can pin the held
+                    # item by CAPABILITY rather than by id, and reading `items` alone found nothing
+                    # to require. 'Music To My Ears' asks only that whatever is used on the jukebox
+                    # be jukebox_playable — a music disc — so it priced the jukebox and let a
+                    # player who can never obtain a disc have it. _item_predicate also brings the
+                    # enchantment / trim / container gates to a match_tool, as everywhere else.
+                    item = self._item_predicate(sub.get("predicate"))
+                    if item is not None:
+                        break
         blocks = self._blocks_in(cond)
         block = self._block_source_node(blocks)
         parts = [n for n in (item, block) if n is not None]
