@@ -78,6 +78,8 @@
 
   "gui.aem.biome_finder.search": "Search",
   "gui.aem.biome_finder.search_hint": "Search biomes…",
+  "gui.aem.biome_finder.loading": "Asking the server…",
+  "gui.aem.biome_finder.empty": "No biomes available here.",
 
   "gui.aem.common.close": "Close",
 
@@ -102,11 +104,17 @@
   "message.aem.content.kind.datapack": "datapack",
   "message.aem.content.kind.mod": "mod",
 
+  "message.aem.awaiting_slot": "This server has not connected to Archipelago yet.\nAn operator must run /aem connect before anyone can join.",
   "message.aem.deathlink": "DeathLink: %s",
+  "message.aem.deathlink.victim": "%s was taken by the link. %s",
   "message.aem.deathlink.unknown": "%s died",
   "message.aem.deathlink.anonymous": "A linked player died",
 
-  "message.aem.disconnect.required": "Disconnected from Archipelago — you must stay connected to play.",
+  "message.aem.disconnect.required": "Disconnected from Archipelago — this world has no cached slot data yet, so it cannot be played offline.",
+  "message.aem.offline.entered": "Lost the Archipelago link. Playing on offline — checks are being saved and will be sent on /aem reconnect. No new items can arrive until then.",
+  "gui.aem.offline.title": "Archipelago unreachable",
+  "gui.aem.offline.subtitle": "Loading offline from this world's saved data.",
+
 
   "message.aem.compat.mod_too_old": "This world needs a newer mod (slot data v%s; this mod supports up to v%s). Update the Archipelago mod.",
   "message.aem.compat.apworld_too_old": "This world was made with an older apworld (slot data v%s; this mod needs at least v%s). Regenerate with an updated apworld.",

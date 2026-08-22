@@ -73,6 +73,48 @@ _TRIM_MATERIAL_ITEM = {
     "resin": "resin_brick",
 }
 
+# Enchantments an enchanting table cannot produce. Derived from the 26.1.2 jar's enchantment tags:
+# of 43 enchantments, #minecraft:in_enchanting_table holds 36 and #minecraft:tradeable holds 40, so
+# these seven are the ones "go enchant something" is the wrong price for. Four remain tradeable, i.e.
+# a librarian's enchanted book is the entire route.
+_NOT_IN_ENCHANTING_TABLE = frozenset({
+    "mending", "frost_walker", "binding_curse", "vanishing_curse",   # tradeable / loot only
+    "swift_sneak", "soul_speed", "wind_burst",                       # in neither tag — see below
+})
+
+# The three in neither tag: exactly one place in the world generates each, so no amount of enchanting
+# or trading substitutes. Loot tables verified in the same jar (paths under data/minecraft/loot_table).
+# Each value takes the compiler so the gate builds lazily through _struct_gid (which yields None when
+# the active packs lack that structure, rather than inventing a gate).
+_ENCHANT_LOOT_SOURCE = {
+    "swift_sneak": lambda c: c._struct_gid("minecraft:ancient_city"),        # chests/ancient_city
+    "soul_speed": lambda c: c._any_opt(                                      # chests/bastion_other
+        c._struct_gid("minecraft:bastion_remnant"), c.h.can_barter()),       # + gameplay/piglin_bartering
+    "wind_burst": lambda c: c._struct_gid("minecraft:trial_chambers"),       # trial_chambers/reward_ominous_rare
+}
+
+# Damage-type #tags, as gates. BACAP reaches for one of these whenever it wants "kill it WITH
+# something" without naming the item — the tag is then the only thing the criterion says about how
+# the blow must land, so it IS the requirement. Six occur across the pack; they are tried in this
+# order because it runs most specific first (a mace smash is also a player attack, and the mace is
+# the answer). A value that resolves to None (an item this content version lacks) falls through to
+# the next matching tag rather than voiding the gate.
+_DAMAGE_TAG_GATE = {
+    "minecraft:mace_smash": lambda c: c.h.acquire("minecraft:mace"),
+    "minecraft:spear": lambda c: c.h.acquire("minecraft:spear"),
+    "blazeandcave:spear": lambda c: c.h.acquire("minecraft:spear"),
+    # Something had to explode: your own TNT or end crystal, a bed/anchor detonated where it cannot
+    # be slept in, or a creeper you led into the victim.
+    "minecraft:is_explosion": lambda c: c._any_opt(
+        c.h.acquire("minecraft:tnt"), c._entity_gid("minecraft:creeper"),
+        c.h.acquire("minecraft:end_crystal"), c.h.acquire("minecraft:respawn_anchor")),
+    # Kept as bow/crossbow + arrow, matching what _killing_blow_gear already demanded here.
+    "minecraft:is_projectile": lambda c: c._all_req(
+        c._any_opt(c.h.acquire("minecraft:bow"), c.h.acquire("minecraft:crossbow")),
+        c.h.can_get_arrow()),
+    "minecraft:is_player_attack": lambda c: c.h.can_kill(),
+}
+
 _TAGS: dict | None = None
 _BREWING: dict | None = None
 
@@ -345,6 +387,26 @@ class TriggerCompiler:
 
     # -- per-criterion dispatch --------------------------------------------
     def _criterion(self, crit: dict) -> Rule | None:
+        """One criterion's rule: what its trigger demands, AND the `player` predicate beside it.
+
+        The player predicate is applied here rather than in each handler because it means the same
+        thing under every trigger — where you must be standing, what you must be wearing, riding, or
+        have already earned — and only a handful of handlers ever remembered to ask for it. The rest
+        silently dropped it: 'Rock, Paper, Shears!' is killing a mob with SHEARS in your mainhand,
+        "We're in the endgame now" is winning a raid in the END, 'Star Trader' is trading in another
+        dimension. Each compiled to the trigger's half alone.
+
+        A handler that returns ``None`` still returns ``None``: an unreadable trigger means the whole
+        criterion is unpriced, and answering with the player predicate by itself would claim the
+        criterion costs only "be somewhere", which is weaker than falling back to the parent chain.
+        (``and_`` is idempotent, so handlers that do fold the predicate in themselves cost nothing.)"""
+        rule = self._criterion_trigger(crit)
+        if rule is None:
+            return None
+        where = self._location_node(crit.get("conditions") or {})
+        return rule if where is None else and_(rule, where)
+
+    def _criterion_trigger(self, crit: dict) -> Rule | None:
         trigger = crit.get("trigger")
         cond = crit.get("conditions") or {}
         # Minecraft treats an unnamespaced trigger as `minecraft:` (BACAP writes some criteria as
@@ -393,7 +455,10 @@ class TriggerCompiler:
                 names = [species] if species else []
             options = [self.h.can_tame(n) for n in names if n in MOBS_TAMEABLE]
             if options:
-                return or_(*options)
+                # A pinned variant is the whole point of 'A Complete Catalogue' / 'The Whole Pack' /
+                # 'Birdkeeper': taming any cat is easy, taming EVERY variant means finding each one's
+                # biome. Without it they asked only for a cat.
+                return self._all_opt(or_(*options), self._entity_variant_node(cond))
             return self._any_mob(MOBS_TAMEABLE, self.h.can_tame) if not cond else None
         if trigger == "minecraft:bred_animals":
             # The bred species is pinned on `child` (vanilla bred_all_animals) or directly on
@@ -410,13 +475,24 @@ class TriggerCompiler:
             # hoglin) is the real gate. The flag-derived MOBS_BREEDABLE is only for the "breed any" case.
             names = self._entity_names_from_type(gid)
             if names:
-                return or_(*[self.h.can_breed(n) for n in names])
+                bred = or_(*[self.h.can_breed(n) for n in names])
+                # BOTH sides when the criterion names them separately. `parent` was read and
+                # `partner` ignored, which is exactly wrong for a cross-species pairing: a mule is a
+                # horse AND a donkey, and only the horse was being asked for.
+                other = self._entity_names_from_type(self._predicate_value(cond.get("partner"), "type"))
+                if other and set(other) != set(names):
+                    bred = and_(bred, or_(*[self.h.can_breed(n) for n in other]))
+                return bred
             return self._any_mob(MOBS_BREEDABLE, self.h.can_breed) if not cond else None
         if trigger == "minecraft:changed_dimension":
             region = _DIMENSION_REGION.get(self._path(cond.get("to")))
             # enter_dimension, not access_region: entering the dimension you START in means leaving
             # and coming back, which spawning there does not satisfy.
-            return self.h.enter_dimension(region) if region else None
+            node = self.h.enter_dimension(region) if region else None
+            # `from` is the other half of a crossing and was ignored: BACAP's 'Nether' wants the trip
+            # to START in the Overworld, which on a Nether start is not free.
+            origin = _DIMENSION_REGION.get(self._path(cond.get("from")))
+            return self._all_opt(node, self.h.access_region(origin) if origin else None)
         if trigger == "minecraft:location":
             return self._location_node(cond)
         if trigger == "minecraft:inventory_changed":
@@ -448,7 +524,13 @@ class TriggerCompiler:
                 node = self._all_req(node, self.h.can_get_beacon_base())
             return node
         if trigger == "minecraft:villager_trade":
-            return self.h.can_trade_villager()
+            # Trading, plus WHERE the villager has to be: 'Star Trader' wants the trade done in
+            # another dimension, which means hauling a villager through a portal. The traded `item`
+            # is deliberately NOT gated — it is the trade's OUTPUT, so demanding it separately would
+            # price the reward as a prerequisite for earning it.
+            villager = self._predicate_value(cond.get("villager"), "location")
+            where = self._loc_value_node(villager) if isinstance(villager, dict) else None
+            return self._all_opt(self.h.can_trade_villager(), where)
         if trigger == "minecraft:slept_in_bed":
             # This used to return the bare region on the reasoning "a bed needs wool + planks" — and
             # then never asked for either, which is why 'Sweet Dreams' was green on a fresh world.
@@ -472,6 +554,7 @@ class TriggerCompiler:
             blocks = self._blocks_in(cond)
             parts = [n for n in (self._block_source_node(blocks),
                                  self._location_node(cond),
+                                 self._block_where_node(cond),
                                  self._transport_node(blocks, cond)) if n is not None]
             return and_(*parts) if parts else and_()
         if trigger in ("minecraft:item_durability_changed", "minecraft:player_sheared_equipment"):
@@ -513,16 +596,24 @@ class TriggerCompiler:
                                  self._location_node(cond))
         if trigger == "minecraft:started_riding":
             return self._started_riding_node(cond)
-        if trigger in ("minecraft:voluntary_exile", "minecraft:hero_of_the_village"):
-            # A raid: trigger / win it → reach a Pillager and a village.
+        if trigger == "minecraft:hero_of_the_village":
+            # WIN a raid — which needs every raid mob unlocked, not merely a pillager and a village:
+            # a locked raider stalls a wave forever, so the mod will not even start the raid. See
+            # can_raid.
+            return self.h.can_win_raid()
+        if trigger == "minecraft:voluntary_exile":
+            # Only KILL a raid captain, which does not involve a raid at all — so this keeps the
+            # plain pillager gate rather than sharing hero_of_the_village's.
             return self._all_req(self._entity_gid("minecraft:pillager"), self.h.any_village())
         if trigger == "minecraft:avoid_vibration":
             # Sneak past a sculk sensor → the Deep Dark (Ancient City).
             return self._struct_gid("minecraft:ancient_city")
         if trigger in ("minecraft:channeled_lightning", "minecraft:lightning_strike",
                        "minecraft:spear_mobs"):
-            # Channel lightning with a trident / spear mobs with one → obtain a trident.
-            return self.h.acquire("minecraft:trident")
+            # Channel lightning with a trident / spear mobs with one → obtain a trident, AND reach
+            # whatever the criterion says you must hit: 'Electrifying Alliance' names its victims, and
+            # asking only for the trident let it pass without them.
+            return self._all_opt(self.h.acquire("minecraft:trident"), self._victims_node(cond))
         if trigger == "minecraft:nether_travel":
             return self.h.access_region(REGION_NETHER)
         if trigger == "minecraft:levitation":
@@ -537,7 +628,10 @@ class TriggerCompiler:
         if trigger == "minecraft:brewed_potion":
             # Brewing anything (Local Brewery) needs the full capability — a water bottle in
             # particular (glass + water = Overworld) — not just the stand (blackstone + blaze rod).
-            return self._can_brew()
+            # When the criterion names WHICH potion, its reagents are the real cost on top: 'A Weak
+            # Brew' is a fermented spider eye, 'Medic!' a ghast tear from the Nether. That name was
+            # being dropped, so every potion cost the same as a water bottle.
+            return self._all_opt(self._can_brew(), self._brewed_reagents_node(cond.get("potion")))
         if trigger == "minecraft:effects_changed":
             return self._effects_node(cond)
         if trigger == "minecraft:used_ender_eye":
@@ -554,7 +648,14 @@ class TriggerCompiler:
             # Neither's real prerequisite is in the criterion, so defer to the parent-chain fallback.
             return None
         if trigger in _IMPLIED_ITEM:
-            return self.h.acquire(_IMPLIED_ITEM[trigger])
+            # The item the trigger implies (a target block, a fishing rod), AND anything the criterion
+            # pins beside it: WHAT you must hit the target with ('Bullseye' / 'Target Practise' name
+            # the projectile) or WHAT you must hook ('Hot Reels!', 'Pig Fishing Tournament'). Both were
+            # dropped, leaving "own a target" and "own a rod".
+            projectile = self._predicate_value(cond.get("projectile"), "type")
+            extra = self._projectile_item(self._ns(projectile)) if isinstance(projectile, str) else None
+            return self._all_opt(self.h.acquire(_IMPLIED_ITEM[trigger]),
+                                 extra, self._entity_node(cond))
         return None
 
     # -- condition extractors ----------------------------------------------
@@ -595,18 +696,75 @@ class TriggerCompiler:
 
     def _entity_node(self, cond: dict, gate=None) -> Rule | None:
         """Reach the entity/entities a criterion's `entity` predicate pins (single id or ``#tag``),
-        and be able to put on it whatever that predicate says it is WEARING.
+        be able to put on it whatever that predicate says it is WEARING, and be WHERE the predicate
+        says it must be.
 
         ``gate`` is what each pinned species must satisfy, defaulting to plain reachability
         (``RuleHelper.entity``). A kill criterion passes ``can_defeat`` instead — see
-        _player_killed_node."""
+        _player_killed_node.
+
+        The predicate's own ``location`` used to be dropped on the floor, and it is most of the
+        requirement wherever it appears: 'The Actual End' is an enderman killing you IN THE END, and
+        endermen spawn in the Overworld, so it compiled to a gate you satisfy on day one. Same shape
+        for 'The Beginning' (a wither in the End), 'Hell Hunter' (the Nether) and 'Wololo!' (inside a
+        mansion). It goes through the same _loc_value_node the player predicate uses, so a dimension,
+        structure, biome or Y-bound all price the same way on either side."""
         gate = gate or self.h.entity
+        # Everything the predicate demands BESIDES the species. Collected first so it survives an
+        # unpinned `type`: the "any entity except …" shape (Lead the Way!, Oh, Shiny!) names no
+        # species but still says what the target wears or where it is, and returning early on the
+        # missing species threw all of that away.
+        extras = (self._entity_equipment_node(cond), self._entity_location_node(cond),
+                  self._entity_variant_node(cond), self._entity_mount_node(cond),
+                  self._type_specific_node(self._predicate_value(cond.get("entity"), "type_specific")))
         options = [gate(name) for name in self._entity_names(cond)]
         if not options:
-            return None  # callers keep their own "any mob" fallbacks for an unpinned predicate
-        equipment = self._entity_equipment_node(cond)
-        node = or_(*options)
-        return node if equipment is None else and_(node, equipment)
+            # Callers keep their own "any mob" fallbacks for the fully unpinned predicate.
+            return self._all_opt(*extras)
+        # _all_opt, not _all_req: species / gear / place / mount are independent requirements, so an
+        # unresolvable one leaves a sound-but-weaker rule rather than voiding the whole gate.
+        # _all_opt, not _all_req: species / gear / place / mount are independent requirements, so an
+        # unresolvable one leaves a sound-but-weaker rule rather than voiding the whole gate.
+        return self._all_opt(or_(*options), *extras)
+
+    def _entity_variant_node(self, cond: dict) -> Rule | None:
+        """A pinned mob VARIANT means finding a particular biome: each cat / wolf / frog / parrot
+        variant generates in its own one ('A Complete Catalogue', 'The Whole Pack', 'Birdkeeper',
+        'When the Squad Hops into Town' each want the full set). Priced as the same strict_only
+        Biome-Finder gate a named biome gets, rather than the exact biome — every variant biome is in
+        the Overworld, so the region half adds nothing, and the exact mapping lives in the jar's
+        wolf_variant/cat_variant data which the packs do not carry. Promote it to a real per-variant
+        biome if that data is ever dumped."""
+        entity = cond.get("entity")
+        preds = entity if isinstance(entity, list) else [entity]
+        for sub in preds:
+            if not isinstance(sub, dict):
+                continue
+            pred = sub.get("predicate", sub)
+            if not isinstance(pred, dict):
+                continue
+            for holder in ("components", "predicates"):
+                block = pred.get(holder)
+                if isinstance(block, dict) and any(str(k).endswith("/variant") for k in block):
+                    return self.h.strict_only(self.h.needs_biome_finder())
+        return None
+
+    def _entity_mount_node(self, cond: dict) -> Rule | None:
+        """What the entity must be riding or carrying. A jockey is two mobs, not one — 'Legend of
+        Hell Chicken Riders' pins the chicken on `passenger` and the rider on `vehicle`, and reading
+        only the top-level type asked for half of it."""
+        parts = []
+        for key in ("vehicle", "passenger"):
+            gid = self._predicate_value(cond.get("entity"), key)
+            names = self._entity_names_from_type(gid.get("type")) if isinstance(gid, dict) else []
+            if names:
+                parts.append(or_(*[self.h.entity(name) for name in names]))
+        return self._all_opt(*parts)
+
+    def _entity_location_node(self, cond: dict) -> Rule | None:
+        """Where an `entity` predicate says the entity has to be, or ``None`` if it doesn't say."""
+        loc = self._predicate_value(cond.get("entity"), "location")
+        return self._loc_value_node(loc) if isinstance(loc, dict) else None
 
     def _entity_equipment_node(self, cond: dict) -> Rule | None:
         """The gear an `entity` predicate demands the target be wearing, via its ``equipment`` map.
@@ -714,9 +872,7 @@ class TriggerCompiler:
             return self._projectile_item(proj)
         if isinstance(proj, list):
             return self._any_opt(*[self._projectile_item(p) for p in proj if isinstance(p, str)])
-        if self._has_tag(dtype, "minecraft:is_player_attack"):
-            return self.h.can_kill()
-        return None
+        return self._damage_tag_node(dtype)
 
     def _player_hurt_node(self, cond: dict) -> Rule | None:
         """``player_hurt_entity``: the player damages an entity. Require the pinned weapon AND, when a
@@ -767,7 +923,7 @@ class TriggerCompiler:
         should. "Free the End" compiled to a bare Region(The End): no bow, no gear, no fight. It also
         puts the kill ADVANCEMENTS on the same footing as the Kill/Boss Kill LOCATIONS, which have
         always used can_defeat (engine.collect_entity_rules)."""
-        weapon = self._killing_blow_weapon(cond.get("killing_blow"))
+        weapon = self._killing_blow_gear(cond.get("killing_blow"))
         victim = self._entity_node(cond, gate=self.h.can_defeat)
         parts = [n for n in (weapon, victim) if n is not None]
         if victim is None and cond.get("entity"):
@@ -783,27 +939,39 @@ class TriggerCompiler:
         # NOT trivially true: under mob_spawn_lock every mob is gated behind its unlock item.
         return self.h.can_kill_any_mob() if not cond else None
 
-    def _killing_blow_weapon(self, kb) -> Rule | None:
+    def _killing_blow_gear(self, kb) -> Rule | None:
+        """What the killer had to be carrying for this `killing_blow`: the projectile that struck,
+        the items worn or held in its `source_entity`'s equipment slots, or — when the criterion
+        names neither — the weapon its damage-type tag implies.
+
+        Held is not the only slot a criterion pins. 'Camouflage' names no weapon at all: it asks for
+        the matching mob head on the killer's HEAD slot, so reading `mainhand` alone priced the five
+        kills and left the five heads free. Every slot is read now; `and_` folds the mainhand node
+        back together with the weapon when both describe the same item."""
         if not isinstance(kb, dict):
             return None
         direct = kb.get("direct_entity")
         proj = direct.get("type") if isinstance(direct, dict) else None
-        if isinstance(proj, str):
-            return self._projectile_item(proj)
         source = kb.get("source_entity")
-        mainhand = ((source.get("equipment") or {}).get("mainhand")
-                    if isinstance(source, dict) else None)
-        held = self._item_predicate(mainhand) if isinstance(mainhand, dict) else None
-        if held is not None:
-            return held
-        if self._has_tag(kb, "minecraft:is_player_attack"):
-            return self.h.can_kill()
-        if self._has_tag(kb, "minecraft:is_projectile"):
-            # Killed by an unspecified projectile (There it goes…) → a bow/crossbow + arrow.
-            return self._all_req(
-                self._any_opt(self.h.acquire("minecraft:bow"), self.h.acquire("minecraft:crossbow")),
-                self.h.can_get_arrow(),
-            )
+        worn = self._equipment_nodes(source.get("equipment") if isinstance(source, dict) else None)
+        if isinstance(proj, str):
+            weapon = self._projectile_item(proj)
+        else:
+            # No projectile named: _equipment_nodes has already priced the mainhand weapon, so the
+            # damage tag is consulted only when the slots yielded nothing — as before.
+            weapon = self._damage_tag_node(kb) if not worn else None
+        parts = [part for part in (weapon, *worn) if part is not None]
+        return and_(*parts) if parts else None
+
+    def _damage_tag_node(self, holder: dict) -> Rule | None:
+        """The weapon a damage-type ``#tag`` implies, when the criterion names no item: 'Nice to Mace
+        You!' is a mace smash, 'Over-Overkill' a spear, 'Demolitions Expert' an explosion, 'There it
+        goes…' a projectile. ``None`` when it carries no tag we can price."""
+        for tag_id, build in _DAMAGE_TAG_GATE.items():
+            if self._has_tag(holder, tag_id):
+                node = build(self)
+                if node is not None:
+                    return node
         return None
 
     def _entity_hurt_player_node(self, cond: dict) -> Rule | None:
@@ -851,11 +1019,23 @@ class TriggerCompiler:
                 self._any_opt(self.h.acquire("minecraft:bow"), self.h.acquire("minecraft:crossbow")),
                 self.h.can_get_arrow(),
             )
-        parts = [weapon] if weapon is not None else []
+        return self._all_opt(weapon, self._victims_node(cond))
+
+    def _victims_node(self, cond: dict) -> Rule | None:
+        """The ``victims`` list as a gate: an AND over the groups, each an OR over the species it
+        pins, each of which must be DEFEATED. ``None`` when nothing resolvable is pinned."""
+        parts = []
         for group in cond.get("victims") or []:
             options = [self.h.can_defeat(name) for name in self._victim_names(group)]
             if options:
                 parts.append(or_(*options))
+            # A victim can carry a location the same way an `entity` predicate does ("kill these,
+            # in the End"), so price it the same way.
+            for sub in (group if isinstance(group, list) else [group]):
+                loc = (sub.get("predicate") or sub).get("location") if isinstance(sub, dict) else None
+                where = self._loc_value_node(loc) if isinstance(loc, dict) else None
+                if where is not None:
+                    parts.append(where)
         return and_(*parts) if parts else None
 
     def _victim_names(self, group) -> list:
@@ -864,7 +1044,10 @@ class TriggerCompiler:
         entries = group if isinstance(group, list) else [group]
         names = []
         for sub in entries:
-            gid = (sub.get("predicate") or {}).get("type") if isinstance(sub, dict) else None
+            # Either spelling: wrapped in an entity_properties `predicate`, or the bare `{type: ...}`
+            # BACAP also writes. Only the wrapped form was read, so a bare victim list pinned nothing
+            # and 'Mushroom Scientist' / 'Justice' asked for the bow and no particular victim.
+            gid = (sub.get("predicate") or sub).get("type") if isinstance(sub, dict) else None
             if not isinstance(gid, str):
                 continue
             members = (self._entity_tags.get(self._ns(gid[1:]), [])
@@ -887,14 +1070,21 @@ class TriggerCompiler:
         return self.h.acquire(recipe_id)
 
     def _location_node(self, cond: dict) -> Rule | None:
-        """The `player` predicate, in any of its forms: a dict with `type_specific` (advancement/stat
-        prerequisites — BACAP's Milestones), or a list of entity_properties / any_of / inverted
-        conditions pinning a location, worn equipment, or the block stood on."""
+        """The `player` predicate, in either of its forms: a bare dict, or a list of
+        entity_properties / any_of / inverted conditions. Both can pin a location, worn equipment,
+        the block stood on, a vehicle, an effect, or `type_specific` advancement/stat prerequisites
+        (BACAP's Milestones)."""
         return self._player_node(cond.get("player"))
 
     def _player_node(self, player) -> Rule | None:
         if isinstance(player, dict):
-            return self._type_specific_node(player.get("type_specific"))
+            # The dict form carries exactly the same fields as a list entry — sometimes behind a
+            # `predicate` wrapper — so it goes through the same reader. It used to be mined for
+            # `type_specific` and nothing else, which silently dropped every other field the dict
+            # form can hold: the mainhand weapon of 'Rock, Paper, Shears!' and 'Axeolotl', the
+            # dimension of "We're in the endgame now", the structure of 'Thanks a lotl', the boat of
+            # "It's High Noon". Each read as a criterion with no equipment or place requirement.
+            return self._predicate_loc_node(player.get("predicate", player))
         if isinstance(player, list):
             parts = [self._condition_node(sub) for sub in player]
             parts = [p for p in parts if p is not None]
@@ -954,13 +1144,23 @@ class TriggerCompiler:
         return self._all_req(*parts) if parts else None
 
     def _loc_value_node(self, loc: dict) -> Rule | None:
+        """A ``location`` predicate as a gate: every facet it pins, AND-ed.
+
+        Each facet used to ``return`` as soon as it matched, so a location that pinned two of them
+        kept only the first. That is how 'From Whence It Came!' lost the Nether — it wants a ruined
+        portal ON THE NETHER SIDE, and the structure branch returned before the dimension was read,
+        leaving a gate an Overworld ruined portal satisfies."""
+        struct_node = None
         struct = loc.get("structures")
         if isinstance(struct, str):
             if struct.startswith("#"):
                 # A structure #tag — the village tag is the only common one we can map.
-                return self.h.any_village() if "village" in struct else None
-            name = self._struct_name(struct)
-            return self.h.structure(name) if name else None
+                struct_node = self.h.any_village() if "village" in struct else None
+            else:
+                name = self._struct_name(struct)
+                struct_node = self.h.structure(name) if name else None
+        biome_node = None
+        region = None
         if "biomes" in loc:
             # Locating a specific biome needs the Biome Finder (when enabled) AND being in that biome's
             # dimension — a Nether/End biome (basalt_deltas, the_end) carries its region (do NOT rely
@@ -970,14 +1170,21 @@ class TriggerCompiler:
             # strict_only: the Finder is how strict logic expects you to reach a named biome, but
             # wandering until you hit one is a real (if slow) alternative, so the display graph
             # waives it and the tile reads yellow instead of red.
-            return self._all_req(self.h.strict_only(self.h.needs_biome_finder()),
-                                 self.h.access_region(region))
+            biome_node = self.h.strict_only(self.h.needs_biome_finder())
         dim = loc.get("dimension")
-        region = _DIMENSION_REGION.get(self._path(dim)) if isinstance(dim, str) else None
+        if isinstance(dim, str):
+            region = _DIMENSION_REGION.get(self._path(dim)) or region
         # Dimension and position are AND-ed, never either/or: 'Limbo Walker' is the Nether AND above
         # the roof, and returning on the dimension alone (as this used to) threw the position away —
         # which is most of the check.
         parts = []
+        if struct_node is not None:
+            parts.append(struct_node)
+        if biome_node is not None:
+            # AND-ed rather than returned: a criterion can pin a biome AND a height ('Freezing' is
+            # ice_spikes above y=56, 'Warden Frostbite' the same above 64), and returning on the biome
+            # alone dropped the height, which is the harder half.
+            parts.append(biome_node)
         if region:
             parts.append(self.h.access_region(region))
         position = loc.get("position")
@@ -1059,6 +1266,11 @@ class TriggerCompiler:
         if not isinstance(ts, dict):
             return None
         parts = []
+        if ts.get("has_raid") is True:
+            # "…while a raid is happening" (Feeling Ill). A raid has to be started, which can_raid
+            # prices (a pillager plus a village). `has_raid: false` asks for the ordinary case and
+            # gates nothing.
+            parts.append(self.h.can_raid())
         advancements = ts.get("advancements")
         if isinstance(advancements, dict):
             for gid, required in advancements.items():
@@ -1172,9 +1384,49 @@ class TriggerCompiler:
             return potion
         # The base item (when named) AND any capability its predicate demands: being enchanted, or
         # carrying an armor trim of a specific material (Chromatic Armory / Coordinated Flair).
-        parts = [self._any_acquire(pred.get("items")), self._enchant_gate(pred), self._trim_gate(pred)]
+        parts = [self._any_acquire(pred.get("items")), self._enchant_gate(pred), self._trim_gate(pred),
+                 self._contents_gate(pred), self._jukebox_gate(pred)]
         parts = [p for p in parts if p is not None]
         return and_(*parts) if parts else None
+
+    def _contents_gate(self, pred: dict) -> Rule | None:
+        """What a container item must be HOLDING. A shulker box full of specific items ('Sculker
+        Box') or a bundle with specific contents ('Fractal', 'Flamboyant Range') costs those items on
+        top of the container itself, and only the container was being asked for."""
+        parts = []
+        container = self._component(pred, "minecraft:container")
+        for slot in (container if isinstance(container, list) else []):
+            item = slot.get("item") if isinstance(slot, dict) else None
+            gid = item.get("id") if isinstance(item, dict) else None
+            if isinstance(gid, str):
+                parts.append(self.h.acquire(self._ns(gid)))
+        bundle = self._component(pred, "minecraft:bundle_contents")
+        contains = (bundle.get("items") or {}).get("contains") if isinstance(bundle, dict) else None
+        for entry in (contains if isinstance(contains, list) else []):
+            if isinstance(entry, dict):
+                # Each entry is itself a full item predicate, so recurse rather than reading `items`:
+                # 'Fractal' is a bundle inside a bundle inside a bundle, and one level of unwrapping
+                # priced only the outermost.
+                parts.append(self._item_predicate(entry))
+        # _all_req: a content we can't price means the gate is incomplete, and a partial one would
+        # claim the box is cheaper than it is — fall back to the container alone instead.
+        return self._all_req(*parts) if parts else None
+
+    def _jukebox_gate(self, pred: dict) -> Rule | None:
+        """The disc behind a ``jukebox_playable`` item predicate.
+
+        This is the one item predicate that names no item: it says "whatever you are holding must be
+        playable in a jukebox", which is how BACAP spells "a music disc". Nothing else in the
+        criterion mentions one, so 'Music To My Ears' and 'The Sound of Music' priced the jukebox and
+        read as free for a player who can never obtain a disc — every route to one is a creeper
+        killed by a skeleton, a deflected fireball, or structure loot (``can_get_disc``).
+
+        Every use in the packs today is the empty ``{}`` form — any disc. A predicate that pinned a
+        specific ``song`` would still need *a* disc, so this generic gate stays a correct (if then
+        slightly cheap) price rather than nothing at all."""
+        if self._component(pred, "minecraft:jukebox_playable") is None:
+            return None
+        return self.h.can_get_disc()
 
     def _trim_gate(self, pred: dict) -> Rule | None:
         """The capability behind a ``trim`` item predicate: a smithing table plus the named trim
@@ -1191,11 +1443,16 @@ class TriggerCompiler:
                              self.h.acquire(f"minecraft:{item}"))
 
     def _enchant_gate(self, pred: dict) -> Rule | None:
-        """The capability to get an ENCHANTED item, or ``None`` when the predicate names no
-        enchantment. Two routes: the enchanting table (``acquire`` gates it behind Knowledge:
-        Enchanting + its tier), OR an enchanted book — a librarian's trade gives one with no
-        Knowledge needed, applied to the item with an anvil (when the item itself, not the book,
-        must carry the enchantment, i.e. ``enchantments`` predicate vs ``stored_enchantments``)."""
+        """The capability to get the ENCHANTED item this predicate describes, or ``None`` when it
+        names no enchantment.
+
+        The enchantment is resolved BY NAME, because the routes are not interchangeable. This used to
+        answer "enchanting table OR an enchanted book + anvil" for all 43 enchantments, which is
+        right for the 36 an enchanting table actually offers and wrong for the rest: Swift Sneak
+        exists only in an Ancient City, Soul Speed only in a bastion or a piglin barter, Wind Burst
+        only in a trial chamber's ominous vault, and Mending / Frost Walker / the two curses only
+        through a trade or loot. 'Silent But Deadly' and 'Like a Ninja' therefore read as reachable
+        with nothing but an enchanting table."""
         predicates = pred.get("predicates")
         if not isinstance(predicates, dict):
             return None
@@ -1203,17 +1460,74 @@ class TriggerCompiler:
         # too, the way _criterion normalises triggers and _trim_gate already reads its own key. Only
         # the bare spelling was matched, so an enchantment requirement silently evaluated to "no
         # enchantment needed" — Total Beelocation asks for Silk Touch and compiled to "reach a bee".
-        on_item = "enchantments" in predicates or "minecraft:enchantments" in predicates
-        on_book = ("stored_enchantments" in predicates
-                   or "minecraft:stored_enchantments" in predicates)
-        if not on_item and not on_book:
+        on_item = self._first_key(predicates, "enchantments")
+        on_book = self._first_key(predicates, "stored_enchantments")
+        if on_item is None and on_book is None:
             return None
-        routes = [self.h.acquire("minecraft:enchanting_table")]
+        # Several enchantment predicates side by side must ALL hold; the enchantment(s) named inside
+        # one of them are alternatives. A `stored_enchantments` target IS the book, so it needs no
+        # anvil; an `enchantments` target needs the enchantment moved onto the item.
+        parts = []
+        for entries, on_the_item in ((on_item, True), (on_book, False)):
+            if entries is None:
+                continue
+            for entry in (entries if isinstance(entries, list) else [entries]):
+                parts.append(self._one_enchant_node(entry, on_the_item))
+        if any(part is None for part in parts):
+            # Something unpriceable (an enchantment #tag, an unknown id): fall back to the generic
+            # capability rather than over-gate on the alternatives we happened to resolve.
+            return self._generic_enchant_node(on_item is not None)
+        return self._all_opt(*parts)
+
+    @staticmethod
+    def _first_key(holder: dict, key: str):
+        """``holder[key]`` accepting the bare or ``minecraft:``-namespaced spelling; ``None`` if
+        neither is present (as opposed to present-but-empty, which stays distinguishable)."""
+        for spelling in (key, f"minecraft:{key}"):
+            if spelling in holder:
+                return holder[spelling]
+        return None
+
+    def _one_enchant_node(self, entry, on_the_item: bool) -> Rule | None:
+        """One enchantment predicate: any of the enchantment(s) it names, obtained by a route that
+        actually offers it. ``None`` when the entry names nothing resolvable."""
+        names = entry.get("enchantments") if isinstance(entry, dict) else entry
+        ids = names if isinstance(names, list) else [names]
+        routes = []
+        for gid in ids:
+            if not isinstance(gid, str) or gid.startswith("#"):
+                return None  # a tag covers many enchantments with different sources — unpriceable
+            node = self._enchant_source_node(self._path(gid), on_the_item)
+            if node is None:
+                return None
+            routes.append(node)
+        return self._any_opt(*routes) if routes else None
+
+    def _enchant_source_node(self, name: str, on_the_item: bool) -> Rule | None:
+        """Every way to end up holding ``name``, as a rule. Loot-only enchantments arrive as a BOOK,
+        so putting one on an item costs an anvil on top of finding it."""
+        anvil = self.h.acquire("minecraft:anvil")
+        loot = _ENCHANT_LOOT_SOURCE.get(name)
+        if loot is not None:
+            found = loot(self)
+            if found is None:
+                return None
+            return found if not on_the_item else self._all_req(found, anvil)
+        routes = []
+        if name not in _NOT_IN_ENCHANTING_TABLE:
+            # acquire(enchanting_table) gates Knowledge: Enchanting + its material tier.
+            routes.append(self.h.acquire("minecraft:enchanting_table"))
         book = self.h.acquire("minecraft:enchanted_book")  # librarian trades; no Knowledge needed
         if book is not None:
-            # A stored_enchantments target *is* the book; an enchantments target needs it applied
-            # with an anvil. (A librarian's book has a random enchant — a trade path, as elsewhere.)
-            routes.append(and_(book, self.h.acquire("minecraft:anvil")) if on_item else book)
+            routes.append(self._all_req(book, anvil) if on_the_item else book)
+        return self._any_opt(*routes)
+
+    def _generic_enchant_node(self, on_the_item: bool) -> Rule:
+        """"Some enchantment, we can't tell which" — the capability to enchant at all."""
+        routes = [self.h.acquire("minecraft:enchanting_table")]
+        book = self.h.acquire("minecraft:enchanted_book")
+        if book is not None:
+            routes.append(and_(book, self.h.acquire("minecraft:anvil")) if on_the_item else book)
         return or_(*routes)
 
     def _potion_node(self, pred: dict) -> Rule | None:
@@ -1224,36 +1538,88 @@ class TriggerCompiler:
         ids = items if isinstance(items, list) else [items]
         if not any(item in _POTION_ITEMS for item in ids):
             return None
-        contents = self._component(pred, "minecraft:potion_contents")
-        potion_type = contents.get("potion") if isinstance(contents, dict) else None
-        if not isinstance(potion_type, str):
+        routes: list[Rule] = []
+        for potion_type in self._potion_types(pred):
+            reagents = _brewing().get(potion_type)
+            if reagents is None:
+                # An alternative we can't price (a water bottle is free, and `mundane`/unknown types
+                # have no chain) makes the whole OR unpriceable — fall through to the item's own
+                # sources rather than invent a gate the player can dodge.
+                return None
+            parts = [self._can_brew()]
+            parts += [self.h.acquire(f"minecraft:{reagent}") for reagent in reagents]
+            parts = [node for node in parts if node is not None]
+            if parts:
+                routes.append(and_(*parts))
+        return or_(*routes) if routes else None
+
+    @staticmethod
+    def _potion_types(pred: dict) -> list[str]:
+        """The potion types an item predicate accepts, as bare names with the tier prefix stripped.
+
+        Two shapes reach here and both are valid Minecraft: the exact-component form
+        ``components: {minecraft:potion_contents: {potion: "minecraft:x"}}``, and the sub-predicate
+        form ``predicates: {potion_contents: "minecraft:x" | ["minecraft:x", ...]}`` that BACAP's
+        potion tab uses. Multiple ids are ALTERNATIVES (any one satisfies the predicate)."""
+        contents = TriggerCompiler._component(pred, "minecraft:potion_contents")
+        if isinstance(contents, dict):
+            contents = contents.get("potion")
+        ids = contents if isinstance(contents, list) else [contents]
+        types = []
+        for potion_id in ids:
+            if not isinstance(potion_id, str):
+                continue
+            name = potion_id.split(":")[-1]
+            for prefix in ("long_", "strong_"):
+                name = name.removeprefix(prefix)
+            types.append(name)
+        return types
+
+    def _brewed_reagents_node(self, potion_id) -> Rule | None:
+        """Every reagent a named potion type needs (brewing.json), AND-ed. ``None`` for an unnamed or
+        unknown potion, or one whose chain we can't price — falling back to the plain brew capability
+        rather than inventing a gate."""
+        if not isinstance(potion_id, str):
             return None
-        potion_type = potion_type.split(":")[-1]
+        name = potion_id.split(":")[-1]
         for prefix in ("long_", "strong_"):
-            potion_type = potion_type.removeprefix(prefix)
-        reagents = _brewing().get(potion_type)
-        if reagents is None:
+            name = name.removeprefix(prefix)
+        reagents = _brewing().get(name)
+        if not reagents:
             return None
-        parts = [self._can_brew()]
-        parts += [self.h.acquire(f"minecraft:{reagent}") for reagent in reagents]
-        parts = [node for node in parts if node is not None]
-        return and_(*parts) if parts else None
+        return self._all_req(*[self.h.acquire(f"minecraft:{item}") for item in reagents])
 
     def _can_brew(self) -> Rule | None:
-        """Capability to brew a potion: a brewing stand, Knowledge: Brewing, and a water bottle — a
-        glass bottle (glass = sand) filled with water. Both sand and water are Overworld-only, so
-        brewing gates on the Overworld even though the stand itself is buildable from Nether
-        blackstone + a blaze rod."""
-        return self.h.all_of(self.h.acquire("minecraft:brewing_stand"), self.h.knowledge(K_BREWING),
+        """Capability to brew a potion: a brewing stand, its FUEL, Knowledge: Brewing, and a water
+        bottle — a glass bottle (glass = sand) filled with water. Both sand and water are
+        Overworld-only, so brewing gates on the Overworld too.
+
+        Blaze powder is listed explicitly because it is the only unavoidable blaze requirement here.
+        The stand itself is a bad proxy: one stands in every village church and igloo basement ready
+        to be mined, and with `bacap_rewards` on it also arrives as an advancement reward — so
+        `acquire(brewing_stand)` resolves without ever meeting a blaze. Fuel has no such loophole
+        (blaze powder comes only from a blaze rod), and without it the stand does nothing. Omitting
+        it let the whole BACAP potion tab read as free, so fill could park `Entity Unlock: Blaze`
+        behind a potion advancement that needs a blaze to earn."""
+        return self.h.all_of(self.h.acquire("minecraft:brewing_stand"),
+                             self.h.acquire("minecraft:blaze_powder"),
+                             self.h.knowledge(K_BREWING),
                              self.h.acquire("minecraft:glass_bottle"))
 
     @staticmethod
     def _component(pred: dict, key: str):
-        """A component value from an item predicate's ``components`` / ``predicates`` block."""
+        """A component value from an item predicate's ``components`` / ``predicates`` block.
+
+        Minecraft treats an unnamespaced component key as ``minecraft:``, and BACAP writes them bare
+        (``predicates: {potion_contents: ...}``), so match on the bare name rather than the literal
+        key — the same normalisation ``_criterion`` does for trigger names."""
+        bare = key.split(":")[-1]
         for holder in ("components", "predicates"):
             block = pred.get(holder)
-            if isinstance(block, dict) and key in block:
-                return block[key]
+            if isinstance(block, dict):
+                for name, value in block.items():
+                    if name.split(":")[-1] == bare:
+                        return value
         return None
 
     def _any_acquire(self, ids) -> Rule | None:
@@ -1459,6 +1825,33 @@ class TriggerCompiler:
         add(cond.get("block"))
         add({"blocks": cond.get("blocks")})  # BACAP slide_down_block: top-level `blocks` list
         return blocks
+
+    def _block_where_node(self, cond: dict) -> Rule | None:
+        """WHERE the block interaction has to happen, from the criterion's ``location`` list.
+
+        That list carries a biome / dimension / structure beside the block, and only the block half
+        was ever read — so 'Travelling Bard' (play a jukebox in each of many biomes) asked for a
+        jukebox and nothing else. Mirrors what ``placed_block`` already does with its own predicate;
+        recurses ``any_of``/``all_of`` groups, and skips ``inverted`` terms because "NOT there" adds
+        no positive requirement."""
+        def walk(entry) -> Rule | None:
+            if not isinstance(entry, dict):
+                return None
+            ctype = str(entry.get("condition", ""))
+            if ctype.endswith("inverted"):
+                return None
+            if ctype.endswith(("any_of", "all_of")):
+                opts = [walk(term) for term in entry.get("terms") or []]
+                opts = [o for o in opts if o is not None]
+                if not opts:
+                    return None
+                return or_(*opts) if ctype.endswith("any_of") else and_(*opts)
+            pred = entry.get("predicate", entry)
+            return self._loc_value_node(pred) if isinstance(pred, dict) else None
+
+        location = cond.get("location")
+        parts = [walk(entry) for entry in (location if isinstance(location, list) else [location])]
+        return self._all_opt(*parts)
 
     def _block_region_node(self, blocks: list) -> Rule | None:
         """Reach a dimension a non-item natural block pins (``_BLOCK_REGION``), OR-ed over every region
@@ -1704,20 +2097,27 @@ class TriggerCompiler:
         item = self._item_predicate(cond.get("item")) if "item" in cond else None
         if item is None:
             for sub in locs:
-                if isinstance(sub, dict) and sub.get("condition") == "minecraft:match_tool":
-                    item = self._any_acquire((sub.get("predicate") or {}).get("items"))
-                    break
+                if isinstance(sub, dict) and str(sub.get("condition", "")).endswith("match_tool"):
+                    # The whole predicate, not just its `items` list: a match_tool can pin the held
+                    # item by CAPABILITY rather than by id, and reading `items` alone found nothing
+                    # to require. 'Music To My Ears' asks only that whatever is used on the jukebox
+                    # be jukebox_playable — a music disc — so it priced the jukebox and let a
+                    # player who can never obtain a disc have it. _item_predicate also brings the
+                    # enchantment / trim / container gates to a match_tool, as everywhere else.
+                    item = self._item_predicate(sub.get("predicate"))
+                    if item is not None:
+                        break
         blocks = self._blocks_in(cond)
         block = self._block_source_node(blocks)
         parts = [n for n in (item, block) if n is not None]
         # A location_check can also pin the biome / dimension the block must be used IN — e.g. Sound
         # of Music needs the jukebox played in a meadow (Overworld). Gate on it so a Nether-craftable
-        # jukebox alone doesn't satisfy the criterion anywhere.
-        for sub in locs:
-            if isinstance(sub, dict) and str(sub.get("condition", "")).endswith("location_check"):
-                node = self._loc_value_node(sub.get("predicate") or {})
-                if node is not None:
-                    parts.append(node)
+        # jukebox alone doesn't satisfy the criterion anywhere. _block_where_node generalises what
+        # used to be a flat scan for `location_check`: it takes either spelling and recurses the
+        # any_of/all_of groups BACAP nests these in.
+        where = self._block_where_node(cond)
+        if where is not None:
+            parts.append(where)
         return and_(*parts) if parts else None
 
     def _any_mob(self, mobs, build) -> Rule | None:

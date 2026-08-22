@@ -329,6 +329,16 @@ E_ZOGLIN = "Zoglin"
 E_ZOMBIE = "Zombie"
 E_ZOMBIE_VILLAGER = "Zombie Villager"
 
+# The mobs a raid wave spawns — mirrors Minecraft's own `Raid.RaiderType` enum, which is what the
+# wave table actually draws from. NOT the `#minecraft:raiders` entity tag: that also carries the
+# Illusioner, which is a member of the tag but never spawns in a raid.
+#
+# A raid needs every one of them: waves spawn each type, and a wave only clears once its raiders are
+# dead, so a single locked member stalls the raid forever. The mod refuses to convert Bad Omen into
+# Raid Omen until all of them are unlocked (see MobSpawnLockService#isAnyRaidMobLocked), and
+# can_win_raid mirrors that gate.
+MOBS_RAID = (E_PILLAGER, E_VINDICATOR, E_EVOKER, E_WITCH, E_RAVAGER)
+
 # -----------------------------------------------------------------------
 # Mobs — Bosses
 # -----------------------------------------------------------------------

@@ -144,7 +144,7 @@ def item_sets(world):
 
 
 def main() -> int:
-    world_type = AutoWorldRegister.world_types["Minecraft [AEM]"]
+    world_type = AutoWorldRegister.world_types["AEMinecraft"]
     multiworld = setup_solo_multiworld(world_type)
     world = multiworld.worlds[1]
     player = world.player

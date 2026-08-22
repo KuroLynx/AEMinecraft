@@ -12,7 +12,9 @@ import net.minecraft.server.level.ServerPlayer;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Applies the one-shot effects of received filler and trap items (filler grants a temporary buff via
@@ -20,50 +22,91 @@ import java.util.List;
  * {@code slot_data} (see {@code minecraft_aem/filler.py}) so the apworld stays the source of truth.
  *
  * <p>Archipelago replays the whole item history on every reconnect (the index-0 resync), so a naive
- * "apply on receipt" would duplicate filler each time. Instead we keep a persisted high-water mark in
- * {@code archipelago_received.json} in the world folder: the number of received items already applied.
- * On each item batch (and on join, for items received while offline) we apply only the items past that
- * mark — against the ordered history in {@link fr.euclesia.mcarchipelago.registry.APItemRegistry} — and
- * advance it. All work runs on the server thread.
+ * "apply on receipt" would duplicate filler each time. Instead we keep persisted high-water marks in
+ * {@code archipelago_received.json} in the world folder: how many received items have already been
+ * dealt with. On each item batch (and on join, for items received while offline) only the items past
+ * the mark are applied — against the ordered history in
+ * {@link fr.euclesia.mcarchipelago.registry.APItemRegistry} — and the mark advances. All work runs on
+ * the server thread.
+ *
+ * <p>The mark is per player. The slot receives one Speed Boost, but the run is being played by
+ * several people, and handing it to whoever happened to be first in the player list means everyone
+ * else watches a teammate collect the reward — the same reasoning that gives every player their own
+ * BACAP reward for a shared advancement. So each player carries their own mark and gets every filler
+ * exactly once, including the ones that arrived while they were offline.
+ *
+ * <p><b>Traps do not catch up.</b> Filler is a gift and keeps: collect it whenever you next log in.
+ * A trap is an event — it happens to the people who are in the world when it lands. Firing a week of
+ * banked traps at whoever logs in next punishes them for having been away, and lands as an
+ * unsurvivable pile rather than the moment of chaos each one was meant to be. So a catch-up pass
+ * ({@link Mode#CATCH_UP}) applies the filler it finds and walks the traps past without firing them;
+ * only a live pass ({@link Mode#LIVE}), for players who were actually present, springs them.
+ *
+ * <p>(DeathLink is a different thing entirely: a death arriving from ANOTHER world takes one victim
+ * rather than wiping the server. These are this slot's own items.)
  */
 public final class FillerTrapService {
     private static final String FILE_NAME = "archipelago_received.json";
     private static final Gson GSON = new Gson();
 
-    /** On-disk persistence shape: how many received items have already had their effect applied. */
+    /**
+     * On-disk persistence. The two int fields are older shapes of this file, read but never written
+     * again: they seed a player's first mark so an existing world does not replay its whole item
+     * history at everyone the moment they next log in.
+     */
     private static final class Progress {
-        int appliedItemCount;
+        int appliedItemCount;                  // pre-split single mark; seeds a player's first mark
+        int appliedTrapCount = -1;             // no longer used; read only so old files stay parseable
+        Map<String, Integer> appliedByPlayer;  // player uuid -> items already applied to them
+    }
+
+    /** Whether a pass may spring the traps it finds, or only collect the filler. */
+    public enum Mode {
+        /** The player was here when these arrived: filler and traps both. */
+        LIVE,
+        /** The player was not: filler only, traps marked as spent without firing. */
+        CATCH_UP
     }
 
     private FillerTrapService() {}
 
-    /** Applies pending filler/trap effects to the first online player (after an item batch arrives). */
-    public static void applyPendingToAny(MinecraftServer server) {
-        List<ServerPlayer> players = server.getPlayerList().getPlayers();
-        if (!players.isEmpty()) {
-            applyPending(players.get(0));
+    /**
+     * Applies a batch to everyone online.
+     *
+     * <p>{@code mode} is the caller's answer to "did this just happen?". A live batch is
+     * {@link Mode#LIVE}; the index-0 resync Archipelago sends on every (re)connect is history and must
+     * be {@link Mode#CATCH_UP}, or a player whose mark never advanced — one who was already in the
+     * world before the session connected — has the run's entire trap list sprung on them at once.
+     */
+    public static void applyPendingToAll(MinecraftServer server, Mode mode) {
+        for (ServerPlayer player : List.copyOf(server.getPlayerList().getPlayers())) {
+            applyPending(player, mode);
         }
     }
 
-    /** Applies every received item not yet applied (per the persisted mark) to {@code player}. */
-    public static void applyPending(ServerPlayer player) {
+    /** Applies every filler this player has not yet had, and their traps if {@code mode} is LIVE. */
+    public static void applyPending(ServerPlayer player, Mode mode) {
         MinecraftServer server = AEMServerRuntime.server();
         if (server == null || !AEMServerRuntime.isArchipelagoReady()) {
             return;
         }
         List<Long> order = AEM.ARCHIPELAGO.client().registries().apItems().receivedOrder();
-        int applied = Math.min(readApplied(server), order.size());
+        Progress progress = read(server);
+        String key = player.getUUID().toString();
+        int applied = Math.min(
+                progress.appliedByPlayer.getOrDefault(key, progress.appliedItemCount), order.size());
         if (applied >= order.size()) {
             return;
         }
         APSlotData slot = AEM.ARCHIPELAGO.client().state().parsedSlotData();
         for (int i = applied; i < order.size(); i++) {
-            applyOne(player, slot, order.get(i));
+            applyOne(player, slot, order.get(i), mode);
         }
-        writeApplied(server, order.size());
+        progress.appliedByPlayer.put(key, order.size());
+        write(server, progress);
     }
 
-    private static void applyOne(ServerPlayer player, APSlotData slot, long itemId) {
+    private static void applyOne(ServerPlayer player, APSlotData slot, long itemId, Mode mode) {
         FillerGrant grant = slot.fillerItems().get(itemId);
         if (grant != null) {
             if (grant.isItem()) {
@@ -74,28 +117,34 @@ public final class FillerTrapService {
             return;
         }
         String trap = slot.trapItems().get(itemId);
-        if (trap != null) {
-            TrapEffects.run(trap, player);
+        if (trap != null && mode == Mode.LIVE) {
+            // Queued rather than fired: traps are spaced out, and none goes off during the arrival
+            // grace (see TrapScheduler).
+            TrapScheduler.submit(player, trap);
         }
     }
 
-    private static int readApplied(MinecraftServer server) {
+    private static Progress read(MinecraftServer server) {
         Path file = APWorldPaths.readPath(server, FILE_NAME);
-        if (!Files.exists(file)) {
-            return 0;
+        Progress progress = null;
+        if (Files.exists(file)) {
+            try {
+                progress = GSON.fromJson(Files.readString(file), Progress.class);
+            } catch (Exception exception) {
+                AEM.LOGGER.warn("Failed to read {}", FILE_NAME, exception);
+            }
         }
-        try {
-            Progress progress = GSON.fromJson(Files.readString(file), Progress.class);
-            return progress == null ? 0 : Math.max(0, progress.appliedItemCount);
-        } catch (Exception exception) {
-            AEM.LOGGER.warn("Failed to read {}", FILE_NAME, exception);
-            return 0;
+        if (progress == null) {
+            progress = new Progress();
         }
+        progress.appliedItemCount = Math.max(0, progress.appliedItemCount);
+        if (progress.appliedByPlayer == null) {
+            progress.appliedByPlayer = new HashMap<>();
+        }
+        return progress;
     }
 
-    private static void writeApplied(MinecraftServer server, int count) {
-        Progress progress = new Progress();
-        progress.appliedItemCount = count;
+    private static void write(MinecraftServer server, Progress progress) {
         try {
             Files.writeString(APWorldPaths.writePath(server, FILE_NAME), GSON.toJson(progress));
         } catch (IOException exception) {

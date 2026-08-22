@@ -58,10 +58,20 @@ public abstract class PlayerAdvancementsMixin {
         }
     }
 
+    /**
+     * Every earned criterion goes to the run: the one that finishes an advancement as a completion
+     * (which shares the whole thing), any other as a single step, so half-done multi-criterion
+     * advancements pool across the server instead of stranding in one player's file.
+     */
     @Inject(method = "award", at = @At("RETURN"))
     private void archipelago_euclesia$onAward(AdvancementHolder holder, String criterion, CallbackInfoReturnable<Boolean> cir) {
-        if (cir.getReturnValue() && getOrStartProgress(holder).isDone()) {
+        if (!cir.getReturnValue()) {
+            return;
+        }
+        if (getOrStartProgress(holder).isDone()) {
             AdvancementBridge.onCompleted(player, holder.id().toString());
+        } else {
+            AdvancementBridge.onCriterion(player, holder, criterion);
         }
     }
 

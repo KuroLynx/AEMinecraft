@@ -31,6 +31,8 @@ public final class TrapPlatformService {
     private static final int DROP_HEIGHT = 70;
     /** How far to the side the water lands — far enough that you must move to reach it. */
     private static final int HORIZONTAL_OFFSET = 5;
+    /** How far out {@link #platformSpot} will keep looking when nearer sides hold containers. */
+    private static final int MAX_HORIZONTAL_OFFSET = 8;
     /** Perpendicular half-width of the cleared fall corridor (1 => 3 wide). */
     private static final int CORRIDOR_HALF_WIDTH = 1;
     private static final Direction[] HORIZONTAL = {Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST};
@@ -79,8 +81,10 @@ public final class TrapPlatformService {
     /** Builds the offset platform + corridor and flings {@code player} skyward over their original spot. */
     public static void mlg(ServerPlayer player, ServerLevel level) {
         BlockPos origin = player.blockPosition();
-        Direction dir = HORIZONTAL[level.getRandom().nextInt(HORIZONTAL.length)];
-        BlockPos water = origin.relative(dir, HORIZONTAL_OFFSET);
+        BlockPos water = platformSpot(level, origin);
+        if (water == null) {
+            return;  // nowhere to build that wouldn't destroy a container; see platformSpot
+        }
         Map<BlockPos, BlockState> snapshot = new HashMap<>();
 
         // Offset water platform: a bedrock plus-frame holding a single central water source.
@@ -105,7 +109,7 @@ public final class TrapPlatformService {
             for (int x = minX; x <= maxX; x++) {
                 for (int z = minZ; z <= maxZ; z++) {
                     cursor.set(x, y, z);
-                    if (!level.getBlockState(cursor).isAir()) {
+                    if (!level.getBlockState(cursor).isAir() && !holdsContents(level, cursor)) {
                         clear(level, snapshot, cursor);
                     }
                 }
@@ -116,6 +120,49 @@ public final class TrapPlatformService {
                 player.getYRot(), player.getXRot());
         PLATFORMS.add(new Platform(level, snapshot,
                 System.currentTimeMillis() + LIFETIME_MS, player.getUUID()));
+    }
+
+    /**
+     * Where to put the water platform: a random side, at the first distance whose whole footprint is
+     * clear of containers (see {@link #holdsContents}). {@code null} if there is nowhere to put it.
+     *
+     * <p>There is no fallback onto a dirty spot on purpose. The platform is written with
+     * {@code setBlockAndUpdate} and restored from a {@link BlockState}, so paving over a chest empties
+     * it permanently — the exact loss this check exists to prevent. A player who has walled themselves
+     * in with storage on all sides at every distance simply does not get the trap; a trap that fails to
+     * fire costs the run nothing, and one that eats a shulker box cannot be undone.
+     */
+    private static BlockPos platformSpot(ServerLevel level, BlockPos origin) {
+        int first = level.getRandom().nextInt(HORIZONTAL.length);
+        for (int distance = HORIZONTAL_OFFSET; distance <= MAX_HORIZONTAL_OFFSET; distance++) {
+            for (int i = 0; i < HORIZONTAL.length; i++) {
+                BlockPos spot = origin.relative(HORIZONTAL[(first + i) % HORIZONTAL.length], distance);
+                if (isClear(level, spot)) {
+                    return spot;
+                }
+            }
+        }
+        return null;
+    }
+
+    /** Whether the plus-shaped platform footprint at {@code spot} would destroy nothing. */
+    private static boolean isClear(ServerLevel level, BlockPos spot) {
+        return !holdsContents(level, spot)
+                && !holdsContents(level, spot.north()) && !holdsContents(level, spot.south())
+                && !holdsContents(level, spot.east()) && !holdsContents(level, spot.west());
+    }
+
+    /**
+     * Whether {@code pos} holds something the snapshot could not give back.
+     *
+     * <p>The snapshot is a {@link BlockState}, and a state is not a chest's contents: clearing a
+     * furnace out of the corridor and putting the same furnace back thirty seconds later would return
+     * it empty, and the trap would have eaten the player's things. Anything with a block entity is
+     * therefore left standing — the corridor detours around it. Falling into it is survivable; losing
+     * a shulker box is not.
+     */
+    private static boolean holdsContents(ServerLevel level, BlockPos pos) {
+        return level.getBlockEntity(pos) != null;
     }
 
     /** Snapshots {@code pos} once and sets it with a full update (the water/bedrock platform). */

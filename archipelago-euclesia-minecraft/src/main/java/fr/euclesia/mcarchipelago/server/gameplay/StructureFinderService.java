@@ -42,8 +42,16 @@ public final class StructureFinderService {
 
     private StructureFinderService() {}
 
-    /** The player's finder tier, 0 (none) to {@link #MAX_TIER}, from received Finder items. */
-    public static int tier(ServerPlayer player) {
+    /**
+     * The RUN's finder tier, 0 (none) to {@link #MAX_TIER}, from the Finder items this slot has
+     * received.
+     *
+     * <p>Deliberately takes no player. A server is many people playing one Archipelago slot, so the
+     * Finder belongs to the run and everybody sees the same tier — there is no per-player count to
+     * read. It used to take a {@code ServerPlayer} and ignore it, which read as though the tier were
+     * personal and is exactly the kind of signature that invites a wrong assumption.
+     */
+    public static int tier() {
         if (!AEMServerRuntime.isArchipelagoReady()) {
             return 0;
         }

@@ -14,6 +14,19 @@ import java.util.List;
 public final class AdvancementBridge {
     private AdvancementBridge() {}
 
+    /**
+     * One criterion of an advancement that is NOT finished yet: hand it to the rest of the server so
+     * partial progress pools like completions do (see {@link SharedAdvancementService}). Recipe
+     * unlocks are skipped — they fire constantly and mean nothing — as are our own tracker tiles,
+     * whose criteria are per-player bookkeeping that {@link RootAdvancementService} reconciles.
+     */
+    public static void onCriterion(ServerPlayer player, AdvancementHolder holder, String criterion) {
+        if (!AEMServerRuntime.isArchipelagoReady()) {
+            return;
+        }
+        SharedAdvancementService.onCriterion(player, holder, criterion);
+    }
+
     public static void onCompleted(ServerPlayer player, String advancementId) {
         if (!AEMServerRuntime.isArchipelagoReady()) {
             return;
@@ -22,6 +35,14 @@ public final class AdvancementBridge {
         // Recipe-unlock "advancements" (minecraft:recipes/...) fire constantly and are never
         // randomized locations, so skip them before any lookup/network work.
         if (advancementId.startsWith("minecraft:recipes/")) {
+            return;
+        }
+
+        // Everyone on the server shares one book, so hand this completion to the other players. The
+        // return value is what makes a location report exactly once: it is true only for the player
+        // who actually got there, false for the copies we then award to everybody else and for a
+        // late joiner catching up on a location the run sent hours ago.
+        if (!SharedAdvancementService.onCompleted(player, advancementId)) {
             return;
         }
 
@@ -40,7 +61,11 @@ public final class AdvancementBridge {
         // but only for real advancement checks this seed — not the root tile itself.
         if (!APTrackerRegistry.TAB_ROOT_ID.equals(advancementId)
                 && AEM.ARCHIPELAGO.client().registries().apLocations().isActiveLocation(advancementId)) {
-            RootAdvancementService.syncProgress(player);
+            // Everyone, not just the earner. The others were handed this advancement a moment ago by
+            // SharedAdvancementService, but their own completion came back through here while the
+            // propagation guard was up and returned early — so nothing recounted their goal tile and
+            // it sat one behind until they next logged in.
+            RootAdvancementService.syncProgressToAll();
             // The advancement count is part of the win condition, so re-check the goal here too — not
             // just on boss kills — or completing the last required advancement wouldn't trigger the win.
             GoalTracker.evaluate();
@@ -96,6 +121,17 @@ public final class AdvancementBridge {
 
         int sent = AEM.ARCHIPELAGO.gateway().checkLocationsByGameId(completed);
         AEM.LOGGER.info("[AEM-DIAG] scanPlayer sent {} checks from {} completed advancements", sent, completed.size());
+
+        // Fold whatever this player already held into the run's shared book, so the book is the
+        // UNION of everyone's progress rather than only what was earned since sharing began. This is
+        // the path that matters for an existing world going multiplayer, or for a player whose file
+        // carries progress the book never saw; anything already in the book is a no-op, and anything
+        // new propagates to the other players from here.
+        for (String advancementId : completed) {
+            SharedAdvancementService.onCompleted(player, advancementId);
+        }
+        // …and the same for what they have only part-done, which no completion would ever surface.
+        SharedAdvancementService.foldIn(player);
 
         // Re-evaluate the advancement-count goal progress once after the batch (syncProgress is an
         // idempotent recompute, so a single call covers every advancement just folded in above).

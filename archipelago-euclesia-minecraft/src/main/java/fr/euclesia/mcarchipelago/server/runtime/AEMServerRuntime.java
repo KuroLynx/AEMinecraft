@@ -28,8 +28,22 @@ public final class AEMServerRuntime {
         return server;
     }
 
+    /**
+     * Whether the slot's data can be trusted — which is what every gameplay service actually needs to
+     * know, and is NOT the same as having a socket open.
+     *
+     * <p>This used to be {@code isConnected()}, and that was safe only because a dropped session
+     * kicked everybody out. It stopped being safe the moment a world was allowed to keep running
+     * offline: the lock services read this to decide whether they can judge at all, and several of
+     * them fail OPEN when the answer is no — {@code DimensionLockService} returns "not blocked",
+     * {@code MaterialLockService} returns "no reason". A live-socket definition would therefore have
+     * handed an offline player every dimension and every gated material at once.
+     *
+     * <p>{@link APSlotGate#isReady()} is the honest question: the registries are loaded, from a live
+     * session or from this world's cache, which are the same bytes.
+     */
     public static boolean isArchipelagoReady() {
-        return AEM.ARCHIPELAGO.client().state().isConnected();
+        return APSlotGate.isReady();
     }
 
     public static String defaultSlotName(CommandSourceStack source) {

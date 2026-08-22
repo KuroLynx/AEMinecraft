@@ -36,7 +36,10 @@ public final class DataLogicProvider implements LogicProvider {
     @Override
     public LogicState stateFor(Identifier advancementId) {
         ArchipelagoClient client = AEM.ARCHIPELAGO.client();
-        if (!client.state().isConnected()) {
+        // Loaded locations rather than a live socket: in singleplayer an offline world restores the
+        // same registries this reads, so the overlay keeps colouring instead of going dark the
+        // moment the room becomes unreachable.
+        if (!client.registries().apLocations().hasLocations()) {
             return LogicState.UNKNOWN;
         }
 

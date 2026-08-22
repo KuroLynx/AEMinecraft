@@ -19,6 +19,7 @@ import fr.euclesia.mcarchipelago.protocol.packet.outbound.SetOperation;
 import fr.euclesia.mcarchipelago.protocol.packet.outbound.SetPacket;
 import fr.euclesia.mcarchipelago.protocol.packet.outbound.StatusUpdatePacket;
 import fr.euclesia.mcarchipelago.protocol.packet.outbound.SyncPacket;
+import fr.euclesia.mcarchipelago.server.session.PendingChecks;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,8 +32,24 @@ public final class APArchipelagoGateway implements ArchipelagoGateway {
         this.client = client;
     }
 
+    /**
+     * Sends the checks, or holds them for the next session when there is no link.
+     *
+     * <p>This is the one outbound message an offline run still generates something for: the room is
+     * owed every location this slot completes, and dropping one strands whoever is waiting on the item
+     * behind it. Ids resolve fine offline (the map is slot data, not the socket), so only the send has
+     * to wait — see {@link PendingChecks}.
+     */
     @Override
     public void checkLocations(Collection<Long> locations) {
+        if (locations.isEmpty()) {
+            return;
+        }
+        if (!client.state().isConnected() && PendingChecks.isLoaded()) {
+            AEMDebug.log("gateway.checkLocations OFFLINE, queued ids={}", locations);
+            PendingChecks.add(locations);
+            return;
+        }
         AEMDebug.log("gateway.checkLocations ids={}", locations);
         client.send(new LocationChecksPacket(locations));
     }
@@ -81,8 +98,18 @@ public final class APArchipelagoGateway implements ArchipelagoGateway {
         client.send(new LocationScoutsPacket(locations, hintMode));
     }
 
+    /**
+     * Reports the goal, or remembers to report it. Finishing the run offline and never telling the
+     * room would leave the slot open forever, which is the one offline loss nobody could work around
+     * by playing on; the flag is persisted and sent with the queued checks on reconnect.
+     */
     @Override
     public void markGoalReached() {
+        if (!client.state().isConnected() && PendingChecks.isLoaded()) {
+            AEMDebug.log("gateway.markGoalReached OFFLINE, held for the next session");
+            PendingChecks.markGoalReached();
+            return;
+        }
         AEMDebug.log("gateway.markGoalReached -> CLIENT_GOAL");
         client.send(new StatusUpdatePacket(APClientStatus.CLIENT_GOAL));
     }

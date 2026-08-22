@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Optional;
 
 /**
@@ -79,6 +80,11 @@ public final class StructureCaptureData extends SavedData {
     public synchronized void add(String structureId, CapturedPlacement placement) {
         captured.computeIfAbsent(structureId, key -> new ArrayList<>()).add(placement);
         setDirty();
+    }
+
+    /** Every structure id currently holding captured placements. */
+    public synchronized Set<String> capturedIds() {
+        return Set.copyOf(captured.keySet());
     }
 
     public synchronized List<CapturedPlacement> drain(String structureId) {

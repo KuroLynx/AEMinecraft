@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Per-dimension persistent record of structure mobs that were ready to spawn (their structure
@@ -58,6 +59,11 @@ public final class PendingMobData extends SavedData {
     public synchronized void add(String mobId, CompoundTag entityNbt) {
         pending.computeIfAbsent(mobId, key -> new ArrayList<>()).add(entityNbt);
         setDirty();
+    }
+
+    /** Every mob id currently holding deferred spawns. */
+    public synchronized Set<String> pendingIds() {
+        return Set.copyOf(pending.keySet());
     }
 
     public synchronized List<CompoundTag> drain(String mobId) {

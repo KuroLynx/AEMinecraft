@@ -5,6 +5,7 @@ import fr.euclesia.mcarchipelago.client.connect.WorldLoadResume;
 import fr.euclesia.mcarchipelago.client.dump.HeadlessWorldDump;
 import fr.euclesia.mcarchipelago.client.gui.ArchipelagoConnectingScreen;
 import fr.euclesia.mcarchipelago.server.connect.APWorldConnection;
+import fr.euclesia.mcarchipelago.server.session.APSessionCache;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.client.gui.screens.TitleScreen;
@@ -95,6 +96,23 @@ public abstract class MinecraftWorldLoadMixin {
                     self.doWorldLoad(storageAccess, packs, stem, gameRules, newWorld);
                 }),
                 () -> {
+                    // The room could not be reached. A world that has connected before has its slot
+                    // data cached, and the gates read the cache exactly as they read a live session —
+                    // so load it anyway and play offline. Checks earned meanwhile are queued and sent
+                    // by /aem reconnect. Only a world that has NEVER connected is genuinely blind:
+                    // there is nothing to fall back to, and generating would place locked content for
+                    // real, so that one still goes home.
+                    if (APSessionCache.exists(storageAccess.getLevelPath(LevelResource.ROOT))) {
+                        SystemToast.addOrUpdate(self.getToastManager(), SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
+                                Component.translatable("gui.aem.offline.title"),
+                                Component.translatable("gui.aem.offline.subtitle"));
+                        APSessionCache.requestOfflineStart();
+                        WorldLoadResume.schedule(() -> {
+                            archipelago_euclesia$resuming = true;
+                            self.doWorldLoad(storageAccess, packs, stem, gameRules, newWorld);
+                        });
+                        return;
+                    }
                     // Abort: release the world resources and save lock, drop any staged connection, go home.
                     stem.close();
                     storageAccess.safeClose();

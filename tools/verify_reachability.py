@@ -29,7 +29,7 @@ from BaseClasses import CollectionState  # noqa: E402
 from worlds.AutoWorld import AutoWorldRegister  # noqa: E402
 from test.general import setup_multiworld  # noqa: E402
 
-WORLD = AutoWorldRegister.world_types["Minecraft [AEM]"]
+WORLD = AutoWorldRegister.world_types["AEMinecraft"]
 OVERWORLD_ITEM = "Dimension Unlock: Overworld"
 
 

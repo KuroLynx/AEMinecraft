@@ -4,7 +4,6 @@ import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.server.gameplay.StructureCapture.CaptureSession;
 import fr.euclesia.mcarchipelago.server.gameplay.StructureCaptureData.CapturedBlock;
 import fr.euclesia.mcarchipelago.server.gameplay.StructureCaptureData.CapturedPlacement;
-import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
@@ -41,29 +40,65 @@ public final class StructureCaptureService {
         if (session == null || session.isEmpty()) {
             return;
         }
-        MinecraftServer server = AEMServerRuntime.server();
-        if (server == null) {
-            return;
-        }
+        // level.getServer(), NOT AEMServerRuntime.server(): the latter is only set on SERVER_STARTED,
+        // and spawn chunks generate during level load, BEFORE that. Reading it here returned null and
+        // dropped straight out — but StructureCapture.end() above has already consumed the session, so
+        // the structure's writes were diverted away from the world AND the capture thrown away. The
+        // structure was neither placed nor stored: gone, with nothing left to release. A ServerLevel
+        // always knows its server, whatever stage of startup we are in.
+        MinecraftServer server = level.getServer();
         HolderLookup.Provider provider = level.registryAccess();
         String structureId = session.structureId();
         CapturedPlacement placement = session.toPersistable(provider);
         server.execute(() -> captureData(level).add(structureId, placement));
     }
 
-    /** Applies every captured placement of the given structures into the live world. Server thread. */
+    /** Structure ids holding captured placements in this level (see SlotReleaseService). */
+    public static Set<String> capturedStructureIds(ServerLevel level) {
+        return captureData(level).capturedIds();
+    }
+
+    /** Mob ids holding deferred worldgen spawns in this level (see SlotReleaseService). */
+    public static Set<String> pendingMobIds(ServerLevel level) {
+        return pendingMobData(level).pendingIds();
+    }
+
+    /**
+     * Queues every captured placement of the given structures for application. Server thread.
+     *
+     * <p>Queued rather than applied on the spot: one unlock is one structure type and would be fine,
+     * but a mass unlock — another player finishing their game and releasing — delivers dozens at once,
+     * and writing every placement of every type in a single tick stalls the server hard enough that
+     * the structures look like they never arrived. See {@link StructurePlacementQueue}.
+     */
     public static void applyUnlocked(MinecraftServer server, Set<String> structureIds) {
         if (structureIds.isEmpty()) {
             return;
         }
+        int queued = 0;
         for (ServerLevel level : server.getAllLevels()) {
             StructureCaptureData data = captureData(level);
             for (String structureId : structureIds) {
                 for (CapturedPlacement placement : data.drain(structureId)) {
-                    applyPlacement(level, placement);
+                    StructurePlacementQueue.enqueue(level, structureId, placement);
+                    queued++;
                 }
             }
         }
+        if (queued > 0) {
+            AEM.LOGGER.info("Unlocked {} structure type(s): {} placement(s) queued.",
+                    structureIds.size(), queued);
+        }
+    }
+
+    /** Applies one queued placement. Called only by {@link StructurePlacementQueue}. */
+    static void applyPlacementNow(ServerLevel level, CapturedPlacement placement) {
+        applyPlacement(level, placement);
+    }
+
+    /** Puts a placement back in storage when the server stops before it could be applied. */
+    static void restoreCaptured(ServerLevel level, String structureId, CapturedPlacement placement) {
+        captureData(level).add(structureId, placement);
     }
 
     /**
@@ -91,10 +126,9 @@ public final class StructureCaptureService {
         if (mobId.isEmpty()) {
             return;
         }
-        MinecraftServer server = AEMServerRuntime.server();
-        if (server == null) {
-            return;
-        }
+        // Same reasoning as finish(): the runtime reference is not set this early in startup, and a
+        // deferred mob dropped here is a mob that never spawns at all.
+        MinecraftServer server = level.getServer();
         server.execute(() -> pendingMobData(level).add(mobId, entityNbt));
     }
 
@@ -137,19 +171,32 @@ public final class StructureCaptureService {
     }
 
     private static void spawnOrDeferMob(ServerLevel level, CompoundTag entityNbt) {
-        String mobId = entityNbt.getStringOr("id", "");
-        if (!mobId.isEmpty() && AEM.ARCHIPELAGO.client().registries().apMobs().isSpawnLocked(mobId)) {
-            pendingMobData(level).add(mobId, entityNbt);
-            return;
-        }
+        // spawnEntity parks the mob itself when anything in its rider stack is locked, so the old
+        // id-only pre-check here would only duplicate it — and it read the ROOT's id alone, which
+        // missed a locked passenger entirely.
         spawnEntity(level, entityNbt);
     }
 
+    /**
+     * Spawns a stored mob, or parks it again when its rider stack is not clear to spawn yet.
+     *
+     * <p>The re-check matters because a stack is deferred under ONE mob's id (the root's, since the
+     * root's NBT is what carries the whole stack). A Parched riding a Camel Husk deferred for the
+     * camel therefore comes due the moment the camel unlocks — while the Parched may still be locked.
+     * Vanilla's add refuses that stack and the NBT has already been drained, so without parking it
+     * again under whichever member is still locked, the mob would be lost for the rest of the run.
+     */
     private static void spawnEntity(ServerLevel level, CompoundTag entityNbt) {
         Entity entity = EntityType.loadEntityRecursive(entityNbt, level, EntitySpawnReason.STRUCTURE, EntityProcessor.NOP);
-        if (entity != null) {
-            level.tryAddFreshEntityWithPassengers(entity);
+        if (entity == null) {
+            return;
         }
+        String stillLocked = MobSpawnLockService.firstLockedInStack(entity);
+        if (stillLocked != null) {
+            pendingMobData(level).add(stillLocked, entityNbt);
+            return;
+        }
+        level.tryAddFreshEntityWithPassengers(entity);
     }
 
     private static StructureCaptureData captureData(ServerLevel level) {

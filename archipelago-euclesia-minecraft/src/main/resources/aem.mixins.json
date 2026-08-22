@@ -5,15 +5,19 @@
   "mixins": [
     "AdvancementRewardsMixin",
     "AdvancementVisibilityEvaluatorMixin",
+    "BadOmenMobEffectMixin",
     "BeehiveBlockEntityMixin",
+    "CreeperMixin",
     "EnderDragonFightMixin",
     "EntityMixin",
     "GiveCommandMixin",
     "ItemEntityMixin",
     "KilledTriggerMixin",
     "LivingEntityMixin",
+    "NaturalSpawnerMixin",
     "PlacedFeatureMixin",
     "PlayerAdvancementsMixin",
+    "PrimedTntMixin",
     "ServerAdvancementManagerAccessor",
     "ServerLevelMixin",
     "ServerPlayerMixin",
@@ -27,5 +31,5 @@
   },
   "overwrites": {
     "requireAnnotations": true
-	}
+  }
 }

@@ -89,6 +89,6 @@ read it, and bump `MAX_SUPPORTED`.
   `minecraft_aem.apworld` does not collide with Archipelago's built-in Minecraft world when a user
   installs it. If you develop against a local Archipelago checkout, install the world there as
   `worlds/minecraft_aem/` to match (the `tools/` scripts import `worlds.minecraft_aem`).
-- **`archipelago.json`.** Its `game` (`"Minecraft [AEM]"`) must match the world's `game` in
+- **`archipelago.json`.** Its `game` (`"AEMinecraft"`) must match the world's `game` in
   `minecraft_aem/__init__.py`; `minimum_ap_version` is the oldest Archipelago version the world
   supports; and `world_version` is the release version (numeric `major.minor.build`, as above).

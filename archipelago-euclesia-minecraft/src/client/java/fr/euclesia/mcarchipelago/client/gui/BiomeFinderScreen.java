@@ -1,5 +1,6 @@
 package fr.euclesia.mcarchipelago.client.gui;
 
+import fr.euclesia.mcarchipelago.client.net.BiomeFinderClient;
 import fr.euclesia.mcarchipelago.server.gameplay.BiomeFinderService;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -19,6 +20,10 @@ import java.util.Locale;
  * picking one asks the server to locate the nearest instance and point the compass needle at it
  * (see {@link BiomeFinderService}). The dimension scope means nether/end biomes only show up while
  * you're in those dimensions.
+ *
+ * <p>Both halves of that go through the server ({@link BiomeFinderClient}), so the list arrives a
+ * round trip after the screen opens: it draws a loading line until then, and fills itself in from
+ * {@link #tick()}.
  */
 public final class BiomeFinderScreen extends Screen {
     private static final int LIST_WIDTH = 220;
@@ -36,21 +41,18 @@ public final class BiomeFinderScreen extends Screen {
     private EditBox searchField;
     private String lastQuery = "";
     private int scroll;
+    /** False until the server's biome list has arrived; the list is empty rather than absent. */
+    private boolean loaded;
 
     public BiomeFinderScreen() {
         super(Minecraft.getInstance(), Minecraft.getInstance().font, Component.translatable("item.aem.biome_finder"));
+        // Asked for once per opening — init() also runs on resize, which must not restart the wait.
+        BiomeFinderClient.requestList();
     }
 
     @Override
     protected void init() {
-        entries.clear();
-        if (this.minecraft.player != null) {
-            for (Identifier id : BiomeFinderService.availableBiomes(this.minecraft.player.level().dimension())) {
-                Component name = Component.translatable(BiomeFinderService.biomeTranslationKey(id));
-                String haystack = (name.getString() + " " + id).toLowerCase(Locale.ROOT);
-                entries.add(new Entry(id, name, haystack));
-            }
-        }
+        loadEntries();
 
         int left = this.width / 2 - LIST_WIDTH / 2;
         int top = this.height / 6;
@@ -67,6 +69,21 @@ public final class BiomeFinderScreen extends Screen {
 
         applyFilter();
         rebuildRows();
+    }
+
+    /** Rebuilds {@link #entries} from whatever the server has sent us so far. */
+    private void loadEntries() {
+        entries.clear();
+        List<Identifier> biomes = BiomeFinderClient.biomes();
+        loaded = biomes != null;
+        if (!loaded) {
+            return;
+        }
+        for (Identifier id : biomes) {
+            Component name = Component.translatable(BiomeFinderService.biomeTranslationKey(id));
+            String haystack = (name.getString() + " " + id).toLowerCase(Locale.ROOT);
+            entries.add(new Entry(id, name, haystack));
+        }
     }
 
     /** Y of the count/scroll hint line, sitting in the gap between the search box and the list. */
@@ -110,15 +127,18 @@ public final class BiomeFinderScreen extends Screen {
     }
 
     private void pick(Identifier biomeId) {
-        if (this.minecraft.player != null) {
-            BiomeFinderService.requestSearch(this.minecraft.player.getUUID(), biomeId);
-        }
+        BiomeFinderClient.pick(biomeId);
         onClose();
     }
 
     @Override
     public void tick() {
         super.tick();
+        if (!loaded && BiomeFinderClient.biomes() != null) {
+            loadEntries();
+            applyFilter();
+            rebuildRows();
+        }
         if (!searchField.getValue().equals(lastQuery)) {
             lastQuery = searchField.getValue();
             applyFilter();
@@ -141,8 +161,12 @@ public final class BiomeFinderScreen extends Screen {
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
         graphics.centeredText(this.font, this.title.getString(), this.width / 2, this.height / 6 - 20, 0xFFFFFFFF);
 
-        if (entries.isEmpty()) {
-            graphics.centeredText(this.font, "No biomes available here.", this.width / 2, listTop(), 0xFFFF5555);
+        if (!loaded) {
+            graphics.centeredText(this.font, Component.translatable("gui.aem.biome_finder.loading").getString(),
+                    this.width / 2, listTop(), 0xFFA0A0A0);
+        } else if (entries.isEmpty()) {
+            graphics.centeredText(this.font, Component.translatable("gui.aem.biome_finder.empty").getString(),
+                    this.width / 2, listTop(), 0xFFFF5555);
         } else if (filtered.size() > VISIBLE_ROWS) {
             String hint = (scroll + VISIBLE_ROWS) + " / " + filtered.size() + " (scroll for more)";
             graphics.centeredText(this.font, hint, this.width / 2, hintY(), 0xFFA0A0A0);

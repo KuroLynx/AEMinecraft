@@ -1,10 +1,10 @@
 name: Player{number}
-description: Minecraft [AEM] — Minecraft Randomizer by KuroLynx (mod by EDGN)
-game: Minecraft [AEM]
+description: AEMinecraft — Minecraft Randomizer by KuroLynx (mod by EDGN)
+game: AEMinecraft
 requires:
   version: 0.6.7
 
-Minecraft [AEM]:
+AEMinecraft:
   # -------------------------------------------------------------------------
   # Generic Archipelago options
   # -------------------------------------------------------------------------
@@ -361,7 +361,13 @@ Minecraft [AEM]:
     #     - container: taking a locked item out of plain storage — chest, barrel, shulker box, hopper,
     #       dispenser, ender chest, minecart and mount inventories.
     #     - pickup: picking a locked item up off the ground.
-    #     - given: the /give command handing you a locked item.
+    #     - given: the /give command handing you a locked item. Note that BlazeandCave's item rewards
+    #       travel this route too — the pack hands them out with plain /give commands — so leaving
+    #       'given' open lets a BACAP reward drop a still-locked item into your inventory, which can
+    #       award the advancement for obtaining it (an iron ingot reward completing Acquire Hardware,
+    #       say). The mod does pull such reward items back out of your inventory, but that happens after
+    #       the advancement has already fired, so set 'given' to true if you would rather BACAP's rewards
+    #       were gated as well.
     #
     # Meaning of each value:
     #     - true: the route is gated until the item unlocks (you get a red "requires ..." message).
