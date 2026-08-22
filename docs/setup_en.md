@@ -88,6 +88,94 @@ Use the **options / template generator** in your Archipelago Launcher to produce
 > Each Archipelago world is tied to the slot it was created with. The most recently created world is
 > the one at the top of your Singleplayer list.
 
+## Playing With Friends (Multiplayer)
+
+An Archipelago slot belongs to a **world**, not to a person. Everyone playing in the same Minecraft
+world is playing the same slot together: one item pool, one set of checks, one goal. (Two people who
+each want their own slot need two worlds and two YAMLs, the same as two players of any other game.)
+
+### What everyone needs
+
+Every player who connects needs the same **Minecraft version**, **Fabric API**, and the **same
+AEMinecraft `.jar`** as the host — the mod adds its own items and effects, so a client without it
+cannot join.
+
+Nobody else needs the rest: datapacks such as **BACAP** live in the world, so only the host or the
+server installs them, and the `.apworld` is only needed by whoever generates the multiworld.
+
+### Option A — Open to LAN
+
+1. Create the world exactly as above — the **Archipelago** tab is what ties it to your slot.
+2. In-game, press **Esc** → **Open to LAN**. Turn **Allow Cheats** on if you want to be able to run
+   `/aem` commands.
+3. Your friends join through **Multiplayer** on the same network.
+
+Your game holds the Archipelago session, so when you close the world the run stops for everyone.
+
+### Option B — Dedicated server
+
+1. Install a **Fabric server** for Minecraft `26.1.2`.
+2. Put the **AEMinecraft** `.jar` and **Fabric API** into the server's `mods/` folder.
+3. Put any datapacks your config requires (e.g. BACAP) into `world/datapacks/`.
+4. Start the server once. The mod writes a starter **`config/aem.json`** and logs where it is.
+5. Fill that file in, then restart:
+
+```json
+{
+  "slot": "YourSlotName",
+  "address": "archipelago.gg",
+  "port": "38281",
+  "password": "",
+  "connectOnStart": true
+}
+```
+
+| Field | Meaning |
+| --- | --- |
+| `slot` | Your slot name in the room. Left blank, the server boots with no session at all. |
+| `address` / `port` | The Archipelago room to join. |
+| `password` | The room's password, or `""` when it has none. |
+| `connectOnStart` | Set it to `false` to boot idle and connect by hand with `/aem connect` — the usual choice while a room is still being set up. |
+
+A dedicated server has no create-world screen, and this file is what replaces it. It only ever
+**seeds** a world that has no slot yet: after the first use the slot is written into
+`<world>/archipelago/`, and that copy wins from then on — so a save moved to another host carries its
+own slot along instead of quietly adopting the new host's. To point a world at a different room, use
+`/aem connect`.
+
+> **Until the server has its slot data, players are held at the door** with *"This server has not
+> connected to Archipelago yet."* That is deliberate: a server that cannot tell locked content from
+> unlocked would generate locked structures for real, permanently. Connect from the console with
+> `/aem connect "wss://archipelago.gg:38281" "YourSlotName"` (a third argument is the room password;
+> the `wss://` scheme is required here), and everyone can come in. A world that has already cached its
+> slot data holds nobody out — it simply plays [offline](#playing-offline).
+
+### What the run shares, and what stays yours
+
+| Shared by the whole run | Yours alone |
+| --- | --- |
+| **Advancements**, and the individual criteria inside them — one player's thirty biomes and another's ten add up | **BACAP rewards** — everyone completes the shared advancement for real, so everyone gets their own reward chest and trophy |
+| **Checks** — a location is sent once, by whoever reaches it first | **Filler buffs** — each player receives every one, including the ones that landed while they were logged off |
+| **Unlocks** — mobs, structures, dimensions, materials, Knowledge | **Finders** — every player is handed their own Biome Finder, and the structure locator bar draws on each player's own HUD |
+| The **goal**, and whether the run is online or offline | **Traps** — they fire on whoever is in the world at the time, and are never banked for latecomers |
+
+A player who joins tomorrow, or the first one back after a restart, is caught up on everything the run
+has done — half-finished advancements included — instead of starting from their own empty book.
+
+> **DeathLink on a server:** your deaths go to the room once each, however many of you are online, and
+> a death arriving from another world takes **one** random living player rather than wiping the
+> server.
+
+### Server commands
+
+| Command | Who can run it | What it does |
+| --- | --- | --- |
+| `/aem status` | anyone | Online or offline, the slot, and how many checks are queued |
+| `/aem say <message>` | anyone | Sends a message to Archipelago chat (needs a live link) |
+| `/aem connect "<uri>" "<slot>" ["<password>"]` | anyone | Opens a session on a server that started idle |
+| `/aem reconnect` | operators | Retries this world's saved slot and flushes everything earned offline |
+| `/aem deathlink [on\|off\|default]` | operators | DeathLink for the whole run, saved in the world. On a dedicated server this is the only way to change it — the client screen's toggle has no session to talk to |
+
 ## Playing offline
 
 Once a world has connected successfully **even once**, it keeps a copy of its slot data and can be
