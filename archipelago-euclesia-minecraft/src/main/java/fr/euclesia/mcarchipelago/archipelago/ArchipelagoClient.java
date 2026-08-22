@@ -38,7 +38,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 public final class ArchipelagoClient {
-    private static final String MINECRAFT_GAME = "Minecraft [AEM]";
+    private static final String MINECRAFT_GAME = "AEMinecraft";
 
     private final APTransport transport;
     private final AEMRegistries registries;

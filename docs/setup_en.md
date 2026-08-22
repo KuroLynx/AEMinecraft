@@ -1,4 +1,4 @@
-# Setup Guide — Minecraft [AEM]
+# Setup Guide — AEMinecraft
 
 *Minecraft Randomizer by KuroLynx (mod by EDGN)*
 
@@ -11,8 +11,8 @@
 | **Minecraft: Java Edition** | `26.1.2` | — |
 | **Fabric Loader** | `0.19.2` or newer | [fabricmc.net](https://fabricmc.net/use/installer/) |
 | **Fabric API** | `0.149.0+26.1.2` | [github.com/FabricMC/fabric-api](https://github.com/FabricMC/fabric-api/releases) |
-| **Minecraft [AEM] mod** (`.jar`) | latest release | [Latest release](https://github.com/KuroLynx/ArchipelagoMinecraft/releases/latest) |
-| **Minecraft [AEM] apworld** (`.apworld`) | latest release | [Latest release](https://github.com/KuroLynx/ArchipelagoMinecraft/releases/latest) |
+| **AEMinecraft mod** (`.jar`) | latest release | [Latest release](https://github.com/KuroLynx/ArchipelagoMinecraft/releases/latest) |
+| **AEMinecraft apworld** (`.apworld`) | latest release | [Latest release](https://github.com/KuroLynx/ArchipelagoMinecraft/releases/latest) |
 | **Archipelago** | `0.6.7` or newer | [archipelago.gg](https://archipelago.gg/) |
 
 > Download the `.jar` and `.apworld` from the **same** release so their versions match.
@@ -29,9 +29,9 @@
 
 1. Install **Fabric Loader** for Minecraft `26.1.2`.
 2. Drop the following into your `.minecraft/mods/` folder:
-   - the **Minecraft [AEM]** mod `.jar`
+   - the **AEMinecraft** mod `.jar`
    - **Fabric API**
-3. Place the **Minecraft [AEM]** `.apworld` in your Archipelago installation
+3. Place the **AEMinecraft** `.apworld` in your Archipelago installation
    (double-clicking the `.apworld` with the Archipelago Launcher installed will install it for you).
 
 ---
@@ -50,7 +50,7 @@ You need a player YAML (your "config") before you can generate or join a game. P
 *(Requires the Archipelago Launcher, with the AEM `.apworld` installed.)*
 
 Use the **options / template generator** in your Archipelago Launcher to produce a valid YAML for
-**Minecraft [AEM]**, then customize it.
+**AEMinecraft**, then customize it.
 
 ---
 
@@ -58,7 +58,7 @@ Use the **options / template generator** in your Archipelago Launcher to produce
 
 ### First time (creating your world)
 
-1. Launch Minecraft with the required mods installed (**Minecraft [AEM]** + **Fabric API**).
+1. Launch Minecraft with the required mods installed (**AEMinecraft** + **Fabric API**).
 2. Click **Singleplayer**, then **Create New World**.
 3. Open the **Archipelago** tab (far right of the tab bar at the top of the create-world screen).
 4. Enter the **Address**, **Port**, **Slot name**, and **Password** (if the room needs one) into the

@@ -1,10 +1,10 @@
 name: Player{number}
-description: Minecraft [AEM] — Minecraft Randomizer by KuroLynx (mod by EDGN)
-game: Minecraft [AEM]
+description: AEMinecraft — Minecraft Randomizer by KuroLynx (mod by EDGN)
+game: AEMinecraft
 requires:
   version: 0.6.7
 
-Minecraft [AEM]:
+AEMinecraft:
   # -------------------------------------------------------------------------
   # Generic Archipelago options
   # -------------------------------------------------------------------------

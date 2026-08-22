@@ -47,7 +47,7 @@ from worlds.minecraft_aem.logic.acquisition import RuleHelper  # noqa: E402
 from worlds.minecraft_aem.logic.root import _manifest  # noqa: E402
 from worlds.minecraft_aem.logic.triggers import TriggerCompiler  # noqa: E402
 
-WORLD = AutoWorldRegister.world_types["Minecraft [AEM]"]
+WORLD = AutoWorldRegister.world_types["AEMinecraft"]
 
 # Every lock on, so a field's gate can't read as absent merely because this seed put no item behind
 # it. Coverage is a property of the compiler, not of a config, but the helper still consults options.

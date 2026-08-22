@@ -31,7 +31,7 @@ from worlds.AutoWorld import AutoWorldRegister  # noqa: E402
 from test.general import setup_multiworld  # noqa: E402
 from worlds.minecraft_aem.logic.root import build_location_rules  # noqa: E402
 
-WORLD = AutoWorldRegister.world_types["Minecraft [AEM]"]
+WORLD = AutoWorldRegister.world_types["AEMinecraft"]
 
 # The axis that matters is which locations are ABSENT, so every case here turns something OFF.
 CASES = {
