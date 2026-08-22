@@ -1,10 +1,10 @@
-# Minecraft [AEM]
+# AEMinecraft
 
-## Why "Minecraft [AEM]" and not just "Minecraft"?
+## Why "AEMinecraft" and not just "Minecraft"?
 
-There is **no official Minecraft implementation** in Archipelago. **Minecraft [AEM]** is a standalone,
+There is **no official Minecraft implementation** in Archipelago. **AEMinecraft** is a standalone,
 community-made randomizer (by KuroLynx, mod by EDGN) for **modern Minecraft (Java Edition 26.1.2)**.
-The `[AEM]` tag identifies this specific mod and apworld rather than claiming the bare "Minecraft"
+The `AEM` prefix identifies this specific mod and apworld rather than claiming the bare "Minecraft"
 name, so it stays unambiguous and leaves room for other implementations that may appear later.
 
 ## Where is the options page?
@@ -33,7 +33,7 @@ since many of your checks come from it.
 
 ## What does randomization do to this game?
 
-Instead of shuffling item pickups, Minecraft [AEM] turns **advancements and mob kills into location
+Instead of shuffling item pickups, AEMinecraft turns **advancements and mob kills into location
 checks** and hands progression back to you as Archipelago items. Completing a check anywhere in your
 world releases the item held in that location — which may belong to you or to another player.
 
@@ -71,7 +71,7 @@ Optional systems expand or reshape the game:
 - **Structure Finder / Biome Finder** — navigation aids (see below) that can be shuffled into the
   pool, granted at start, or disabled.
 
-## What is the goal of Minecraft [AEM] when randomized?
+## What is the goal of AEMinecraft when randomized?
 
 You must satisfy **two** conditions (whichever your options set):
 
@@ -83,12 +83,12 @@ You must satisfy **two** conditions (whichever your options set):
 If you ask for more advancements than your options actually make available, the requirement is
 automatically lowered to fit, so a high value is always safe.
 
-## What items from Minecraft [AEM] can appear in another player's world?
+## What items from AEMinecraft can appear in another player's world?
 
 Every item in the pool can appear in another player's world — Dimension/Structure/Entity Unlocks,
 Knowledge and Material Handling items, the Structure and Biome Finders, and filler (see below).
 
-## How many checks are in Minecraft [AEM]?
+## How many checks are in AEMinecraft?
 
 There is no fixed number — it depends on your options. The baseline is the vanilla advancements plus
 your required boss kills. **Kill Sanity**, **Challenge Sanity**, and **BlazeandCave's Advancements
@@ -160,7 +160,7 @@ identical either way — so turning it off simply puts the tracker back to green
 
 ## A note on AI usage
 
-We want to be upfront about how this project is built. Minecraft [AEM] currently relies **heavily on
+We want to be upfront about how this project is built. AEMinecraft currently relies **heavily on
 AI to write its code**. We simply don't have the time a repository like this normally needs to
 maintain, but we care about it and want to keep improving it — especially in the first few releases of
 the apworld, where a lot still needs to change.

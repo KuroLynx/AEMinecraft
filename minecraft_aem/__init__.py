@@ -25,11 +25,11 @@ SLOT_DATA_VERSION = 2
 # ---------------------------------------------------------------------------
 
 class MCItem(Item):
-    game = "Minecraft [AEM]"
+    game = "AEMinecraft"
 
 
 class MCLocation(Location):
-    game = "Minecraft [AEM]"
+    game = "AEMinecraft"
 
 
 # Structures that gate a goal boss (and thus the critical path) when that boss is required: such a
@@ -73,7 +73,7 @@ class MCWebWorld(WebWorld):
     tutorials = [
         Tutorial(
             tutorial_name = "Setup Guide",
-            description = "Guide to set up the Minecraft [AEM] randomizer.",
+            description = "Guide to set up the AEMinecraft randomizer.",
             language = "English",
             file_name = "setup_en.md",
             link = "setup/en",
@@ -88,7 +88,7 @@ class MCWebWorld(WebWorld):
 
 class MCWorld(World):
     """Minecraft Randomizer by KuroLynx (Mod by EDGN)"""
-    game = "Minecraft [AEM]"
+    game = "AEMinecraft"
     options: MCOptions
     options_dataclass = MCOptions
     web = MCWebWorld()
@@ -158,7 +158,7 @@ class MCWorld(World):
         )
         if self.options.advancements_required.value > active_advancement_count:
             logging.warning(
-                "Minecraft [AEM] (%s): advancements_required (%d) exceeds the %d advancement checks this "
+                "AEMinecraft (%s): advancements_required (%d) exceeds the %d advancement checks this "
                 "seed has; clamping to %d. Enable challenge_sanity / blazeandcave for more.",
                 self.multiworld.get_player_name(self.player),
                 self.options.advancements_required.value,
@@ -465,7 +465,7 @@ class MCWorld(World):
 
         if len(pool) > active_location_count:
             raise Exception(
-                f"Minecraft [AEM]: required item pool ({len(pool)}) exceeds active locations "
+                f"AEMinecraft: required item pool ({len(pool)}) exceeds active locations "
                 f"({active_location_count}). Enable kill_sanity / challenge_sanity, or reduce "
                 f"mob_spawn_lock."
             )

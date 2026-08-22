@@ -1,10 +1,10 @@
 name: MCOverworld
 description: Verify Overworld start generates with full accessibility
-game: Minecraft [AEM]
+game: AEMinecraft
 requires:
   version: 0.6.7
 
-Minecraft [AEM]:
+AEMinecraft:
   progression_balancing: 0
   accessibility: full
   boss_list:

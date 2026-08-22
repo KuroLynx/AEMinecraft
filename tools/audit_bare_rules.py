@@ -70,7 +70,7 @@ from worlds.minecraft_aem.logic.root import (  # noqa: E402
     _manifest, build_location_rules, derive_location_regions,
 )
 
-WORLD = AutoWorldRegister.world_types["Minecraft [AEM]"]
+WORLD = AutoWorldRegister.world_types["AEMinecraft"]
 
 # Checks that legitimately ask for nothing: you can do them the moment you spawn. Listed so the
 # report stays short and every remaining line is a real question. Roots are detected structurally.

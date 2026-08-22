@@ -21,7 +21,7 @@ from worlds.minecraft_aem.logic.ast import (  # noqa: E402
     And, AtLeast, Const, Has, Or, ReachLocation, ReachRegion,
 )
 
-WORLD = AutoWorldRegister.world_types["Minecraft [AEM]"]
+WORLD = AutoWorldRegister.world_types["AEMinecraft"]
 OPTS = {
     "blazeandcave": 1, "challenge_sanity": 1, "kill_sanity": 1, "villager_trust": 1,
     "mob_spawn_lock": {"passive", "neutral", "hostile", "boss"},

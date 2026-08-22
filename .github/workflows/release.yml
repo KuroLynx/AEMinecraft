@@ -119,7 +119,7 @@ jobs:
           # inside the zip. Shipping minecraft_aem-0.4.0.apworld made it look for
           # worlds.minecraft_aem-0.4.0 — which is neither a valid module name nor present — and the
           # world silently "failed to initialize", surfacing to players as
-          # "No functional world found to handle game Minecraft [AEM]".
+          # "No functional world found to handle game AEMinecraft".
           # The version is already inside, in archipelago.json's world_version, which is what AP
           # reads and displays.
           cp minecraft_aem.apworld "dist/minecraft_aem.apworld"

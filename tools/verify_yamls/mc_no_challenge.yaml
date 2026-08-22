@@ -9,11 +9,11 @@
 # removes locations from the seed.
 name: MCNoChallenge
 description: Verify a fill with challenge_sanity off, where challenge-frame locations do not exist
-game: Minecraft [AEM]
+game: AEMinecraft
 requires:
   version: 0.6.7
 
-Minecraft [AEM]:
+AEMinecraft:
   progression_balancing: 0
   accessibility: full
   boss_list:

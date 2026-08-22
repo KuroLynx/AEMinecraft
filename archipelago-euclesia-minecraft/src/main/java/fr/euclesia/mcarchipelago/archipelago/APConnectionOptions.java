@@ -17,7 +17,7 @@ public record APConnectionOptions(
 ) {
     public static APConnectionOptions minecraft(String playerName, String password) {
         return new APConnectionOptions(
-                "Minecraft [AEM]",
+                "AEMinecraft",
                 playerName,
                 password,
                 APVersion.V0_6_0,
