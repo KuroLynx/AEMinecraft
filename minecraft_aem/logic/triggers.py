@@ -313,7 +313,10 @@ class TriggerCompiler:
         # advancement prerequisite that is NOT an AP location (BACAP's `technical` tab) down to its
         # own criteria. None = no such resolution available; the prerequisite falls back to None.
         self._records = records or {}
-        self._record_stack: set = set()
+        # Advancement ids whose rule is being built right now, outermost first. Two things read it:
+        # _record_rule, so following a prerequisite cannot recurse forever, and _is_back_reference,
+        # so a criterion pointing back into an in-progress subtree is recognised as a cycle.
+        self._compiling: list[str] = []
         # Reverse lookups from Minecraft id -> our display-name key. The *_by_path variants are keyed
         # by the bare path so any namespace resolves (BACAP writes ids bare like "end_city" / "cow",
         # vanilla uses "minecraft:"): see _entity_name / _struct_name.
@@ -330,25 +333,58 @@ class TriggerCompiler:
         # AP's reachability sweep raise on an unknown location. None = don't restrict.
         self._active = active_locations
 
+    def _is_back_reference(self, gid: str) -> bool:
+        """Would depending on ``gid`` close a loop back onto an advancement we are compiling?
+
+        BACAP lights a tab root up from its own tree: `challenges/root` ("Super Challenges") is
+        granted by any ONE of 47 criteria, and 39 of them are a `type_specific.advancements`
+        predicate naming one of its own children — one of them naming `challenges/root` itself.
+        Compiling those into reached() gave the access-rule graph back-edges (root -> child, and
+        child -> root via the parent chain), and AP's can_reach_location has no re-entry guard, so
+        the first reachability sweep recursed until the stack blew: every `blazeandcave` +
+        `challenge_sanity: all` seed died with RecursionError. `statistics/root` does the same
+        thing to `statistics/the_first_night`; that tab just never becomes checks today.
+        """
+        if not self._compiling:
+            return False
+        in_progress = set(self._compiling)
+        seen: set[str] = set()
+        current = gid
+        # gid itself, then up its parent chain: an ancestor being compiled means gid is inside that
+        # advancement's own subtree, which is the back-edge.
+        while current is not None and current not in seen:
+            if current in in_progress:
+                return True
+            seen.add(current)
+            record = self._records.get(current)
+            current = record.get("parent") if record else None
+        return False
+
     def _record_rule(self, gid: str) -> Rule | None:
         """Compile another advancement's record by id, for a prerequisite that is not a check.
         Guarded against cycles: a record already being compiled resolves to None (fall back) rather
-        than recursing forever."""
+        than recursing forever. compile() does the push/pop of ``gid``."""
         record = self._records.get(gid)
-        if record is None or gid in self._record_stack:
+        if record is None or gid in self._compiling:
             return None
-        self._record_stack.add(gid)
-        try:
-            return self.compile(record, gid)
-        finally:
-            self._record_stack.discard(gid)
+        return self.compile(record, gid)
 
     # -- public -------------------------------------------------------------
     def compile(self, record: dict, gid: str | None = None) -> Rule | None:
         """AST for ``record``'s requirements, or ``None`` if any AND-group is uninterpretable.
 
         ``gid`` lets a record pick up an _EXTRA_REQUIREMENT — something the game demands that the
-        criteria simply do not state."""
+        criteria simply do not state, and marks the record as in-progress so a criterion that
+        points back at it (or at one of its children) is recognised as a cycle."""
+        if gid is not None:
+            self._compiling.append(gid)
+        try:
+            return self._compile(record, gid)
+        finally:
+            if gid is not None:
+                self._compiling.pop()
+
+    def _compile(self, record: dict, gid: str | None) -> Rule | None:
         criteria = record.get("criteria", {})
         # Minecraft's default when `requirements` is absent/empty is "all criteria required" — each
         # criterion as its own AND-group (AdvancementRequirements.allOf). Datapacks (BACAP) usually
@@ -1276,6 +1312,12 @@ class TriggerCompiler:
             for gid, required in advancements.items():
                 if required is False:
                     continue
+                if self._is_back_reference(gid):
+                    # A criterion that just mirrors this advancement's own subtree. Drop the whole
+                    # predicate (not only this entry): the criterion says nothing else, and pricing
+                    # it as free would hand out the advancement for nothing. The caller drops it
+                    # from its OR-group, leaving the criteria that describe real play.
+                    return None
                 loc = self._adv_loc_by_gid.get(gid)
                 if loc is not None and (self._active is None or loc in self._active):
                     parts.append(self.h.reached(loc))
