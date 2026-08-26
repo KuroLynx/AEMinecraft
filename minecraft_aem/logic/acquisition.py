@@ -160,6 +160,19 @@ _NATURAL_SELF_MINED = frozenset({
     "clay", "snow_block", "packed_ice", "blue_ice", "glowstone", "magma_block", "obsidian",
     "mossy_cobblestone", "mud", "packed_mud", "bone_block",
 })
+# Blocks that cannot simply be found: they exist only where something put them there, so mining one
+# is not a free natural source the way mining gravel is. Not derivable from the packs — the palettes
+# in structures.json say which structures a block DECORATES, not whether it also generates in the
+# open world — so the gate each one needs is named here.
+#   * nether_wart grows on soul sand in Nether Fortresses and Bastion Remnants and nowhere else;
+#     mining it read as "be in the Nether", which made 'Basis of Brewing' free and, through it, the
+#     whole brewing tree.
+#   * a wither rose drops only when a WITHER kills a mob, so it prices the Wither ('Decaying Beauty').
+# Keyed by block; the value is what the mining route must additionally require.
+_BLOCK_ONLY_FROM = {
+    "nether_wart": ("structures", ("fortress", "bastion_remnant")),
+    "wither_rose": ("boss", E_WITHER),
+}
 # needs_<tier>_tool tag -> the material tier the mining pickaxe (and the player) must have reached.
 _NEEDS_TIER = {"stone": MAT_STONE, "iron": MAT_IRON, "diamond": MAT_DIAMOND}
 _BLOCK_MINING: dict | None = None
@@ -1449,7 +1462,7 @@ class RuleHelper:
         # not something strict logic should lean on, so it stays in the glitch graph.
         if base == "grass_block":
             return self.any_of(
-                self.all_of(self.knowledge(K_SHOVEL), self.can_silk_touch()),
+                self.all_of(self.knowledge(K_SHOVEL), self.can_silk_touch(_stack | {base})),
                 self.glitch_only(self.entity(E_ENDERMAN)),
             )
 
@@ -1601,6 +1614,13 @@ class RuleHelper:
         for block in mining_blocks:
             if has_tiered_ore and _block_mining().get(block) is None:
                 continue
+            # A potted plant is the flower pot plus the plant, placed by hand or by a village
+            # decorator. Mining one back is circular, and reading it as a natural source made the
+            # plant free: `potted_wither_rose` handed out a wither rose with no Wither, and
+            # `potted_dead_bush` a dead bush with no shears. The plant's own block (and the item's
+            # structure route) stay as the real sources.
+            if block.startswith("potted_"):
+                continue
             # A block that drops *itself* is only a real "mine it" source when it generates
             # naturally. A placed-only block — a crafted one (slime_block, wool, planks, …), a mob
             # trophy (a skull/head) or a frog-made froglight — must be obtained then placed first,
@@ -1621,12 +1641,19 @@ class RuleHelper:
                         add(self.structure(struct_name),
                             struct_name not in self.progression_structures)
                 continue
-            add(self._mining_node(block, base), unreliable("mining", block))
+            node = self._mining_node(block, base, stack=inner)
+            if node is not None:
+                origin = self._block_origin_node(block)
+                if origin is None:
+                    continue          # the block cannot exist for this seed — not a source at all
+                add(self.all_of(node, origin), unreliable("mining", block))
         for block in record.get("silk_mining", ()):
             # The block yields itself only to a Silk-Touch tool (bee_nest, ice, coral, …): same
             # region/tier as a normal mine PLUS the capability to silk-touch (enchant). Always behind
             # the silk gate, so it is never a free path even when the block is placed-only.
-            add(self._mining_node(block, base, silk=True), unreliable("silk_mining", block))
+            node = self._mining_node(block, base, silk=True, stack=inner)
+            if node is not None:
+                add(node, unreliable("silk_mining", block))
         trades = record.get("trades", ())
         professions = {entry[0] for entry in trades if entry}
         if professions - {"wandering_trader"}:
@@ -1784,32 +1811,93 @@ class RuleHelper:
             return self.acquire(ingredient["item"], stack)
         return None
 
-    def _mining_node(self, block: str, item: str, silk: bool = False):
+    def _mining_node(self, block: str, item: str, silk: bool = False,
+                     stack: frozenset = frozenset()):
         """Break ``block`` (to obtain ``item``): be in the block's dimension, and — only for
         pickaxe-mineable blocks (soul sand, glowstone, crops drop bare-handed) — hold a pickaxe of
         the required material tier. ``silk`` adds the Silk-Touch capability when the block yields
-        itself only to a Silk-Touch tool."""
+        itself only to a Silk-Touch tool.
+
+        Some blocks yield a given item only to a particular tool, which lives in the loot table
+        rather than a tag: grass and ferns drop seeds bare-handed but themselves only to shears,
+        leaves and cobweb want shears or Silk Touch, a mushroom block yields itself only to Silk
+        Touch. block_mining's ``drops`` records that per item, so the gate lands on glow lichen and
+        dead bush without touching the wheat seeds off the same grass."""
         parts = [self.access_region(_block_region(block))]
         info = _block_mining().get(block)
         if info is not None:
-            parts.append(self.knowledge(K_PICKAXE))
-            tier = _MATERIAL_TIER_BY_ITEM.get(item) or _NEEDS_TIER.get(info.get("needs"))
-            if tier is not None:
-                parts.append(self.material(tier))
+            # A block is listed for either reason now — a pickaxe tier, or a per-item tool. Only the
+            # first means "you need a pickaxe"; glow lichen is in the table and mines bare-handed.
+            if "needs" in info:
+                parts.append(self.knowledge(K_PICKAXE))
+                tier = _MATERIAL_TIER_BY_ITEM.get(item) or _NEEDS_TIER.get(info.get("needs"))
+                if tier is not None:
+                    parts.append(self.material(tier))
+            if not silk:
+                tool_gate = self._drop_tool_node(info, item, stack)
+                if tool_gate is None:
+                    return None      # the only tool that works is itself unreachable here
+                parts.append(tool_gate)
         if silk:
-            parts.append(self.can_silk_touch())
+            silk_gate = self.can_silk_touch(stack)
+            if silk_gate is None:
+                return None      # silk is unreachable from here (circular) — drop the route
+            parts.append(silk_gate)
         return self.all_of(*parts)
 
-    def can_silk_touch(self):
+    def _block_origin_node(self, block: str):
+        """What a block needs to EXIST before it can be mined (see ``_BLOCK_ONLY_FROM``), or an
+        empty AND for the ordinary block that simply generates in the world. ``None`` when the only
+        thing that would place it is inactive this seed, so the caller drops the route."""
+        entry = _BLOCK_ONLY_FROM.get(block)
+        if entry is None:
+            return self.all_of()
+        kind, value = entry
+        if kind == "boss":
+            return self.can_defeat(value)
+        active = [name for name in value if name in self.active_structures]
+        return self.any_of(*[self.structure(name) for name in active]) if active else None
+
+    # Loot-table tool name -> the capability that satisfies it.
+    def _drop_tool_node(self, info: dict, item: str, stack: frozenset):
+        """Gate for the tool ``item`` needs off this block, or an empty AND when it needs none.
+
+        ``None`` means the requirement exists but no listed tool is reachable — the caller drops the
+        whole mining route rather than pretending the drop is free."""
+        tools = (info.get("drops") or {}).get(item)
+        if not tools:
+            return self.all_of()
+        routes = []
+        for tool in tools:
+            if tool == "shears":
+                shears = self.acquire("minecraft:shears", stack)
+                if shears is not None:   # None on a cycle (shears off a shears-gated block)
+                    routes.append(shears)
+            elif tool == "silk":
+                silk_gate = self.can_silk_touch(stack)
+                if silk_gate is not None:
+                    routes.append(silk_gate)
+        return self.any_of(*routes) if routes else None
+
+    def can_silk_touch(self, stack: frozenset = frozenset()):
         """The capability to wield a Silk-Touch tool. Two routes, mirroring the enchant gate in
         ``triggers.py``: enchant one yourself (``acquire(enchanting_table)`` gates Knowledge:
         Enchanting + its tier), OR apply a Silk-Touch enchanted book with an anvil (a librarian's
-        book is a no-Knowledge trade path)."""
-        routes = [self.acquire("minecraft:enchanting_table")]
-        book = self.acquire("minecraft:enchanted_book")
-        if book is not None:
-            routes.append(self.all_of(book, self.acquire("minecraft:anvil")))
-        return self.any_of(*routes)
+        book is a no-Knowledge trade path).
+
+        ``stack`` is the acquisition recursion stack. It must be threaded through: a silk-only block
+        drop asks for silk, silk asks for an enchanting table, and its ingredients can lead back to a
+        silk-only block (deepslate gold ore -> silk -> obsidian -> ... -> deepslate gold ore). Without
+        the stack that loop never breaks. ``None`` when every route is itself circular."""
+        routes = []
+        table = self.acquire("minecraft:enchanting_table", stack)
+        if table is not None:
+            routes.append(table)
+        book = self.acquire("minecraft:enchanted_book", stack)
+        anvil = self.acquire("minecraft:anvil", stack) if book is not None else None
+        if book is not None and anvil is not None:
+            routes.append(self.all_of(book, anvil))
+        return self.any_of(*routes) if routes else None
 
     def _gameplay_node(self, table: str, stack: frozenset = frozenset()):
         """The gate for a 'gameplay' loot source — a real, repeatable acquisition path, grounded in

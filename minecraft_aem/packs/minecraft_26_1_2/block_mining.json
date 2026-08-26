@@ -1,8 +1,21 @@
 {
+  "acacia_leaves": {
+    "drops": {
+      "acacia_leaves": [
+        "shears",
+        "silk"
+      ]
+    }
+  },
   "amethyst_block": {
     "needs": null
   },
   "amethyst_cluster": {
+    "drops": {
+      "amethyst_cluster": [
+        "silk"
+      ]
+    },
     "needs": null
   },
   "ancient_debris": {
@@ -17,17 +30,54 @@
   "andesite_stairs": {
     "needs": null
   },
+  "azalea_leaves": {
+    "drops": {
+      "azalea_leaves": [
+        "shears",
+        "silk"
+      ]
+    }
+  },
   "basalt": {
     "needs": null
   },
+  "bee_nest": {
+    "drops": {
+      "bee_nest": [
+        "silk"
+      ]
+    }
+  },
   "bell": {
     "needs": null
+  },
+  "birch_leaves": {
+    "drops": {
+      "birch_leaves": [
+        "shears",
+        "silk"
+      ]
+    }
   },
   "black_concrete": {
     "needs": null
   },
   "black_glazed_terracotta": {
     "needs": null
+  },
+  "black_stained_glass": {
+    "drops": {
+      "black_stained_glass": [
+        "silk"
+      ]
+    }
+  },
+  "black_stained_glass_pane": {
+    "drops": {
+      "black_stained_glass_pane": [
+        "silk"
+      ]
+    }
   },
   "black_terracotta": {
     "needs": null
@@ -51,7 +101,26 @@
     "needs": null
   },
   "blue_ice": {
+    "drops": {
+      "blue_ice": [
+        "silk"
+      ]
+    },
     "needs": null
+  },
+  "blue_stained_glass": {
+    "drops": {
+      "blue_stained_glass": [
+        "silk"
+      ]
+    }
+  },
+  "blue_stained_glass_pane": {
+    "drops": {
+      "blue_stained_glass_pane": [
+        "silk"
+      ]
+    }
   },
   "blue_terracotta": {
     "needs": null
@@ -59,8 +128,34 @@
   "bone_block": {
     "needs": null
   },
+  "bookshelf": {
+    "drops": {
+      "bookshelf": [
+        "silk"
+      ]
+    }
+  },
+  "brain_coral": {
+    "drops": {
+      "brain_coral": [
+        "silk"
+      ]
+    }
+  },
   "brain_coral_block": {
+    "drops": {
+      "brain_coral_block": [
+        "silk"
+      ]
+    },
     "needs": null
+  },
+  "brain_coral_fan": {
+    "drops": {
+      "brain_coral_fan": [
+        "silk"
+      ]
+    }
   },
   "brewing_stand": {
     "needs": null
@@ -80,17 +175,94 @@
   "brown_glazed_terracotta": {
     "needs": null
   },
+  "brown_mushroom_block": {
+    "drops": {
+      "brown_mushroom_block": [
+        "silk"
+      ]
+    }
+  },
+  "brown_stained_glass": {
+    "drops": {
+      "brown_stained_glass": [
+        "silk"
+      ]
+    }
+  },
+  "brown_stained_glass_pane": {
+    "drops": {
+      "brown_stained_glass_pane": [
+        "silk"
+      ]
+    }
+  },
   "brown_terracotta": {
     "needs": null
   },
+  "bubble_coral": {
+    "drops": {
+      "bubble_coral": [
+        "silk"
+      ]
+    }
+  },
   "bubble_coral_block": {
+    "drops": {
+      "bubble_coral_block": [
+        "silk"
+      ]
+    },
     "needs": null
+  },
+  "bubble_coral_fan": {
+    "drops": {
+      "bubble_coral_fan": [
+        "silk"
+      ]
+    }
   },
   "budding_amethyst": {
     "needs": null
   },
+  "bush": {
+    "drops": {
+      "bush": [
+        "shears",
+        "silk"
+      ]
+    }
+  },
   "calcite": {
     "needs": null
+  },
+  "calibrated_sculk_sensor": {
+    "drops": {
+      "calibrated_sculk_sensor": [
+        "silk"
+      ]
+    }
+  },
+  "campfire": {
+    "drops": {
+      "campfire": [
+        "silk"
+      ]
+    }
+  },
+  "cherry_leaves": {
+    "drops": {
+      "cherry_leaves": [
+        "shears",
+        "silk"
+      ]
+    }
+  },
+  "chiseled_bookshelf": {
+    "drops": {
+      "chiseled_bookshelf": [
+        "silk"
+      ]
+    }
   },
   "chiseled_copper": {
     "needs": "stone"
@@ -125,10 +297,22 @@
   "chiseled_tuff_bricks": {
     "needs": null
   },
+  "clay": {
+    "drops": {
+      "clay": [
+        "silk"
+      ]
+    }
+  },
   "coal_block": {
     "needs": null
   },
   "coal_ore": {
+    "drops": {
+      "coal_ore": [
+        "silk"
+      ]
+    },
     "needs": null
   },
   "cobbled_deepslate": {
@@ -149,6 +333,14 @@
   "cobblestone_stairs": {
     "needs": null
   },
+  "cobweb": {
+    "drops": {
+      "cobweb": [
+        "shears",
+        "silk"
+      ]
+    }
+  },
   "conduit": {
     "needs": null
   },
@@ -165,6 +357,11 @@
     "needs": "stone"
   },
   "copper_ore": {
+    "drops": {
+      "copper_ore": [
+        "silk"
+      ]
+    },
     "needs": "stone"
   },
   "copper_trapdoor": {
@@ -188,7 +385,19 @@
   "crafter": {
     "needs": "stone"
   },
+  "creaking_heart": {
+    "drops": {
+      "creaking_heart": [
+        "silk"
+      ]
+    }
+  },
   "crimson_nylium": {
+    "drops": {
+      "crimson_nylium": [
+        "silk"
+      ]
+    },
     "needs": null
   },
   "crying_obsidian": {
@@ -221,8 +430,30 @@
   "cyan_glazed_terracotta": {
     "needs": null
   },
+  "cyan_stained_glass": {
+    "drops": {
+      "cyan_stained_glass": [
+        "silk"
+      ]
+    }
+  },
+  "cyan_stained_glass_pane": {
+    "drops": {
+      "cyan_stained_glass_pane": [
+        "silk"
+      ]
+    }
+  },
   "cyan_terracotta": {
     "needs": null
+  },
+  "dark_oak_leaves": {
+    "drops": {
+      "dark_oak_leaves": [
+        "shears",
+        "silk"
+      ]
+    }
   },
   "dark_prismarine": {
     "needs": null
@@ -234,66 +465,128 @@
     "needs": null
   },
   "dead_brain_coral": {
+    "drops": {
+      "dead_brain_coral": [
+        "silk"
+      ]
+    },
     "needs": null
   },
   "dead_brain_coral_block": {
     "needs": null
   },
   "dead_brain_coral_fan": {
+    "drops": {
+      "dead_brain_coral_fan": [
+        "silk"
+      ]
+    },
     "needs": null
   },
   "dead_brain_coral_wall_fan": {
     "needs": null
   },
   "dead_bubble_coral": {
+    "drops": {
+      "dead_bubble_coral": [
+        "silk"
+      ]
+    },
     "needs": null
   },
   "dead_bubble_coral_block": {
     "needs": null
   },
   "dead_bubble_coral_fan": {
+    "drops": {
+      "dead_bubble_coral_fan": [
+        "silk"
+      ]
+    },
     "needs": null
   },
   "dead_bubble_coral_wall_fan": {
     "needs": null
   },
+  "dead_bush": {
+    "drops": {
+      "dead_bush": [
+        "shears"
+      ]
+    }
+  },
   "dead_fire_coral": {
+    "drops": {
+      "dead_fire_coral": [
+        "silk"
+      ]
+    },
     "needs": null
   },
   "dead_fire_coral_block": {
     "needs": null
   },
   "dead_fire_coral_fan": {
+    "drops": {
+      "dead_fire_coral_fan": [
+        "silk"
+      ]
+    },
     "needs": null
   },
   "dead_fire_coral_wall_fan": {
     "needs": null
   },
   "dead_horn_coral": {
+    "drops": {
+      "dead_horn_coral": [
+        "silk"
+      ]
+    },
     "needs": null
   },
   "dead_horn_coral_block": {
     "needs": null
   },
   "dead_horn_coral_fan": {
+    "drops": {
+      "dead_horn_coral_fan": [
+        "silk"
+      ]
+    },
     "needs": null
   },
   "dead_horn_coral_wall_fan": {
     "needs": null
   },
   "dead_tube_coral": {
+    "drops": {
+      "dead_tube_coral": [
+        "silk"
+      ]
+    },
     "needs": null
   },
   "dead_tube_coral_block": {
     "needs": null
   },
   "dead_tube_coral_fan": {
+    "drops": {
+      "dead_tube_coral_fan": [
+        "silk"
+      ]
+    },
     "needs": null
   },
   "dead_tube_coral_wall_fan": {
     "needs": null
   },
   "deepslate": {
+    "drops": {
+      "deepslate": [
+        "silk"
+      ]
+    },
     "needs": null
   },
   "deepslate_brick_slab": {
@@ -306,27 +599,67 @@
     "needs": null
   },
   "deepslate_coal_ore": {
+    "drops": {
+      "deepslate_coal_ore": [
+        "silk"
+      ]
+    },
     "needs": null
   },
   "deepslate_copper_ore": {
+    "drops": {
+      "deepslate_copper_ore": [
+        "silk"
+      ]
+    },
     "needs": "stone"
   },
   "deepslate_diamond_ore": {
+    "drops": {
+      "deepslate_diamond_ore": [
+        "silk"
+      ]
+    },
     "needs": "iron"
   },
   "deepslate_emerald_ore": {
+    "drops": {
+      "deepslate_emerald_ore": [
+        "silk"
+      ]
+    },
     "needs": "iron"
   },
   "deepslate_gold_ore": {
+    "drops": {
+      "deepslate_gold_ore": [
+        "silk"
+      ]
+    },
     "needs": "iron"
   },
   "deepslate_iron_ore": {
+    "drops": {
+      "deepslate_iron_ore": [
+        "silk"
+      ]
+    },
     "needs": "stone"
   },
   "deepslate_lapis_ore": {
+    "drops": {
+      "deepslate_lapis_ore": [
+        "silk"
+      ]
+    },
     "needs": "stone"
   },
   "deepslate_redstone_ore": {
+    "drops": {
+      "deepslate_redstone_ore": [
+        "silk"
+      ]
+    },
     "needs": "iron"
   },
   "deepslate_tile_slab": {
@@ -342,6 +675,11 @@
     "needs": "iron"
   },
   "diamond_ore": {
+    "drops": {
+      "diamond_ore": [
+        "silk"
+      ]
+    },
     "needs": "iron"
   },
   "diorite": {
@@ -366,6 +704,11 @@
     "needs": "iron"
   },
   "emerald_ore": {
+    "drops": {
+      "emerald_ore": [
+        "silk"
+      ]
+    },
     "needs": "iron"
   },
   "enchanting_table": {
@@ -384,6 +727,11 @@
     "needs": null
   },
   "ender_chest": {
+    "drops": {
+      "ender_chest": [
+        "silk"
+      ]
+    },
     "needs": null
   },
   "exposed_chiseled_copper": {
@@ -413,8 +761,42 @@
   "exposed_cut_copper_stairs": {
     "needs": "stone"
   },
+  "fern": {
+    "drops": {
+      "fern": [
+        "shears"
+      ]
+    }
+  },
+  "fire_coral": {
+    "drops": {
+      "fire_coral": [
+        "silk"
+      ]
+    }
+  },
   "fire_coral_block": {
+    "drops": {
+      "fire_coral_block": [
+        "silk"
+      ]
+    },
     "needs": null
+  },
+  "fire_coral_fan": {
+    "drops": {
+      "fire_coral_fan": [
+        "silk"
+      ]
+    }
+  },
+  "flowering_azalea_leaves": {
+    "drops": {
+      "flowering_azalea_leaves": [
+        "shears",
+        "silk"
+      ]
+    }
   },
   "furnace": {
     "needs": null
@@ -422,10 +804,43 @@
   "gilded_blackstone": {
     "needs": null
   },
+  "glass": {
+    "drops": {
+      "glass": [
+        "silk"
+      ]
+    }
+  },
+  "glass_pane": {
+    "drops": {
+      "glass_pane": [
+        "silk"
+      ]
+    }
+  },
+  "glow_lichen": {
+    "drops": {
+      "glow_lichen": [
+        "shears"
+      ]
+    }
+  },
+  "glowstone": {
+    "drops": {
+      "glowstone": [
+        "silk"
+      ]
+    }
+  },
   "gold_block": {
     "needs": "iron"
   },
   "gold_ore": {
+    "drops": {
+      "gold_ore": [
+        "silk"
+      ]
+    },
     "needs": "iron"
   },
   "granite": {
@@ -437,11 +852,32 @@
   "granite_stairs": {
     "needs": null
   },
+  "grass_block": {
+    "drops": {
+      "grass_block": [
+        "silk"
+      ]
+    }
+  },
   "gray_concrete": {
     "needs": null
   },
   "gray_glazed_terracotta": {
     "needs": null
+  },
+  "gray_stained_glass": {
+    "drops": {
+      "gray_stained_glass": [
+        "silk"
+      ]
+    }
+  },
+  "gray_stained_glass_pane": {
+    "drops": {
+      "gray_stained_glass_pane": [
+        "silk"
+      ]
+    }
   },
   "gray_terracotta": {
     "needs": null
@@ -452,11 +888,32 @@
   "green_glazed_terracotta": {
     "needs": null
   },
+  "green_stained_glass": {
+    "drops": {
+      "green_stained_glass": [
+        "silk"
+      ]
+    }
+  },
+  "green_stained_glass_pane": {
+    "drops": {
+      "green_stained_glass_pane": [
+        "silk"
+      ]
+    }
+  },
   "green_terracotta": {
     "needs": null
   },
   "grindstone": {
     "needs": null
+  },
+  "hanging_roots": {
+    "drops": {
+      "hanging_roots": [
+        "shears"
+      ]
+    }
   },
   "heavy_core": {
     "needs": null
@@ -467,31 +924,90 @@
   "hopper": {
     "needs": null
   },
+  "horn_coral": {
+    "drops": {
+      "horn_coral": [
+        "silk"
+      ]
+    }
+  },
   "horn_coral_block": {
+    "drops": {
+      "horn_coral_block": [
+        "silk"
+      ]
+    },
     "needs": null
   },
+  "horn_coral_fan": {
+    "drops": {
+      "horn_coral_fan": [
+        "silk"
+      ]
+    }
+  },
   "ice": {
+    "drops": {
+      "ice": [
+        "silk"
+      ]
+    },
     "needs": null
   },
   "infested_chiseled_stone_bricks": {
+    "drops": {
+      "chiseled_stone_bricks": [
+        "silk"
+      ]
+    },
     "needs": null
   },
   "infested_cobblestone": {
+    "drops": {
+      "cobblestone": [
+        "silk"
+      ]
+    },
     "needs": null
   },
   "infested_cracked_stone_bricks": {
+    "drops": {
+      "cracked_stone_bricks": [
+        "silk"
+      ]
+    },
     "needs": null
   },
   "infested_deepslate": {
+    "drops": {
+      "deepslate": [
+        "silk"
+      ]
+    },
     "needs": null
   },
   "infested_mossy_stone_bricks": {
+    "drops": {
+      "mossy_stone_bricks": [
+        "silk"
+      ]
+    },
     "needs": null
   },
   "infested_stone": {
+    "drops": {
+      "stone": [
+        "silk"
+      ]
+    },
     "needs": null
   },
   "infested_stone_bricks": {
+    "drops": {
+      "stone_bricks": [
+        "silk"
+      ]
+    },
     "needs": null
   },
   "iron_block": {
@@ -501,25 +1017,69 @@
     "needs": null
   },
   "iron_ore": {
+    "drops": {
+      "iron_ore": [
+        "silk"
+      ]
+    },
     "needs": "stone"
   },
   "iron_trapdoor": {
     "needs": null
   },
+  "jungle_leaves": {
+    "drops": {
+      "jungle_leaves": [
+        "shears",
+        "silk"
+      ]
+    }
+  },
   "lapis_block": {
     "needs": "stone"
   },
   "lapis_ore": {
+    "drops": {
+      "lapis_ore": [
+        "silk"
+      ]
+    },
     "needs": "stone"
   },
   "large_amethyst_bud": {
+    "drops": {
+      "large_amethyst_bud": [
+        "silk"
+      ]
+    },
     "needs": null
+  },
+  "large_fern": {
+    "drops": {
+      "fern": [
+        "shears"
+      ]
+    }
   },
   "light_blue_concrete": {
     "needs": null
   },
   "light_blue_glazed_terracotta": {
     "needs": null
+  },
+  "light_blue_stained_glass": {
+    "drops": {
+      "light_blue_stained_glass": [
+        "silk"
+      ]
+    }
+  },
+  "light_blue_stained_glass_pane": {
+    "drops": {
+      "light_blue_stained_glass_pane": [
+        "silk"
+      ]
+    }
   },
   "light_blue_terracotta": {
     "needs": null
@@ -529,6 +1089,20 @@
   },
   "light_gray_glazed_terracotta": {
     "needs": null
+  },
+  "light_gray_stained_glass": {
+    "drops": {
+      "light_gray_stained_glass": [
+        "silk"
+      ]
+    }
+  },
+  "light_gray_stained_glass_pane": {
+    "drops": {
+      "light_gray_stained_glass_pane": [
+        "silk"
+      ]
+    }
   },
   "light_gray_terracotta": {
     "needs": null
@@ -542,6 +1116,20 @@
   "lime_glazed_terracotta": {
     "needs": null
   },
+  "lime_stained_glass": {
+    "drops": {
+      "lime_stained_glass": [
+        "silk"
+      ]
+    }
+  },
+  "lime_stained_glass_pane": {
+    "drops": {
+      "lime_stained_glass_pane": [
+        "silk"
+      ]
+    }
+  },
   "lime_terracotta": {
     "needs": null
   },
@@ -554,14 +1142,48 @@
   "magenta_glazed_terracotta": {
     "needs": null
   },
+  "magenta_stained_glass": {
+    "drops": {
+      "magenta_stained_glass": [
+        "silk"
+      ]
+    }
+  },
+  "magenta_stained_glass_pane": {
+    "drops": {
+      "magenta_stained_glass_pane": [
+        "silk"
+      ]
+    }
+  },
   "magenta_terracotta": {
     "needs": null
   },
   "magma_block": {
     "needs": null
   },
+  "mangrove_leaves": {
+    "drops": {
+      "mangrove_leaves": [
+        "shears",
+        "silk"
+      ]
+    }
+  },
   "medium_amethyst_bud": {
+    "drops": {
+      "medium_amethyst_bud": [
+        "silk"
+      ]
+    },
     "needs": null
+  },
+  "melon": {
+    "drops": {
+      "melon": [
+        "silk"
+      ]
+    }
   },
   "mossy_cobblestone": {
     "needs": null
@@ -590,6 +1212,20 @@
   "mud_bricks": {
     "needs": null
   },
+  "mushroom_stem": {
+    "drops": {
+      "mushroom_stem": [
+        "silk"
+      ]
+    }
+  },
+  "mycelium": {
+    "drops": {
+      "mycelium": [
+        "silk"
+      ]
+    }
+  },
   "nether_brick_fence": {
     "needs": null
   },
@@ -603,16 +1239,41 @@
     "needs": null
   },
   "nether_gold_ore": {
+    "drops": {
+      "nether_gold_ore": [
+        "silk"
+      ]
+    },
     "needs": null
   },
   "nether_quartz_ore": {
+    "drops": {
+      "nether_quartz_ore": [
+        "silk"
+      ]
+    },
     "needs": null
+  },
+  "nether_sprouts": {
+    "drops": {
+      "nether_sprouts": [
+        "shears"
+      ]
+    }
   },
   "netherite_block": {
     "needs": "diamond"
   },
   "netherrack": {
     "needs": null
+  },
+  "oak_leaves": {
+    "drops": {
+      "oak_leaves": [
+        "shears",
+        "silk"
+      ]
+    }
   },
   "observer": {
     "needs": null
@@ -625,6 +1286,20 @@
   },
   "orange_glazed_terracotta": {
     "needs": null
+  },
+  "orange_stained_glass": {
+    "drops": {
+      "orange_stained_glass": [
+        "silk"
+      ]
+    }
+  },
+  "orange_stained_glass_pane": {
+    "drops": {
+      "orange_stained_glass_pane": [
+        "silk"
+      ]
+    }
   },
   "orange_terracotta": {
     "needs": null
@@ -657,10 +1332,31 @@
     "needs": "stone"
   },
   "packed_ice": {
+    "drops": {
+      "packed_ice": [
+        "silk"
+      ]
+    },
     "needs": null
   },
   "packed_mud": {
     "needs": null
+  },
+  "pale_hanging_moss": {
+    "drops": {
+      "pale_hanging_moss": [
+        "shears",
+        "silk"
+      ]
+    }
+  },
+  "pale_oak_leaves": {
+    "drops": {
+      "pale_oak_leaves": [
+        "shears",
+        "silk"
+      ]
+    }
   },
   "petrified_oak_slab": {
     "needs": null
@@ -671,6 +1367,20 @@
   "pink_glazed_terracotta": {
     "needs": null
   },
+  "pink_stained_glass": {
+    "drops": {
+      "pink_stained_glass": [
+        "silk"
+      ]
+    }
+  },
+  "pink_stained_glass_pane": {
+    "drops": {
+      "pink_stained_glass_pane": [
+        "silk"
+      ]
+    }
+  },
   "pink_terracotta": {
     "needs": null
   },
@@ -679,6 +1389,13 @@
   },
   "piston_head": {
     "needs": null
+  },
+  "podzol": {
+    "drops": {
+      "podzol": [
+        "silk"
+      ]
+    }
   },
   "pointed_dripstone": {
     "needs": null
@@ -779,6 +1496,20 @@
   "purple_glazed_terracotta": {
     "needs": null
   },
+  "purple_stained_glass": {
+    "drops": {
+      "purple_stained_glass": [
+        "silk"
+      ]
+    }
+  },
+  "purple_stained_glass_pane": {
+    "drops": {
+      "purple_stained_glass_pane": [
+        "silk"
+      ]
+    }
+  },
   "purple_terracotta": {
     "needs": null
   },
@@ -824,6 +1555,13 @@
   "red_glazed_terracotta": {
     "needs": null
   },
+  "red_mushroom_block": {
+    "drops": {
+      "red_mushroom_block": [
+        "silk"
+      ]
+    }
+  },
   "red_nether_brick_slab": {
     "needs": null
   },
@@ -842,6 +1580,20 @@
   "red_sandstone_stairs": {
     "needs": null
   },
+  "red_stained_glass": {
+    "drops": {
+      "red_stained_glass": [
+        "silk"
+      ]
+    }
+  },
+  "red_stained_glass_pane": {
+    "drops": {
+      "red_stained_glass_pane": [
+        "silk"
+      ]
+    }
+  },
   "red_terracotta": {
     "needs": null
   },
@@ -849,6 +1601,11 @@
     "needs": null
   },
   "redstone_ore": {
+    "drops": {
+      "redstone_ore": [
+        "silk"
+      ]
+    },
     "needs": "iron"
   },
   "resin_brick_slab": {
@@ -875,8 +1632,84 @@
   "sandstone_stairs": {
     "needs": null
   },
+  "sculk": {
+    "drops": {
+      "sculk": [
+        "silk"
+      ]
+    }
+  },
+  "sculk_catalyst": {
+    "drops": {
+      "sculk_catalyst": [
+        "silk"
+      ]
+    }
+  },
+  "sculk_sensor": {
+    "drops": {
+      "sculk_sensor": [
+        "silk"
+      ]
+    }
+  },
+  "sculk_shrieker": {
+    "drops": {
+      "sculk_shrieker": [
+        "silk"
+      ]
+    }
+  },
+  "sculk_vein": {
+    "drops": {
+      "sculk_vein": [
+        "silk"
+      ]
+    }
+  },
+  "sea_lantern": {
+    "drops": {
+      "sea_lantern": [
+        "silk"
+      ]
+    }
+  },
+  "seagrass": {
+    "drops": {
+      "seagrass": [
+        "shears"
+      ]
+    }
+  },
+  "short_dry_grass": {
+    "drops": {
+      "short_dry_grass": [
+        "shears",
+        "silk"
+      ]
+    }
+  },
+  "short_grass": {
+    "drops": {
+      "short_grass": [
+        "shears"
+      ]
+    }
+  },
   "small_amethyst_bud": {
+    "drops": {
+      "small_amethyst_bud": [
+        "silk"
+      ]
+    },
     "needs": null
+  },
+  "small_dripleaf": {
+    "drops": {
+      "small_dripleaf": [
+        "shears"
+      ]
+    }
   },
   "smoker": {
     "needs": null
@@ -917,13 +1750,40 @@
   "smooth_stone_slab": {
     "needs": null
   },
+  "snow_block": {
+    "drops": {
+      "snow_block": [
+        "silk"
+      ]
+    }
+  },
+  "soul_campfire": {
+    "drops": {
+      "soul_campfire": [
+        "silk"
+      ]
+    }
+  },
   "spawner": {
     "needs": null
+  },
+  "spruce_leaves": {
+    "drops": {
+      "spruce_leaves": [
+        "shears",
+        "silk"
+      ]
+    }
   },
   "sticky_piston": {
     "needs": null
   },
   "stone": {
+    "drops": {
+      "stone": [
+        "silk"
+      ]
+    },
     "needs": null
   },
   "stone_brick_slab": {
@@ -947,11 +1807,52 @@
   "stonecutter": {
     "needs": null
   },
+  "tall_dry_grass": {
+    "drops": {
+      "tall_dry_grass": [
+        "shears",
+        "silk"
+      ]
+    }
+  },
+  "tall_grass": {
+    "drops": {
+      "short_grass": [
+        "shears"
+      ]
+    }
+  },
+  "tall_seagrass": {
+    "drops": {
+      "seagrass": [
+        "shears"
+      ]
+    }
+  },
   "terracotta": {
     "needs": null
   },
+  "tube_coral": {
+    "drops": {
+      "tube_coral": [
+        "silk"
+      ]
+    }
+  },
   "tube_coral_block": {
+    "drops": {
+      "tube_coral_block": [
+        "silk"
+      ]
+    },
     "needs": null
+  },
+  "tube_coral_fan": {
+    "drops": {
+      "tube_coral_fan": [
+        "silk"
+      ]
+    }
   },
   "tuff": {
     "needs": null
@@ -977,7 +1878,26 @@
   "tuff_wall": {
     "needs": null
   },
+  "turtle_egg": {
+    "drops": {
+      "turtle_egg": [
+        "silk"
+      ]
+    }
+  },
+  "vine": {
+    "drops": {
+      "vine": [
+        "shears"
+      ]
+    }
+  },
   "warped_nylium": {
+    "drops": {
+      "warped_nylium": [
+        "silk"
+      ]
+    },
     "needs": null
   },
   "waxed_chiseled_copper": {
@@ -1121,6 +2041,20 @@
   "white_glazed_terracotta": {
     "needs": null
   },
+  "white_stained_glass": {
+    "drops": {
+      "white_stained_glass": [
+        "silk"
+      ]
+    }
+  },
+  "white_stained_glass_pane": {
+    "drops": {
+      "white_stained_glass_pane": [
+        "silk"
+      ]
+    }
+  },
   "white_terracotta": {
     "needs": null
   },
@@ -1129,6 +2063,20 @@
   },
   "yellow_glazed_terracotta": {
     "needs": null
+  },
+  "yellow_stained_glass": {
+    "drops": {
+      "yellow_stained_glass": [
+        "silk"
+      ]
+    }
+  },
+  "yellow_stained_glass_pane": {
+    "drops": {
+      "yellow_stained_glass_pane": [
+        "silk"
+      ]
+    }
   },
   "yellow_terracotta": {
     "needs": null
