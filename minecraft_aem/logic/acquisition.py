@@ -169,9 +169,36 @@ _NATURAL_SELF_MINED = frozenset({
 #     whole brewing tree.
 #   * a wither rose drops only when a WITHER kills a mob, so it prices the Wither ('Decaying Beauty').
 # Keyed by block; the value is what the mining route must additionally require.
+#   * a carved pumpkin is a pumpkin carved WITH SHEARS; the ones you can simply find are the
+#     decorations in a woodland mansion or a pillager outpost ('Pumpa kungen!').
 _BLOCK_ONLY_FROM = {
     "nether_wart": ("structures", ("fortress", "bastion_remnant")),
     "wither_rose": ("boss", E_WITHER),
+    "carved_pumpkin": ("structures_or_craft",
+                       (("mansion", "pillager_outpost"), "minecraft:shears", "minecraft:pumpkin")),
+}
+# Blocks that are the PLACED FORM of the item they drop, under a different name — so mining one back
+# is circular the way mining a potted plant is, and reading it as a natural source makes the item
+# free. Tripwire is string laid on the ground; that free Overworld path then absorbed string's real
+# spider/loot gates in _unique_or, which is what kept 'Spider Smasher' (and 'The Ritual Begins',
+# whose black candle needs string) costing nothing even once cobweb asked for a sword. The item's
+# own structure routes still stand — string is in plenty of chests.
+_PLACED_FORM_BLOCKS = frozenset({"tripwire"})
+# Tools a block demands for a drop that its loot table does not state, because the demand is the
+# block's HARDNESS rather than a match_tool condition. Cobweb is the case: the table hands out string
+# to anything that is not shears, but cobweb takes so long to break by hand that a sword is the only
+# realistic way through — and without it 'Spider Smasher' cost nothing, taking 'The Ritual Begins'
+# (a black candle needs string) with it. Keyed by (block, dropped item).
+_EXTRA_DROP_KNOWLEDGE = {
+    ("cobweb", "string"): K_SWORD,
+}
+# Blocks the jar places in CODE rather than in a structure's template palette, so build_structures
+# cannot see them: a dried ghast generates in the Nether fossils of a soul sand valley, but the only
+# mentions of it anywhere in the jar data are its own loot table and piglin bartering. Merged into
+# _block_structures so the block keeps that route — this widens logic (one more way in), it does not
+# gate anything.
+_EXTRA_BLOCK_STRUCTURES = {
+    "dried_ghast": ("nether_fossil",),
 }
 # needs_<tier>_tool tag -> the material tier the mining pickaxe (and the player) must have reached.
 _NEEDS_TIER = {"stone": MAT_STONE, "iron": MAT_IRON, "diamond": MAT_DIAMOND}
@@ -201,6 +228,9 @@ def _block_structures() -> dict:
         for struct_name, data in STRUCTURES.items():
             for block in data.blocks:
                 mapping.setdefault(block, []).append(struct_name)
+        for block, extra in _EXTRA_BLOCK_STRUCTURES.items():
+            known = mapping.setdefault(block, [])
+            known += [name for name in extra if name in STRUCTURES and name not in known]
         _BLOCK_STRUCTURES = mapping
     return _BLOCK_STRUCTURES
 
@@ -1619,7 +1649,7 @@ class RuleHelper:
             # plant free: `potted_wither_rose` handed out a wither rose with no Wither, and
             # `potted_dead_bush` a dead bush with no shears. The plant's own block (and the item's
             # structure route) stay as the real sources.
-            if block.startswith("potted_"):
+            if block.startswith("potted_") or block in _PLACED_FORM_BLOCKS:
                 continue
             # A block that drops *itself* is only a real "mine it" source when it generates
             # naturally. A placed-only block — a crafted one (slime_block, wool, planks, …), a mob
@@ -1629,7 +1659,13 @@ class RuleHelper:
             # slime_block, or wither_skeleton_skull, dropping their mob gate).
             placed_only = (bool(record.get("recipes"))
                            or base.endswith(("_head", "_skull", "_froglight")))
-            if block == base and placed_only and base not in _NATURAL_SELF_MINED:
+            # A VARIANT block that spells out the item is the item after somebody placed it and did
+            # something to it — a candle on a cake (`candle_cake`), a plant in a pot. Mining one back
+            # is as circular as mining the plain placed block, and the free region path it produced
+            # let _unique_or absorb the item's real gates: 'The Ritual Begins' stayed free through
+            # `candle_cake` even after string started asking for a sword.
+            is_variant = block != base and base in block
+            if (block == base or (is_variant and placed_only))                     and placed_only and base not in _NATURAL_SELF_MINED:
                 # The self-mine is circular (placed-only), but the block may still generate naturally
                 # inside a structure's template (structures.json palette) — reaching that structure
                 # and mining it there is a genuine source recipes/loot don't capture (e.g. a
@@ -1834,10 +1870,15 @@ class RuleHelper:
                 if tier is not None:
                     parts.append(self.material(tier))
             if not silk:
-                tool_gate = self._drop_tool_node(info, item, stack)
+                tool_gate = self._drop_tool_node(block, info, item, stack)
                 if tool_gate is None:
                     return None      # the only tool that works is itself unreachable here
                 parts.append(tool_gate)
+        # Applied whether or not the block is in block_mining: this requirement comes from the
+        # block's hardness, not from its loot table (see _EXTRA_DROP_KNOWLEDGE).
+        knowledge = _EXTRA_DROP_KNOWLEDGE.get((block, item))
+        if knowledge is not None:
+            parts.append(self.knowledge(knowledge))
         if silk:
             silk_gate = self.can_silk_touch(stack)
             if silk_gate is None:
@@ -1855,11 +1896,18 @@ class RuleHelper:
         kind, value = entry
         if kind == "boss":
             return self.can_defeat(value)
+        if kind == "structures_or_craft":
+            names, tool_id, source_id = value
+            routes = [self.structure(name) for name in names if name in self.active_structures]
+            tool, source = self.acquire(tool_id), self.acquire(source_id)
+            if tool is not None and source is not None:
+                routes.append(self.all_of(tool, source))
+            return self.any_of(*routes) if routes else None
         active = [name for name in value if name in self.active_structures]
         return self.any_of(*[self.structure(name) for name in active]) if active else None
 
     # Loot-table tool name -> the capability that satisfies it.
-    def _drop_tool_node(self, info: dict, item: str, stack: frozenset):
+    def _drop_tool_node(self, block: str, info: dict, item: str, stack: frozenset):
         """Gate for the tool ``item`` needs off this block, or an empty AND when it needs none.
 
         ``None`` means the requirement exists but no listed tool is reachable — the caller drops the
