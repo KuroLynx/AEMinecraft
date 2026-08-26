@@ -338,14 +338,159 @@ public final class PackDump {
                 }
             }
         }
+        // A second requirement lives in the block's LOOT TABLE rather than a tag: some blocks only
+        // yield a given item to a specific tool (grass and ferns drop seeds bare-handed but
+        // themselves only to shears; leaves and cobweb want shears or Silk Touch; a mushroom block
+        // yields itself only to Silk Touch). Recorded per dropped item so the grass gates on shears
+        // while the wheat seeds off the same block stay free.
+        Map<String, JsonObject> drops = new HashMap<>();
+        for (Map.Entry<Identifier, JsonObject> entry : jsonResources(rm, "loot_table/blocks")) {
+            String block = stripExt(entry.getKey().getPath()
+                    .substring("loot_table/blocks/".length()));
+            JsonObject needed = lootToolRequirements(entry.getValue());
+            if (needed.size() > 0) {
+                drops.put(block, needed);
+            }
+        }
+
+        TreeSet<String> blocks = new TreeSet<>(pickaxe);
+        blocks.addAll(drops.keySet());
         JsonObject out = new JsonObject();
-        for (String block : pickaxe) {
+        for (String block : blocks) {
             JsonObject record = new JsonObject();
-            String tier = needs.get(block);
-            record.add("needs", tier == null ? JsonNull.INSTANCE : new com.google.gson.JsonPrimitive(tier));
+            // Only a pickaxe-mineable block carries "needs"; a block listed purely for a per-item
+            // tool (glow lichen) mines bare-handed and must not gain a pickaxe requirement.
+            if (pickaxe.contains(block)) {
+                String tier = needs.get(block);
+                record.add("needs", tier == null ? JsonNull.INSTANCE
+                        : new com.google.gson.JsonPrimitive(tier));
+            }
+            JsonObject needed = drops.get(block);
+            if (needed != null) {
+                record.add("drops", needed);
+            }
             out.add(block, record);
         }
         return out;
+    }
+
+    /** Per-item tool requirements for one block loot table: {@code {"<item>": ["shears","silk"]}}. */
+    private static JsonObject lootToolRequirements(JsonObject table) {
+        Map<String, Set<String>> found = new HashMap<>();
+        Set<String> free = new HashSet<>();
+        for (JsonElement pool : array(table.get("pools"))) {
+            if (!pool.isJsonObject()) {
+                continue;
+            }
+            List<JsonElement> inherited = new ArrayList<>();
+            for (JsonElement condition : array(pool.getAsJsonObject().get("conditions"))) {
+                inherited.add(condition);
+            }
+            walkLootEntries(pool.getAsJsonObject().get("entries"), inherited, found, free);
+        }
+        JsonObject out = new JsonObject();
+        for (Map.Entry<String, Set<String>> entry : new TreeMap<>(found).entrySet()) {
+            if (free.contains(entry.getKey()) || entry.getValue().isEmpty()) {
+                continue;  // a route with no tool gate wins: the item is free
+            }
+            JsonArray tools = new JsonArray();
+            for (String tool : new TreeSet<>(entry.getValue())) {
+                tools.add(tool);
+            }
+            out.add(entry.getKey(), tools);
+        }
+        return out;
+    }
+
+    /**
+     * Collect {@code item -> tool requirement} from a loot-table subtree. {@code inherited} is the
+     * conditions in scope: a pool's own conditions apply to every entry under it, and an
+     * {@code alternatives} child carries its siblings' fallbacks (grass drops seeds when the shears
+     * branch does not match).
+     */
+    private static void walkLootEntries(JsonElement node, List<JsonElement> inherited,
+                                        Map<String, Set<String>> found, Set<String> free) {
+        if (node == null || node.isJsonNull()) {
+            return;
+        }
+        if (node.isJsonArray()) {
+            for (JsonElement child : node.getAsJsonArray()) {
+                walkLootEntries(child, inherited, found, free);
+            }
+            return;
+        }
+        if (!node.isJsonObject()) {
+            return;
+        }
+        JsonObject obj = node.getAsJsonObject();
+        List<JsonElement> conditions = new ArrayList<>(inherited);
+        for (JsonElement condition : array(obj.get("conditions"))) {
+            conditions.add(condition);
+        }
+        String type = obj.has("type") ? stripNs(obj.get("type").getAsString()) : "";
+        if (!type.equals("item")) {
+            walkLootEntries(obj.get("children"), conditions, found, free);
+            return;
+        }
+        String item = obj.has("name") ? stripNs(obj.get("name").getAsString()) : "";
+        if (item.isEmpty()) {
+            return;
+        }
+        Set<String> required = null;
+        for (JsonElement condition : conditions) {
+            Set<String> tools = conditionTools(condition);
+            if (tools == null) {
+                continue;  // not a tool gate; says nothing
+            }
+            if (required == null) {
+                required = new HashSet<>(tools);
+            } else {
+                required.retainAll(tools);  // both gates must hold
+            }
+        }
+        if (required == null) {
+            free.add(item);
+            return;
+        }
+        found.computeIfAbsent(item, key -> new HashSet<>()).addAll(required);
+    }
+
+    /**
+     * The tools a loot condition demands, or {@code null} if it is not a tool gate at all. Only
+     * {@code match_tool} gates a drop on what you are holding; {@code survives_explosion},
+     * {@code random_chance}, {@code block_state_property} and {@code table_bonus} say nothing about
+     * the tool. {@code any_of} is the shears-or-Silk-Touch shape.
+     */
+    private static Set<String> conditionTools(JsonElement element) {
+        if (element == null || !element.isJsonObject()) {
+            return null;
+        }
+        JsonObject obj = element.getAsJsonObject();
+        String kind = obj.has("condition") ? stripNs(obj.get("condition").getAsString()) : "";
+        if (kind.equals("any_of")) {
+            Set<String> anyOf = new HashSet<>();
+            for (JsonElement term : array(obj.get("terms"))) {
+                Set<String> tools = conditionTools(term);
+                if (tools != null) {
+                    anyOf.addAll(tools);
+                }
+            }
+            return anyOf.isEmpty() ? null : anyOf;
+        }
+        if (!kind.equals("match_tool")) {
+            return null;
+        }
+        JsonObject predicate = obj.has("predicate") && obj.get("predicate").isJsonObject()
+                ? obj.getAsJsonObject("predicate") : new JsonObject();
+        if (predicate.has("items") && predicate.get("items").toString().contains("shears")) {
+            return Set.of("shears");
+        }
+        if (predicate.toString().contains("silk_touch")) {
+            return Set.of("silk");
+        }
+        // A match_tool we cannot read still gates the drop on SOMETHING held; claiming "free" would
+        // be the very bug this table exists to fix, so demand a tool nothing satisfies.
+        return Set.of();
     }
 
     // -- tags (data/<ns>/tags/{item,block,entity_type}/...) -----------------
