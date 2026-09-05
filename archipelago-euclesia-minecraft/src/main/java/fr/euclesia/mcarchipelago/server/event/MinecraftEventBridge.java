@@ -10,6 +10,7 @@ import fr.euclesia.mcarchipelago.server.gameplay.AdvancementBridge;
 import fr.euclesia.mcarchipelago.server.gameplay.BacapConfigService;
 import fr.euclesia.mcarchipelago.server.gameplay.BiomeFinderService;
 import fr.euclesia.mcarchipelago.server.gameplay.FillerTrapService;
+import fr.euclesia.mcarchipelago.server.gameplay.KeepInventoryService;
 import fr.euclesia.mcarchipelago.server.gameplay.KnowledgeUseGate;
 import fr.euclesia.mcarchipelago.server.gameplay.MobKillBridge;
 import fr.euclesia.mcarchipelago.server.gameplay.RootAdvancementService;
@@ -212,17 +213,22 @@ public final class MinecraftEventBridge {
             StructureFinderDriver.onPlayerLeave(player);
         });
 
-        // The Biome Finder is soulbound: restore the exact stack saved at death (keeping its tracked
-        // biome), or grant a fresh one if none was saved.
+        // Hand back what death took: first the slots the keep_inventory option saved (they go back to
+        // their exact indices, so they must land in an empty inventory), then the soulbound Biome
+        // Finder — restored as the exact stack saved at death (keeping its tracked biome), or granted
+        // fresh if none was saved. Doing the finder first would let the slot restore overwrite it.
         ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
+            KeepInventoryService.restoreOnRespawn(newPlayer);
             BiomeFinderService.restoreOnRespawn(newPlayer);
         });
 
-        // Before death drops are computed, save the finder (with its tracking) and strip it from the
-        // inventory so it isn't dropped; AFTER_RESPAWN restores it. Always allow the death itself.
+        // Before death drops are computed, strip from the inventory everything that must not drop —
+        // the finder (saved with its tracking) and the share of slots keep_inventory keeps — so
+        // vanilla only drops the rest; AFTER_RESPAWN puts both back. Always allow the death itself.
         ServerLivingEntityEvents.ALLOW_DEATH.register((entity, damageSource, damageAmount) -> {
             if (entity instanceof ServerPlayer player) {
                 BiomeFinderService.onDeath(player);
+                KeepInventoryService.onDeath(player);
             }
             return true;
         });

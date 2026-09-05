@@ -153,6 +153,7 @@ KNOWLEDGE_ICONS = {
     "Progressive Material Handling": "minecraft:raw_iron",
     "Progressive Villager Trust": "minecraft:emerald",
     "Progressive Structure Finder": "minecraft:recovery_compass",
+    "Progressive Keep Inventory": "minecraft:totem_of_undying",
     "Biome Finder": "minecraft:compass",
     "Dimension Unlock: Overworld": "minecraft:grass_block",
     "Dimension Unlock: Nether": "minecraft:netherrack",

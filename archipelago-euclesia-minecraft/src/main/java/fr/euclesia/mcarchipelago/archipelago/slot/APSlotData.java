@@ -23,6 +23,8 @@ public record APSlotData(
         int deathListCount,
         int advancementsRequired,
         String startDimension,
+        String keepInventoryMode,
+        int keepInventoryPoolSize,
         Set<String> mobSpawnLock,
         Map<Long, String> itemNamesById,
         Map<String, Long> locationIdsByGameId,
@@ -107,6 +109,8 @@ public record APSlotData(
                 0,
                 0,
                 "overworld",
+                "disabled",
+                0,
                 Set.of(),
                 Map.of(),
                 Map.of(),
@@ -142,6 +146,11 @@ public record APSlotData(
                 APJson.getInt(json, "death_list_count", 0),
                 APJson.getInt(json, "advancements_required", 0),
                 APJson.getString(json, "start_dimension", "overworld"),
+                // Keep Inventory: "disabled" | "active" | "progressive", with the pool size as the
+                // denominator progressive turns its received count into a percentage with. Absent in
+                // slot data written before the option existed -> "disabled", i.e. vanilla deaths.
+                APJson.getString(json, "keep_inventory_mode", "disabled"),
+                APJson.getInt(json, "keep_inventory_pool_size", 0),
                 APJson.stringSet(json, "mob_spawn_lock"),
                 APJson.longStringMap(json, "items"),
                 APJson.stringLongMap(json, "locations"),

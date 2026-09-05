@@ -9,7 +9,8 @@ from .logic.ast import Const
 from .logic.constants import *
 from .logic.root import set_rules
 from .logic_export import build_logic_export
-from .options import ChallengeSanity, ItemGateBehavior, MCOptions, StartDimension, StructureFinder
+from .options import (ChallengeSanity, ItemGateBehavior, KeepInventory, MCOptions, StartDimension,
+                      StructureFinder)
 from .regions import MCRegion
 from .trackers import build_trackers_export
 
@@ -438,6 +439,9 @@ class MCWorld(World):
                 continue
             if name in finder_modes:
                 continue
+            # Its count is the keep_inventory_pool_size option, not items.csv's — see below.
+            if name == ITEM_KEEP_INVENTORY:
+                continue
             for _ in range(item_data.count):
                 pool.append(self.create_item(name))
 
@@ -451,6 +455,15 @@ class MCWorld(World):
             elif mode == StructureFinder.option_start:
                 for _ in range(count):
                     self.multiworld.push_precollected(self.create_item(finder_name))
+
+        # Keep Inventory: only 'progressive' puts items in the pool, and how many is the player's
+        # choice (keep_inventory_pool_size), since that count IS the mechanic — each copy is worth
+        # 100/count percentage points, so collecting them all always reaches 100% kept whatever the
+        # size. 'active' is inherent (always 100%) and 'disabled' is vanilla, so neither needs an
+        # item: nothing goes in the pool and nothing is precollected.
+        if self.options.keep_inventory == KeepInventory.option_progressive:
+            for _ in range(self.options.keep_inventory_pool_size.value):
+                pool.append(self.create_item(ITEM_KEEP_INVENTORY))
 
         # Mob spawn unlocks: only the mobs locked by the mob_spawn_lock option are added.
         for mob_name in self._get_locked_mobs():
@@ -703,6 +716,13 @@ class MCWorld(World):
             # Whether the Structure Finder exists at all this seed (disabled = no item in the pool /
             # on start). The mod uses this to skip its proactive structure scan when the finder is off.
             "structure_finder"     : self.options.structure_finder.value != self.options.structure_finder.option_disabled,
+            # How much of the inventory survives a death: "disabled" (vanilla), "active" (always
+            # everything) or "progressive" (a share that grows with the Progressive Keep Inventory
+            # items received). The pool size is the denominator the mod turns that count into a
+            # percentage with; emitted whatever the mode, like any other option (the mod only reads
+            # it when progressive).
+            "keep_inventory_mode"  : self.options.keep_inventory.current_key,
+            "keep_inventory_pool_size": self.options.keep_inventory_pool_size.value,
             # BACAP integration: whether the pack is in play, and whether to keep its item/XP rewards.
             # The mod runs blazeandcave's reward-disable functions on first world load accordingly.
             "blazeandcave"         : bool(self.options.blazeandcave.value),
