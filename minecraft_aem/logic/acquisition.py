@@ -171,11 +171,22 @@ _NATURAL_SELF_MINED = frozenset({
 # Keyed by block; the value is what the mining route must additionally require.
 #   * a carved pumpkin is a pumpkin carved WITH SHEARS; the ones you can simply find are the
 #     decorations in a woodland mansion or a pillager outpost ('Pumpa kungen!').
+#   * a wet sponge is in the sponge room of an OCEAN MONUMENT and nowhere else (the elder guardian's
+#     own drop is a separate source on the item). Mining it read as "be in the Overworld", which made
+#     wet_sponge — and through the furnace, sponge — free.
+#   * a decorated pot you can break for its sherds is one somebody assembled; the ones that generate
+#     are the trial chambers' (structures.json's palette says so). Mining a pot back for `sherds`
+#     skipped both the pot's own recipe and the brushing the sherds really come from.
+#   * a copper golem statue is a copper golem that finished oxidizing — no recipe, and it generates
+#     nowhere — so the golem is the price ("entity": its gate carries the copper and the pumpkin).
 _BLOCK_ONLY_FROM = {
     "nether_wart": ("structures", ("fortress", "bastion_remnant")),
     "wither_rose": ("boss", E_WITHER),
     "carved_pumpkin": ("structures_or_craft",
                        (("mansion", "pillager_outpost"), "minecraft:shears", "minecraft:pumpkin")),
+    "wet_sponge": ("structures", (S_OCEAN_MONUMENT,)),
+    "decorated_pot": ("structures", (S_TRIAL_CHAMBERS,)),
+    "copper_golem_statue": ("entity", E_COPPER_GOLEM),
 }
 # Blocks that are the PLACED FORM of the item they drop, under a different name — so mining one back
 # is circular the way mining a potted plant is, and reading it as a natural source makes the item
@@ -184,6 +195,37 @@ _BLOCK_ONLY_FROM = {
 # whose black candle needs string) costing nothing even once cobweb asked for a sword. The item's
 # own structure routes still stand — string is in plenty of chests.
 _PLACED_FORM_BLOCKS = frozenset({"tripwire"})
+# Farmland crops. Not one of these blocks generates in the open world: a crop is where somebody
+# PLANTED a seed — the player, or a village farmer inside a village's own farm — so mining one back
+# is as circular as mining a placed slime block, and the bare `access_region(Overworld)` it compiled
+# to let _unique_or absorption delete the item's real structure/mob gates (beetroot had no other
+# source at all, so it was simply free; potato and carrot lost their village/husk gates). The honest
+# price of a crop is the SEED you plant, which has its own sources — so that is what the mining route
+# asks for here. Keyed by crop block -> the item planted to grow it. A crop whose seed IS the item
+# being acquired (potato, carrot) resolves to the acquisition cycle it really is, and acquire() drops
+# the route, leaving the item's chest/mob sources to carry it.
+_PLANTED_CROPS = {
+    "wheat": "minecraft:wheat_seeds",
+    "carrots": "minecraft:carrot",
+    "potatoes": "minecraft:potato",
+    "beetroots": "minecraft:beetroot_seeds",
+    "melon_stem": "minecraft:melon_seeds",
+    "pumpkin_stem": "minecraft:pumpkin_seeds",
+    "torchflower_crop": "minecraft:torchflower_seeds",
+    "pitcher_crop": "minecraft:pitcher_pod",
+    # The grown plants themselves: the crop's last stage is a block of its own, and mining THAT was
+    # the free path that kept torchflower and pitcher plant (and with them the sniffer's whole point)
+    # costing nothing.
+    "torchflower": "minecraft:torchflower_seeds",
+    "pitcher_plant": "minecraft:pitcher_pod",
+}
+# Copper ages where it stands. An `exposed_/weathered_/oxidized_` block is the plain one after it
+# weathered, so mining one back is circular — but nothing in the dump says so: you don't CRAFT an
+# aged block (you wait), so it has no "recipes" key, `placed_only` read False, and every aged copper
+# item compiled to a bare Overworld region. Exposed copper bars cost nothing while plain ones cost a
+# copper ingot. The aged block's real price is the plain item plus time; the structures that generate
+# copper already aged still come through the palette route in _block_origin_node.
+_AGING_PREFIXES = ("exposed_", "weathered_", "oxidized_")
 # Tools a block demands for a drop that its loot table does not state, because the demand is the
 # block's HARDNESS rather than a match_tool condition. Cobweb is the case: the table hands out string
 # to anything that is not shears, but cobweb takes so long to break by hand that a sword is the only
@@ -215,6 +257,18 @@ def _block_mining() -> dict:
 
 
 _BLOCK_STRUCTURES: dict | None = None
+
+
+def _aged_source(block: str) -> str | None:
+    """The plain item an aged copper block weathered FROM (``exposed_copper_bars`` ->
+    ``minecraft:copper_bars``), or ``None`` when the block is not an aged form of something the
+    acquisition table knows. See ``_AGING_PREFIXES``."""
+    for prefix in _AGING_PREFIXES:
+        if block.startswith(prefix):
+            plain = block[len(prefix):]
+            if plain in _acquisition_table():
+                return f"minecraft:{plain}"
+    return None
 
 
 def _block_structures() -> dict:
@@ -1679,7 +1733,7 @@ class RuleHelper:
                 continue
             node = self._mining_node(block, base, stack=inner)
             if node is not None:
-                origin = self._block_origin_node(block)
+                origin = self._block_origin_node(block, inner, outer=_stack)
                 if origin is None:
                     continue          # the block cannot exist for this seed — not a source at all
                 add(self.all_of(node, origin), unreliable("mining", block))
@@ -1886,16 +1940,43 @@ class RuleHelper:
             parts.append(silk_gate)
         return self.all_of(*parts)
 
-    def _block_origin_node(self, block: str):
+    def _block_origin_node(self, block: str, stack: frozenset = frozenset(),
+                           outer: frozenset | None = None):
         """What a block needs to EXIST before it can be mined (see ``_BLOCK_ONLY_FROM``), or an
         empty AND for the ordinary block that simply generates in the world. ``None`` when the only
-        thing that would place it is inactive this seed, so the caller drops the route."""
+        thing that would place it is inactive this seed, so the caller drops the route.
+
+        ``stack`` is the acquisition recursion stack, needed by the crop route: a crop block exists
+        only because its seed was planted (see ``_PLANTED_CROPS``), and for potato/carrot that seed
+        is the item being acquired — the stack is what turns that into the cycle it is instead of
+        infinite recursion.
+
+        ``outer`` is that stack without the item being acquired, and only the aging route uses it:
+        weathering is the SAME item a while later, not another crafting step, so it must not spend a
+        depth level of its own — with one it spends, the four-deep waxed-lantern chain (waxed ->
+        exposed -> plain -> copper torch -> copper nugget) runs out of ``_MAX_DEPTH`` and the waxed
+        lanterns lose their last source. Cycles still terminate: the plain item is on the stack for
+        everything below it, so a route back into the aged block dead-ends one level down."""
+        seed = _PLANTED_CROPS.get(block)
+        if seed is not None:
+            return self.acquire(seed, stack)
+        aged = _aged_source(block)
+        if aged is not None:
+            # The plain item, weathered — plus mining one that generated already aged, which only the
+            # structure palettes know about (and which _unique_or collapses when it is redundant).
+            aged_stack = stack if outer is None else outer
+            routes = [route for route in (self.acquire(aged, aged_stack),) if route is not None]
+            routes += [self.structure(name) for name in _block_structures().get(block, ())
+                       if name in self.active_structures]
+            return self.any_of(*routes) if routes else None
         entry = _BLOCK_ONLY_FROM.get(block)
         if entry is None:
             return self.all_of()
         kind, value = entry
         if kind == "boss":
             return self.can_defeat(value)
+        if kind == "entity":
+            return self.entity(value)
         if kind == "structures_or_craft":
             names, tool_id, source_id = value
             routes = [self.structure(name) for name in names if name in self.active_structures]
