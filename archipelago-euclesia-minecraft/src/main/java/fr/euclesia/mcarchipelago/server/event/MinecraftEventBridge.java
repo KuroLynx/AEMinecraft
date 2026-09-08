@@ -10,6 +10,7 @@ import fr.euclesia.mcarchipelago.server.connect.APWorldConnector;
 import fr.euclesia.mcarchipelago.server.gameplay.AdvancementBridge;
 import fr.euclesia.mcarchipelago.server.gameplay.BacapConfigService;
 import fr.euclesia.mcarchipelago.server.gameplay.FillerTrapService;
+import fr.euclesia.mcarchipelago.server.gameplay.KeepInventoryService;
 import fr.euclesia.mcarchipelago.server.gameplay.KnowledgeUseGate;
 import fr.euclesia.mcarchipelago.server.gameplay.MobKillBridge;
 import fr.euclesia.mcarchipelago.server.gameplay.RootAdvancementService;
@@ -216,6 +217,22 @@ public final class MinecraftEventBridge {
             // Their client forgets the finder bar on disconnect, so the server has to forget having
             // sent it — otherwise a reconnect gets nothing and the bar never comes back.
             StructureFinderDriver.onPlayerLeave(player);
+        });
+
+        // Hand back what death took: the share of slots the keep_inventory option saved, each to the
+        // exact index it came from (which is why they must land in an inventory death has emptied).
+        // The Biome Finder no longer takes part — it is access, not an item, since it moved to a
+        // keybind and an inventory-screen button, so there is nothing of it to drop or restore.
+        ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) ->
+                KeepInventoryService.restoreOnRespawn(newPlayer));
+
+        // Before death drops are computed, strip the kept share out of the inventory so vanilla only
+        // drops the rest; AFTER_RESPAWN puts it back. Always allow the death itself.
+        ServerLivingEntityEvents.ALLOW_DEATH.register((entity, damageSource, damageAmount) -> {
+            if (entity instanceof ServerPlayer player) {
+                KeepInventoryService.onDeath(player);
+            }
+            return true;
         });
 
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, damageSource) -> {

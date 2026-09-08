@@ -291,6 +291,51 @@ class BiomeFinder(Choice):
     default = 2
 
 
+class KeepInventory(Choice):
+    """How much of your inventory survives your death.
+
+    Vanilla drops everything you carry when you die. This option lets you keep some or all of it —
+    main inventory, armor and offhand, exactly the scope the keepInventory gamerule covers. Dropped
+    experience is never affected: you lose your XP on death whatever this is set to.
+
+    - disabled (default): vanilla. Everything drops.
+    - active: you always keep your whole inventory, from the first death onwards. No item needed.
+    - progressive: 'Progressive Keep Inventory' items are shuffled into the multiworld, and how much
+      you keep grows as you find them. With none received you drop everything, as in vanilla; with
+      every copy received you keep everything, as in active.
+
+    Under progressive, each copy is worth an equal share of the total: with N of the
+    keep_inventory_pool_size copies received you keep N / pool_size of what you carry, rounded to
+    whole slots and picked at random from the slots that actually hold something. So the item is a
+    gamble at first (half your slots, but you don't choose which half) and becomes a certainty once
+    you have them all.
+    """
+    display_name = "Keep Inventory"
+    option_disabled = 0
+    option_active = 1
+    option_progressive = 2
+    default = 0
+
+
+class KeepInventoryPoolSize(Range):
+    """How many 'Progressive Keep Inventory' items exist, when keep_inventory is progressive.
+
+    This is the granularity of the gauge, not a cap: collecting every copy always reaches 100% kept,
+    whatever the number is. A low value makes each copy a large, rare jump (2 copies = +50% each); a
+    high value makes them small, common steps (100 copies = +1% each) that take most of the seed to
+    complete.
+
+    Ignored unless keep_inventory is set to progressive.
+
+    Minimum value is 1
+    Maximum value is 100
+    """
+    display_name = "Keep Inventory Pool Size"
+    range_start = 1
+    range_end = 100
+    default = 10
+
+
 class BlazeAndCave(Toggle):
     """Include the BlazeandCave's Advancements Pack as extra checks.
 
@@ -432,6 +477,8 @@ class MCOptions(PerGameCommonOptions):
     challenge_sanity: ChallengeSanity
     structure_finder: StructureFinder
     biome_finder: BiomeFinder
+    keep_inventory: KeepInventory
+    keep_inventory_pool_size: KeepInventoryPoolSize
     blazeandcave: BlazeAndCave
     bacap_rewards: BacapRewards
     item_gate_behavior: ItemGateBehavior
