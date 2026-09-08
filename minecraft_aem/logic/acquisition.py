@@ -411,6 +411,21 @@ class RuleHelper:
             # Overworld — structure-locked
             E_CAT            : lambda: self.any_of(self.any_village(), self.structure(S_SWAMP_HUT)),
             E_ALLAY          : lambda: self.any_of(self.structure(S_PILLAGER_OUTPOST), self.structure(S_MANSION)),
+            # A villager is only ever IN a village — nothing spawns one in the open world. Without
+            # this, 'Entity Unlock: Villager' alone was the whole price: 'Kill Entity: Villager' (and
+            # every rule that just wants a villager nearby) read in logic with all five villages
+            # still locked.
+            #
+            # Curing a zombie villager is the one route that needs no village, and it is deliberately
+            # NOT modelled here. Naming it — either rebuilt through acquire() or as
+            # reached('Zombie Doctor') — puts a villager back inside its own price: the golden apple
+            # and the weakness potion resolve through ingredients that list villager trades, so
+            # can_trade_villager leads back to this thunk. As a rule tree that is a location cycle,
+            # and AP's can_reach_location has no cycle guard — it recursed until the interpreter's
+            # stack gave out, mid-fill (a full-pool reachability check never notices; only a real
+            # Generate.py run does). Ignoring the route only makes logic stricter than the game, which
+            # is the safe direction.
+            E_VILLAGER       : lambda: self.any_village(),
             E_SILVERFISH     : lambda: self.structure(S_STRONGHOLD),
             E_WARDEN         : lambda: self.structure(S_ANCIENT_CITY),
             E_ENDERMITE      : lambda: self.entity(E_ENDERMAN),  # spawns from Ender Pearl throws
