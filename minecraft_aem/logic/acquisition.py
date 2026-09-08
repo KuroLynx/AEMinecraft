@@ -1577,7 +1577,18 @@ class RuleHelper:
         if base in _PALE_GARDEN_BLOCKS:
             found = self.all_of(self.strict_only(self.needs_biome_finder()),
                                 self.access_region(REGION_OVERWORLD))
-            return self.all_of(found, self.entity(E_CREAKING)) if base == "creaking_heart" else found
+            # Finding the biome is ON TOP of the block's own price, not instead of it. Returning the
+            # biome alone threw away everything _acquire_from_sources knows, and for the two blocks
+            # that only drop to a tool that mattered: pale oak leaves and pale moss want shears or
+            # Silk Touch (block_mining says so), so a pale leaf block was obtainable with a Biome
+            # Finder and nothing else while ordinary oak leaves correctly asked for Knowledge: Shear
+            # Handling. The creaking heart carries the mob on top: it is only a creaking heart while
+            # the creaking it spawns is alive.
+            sources = self._acquire_from_sources(base, _stack | {base})
+            parts = [found] if sources is None else [found, sources]
+            if base == "creaking_heart":
+                parts.append(self.entity(E_CREAKING))
+            return self.all_of(*parts)
 
         # An elytra exists only in an End City ship — placed in an item frame, not a loot table the
         # indexer reads — so it has no acquisition record and would fall back to its bare material
