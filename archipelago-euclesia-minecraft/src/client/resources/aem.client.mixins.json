@@ -7,6 +7,7 @@
 		"AdvancementTabTypeMixin",
 		"AdvancementWidgetMixin",
 		"CreateWorldScreenMixin",
+		"InventoryLockRenderMixin",
 		"MinecraftWorldLoadMixin",
 		"WorldListEntryMixin"
 	],

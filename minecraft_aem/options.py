@@ -417,6 +417,123 @@ class ItemGateBehavior(OptionDict):
                 raise OptionError(f"Player {player_name}: route '{route}' — {error}")
 
 
+class InventoryLock(OptionDict):
+    """Restrict how many inventory slots you can actually use.
+
+    Three modes:
+        - disabled (default): your full inventory is available, as normal.
+        - fixed: only 'slots' of your 36 hotbar+main-inventory slots are ever usable. The rest are
+          locked for the whole game — there is no item that unlocks them.
+        - progressive: you start with 'slots' of those 36 locked, and copies of the 'Progressive
+          Inventory Slot' item are shuffled into the multiworld — each one unlocks 'slots_per_item'
+          more, until everything locked is open.
+
+    Locked slots open in a fixed order: the hotbar first, then the offhand slot (if 'offhand' is
+    included), then the main-inventory row closest to the hotbar, then your armor slots (if
+    'armor' is included), then the two remaining main-inventory rows.
+
+    'offhand' and 'armor' mean different things depending on 'mode':
+        - fixed: true means that slot group is EXEMPT from the restriction — always usable
+          regardless of 'slots'. false means it is locked for the whole game, same as any
+          hotbar/main slot beyond 'slots'.
+        - progressive: true means that slot group is ADDED to what starts locked (offhand adds 1,
+          armor adds 4) and gets its own share of the unlock items. false means it is left alone,
+          always usable, with no unlock items generated for it.
+
+    Keys:
+        - mode: "disabled", "fixed", or "progressive". Default "disabled".
+        - slots: how many of your 36 hotbar+main-inventory slots are usable (fixed) or start
+          locked (progressive). 1-36. Default 36 (i.e. no restriction even if mode is turned on
+          without changing this).
+        - slots_per_item: progressive only — how many slots each 'Progressive Inventory Slot' item
+          unlocks. Default 1.
+        - offhand: true/false, see above. Default false.
+        - armor: true/false, see above. Default false.
+
+    Any key you omit keeps its default, so you only need to list what you're changing.
+
+    Example (progressive, starting with 10 main/hotbar slots locked plus your armor, two slots per
+    item):
+        inventory_lock:
+            mode: progressive
+            slots: 10
+            slots_per_item: 2
+            armor: true
+    """
+    display_name = "Inventory Lock"
+    valid_keys = {"mode", "slots", "slots_per_item", "offhand", "armor"}
+    default = {"mode": "disabled", "slots": 36, "slots_per_item": 1, "offhand": False, "armor": False}
+
+    _MODES = {"disabled", "fixed", "progressive"}
+
+    def verify(self, world, player_name: str, plando_options) -> None:
+        super().verify(world, player_name, plando_options)
+        mode = self.value.get("mode", "disabled")
+        if mode not in self._MODES:
+            raise OptionError(
+                f"Player {player_name}: inventory_lock mode must be one of {sorted(self._MODES)}, "
+                f"got '{mode}'."
+            )
+        slots = self.value.get("slots", 36)
+        if not isinstance(slots, int) or not (1 <= slots <= 36):
+            raise OptionError(f"Player {player_name}: inventory_lock slots must be 1-36, got '{slots}'.")
+        slots_per_item = self.value.get("slots_per_item", 1)
+        if not isinstance(slots_per_item, int) or slots_per_item < 1:
+            raise OptionError(
+                f"Player {player_name}: inventory_lock slots_per_item must be at least 1, "
+                f"got '{slots_per_item}'."
+            )
+
+    @property
+    def mode(self) -> str:
+        return self.value.get("mode", "disabled")
+
+    @property
+    def slots(self) -> int:
+        return self.value.get("slots", 36)
+
+    @property
+    def slots_per_item(self) -> int:
+        return self.value.get("slots_per_item", 1)
+
+    @property
+    def offhand(self) -> bool:
+        return bool(self.value.get("offhand", False))
+
+    @property
+    def armor(self) -> bool:
+        return bool(self.value.get("armor", False))
+
+    @property
+    def total_locked(self) -> int:
+        """Slots locked at the start of the game (progressive) — the base count plus offhand/armor
+        if included. Meaningless for fixed/disabled."""
+        return self.slots + (1 if self.offhand else 0) + (4 if self.armor else 0)
+
+    @property
+    def armor_unlock_items(self) -> int:
+        """Copies of 'Progressive Inventory Slot' needed before an armor slot exists to wear
+        anything in, in progressive mode with 'armor' included — 0 otherwise (fixed/disabled, or
+        armor not part of the lock, need no such requirement).
+
+        The unlock order is hotbar -> offhand -> the row closest to the hotbar -> armor -> the
+        rest, and only 'slots' worth of the 36-slot hotbar+main pool is ever locked, counted from
+        the LOW-priority end (the two rows farthest from the hotbar) — so the hotbar and the row
+        next to it are only part of what armor has to wait for once 'slots' pushes past 18, then
+        27. Below that (the common case), armor only waits on offhand (if included) plus its own
+        4 slots. Mirrors InventoryLockService.progressiveOrder on the mod side exactly — the two
+        must agree, since this is what makes the multiworld's fill place the items where this
+        logic says they're needed.
+        """
+        if self.mode != "progressive" or not self.armor:
+            return 0
+        hotbar_locked = max(self.slots - 27, 0)
+        nearest_row_locked = min(max(self.slots - 18, 0), 9)
+        offhand_count = 1 if self.offhand else 0
+        rank = hotbar_locked + offhand_count + nearest_row_locked + 4  # +4 = the armor slots themselves
+        return -(-rank // self.slots_per_item)  # ceil division
+
+
 @dataclass
 class MCOptions(PerGameCommonOptions):
     boss_list: BossList
@@ -436,3 +553,4 @@ class MCOptions(PerGameCommonOptions):
     bacap_rewards: BacapRewards
     item_gate_behavior: ItemGateBehavior
     glitch_logic: GlitchLogic
+    inventory_lock: InventoryLock

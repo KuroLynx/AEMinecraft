@@ -212,6 +212,7 @@ ITEM_VILLAGER_TRUST = "Progressive Villager Trust"
 ITEM_MATERIAL_HANDLING = "Progressive Material Handling"
 ITEM_STRUCTURE_FINDER = "Progressive Structure Finder"
 ITEM_BIOME_FINDER = "Biome Finder"
+ITEM_INVENTORY_SLOT = "Progressive Inventory Slot"
 
 # -----------------------------------------------------------------------
 # Prefix

@@ -438,6 +438,8 @@ class MCWorld(World):
                 continue
             if name in finder_modes:
                 continue
+            if name == ITEM_INVENTORY_SLOT:
+                continue
             for _ in range(item_data.count):
                 pool.append(self.create_item(name))
 
@@ -451,6 +453,17 @@ class MCWorld(World):
             elif mode == StructureFinder.option_start:
                 for _ in range(count):
                     self.multiworld.push_precollected(self.create_item(finder_name))
+
+        # Inventory Lock, progressive mode: enough copies to unlock everything that starts locked
+        # (slots + offhand/armor if included), 'slots_per_item' slots each, rounded up so the last
+        # copy still fully opens the inventory even if the split isn't even. disabled/fixed add
+        # nothing — fixed's restriction is permanent and needs no item.
+        if self.options.inventory_lock.mode == "progressive":
+            total_locked = self.options.inventory_lock.total_locked
+            per_item = self.options.inventory_lock.slots_per_item
+            item_count = -(-total_locked // per_item)  # ceil division
+            for _ in range(item_count):
+                pool.append(self.create_item(ITEM_INVENTORY_SLOT))
 
         # Mob spawn unlocks: only the mobs locked by the mob_spawn_lock option are added.
         for mob_name in self._get_locked_mobs():
@@ -714,6 +727,17 @@ class MCWorld(World):
             # The two workstation/storage routes inherit an explicit 'crafting' when they are absent, so a
             # config written before the GUI routes were split keeps meaning the same thing.
             "item_gate_behavior"   : self._item_gate_routes(),
+
+            # How much of the inventory is usable (see InventoryLock). Exported verbatim — the mod
+            # applies its own default (disabled) when this key is absent, so it is purely additive
+            # and needs no SLOT_DATA_VERSION bump.
+            "inventory_lock"       : {
+                "mode"          : self.options.inventory_lock.mode,
+                "slots"         : self.options.inventory_lock.slots,
+                "slots_per_item": self.options.inventory_lock.slots_per_item,
+                "offhand"       : self.options.inventory_lock.offhand,
+                "armor"         : self.options.inventory_lock.armor,
+            },
 
             # Datapacks/mods this seed REQUIRES to be installed at a matching version. The mod verifies
             # each against the loaded datapacks (pack repository) / Fabric mods on world load and refuses
