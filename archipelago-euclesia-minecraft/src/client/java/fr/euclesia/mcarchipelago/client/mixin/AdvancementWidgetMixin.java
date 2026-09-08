@@ -1,9 +1,8 @@
 package fr.euclesia.mcarchipelago.client.mixin;
 
 import com.mojang.blaze3d.pipeline.RenderPipeline;
-import fr.euclesia.mcarchipelago.client.logic.LogicColors;
-import fr.euclesia.mcarchipelago.client.logic.LogicProviders;
-import fr.euclesia.mcarchipelago.client.render.TrackerIconRenderer;
+import fr.euclesia.mcarchipelago.client.hint.HintHoldTracker;
+import fr.euclesia.mcarchipelago.client.render.AdvancementRenderHooks;
 import net.minecraft.advancements.AdvancementNode;
 import net.minecraft.advancements.AdvancementProgress;
 import net.minecraft.advancements.DisplayInfo;
@@ -14,7 +13,9 @@ import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * Recolours each advancement tile by its Archipelago logic state: green = in logic,
@@ -60,10 +61,19 @@ public abstract class AdvancementWidgetMixin {
                     target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;fakeItem(Lnet/minecraft/world/item/ItemStack;II)V"))
     private void archipelago_euclesia$trackerIcon(GuiGraphicsExtractor graphics, ItemStack icon, int x, int y) {
         if (advancementNode != null
-                && TrackerIconRenderer.tryRenderIcon(graphics, advancementNode.holder().id(), x, y)) {
+                && AdvancementRenderHooks.tryDrawTileIcon(graphics, advancementNode.holder().id(), x, y)) {
             return;
         }
         graphics.fakeItem(icon, x, y);
+    }
+
+    /** Reports this tile's hover state to {@link HintHoldTracker} every frame it is tested. */
+    @Inject(method = "isMouseOver(IIII)Z", at = @At("RETURN"))
+    private void archipelago_euclesia$reportHover(int originX, int originY, int mouseX, int mouseY,
+                                                  CallbackInfoReturnable<Boolean> cir) {
+        if (advancementNode != null && cir.getReturnValueZ()) {
+            HintHoldTracker.reportHover(advancementNode.holder().id(), originX, originY, true);
+        }
     }
 
     /**
@@ -80,7 +90,7 @@ public abstract class AdvancementWidgetMixin {
             },
             at = @At(value = "INVOKE", target = "Lnet/minecraft/advancements/DisplayInfo;isHidden()Z"))
     private boolean archipelago_euclesia$alwaysShowHidden(DisplayInfo display) {
-        return false;
+        return !AdvancementRenderHooks.forceVisible();
     }
 
     /**
@@ -100,9 +110,6 @@ public abstract class AdvancementWidgetMixin {
 
     /** @return the 0xRRGGBB colour for this advancement, or {@code null} to keep the original frame. */
     private Integer frameColor() {
-        if (advancementNode == null) {
-            return null;
-        }
-        return LogicColors.rgb(LogicProviders.stateFor(advancementNode.holder().id()));
+        return advancementNode == null ? null : AdvancementRenderHooks.frameColor(advancementNode.holder().id());
     }
 }

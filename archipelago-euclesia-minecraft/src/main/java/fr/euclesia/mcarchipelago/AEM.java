@@ -6,6 +6,7 @@ import fr.euclesia.mcarchipelago.content.FillerBuffEffects;
 import fr.euclesia.mcarchipelago.engine.ap.ArchipelagoService;
 import fr.euclesia.mcarchipelago.net.APStateSync;
 import fr.euclesia.mcarchipelago.net.BiomeFinderNet;
+import fr.euclesia.mcarchipelago.net.HintNet;
 import fr.euclesia.mcarchipelago.server.AEMServerBridge;
 import net.fabricmc.api.ModInitializer;
 
@@ -31,6 +32,7 @@ public class AEM implements ModInitializer {
 		// Payload types must be registered on BOTH sides, at init, before any send.
 		APStateSync.register();
 		BiomeFinderNet.register();
+		HintNet.register();
 		AEMServerBridge.register();
 		LOGGER.info("Archipelago Euclesia Minecraft initialized");
 	}

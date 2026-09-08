@@ -1,7 +1,7 @@
 package fr.euclesia.mcarchipelago.client.mixin;
 
+import fr.euclesia.mcarchipelago.client.render.AdvancementRenderHooks;
 import fr.euclesia.mcarchipelago.client.render.ArchipelagoTabIcon;
-import fr.euclesia.mcarchipelago.registry.APTrackerRegistry;
 import net.minecraft.advancements.AdvancementNode;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.advancements.AdvancementTab;
@@ -24,7 +24,7 @@ public abstract class AdvancementTabMixin {
     private void archipelago_euclesia$markIconStart(GuiGraphicsExtractor graphics, int x, int y, CallbackInfo ci) {
         AdvancementNode root = getRootNode();
         ArchipelagoTabIcon.rendering =
-                root != null && APTrackerRegistry.TAB_ROOT_ID.equals(root.holder().id().toString());
+                AdvancementRenderHooks.isTabRoot(root == null ? null : root.holder().id());
     }
 
     @Inject(method = "extractIcon(Lnet/minecraft/client/gui/GuiGraphicsExtractor;II)V", at = @At("RETURN"))
