@@ -1,6 +1,5 @@
 package fr.euclesia.mcarchipelago.net;
 
-import fr.euclesia.mcarchipelago.content.BiomeFinderItem;
 import fr.euclesia.mcarchipelago.server.gameplay.BiomeFinderService;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -50,12 +49,13 @@ public final class BiomeFinderNet {
     }
 
     /**
-     * Runs a pick. The finder check is not ceremony: the search is a worldgen scan out to 6400 blocks,
-     * so a client that asks for one without holding the compass is refused before it costs anything.
+     * Runs a pick. The ownership check is not ceremony: the search is a worldgen scan out to 6400
+     * blocks, so a client that asks for one without owning the finder is refused before it costs
+     * anything.
      */
     private static void search(ServerPlayer player, String biomeId) {
         Identifier id = Identifier.tryParse(biomeId);
-        if (id == null || BiomeFinderItem.findFirst(player).isEmpty()) {
+        if (id == null || !BiomeFinderService.owns()) {
             return;
         }
         BiomeFinderService.search(player, id);

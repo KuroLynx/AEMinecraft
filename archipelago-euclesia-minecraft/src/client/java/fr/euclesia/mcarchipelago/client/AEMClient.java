@@ -5,6 +5,7 @@ import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.client.connect.APConnectController;
 import fr.euclesia.mcarchipelago.client.connect.WorldLoadResume;
 import fr.euclesia.mcarchipelago.client.dump.HeadlessWorldDump;
+import fr.euclesia.mcarchipelago.client.finder.BiomeFinderTrackerHud;
 import fr.euclesia.mcarchipelago.client.finder.StructureFinderBarHud;
 import fr.euclesia.mcarchipelago.client.gui.AEMScreenButtons;
 import fr.euclesia.mcarchipelago.client.gui.BiomeFinderScreen;
@@ -14,7 +15,6 @@ import fr.euclesia.mcarchipelago.client.net.BiomeFinderClient;
 import fr.euclesia.mcarchipelago.client.net.ChatFilterClient;
 import fr.euclesia.mcarchipelago.client.logic.LogicProviders;
 import fr.euclesia.mcarchipelago.client.render.ConnectionStatusHud;
-import fr.euclesia.mcarchipelago.content.BiomeFinderItem;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -22,12 +22,8 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.fabricmc.fabric.api.event.player.UseBlockCallback;
-import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.minecraft.client.KeyMapping;
-import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.InteractionResult;
 
 @Environment(EnvType.CLIENT)
 public class AEMClient implements ClientModInitializer {
@@ -37,6 +33,10 @@ public class AEMClient implements ClientModInitializer {
 	/** Toggles the chat filter (hide multiworld noise not connected to this slot); default H. */
 	private static final KeyMapping TOGGLE_CHAT_FILTER = new KeyMapping(
 			"key.aem.chat_filter", InputConstants.Type.KEYSYM, InputConstants.KEY_H, CATEGORY);
+
+	/** Opens the Biome Finder search screen; default key B, rebindable in Controls. */
+	private static final KeyMapping OPEN_BIOME_FINDER = new KeyMapping(
+			"key.aem.biome_finder", InputConstants.Type.KEYSYM, InputConstants.KEY_B, CATEGORY);
 
 	@Override
 	public void onInitializeClient() {
@@ -53,16 +53,23 @@ public class AEMClient implements ClientModInitializer {
 		AEMScreenButtons.register();
 
 		KeyMappingHelper.registerKeyMapping(TOGGLE_CHAT_FILTER);
+		KeyMappingHelper.registerKeyMapping(OPEN_BIOME_FINDER);
 
 		// Resume a world load deferred by the pre-flight connect (see MinecraftWorldLoadMixin), run
 		// here so doWorldLoad executes outside any screen-tick bracket. Also drive the headless
 		// entities-dump teardown (leave + delete the temp world once it has dumped), and poll the
-		// chat-filter keybind.
+		// chat-filter and Biome Finder keybinds (the latter gated on ownership, same as the
+		// inventory-screen button).
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			WorldLoadResume.runPending();
 			HeadlessWorldDump.clientTick(client);
 			while (TOGGLE_CHAT_FILTER.consumeClick()) {
 				ChatFilterClient.requestToggle();
+			}
+			while (OPEN_BIOME_FINDER.consumeClick()) {
+				if (client.screen == null && BiomeFinderClient.owns()) {
+					client.setScreen(new BiomeFinderScreen());
+				}
 			}
 		});
 
@@ -79,25 +86,9 @@ public class AEMClient implements ClientModInitializer {
 				Identifier.fromNamespaceAndPath(AEM.MOD_ID, "structure_finder_bar"),
 				new StructureFinderBarHud());
 
-		// Right-clicking the Biome Finder compass opens the biome pick screen. Two callbacks: one for
-		// using it on a block, one for using it in the air. Returning SUCCESS in BOTH the client and
-		// server passes cancels the default interaction — in particular it stops the finder from being
-		// bound to a lodestone (vanilla compass behaviour we don't want). The screen only opens on the
-		// client; the isClientSide guard keeps Minecraft/screen references off the server thread.
-		UseBlockCallback.EVENT.register((player, level, hand, hit) ->
-				BiomeFinderItem.isFinder(player.getItemInHand(hand))
-						? openFinder(level)
-						: InteractionResult.PASS);
-		UseItemCallback.EVENT.register((player, level, hand) ->
-				BiomeFinderItem.isFinder(player.getItemInHand(hand))
-						? openFinder(level)
-						: InteractionResult.PASS);
-	}
-
-	private static InteractionResult openFinder(net.minecraft.world.level.Level level) {
-		if (level.isClientSide()) {
-			Minecraft.getInstance().setScreen(new BiomeFinderScreen());
-		}
-		return InteractionResult.SUCCESS;
+		// Biome Finder: a single-icon locator bar pointing at the last biome located.
+		HudElementRegistry.addLast(
+				Identifier.fromNamespaceAndPath(AEM.MOD_ID, "biome_finder_tracker"),
+				new BiomeFinderTrackerHud());
 	}
 }
