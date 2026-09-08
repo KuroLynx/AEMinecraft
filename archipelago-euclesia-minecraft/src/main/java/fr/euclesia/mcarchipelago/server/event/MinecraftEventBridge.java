@@ -8,7 +8,6 @@ import fr.euclesia.mcarchipelago.server.connect.APWorldConnection;
 import fr.euclesia.mcarchipelago.server.connect.APWorldConnector;
 import fr.euclesia.mcarchipelago.server.gameplay.AdvancementBridge;
 import fr.euclesia.mcarchipelago.server.gameplay.BacapConfigService;
-import fr.euclesia.mcarchipelago.server.gameplay.BiomeFinderService;
 import fr.euclesia.mcarchipelago.server.gameplay.FillerTrapService;
 import fr.euclesia.mcarchipelago.server.gameplay.KnowledgeUseGate;
 import fr.euclesia.mcarchipelago.server.gameplay.MobKillBridge;
@@ -192,8 +191,6 @@ public final class MinecraftEventBridge {
             // scan sees the shared book rather than whatever this player personally happened to have.
             SharedAdvancementService.onPlayerJoin(player);
             AdvancementBridge.scanPlayer(player);
-            // Give back the soulbound Biome Finder if this slot owns it (covers first join and relog).
-            BiomeFinderService.ensureGranted(player);
             // Collect the filler banked while they were away. CATCH_UP: the traps in that backlog
             // went off for whoever was in the world at the time and are not re-run at a latecomer.
             FillerTrapService.applyPending(player, FillerTrapService.Mode.CATCH_UP);
@@ -210,21 +207,6 @@ public final class MinecraftEventBridge {
             // Their client forgets the finder bar on disconnect, so the server has to forget having
             // sent it — otherwise a reconnect gets nothing and the bar never comes back.
             StructureFinderDriver.onPlayerLeave(player);
-        });
-
-        // The Biome Finder is soulbound: restore the exact stack saved at death (keeping its tracked
-        // biome), or grant a fresh one if none was saved.
-        ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
-            BiomeFinderService.restoreOnRespawn(newPlayer);
-        });
-
-        // Before death drops are computed, save the finder (with its tracking) and strip it from the
-        // inventory so it isn't dropped; AFTER_RESPAWN restores it. Always allow the death itself.
-        ServerLivingEntityEvents.ALLOW_DEATH.register((entity, damageSource, damageAmount) -> {
-            if (entity instanceof ServerPlayer player) {
-                BiomeFinderService.onDeath(player);
-            }
-            return true;
         });
 
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, damageSource) -> {

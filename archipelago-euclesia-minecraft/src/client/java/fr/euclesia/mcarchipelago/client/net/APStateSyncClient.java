@@ -9,7 +9,9 @@ import fr.euclesia.mcarchipelago.AEMDebug;
 import fr.euclesia.mcarchipelago.archipelago.ArchipelagoClient;
 import fr.euclesia.mcarchipelago.net.APProgressPayload;
 import fr.euclesia.mcarchipelago.net.APStateSyncPayload;
+import fr.euclesia.mcarchipelago.net.BiomeTrackerSyncPayload;
 import fr.euclesia.mcarchipelago.net.FinderSyncPayload;
+import fr.euclesia.mcarchipelago.server.gameplay.BiomeFinderTrackerState;
 import fr.euclesia.mcarchipelago.server.gameplay.StructureFinderState;
 import fr.euclesia.mcarchipelago.protocol.APItemClassification;
 import fr.euclesia.mcarchipelago.protocol.packet.inbound.APNetworkItem;
@@ -68,6 +70,23 @@ public final class APStateSyncClient {
                     }
                     StructureFinderState.get().putSnapshot(player.getUUID(),
                             new StructureFinderState.Snapshot(payload.tier(), payload.targets()));
+                }));
+
+        // The Biome Finder HUD tracker. Same reasoning as the Structure Finder bar above: this
+        // JVM's own BiomeFinderTrackerState is empty on a dedicated server, so the pushed target
+        // is poured into it under our own uuid.
+        ClientPlayNetworking.registerGlobalReceiver(BiomeTrackerSyncPayload.TYPE,
+                (payload, context) -> context.client().execute(() -> {
+                    LocalPlayer player = context.client().player;
+                    if (player == null) {
+                        return;
+                    }
+                    BiomeFinderTrackerState.Target target = payload.toTarget();
+                    if (target == null) {
+                        BiomeFinderTrackerState.get().remove(player.getUUID());
+                    } else {
+                        BiomeFinderTrackerState.get().putTarget(player.getUUID(), target);
+                    }
                 }));
 
         // Leaving a server (or an integrated world) drops the mirror. In singleplayer this instance
@@ -162,6 +181,7 @@ public final class APStateSyncClient {
         client.registries().apItems().resetReceived();
         // The finder bar too, or it hangs around pointing at the last server's structures.
         StructureFinderState.get().clear();
+        BiomeFinderTrackerState.get().clear();
         mirrored = false;
         AEMDebug.log("apStateSync cleared (left the server)");
     }

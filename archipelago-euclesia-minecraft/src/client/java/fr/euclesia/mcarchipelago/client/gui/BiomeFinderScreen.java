@@ -15,10 +15,11 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Opened by right-clicking the {@link fr.euclesia.mcarchipelago.content.BiomeFinderItem Biome Finder}
- * compass. Shows a search box over the biomes that can generate in the player's current dimension;
- * picking one asks the server to locate the nearest instance and point the compass needle at it
- * (see {@link BiomeFinderService}). The dimension scope means nether/end biomes only show up while
+ * Opened from the Biome Finder keybind or the inventory-screen button (see
+ * {@link fr.euclesia.mcarchipelago.client.AEMClient} / {@link AEMScreenButtons}). Shows a search
+ * box over the biomes that can generate in the player's current dimension; picking one asks the
+ * server to locate the nearest instance and point the HUD tracker bar at it (see
+ * {@link BiomeFinderService}). The dimension scope means nether/end biomes only show up while
  * you're in those dimensions.
  *
  * <p>Both halves of that go through the server ({@link BiomeFinderClient}), so the list arrives a

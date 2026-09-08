@@ -21,7 +21,6 @@ import fr.euclesia.mcarchipelago.protocol.registry.APHandlerRegistry;
 import fr.euclesia.mcarchipelago.protocol.transport.APTransport;
 import fr.euclesia.mcarchipelago.protocol.transport.APTransportListener;
 import fr.euclesia.mcarchipelago.registry.AEMRegistries;
-import fr.euclesia.mcarchipelago.server.gameplay.BiomeFinderService;
 import fr.euclesia.mcarchipelago.server.gameplay.FillerTrapService;
 import fr.euclesia.mcarchipelago.server.gameplay.StructureCaptureService;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
@@ -251,8 +250,6 @@ public final class ArchipelagoClient {
         }
         applyStructureUnlocks(newlyUnlockedStructures, newlyUnlockedMobs);
 
-        // Grant the soulbound Biome Finder to anyone who just (re)gained it. Cheap and idempotent, so
-        // we run it on every batch rather than diffing for the specific item.
         MinecraftServer biomeServer = AEMServerRuntime.server();
         if (biomeServer != null) {
             // The index-0 batch is the whole item history replayed on (re)connect, not something that
@@ -262,11 +259,8 @@ public final class ArchipelagoClient {
             FillerTrapService.Mode mode = receivedItems.index() == 0
                     ? FillerTrapService.Mode.CATCH_UP
                     : FillerTrapService.Mode.LIVE;
-            biomeServer.execute(() -> {
-                BiomeFinderService.ensureGrantedToAll(biomeServer);
-                // Grant filler contents / fire trap effects for any newly received items.
-                FillerTrapService.applyPendingToAll(biomeServer, mode);
-            });
+            // Grant filler contents / fire trap effects for any newly received items.
+            biomeServer.execute(() -> FillerTrapService.applyPendingToAll(biomeServer, mode));
         }
 
         listeners.forEach(listener -> {

@@ -1,5 +1,6 @@
 {
-  "item.aem.biome_finder": "Biome Finder",
+  "key.categories.aem.keys": "Archipelago Euclesia Minecraft",
+  "key.aem.biome_finder": "Open Biome Finder",
 
   "effect.aem.butterfingers": "Slippery Fingers",
   "effect.aem.skittish_loot": "Item Fear",
@@ -76,6 +77,7 @@
   "gui.aem.field.slot": "Slot name",
   "gui.aem.field.password": "Password",
 
+  "gui.aem.biome_finder.open": "Biome Finder",
   "gui.aem.biome_finder.search": "Search",
   "gui.aem.biome_finder.search_hint": "Search biomes…",
   "gui.aem.biome_finder.loading": "Asking the server…",
