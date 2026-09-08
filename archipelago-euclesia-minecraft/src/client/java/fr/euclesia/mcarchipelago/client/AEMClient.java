@@ -1,5 +1,6 @@
 package fr.euclesia.mcarchipelago.client;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.client.connect.APConnectController;
 import fr.euclesia.mcarchipelago.client.connect.WorldLoadResume;
@@ -10,6 +11,7 @@ import fr.euclesia.mcarchipelago.client.gui.BiomeFinderScreen;
 import fr.euclesia.mcarchipelago.client.logic.DataLogicProvider;
 import fr.euclesia.mcarchipelago.client.net.APStateSyncClient;
 import fr.euclesia.mcarchipelago.client.net.BiomeFinderClient;
+import fr.euclesia.mcarchipelago.client.net.ChatFilterClient;
 import fr.euclesia.mcarchipelago.client.logic.LogicProviders;
 import fr.euclesia.mcarchipelago.client.render.ConnectionStatusHud;
 import fr.euclesia.mcarchipelago.content.BiomeFinderItem;
@@ -17,16 +19,25 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.InteractionResult;
 
 @Environment(EnvType.CLIENT)
 public class AEMClient implements ClientModInitializer {
+	private static final KeyMapping.Category CATEGORY =
+			KeyMapping.Category.register(Identifier.fromNamespaceAndPath(AEM.MOD_ID, "keys"));
+
+	/** Toggles the chat filter (hide multiworld noise not connected to this slot); default H. */
+	private static final KeyMapping TOGGLE_CHAT_FILTER = new KeyMapping(
+			"key.aem.chat_filter", InputConstants.Type.KEYSYM, InputConstants.KEY_H, CATEGORY);
+
 	@Override
 	public void onInitializeClient() {
 		// Install the real reachability source for the advancement-screen overlay,
@@ -41,12 +52,18 @@ public class AEMClient implements ClientModInitializer {
 		APConnectController.init();
 		AEMScreenButtons.register();
 
+		KeyMappingHelper.registerKeyMapping(TOGGLE_CHAT_FILTER);
+
 		// Resume a world load deferred by the pre-flight connect (see MinecraftWorldLoadMixin), run
 		// here so doWorldLoad executes outside any screen-tick bracket. Also drive the headless
-		// entities-dump teardown (leave + delete the temp world once it has dumped).
+		// entities-dump teardown (leave + delete the temp world once it has dumped), and poll the
+		// chat-filter keybind.
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			WorldLoadResume.runPending();
 			HeadlessWorldDump.clientTick(client);
+			while (TOGGLE_CHAT_FILTER.consumeClick()) {
+				ChatFilterClient.requestToggle();
+			}
 		});
 
 		// When the headless entities-dump temp world has started, write entities.json off it.

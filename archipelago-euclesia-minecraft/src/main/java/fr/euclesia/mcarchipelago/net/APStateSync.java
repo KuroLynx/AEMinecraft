@@ -55,6 +55,8 @@ public final class APStateSync {
         PayloadTypeRegistry.clientboundPlay()
                 .registerLarge(APStateSyncPayload.TYPE, APStateSyncPayload.CODEC, MAX_PAYLOAD_BYTES);
         PayloadTypeRegistry.clientboundPlay().register(FinderSyncPayload.TYPE, FinderSyncPayload.CODEC);
+        PayloadTypeRegistry.clientboundPlay()
+                .register(ChatFilterSyncPayload.TYPE, ChatFilterSyncPayload.CODEC);
         PayloadTypeRegistry.clientboundPlay().register(APProgressPayload.TYPE, APProgressPayload.CODEC);
         // Progress updates are coalesced onto the tick; see markProgressDirty.
         ServerTickEvents.END_SERVER_TICK.register(server -> flushProgress());
@@ -105,6 +107,14 @@ public final class APStateSync {
             return;
         }
         ServerPlayNetworking.send(player, new FinderSyncPayload(tier, targets));
+    }
+
+    /** Pushes the chat filter's current on/off state to one player. Sent on toggle and on join. */
+    public static void sendChatFilter(ServerPlayer player, boolean enabled) {
+        if (!ServerPlayNetworking.canSend(player, ChatFilterSyncPayload.TYPE)) {
+            return;
+        }
+        ServerPlayNetworking.send(player, new ChatFilterSyncPayload(enabled));
     }
 
     /** Pushes the current session to one player. */
