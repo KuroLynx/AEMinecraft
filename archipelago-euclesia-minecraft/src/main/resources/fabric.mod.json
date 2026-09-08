@@ -27,6 +27,18 @@
 		{
 			"config": "aem.client.mixins.json",
 			"environment": "client"
+		},
+		{
+			"config": "aem.compat.advancementsreloaded.mixins.json",
+			"environment": "client"
+		},
+		{
+			"config": "aem.compat.betteradvancements.mixins.json",
+			"environment": "client"
+		},
+		{
+			"config": "aem.compat.paginatedadvancements.mixins.json",
+			"environment": "client"
 		}
 	],
 	"depends": {

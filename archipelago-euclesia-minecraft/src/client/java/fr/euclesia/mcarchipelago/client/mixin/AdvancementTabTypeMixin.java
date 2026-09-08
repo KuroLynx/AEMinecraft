@@ -1,5 +1,6 @@
 package fr.euclesia.mcarchipelago.client.mixin;
 
+import fr.euclesia.mcarchipelago.client.render.AdvancementRenderHooks;
 import fr.euclesia.mcarchipelago.client.render.ArchipelagoTabIcon;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.world.item.ItemStack;
@@ -22,7 +23,7 @@ public class AdvancementTabTypeMixin {
                     target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;fakeItem(Lnet/minecraft/world/item/ItemStack;II)V"))
     private void archipelago_euclesia$tabLogo(GuiGraphicsExtractor graphics, ItemStack stack, int x, int y) {
         if (ArchipelagoTabIcon.rendering) {
-            ArchipelagoTabIcon.draw(graphics, x, y);
+            AdvancementRenderHooks.drawTabLogo(graphics, x, y);
         } else {
             graphics.fakeItem(stack, x, y);
         }

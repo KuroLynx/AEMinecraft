@@ -3,8 +3,10 @@
 	"package": "fr.euclesia.mcarchipelago.client.mixin",
 	"compatibilityLevel": "JAVA_25",
 	"client": [
+		"AdvancementsScreenMixin",
 		"AdvancementTabMixin",
 		"AdvancementTabTypeMixin",
+		"AdvancementWidgetAccessor",
 		"AdvancementWidgetMixin",
 		"CreateWorldScreenMixin",
 		"MinecraftWorldLoadMixin",
