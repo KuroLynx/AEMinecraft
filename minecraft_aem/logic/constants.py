@@ -213,6 +213,7 @@ ITEM_MATERIAL_HANDLING = "Progressive Material Handling"
 ITEM_STRUCTURE_FINDER = "Progressive Structure Finder"
 ITEM_BIOME_FINDER = "Biome Finder"
 ITEM_KEEP_INVENTORY = "Progressive Keep Inventory"
+ITEM_INVENTORY_SLOT = "Progressive Inventory Slot"
 
 # -----------------------------------------------------------------------
 # Prefix

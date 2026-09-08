@@ -9,6 +9,7 @@
 		"AdvancementWidgetAccessor",
 		"AdvancementWidgetMixin",
 		"CreateWorldScreenMixin",
+		"InventoryLockRenderMixin",
 		"MinecraftWorldLoadMixin",
 		"WorldListEntryMixin"
 	],

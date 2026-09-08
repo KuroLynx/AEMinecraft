@@ -40,6 +40,7 @@ public record APSlotData(
         Map<Long, String> trapItems,
         List<ContentRequirement> requiredContent,
         ItemGateBehavior itemGateBehavior,
+        InventoryLock inventoryLock,
         int slotDataVersion
 ) {
     /** A tool/armor pickup gate: the player needs {@code knowledge} AND {@code material} tiers. */
@@ -66,6 +67,24 @@ public record APSlotData(
     public record ItemGateBehavior(boolean crafting, boolean station, boolean container, boolean pickup,
                                    boolean given) {
         public static final ItemGateBehavior DEFAULT = new ItemGateBehavior(true, true, true, true, false);
+    }
+
+    /**
+     * How much of the player's own inventory is usable (see the Python {@code InventoryLock}
+     * option). {@code slots} is out of the 36 hotbar+main slots: the always-usable count in
+     * {@link Mode#FIXED}, or the base locked count in {@link Mode#PROGRESSIVE}. {@code offhand}/
+     * {@code armor} mean different things per mode — see {@code InventoryLockService}, which is
+     * the only place this record's fields are interpreted.
+     */
+    public record InventoryLock(Mode mode, int slots, int slotsPerItem, boolean offhand, boolean armor) {
+        public enum Mode { DISABLED, FIXED, PROGRESSIVE }
+
+        public static final InventoryLock DISABLED = new InventoryLock(Mode.DISABLED, 36, 1, false, false);
+
+        /** Slots locked at the start of the game in {@link Mode#PROGRESSIVE} — meaningless otherwise. */
+        public int totalLocked() {
+            return slots + (offhand ? 1 : 0) + (armor ? 4 : 0);
+        }
     }
 
     /**
@@ -126,6 +145,7 @@ public record APSlotData(
                 Map.of(),
                 List.of(),
                 ItemGateBehavior.DEFAULT,
+                InventoryLock.DISABLED,
                 0
         );
     }
@@ -166,6 +186,7 @@ public record APSlotData(
                 parseTrapItems(json),
                 parseRequiredContent(json),
                 parseItemGateBehavior(json),
+                parseInventoryLock(json),
                 // Absent (0) in pre-versioning slot data -> treated as legacy/unversioned by
                 // CompatibilityService (allowed with a warning, not blocked).
                 APJson.getInt(json, "slot_data_version", 0)
@@ -253,6 +274,31 @@ public record APSlotData(
                 APJson.getBoolean(routes, "container", crafting),
                 APJson.getBoolean(routes, "pickup", fallback.pickup()),
                 APJson.getBoolean(routes, "given", fallback.given()));
+    }
+
+    /**
+     * Parses {@code inventory_lock}: {@code {mode, slots, slots_per_item, offhand, armor}} (see the
+     * Python {@code InventoryLock} option). A missing object, or an unrecognised {@code mode}, falls
+     * back to {@link InventoryLock#DISABLED} — purely additive, so slot data written before this
+     * field exists behaves exactly as it did.
+     */
+    private static InventoryLock parseInventoryLock(JsonObject json) {
+        JsonElement element = json.get("inventory_lock");
+        if (element == null || !element.isJsonObject()) {
+            return InventoryLock.DISABLED;
+        }
+        JsonObject lock = element.getAsJsonObject();
+        InventoryLock.Mode mode = switch (APJson.getString(lock, "mode", "disabled")) {
+            case "fixed" -> InventoryLock.Mode.FIXED;
+            case "progressive" -> InventoryLock.Mode.PROGRESSIVE;
+            default -> InventoryLock.Mode.DISABLED;
+        };
+        return new InventoryLock(
+                mode,
+                APJson.getInt(lock, "slots", 36),
+                Math.max(1, APJson.getInt(lock, "slots_per_item", 1)),
+                APJson.getBoolean(lock, "offhand", false),
+                APJson.getBoolean(lock, "armor", false));
     }
 
     /** Parses {@code trap_items}: item id -> effect key. */
