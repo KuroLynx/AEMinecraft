@@ -1,6 +1,9 @@
 {
   "item.aem.biome_finder": "Biome Finder",
 
+  "key.categories.aem.keys": "Archipelago Euclesia Minecraft",
+  "key.aem.chat_filter": "Toggle Archipelago Chat Filter",
+
   "effect.aem.butterfingers": "Slippery Fingers",
   "effect.aem.skittish_loot": "Item Fear",
 
@@ -43,6 +46,7 @@
   "gui.aem.connect.connect": "Connect",
   "gui.aem.connect.back": "Back",
   "gui.aem.connect.deathlink": "DeathLink: %s",
+  "gui.aem.connect.chatfilter": "Chat filter: %s",
   "gui.aem.connect.info.slot": "Slot: %s (#%s, team %s)",
   "gui.aem.connect.info.server": "Server: %s:%s",
 
@@ -105,6 +109,9 @@
   "message.aem.content.kind.mod": "mod",
 
   "message.aem.awaiting_slot": "This server has not connected to Archipelago yet.\nAn operator must run /aem connect before anyone can join.",
+  "message.aem.chatfilter.on": "Chat filter ON — showing only what's connected to this slot",
+  "message.aem.chatfilter.off": "Chat filter OFF — showing all multiworld chat",
+
   "message.aem.deathlink": "DeathLink: %s",
   "message.aem.deathlink.victim": "%s was taken by the link. %s",
   "message.aem.deathlink.unknown": "%s died",

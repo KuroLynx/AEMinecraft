@@ -11,7 +11,7 @@ import net.minecraft.resources.Identifier;
 /**
  * Adds an Archipelago icon button (the advancement-tab logo) to the (in-game) options screen,
  * styled like the vanilla language / accessibility buttons. Clicking it opens the
- * {@link ArchipelagoConnectScreen} options panel. Not added to the title screen — there is no
+ * {@link ArchipelagoOptionScreen} options panel. Not added to the title screen — there is no
  * connected session there to show options for.
  */
 public final class AEMScreenButtons {
@@ -38,7 +38,7 @@ public final class AEMScreenButtons {
             }
 
             SpriteIconButton button = SpriteIconButton.builder(LABEL,
-                            ignored -> client.setScreen(new ArchipelagoConnectScreen(screen)), true)
+                            ignored -> client.setScreen(new ArchipelagoOptionScreen(screen)), true)
                     .sprite(ICON, 16, 16)
                     .size(SIZE, SIZE)
                     .build();

@@ -1,6 +1,7 @@
 package fr.euclesia.mcarchipelago.server.event;
 
 import fr.euclesia.mcarchipelago.AEM;
+import fr.euclesia.mcarchipelago.archipelago.ChatFilterPreference;
 import fr.euclesia.mcarchipelago.protocol.packet.outbound.SayPacket;
 import fr.euclesia.mcarchipelago.net.APStateSync;
 import fr.euclesia.mcarchipelago.server.connect.AEMServerConfig;
@@ -24,6 +25,7 @@ import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
 import fr.euclesia.mcarchipelago.server.session.APSessionCache;
 import fr.euclesia.mcarchipelago.server.session.PendingChecks;
 import fr.euclesia.mcarchipelago.server.runtime.APSlotGate;
+import fr.euclesia.mcarchipelago.server.service.ChatFilterSetting;
 import fr.euclesia.mcarchipelago.server.service.DeathLinkService;
 import fr.euclesia.mcarchipelago.server.service.DeathLinkSetting;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
@@ -64,6 +66,10 @@ public final class MinecraftEventBridge {
             // route other worlds' deaths here, so an operator's /aem deathlink off has to be known
             // by then or the run comes back up receiving the deaths they switched off.
             DeathLinkSetting.load(worldDir);
+            // The chat filter has no such timing constraint (it only affects what gets printed
+            // locally), but loading it here alongside DeathLink keeps every world-persisted
+            // Archipelago setting restored in one place, before anyone can join.
+            ChatFilterSetting.load(worldDir);
 
             APWorldConnection pending = APWorldConnection.takePending();
             if (pending != null) {
@@ -200,6 +206,9 @@ public final class MinecraftEventBridge {
             // Hand this client the session, so its advancement overlay and tracker tab have
             // something to draw. Last, so it reflects everything the join just did.
             APStateSync.sendTo(player);
+            // The chat filter is world-persisted and run-wide; a freshly joined player's options
+            // screen should reflect it immediately rather than only after the next toggle.
+            APStateSync.sendChatFilter(player, ChatFilterPreference.enabled());
         });
 
         // A player who logs out between being link-killed and the death landing would otherwise keep
