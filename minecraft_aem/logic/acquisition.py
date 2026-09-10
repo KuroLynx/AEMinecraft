@@ -1293,7 +1293,7 @@ class RuleHelper:
     def can_get_slimeball(self):
         return self.any_of(
             self.entity(E_SLIME),  # Slime drop
-            self.can_trade_wandering_trader(),  # Wandering Trader sells slime balls
+            self.can_trade_wandering_trader(),  # a trader sells them — glitch graph only
         )
 
     def can_get_seagrass(self):
@@ -1483,8 +1483,21 @@ class RuleHelper:
         return self.all_of(self.can_sell_to_villager(tier), self._trade_currency())
 
     def can_trade_wandering_trader(self):
-        """Trade with a Wandering Trader: reach one, and hold the emeralds. It has
-        no trade levels, so it is never gated by villager_trust."""
+        """Trade with a Wandering Trader — GLITCH GRAPH ONLY. Strict logic never sees this route.
+
+        You cannot make a trader spawn, and you cannot make one roll the offer you want, so it is
+        not a route fill may plan around. Being merely *demoted* was not enough: _demote only
+        applies to routes that come out of the acquisition table, so a hand-written helper that
+        OR-ed this in — can_get_slimeball is slime drop OR trader offer — put the trade straight
+        into the strict graph, where _unique_or absorption reads ``A ∨ (A ∧ B)`` as ``A`` and the
+        cheaper trade branch deleted the Slime gate beside it. Returning Const(False) in strict mode
+        makes that impossible from every call site at once: or_ drops a false branch instead of
+        letting it swallow its siblings.
+
+        In the glitch graph it is the real thing: reach one, and hold the emeralds it charges (no
+        trade levels, so villager_trust never applies)."""
+        if not self.glitch:
+            return Const(False)
         return self.all_of(self.entity(E_WANDERING_TRADER), self._trade_currency())
 
     def can_trade(self):
@@ -1824,8 +1837,16 @@ class RuleHelper:
         loose: list = []
 
         def add(node, glitchy: bool = False):
-            if node is not None:
-                (loose if glitchy else options).append(node)
+            # Const(False) is not a source, it is the absence of one — an inactive structure, or a
+            # route this graph doesn't carry (the Wandering Trader in strict mode). Dropping it here
+            # rather than letting or_ swallow it later matters, because _demote counts the lists it
+            # is given: a lone Const(False) in `strict` would read as "something dependable exists"
+            # and throw away the flimsy routes that are the item's real ones, and a lone Const(False)
+            # in `loose` would make an item whose only listed source is a trade read as unobtainable
+            # instead of falling through to _acquire_fallback.
+            if node is None or (isinstance(node, Const) and not node.value):
+                return
+            (loose if glitchy else options).append(node)
 
         def unreliable(kind: str, name: str) -> bool:
             return chances.get(f"{kind}/{name}", 1.0) < self._GLITCH_CHANCE
