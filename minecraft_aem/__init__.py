@@ -272,6 +272,13 @@ class MCWorld(World):
         # them, so set_rules compiles their logic from BACAP's criteria instead — see set_rules).
         if self.options.blazeandcave:
             locations.update(LOCATIONS_BACAP)
+            # ...minus the vanilla ones BACAP deletes rather than rewrites. Its
+            # husbandry/obtain_netherite_hoe is a display-less `minecraft:impossible` stub, so the
+            # check could never be sent — and read as free, since an impossible criterion defers to a
+            # parent chain the stub does not have. BACAP ships its own "Serious Dedication" instead.
+            if BACAP_REMOVED:
+                locations = {name: loc_data for name, loc_data in locations.items()
+                             if loc_data.game_id not in BACAP_REMOVED}
 
         if self.options.challenge_sanity == ChallengeSanity.option_none:
             # A reused vanilla location's challenge-ness follows the active manifest: BACAP's frame

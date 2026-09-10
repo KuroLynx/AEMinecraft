@@ -35,6 +35,7 @@ from .content.registry import (  # noqa: F401
     load_containers,
     load_manifest_advancements,
     load_manifest_challenge,
+    load_manifest_removed,
     load_pack,
     load_structures,
     overlay_packs,
@@ -278,3 +279,10 @@ BACAP_REWRITE_CHALLENGE: dict[str, bool] = {
     game_id: _BACAP_CHALLENGE[game_id]
     for game_id in _VANILLA_ADVANCEMENT_GAME_IDS if game_id in _BACAP_CHALLENGE
 }
+
+# Vanilla advancements BACAP DELETES outright (its rewrite strips the display — see
+# load_manifest_removed). While blazeandcave is on these cannot be earned at all, so they must not be
+# created as checks: "Serious Dedication" (vanilla's netherite hoe) is the one, and BACAP replaces it
+# with a same-titled advancement of its own under a different id.
+BACAP_REMOVED: frozenset[str] = (
+    load_manifest_removed(BACAP_PACK) & _VANILLA_ADVANCEMENT_GAME_IDS) if BACAP_PACK else frozenset()

@@ -481,6 +481,25 @@ def load_manifest_advancements(pack_name: str, id_base: int, region: str = "Over
     return locations
 
 
+def load_manifest_removed(pack_name: str) -> frozenset[str]:
+    """Advancement ids this pack defines but strips of any DISPLAY — a datapack deleting one it
+    inherits, rather than rewriting it.
+
+    BACAP does this to ``minecraft:husbandry/obtain_netherite_hoe``: it replaces the vanilla file
+    with no title, no parent and a single ``minecraft:impossible`` criterion, then ships its own
+    "Serious Dedication" (wear out a diamond hoe) under a new id. An advancement with no display is
+    one a player can neither see nor earn, so it must not be a check while this pack is on — left in,
+    it is an unwinnable location, and one the trigger compiler reads as FREE besides (an impossible
+    criterion defers to the parent chain, and the rewrite has no parent either).
+
+    The title is the signal, NOT the impossible trigger: 63 of BACAP's own advancements are
+    all-impossible and perfectly earnable — the datapack grants those from its own scoreboard logic,
+    which is exactly why TriggerCompiler defers them to the parent chain instead of refusing them."""
+    with _pack_dir(pack_name).joinpath("manifest.json").open(encoding="utf-8") as handle:
+        manifest = json.load(handle)
+    return frozenset(gid for gid, entry in manifest.items() if not entry.get("title"))
+
+
 def load_manifest_challenge(pack_name: str) -> dict[str, bool]:
     """``{advancement_id: frame == "challenge"}`` for every advancement in the pack's manifest.
 
