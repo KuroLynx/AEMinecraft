@@ -2026,7 +2026,7 @@ class RuleHelper:
         """A recipe is satisfied when every distinct ingredient is obtainable (AND), and the station it
         runs on is usable."""
         parts = []
-        station = self._station_node(recipe.get("station"))
+        station = self._station_node(recipe.get("station"), stack)
         if station is not None:
             parts.append(station)
         for ingredient in recipe.get("ingredients", ()):
@@ -2051,31 +2051,47 @@ class RuleHelper:
             return Const(True)
         return self.knowledge(BLOCK_KNOWLEDGE.get("minecraft:chest", ""))
 
-    def _station_node(self, station: str | None):
-        """The Knowledge a recipe's station demands, or None when nothing gates it.
+    def _station_node(self, station: str | None, stack: frozenset = frozenset()):
+        """What a recipe's station costs: permission to use one, AND one to use.
 
         ``station`` is the recipe type the pack dumped (``smelting``, ``stonecutting``,
-        ``crafting_shaped``, …); RECIPE_STATION_KNOWLEDGE maps it to the block(s) that run it, ORed
-        because either a Crafting Table or a Crafter does crafting. Gates the seed switched off fold
-        away in self.knowledge, so this costs nothing when they are.
+        ``crafting_shaped``, …). RECIPE_STATION_KNOWLEDGE maps it to the Knowledge that unlocks it
+        and RECIPE_STATION_BLOCKS to the block(s) that run it, each ORed because either a Crafting
+        Table or a Crafter does crafting. Gates the seed switched off fold away in self.knowledge.
 
-        Every ``crafting_*`` type is treated as needing the crafting station. That is deliberately
-        strict: the acquisition dump doesn't record a shaped recipe's grid size, so a 2x2 recipe you
-        could do in your own inventory is indistinguishable from a 3x3 one. Over-requiring only makes
-        logic more conservative, while under-requiring would hand out seeds that can't be finished.
+        The BLOCK is the half that was missing, and it is not the same requirement as the Knowledge:
+        a seed with `knowledge_gates: [All, -Furnace]` used to price a smelt at nothing at all, so
+        glass came out FREE while the furnace that makes it was correctly gated behind a pickaxe and
+        a stack of cobblestone. That is how BACAP's 'Translucence' — all sixteen stained glass —
+        landed in sphere 1. You need a furnace to smelt whether or not an AP item gates its use, so
+        the block is required regardless of route_open, which only waives the Knowledge.
+
+        CRAFTING is the exception, on both halves. Every ``crafting_*`` type is treated as needing
+        the station: the dump doesn't record a shaped recipe's grid size, so a 2x2 recipe you could
+        do in your own inventory is indistinguishable from a 3x3 one (see docs — the 2x2 gap is a
+        known open question). Asking for the crafting table ITEM there would also be circular, since
+        a crafting table is itself crafted, so crafting keeps the Knowledge-only treatment.
         """
         if not station:
             return None
         key = "crafting" if station.startswith("crafting") else station
+        parts = []
         # item_gate_behavior splits the GUI gates: hand-crafting is the `crafting` route, everything
         # that runs on a placed block (smelting, stonecutting, smithing …) is `station`. With the
-        # seed's route open the permissive graph asks for no Knowledge at all.
-        if self.route_open("crafting" if key == "crafting" else "station"):
-            return None
-        names = RECIPE_STATION_KNOWLEDGE.get(key)
-        if not names:
-            return None
-        return self.any_of(*(self.knowledge(name) for name in names))
+        # seed's route open the permissive graph asks for no Knowledge — but still for the block.
+        if not self.route_open("crafting" if key == "crafting" else "station"):
+            names = RECIPE_STATION_KNOWLEDGE.get(key)
+            if names:
+                parts.append(self.any_of(*(self.knowledge(name) for name in names)))
+        if key != "crafting":
+            # Obtaining the station, threading the recipe's own stack so a station that somehow
+            # depends on its own output drops out (None) instead of recursing. If every candidate
+            # drops out, the Knowledge alone carries the recipe rather than making it unobtainable.
+            blocks = [self.acquire(block, stack) for block in RECIPE_STATION_BLOCKS.get(key, ())]
+            blocks = [node for node in blocks if node is not None]
+            if blocks:
+                parts.append(self.any_of(*blocks))
+        return self.all_of(*parts) if parts else None
 
     def _ingredient_node(self, ingredient: dict, stack: frozenset):
         if "any_of" in ingredient:

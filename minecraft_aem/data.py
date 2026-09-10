@@ -215,11 +215,18 @@ BLOCK_KNOWLEDGE = {block: name for block, name in BLOCK_KNOWLEDGE.items() if nam
 # it, ORed: "crafting" is satisfied by a Crafting Table OR a Crafter. Derived from the dump's
 # recipe_station field, which is how a smelting recipe learns it needs the Furnace gate.
 RECIPE_STATION_KNOWLEDGE: dict[str, list[str]] = {}
+# The same key -> the BLOCKS that run it ("smelting" -> the furnace). The Knowledge above is only the
+# permission to use one; this is the block itself, which a recipe needs whether or not a gate is on.
+RECIPE_STATION_BLOCKS: dict[str, list[str]] = {}
 for _record in load_containers(base_pack()):
     _station = _record.get("recipe_station")
+    if not _station:
+        continue
     _knowledge = BLOCK_KNOWLEDGE.get(_record["block"])
-    if _station and _knowledge and _knowledge not in RECIPE_STATION_KNOWLEDGE.setdefault(_station, []):
+    if _knowledge and _knowledge not in RECIPE_STATION_KNOWLEDGE.setdefault(_station, []):
         RECIPE_STATION_KNOWLEDGE[_station].append(_knowledge)
+    if _record["block"] not in RECIPE_STATION_BLOCKS.setdefault(_station, []):
+        RECIPE_STATION_BLOCKS[_station].append(_record["block"])
 
 # Legacy alias: the two stations gated before the option existed. STATION_KNOWLEDGE_LOCKS is now the
 # whole BLOCK_KNOWLEDGE catalogue (keyed by full id), kept under its old name for fill_slot_data.
