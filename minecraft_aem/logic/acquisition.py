@@ -242,6 +242,20 @@ _EXTRA_DROP_KNOWLEDGE = {
 _EXTRA_BLOCK_STRUCTURES = {
     "dried_ghast": ("nether_fossil",),
 }
+# What has to be standing in front of you before an empty bucket becomes a FULL one. Filling a bucket
+# is a use-interaction, which appears in no recipe, loot table or trade, so the dump has no record of
+# the act at all — see the filled-bucket branch in _acquire_compute for what that cost. Keyed by the
+# filled item -> the mobs that can fill it (OR: any one of them will do). A bucket filled from the
+# world rather than from a mob — water, lava, powder snow — is absent, and needs only the bucket.
+_BUCKET_CONTENT_MOBS: dict[str, tuple[str, ...]] = {
+    "axolotl_bucket": (E_AXOLOTL,),
+    "tadpole_bucket": (E_TADPOLE,),
+    "cod_bucket": (E_COD,),
+    "salmon_bucket": (E_SALMON,),
+    "pufferfish_bucket": (E_PUFFERFISH,),
+    "tropical_fish_bucket": (E_TROPICAL_FISH,),
+    "milk_bucket": (E_COW, E_MOOSHROOM, E_GOAT),  # any of the three gives milk
+}
 # needs_<tier>_tool tag -> the material tier the mining pickaxe (and the player) must have reached.
 _NEEDS_TIER = {"stone": MAT_STONE, "iron": MAT_IRON, "diamond": MAT_DIAMOND}
 _BLOCK_MINING: dict | None = None
@@ -404,12 +418,17 @@ class RuleHelper:
         # acquire(base, stack) is pure. Datapack-scale compilation calls it millions of times for the
         # same (base, stack) pairs (planks/sticks/ingots recur in every recipe); caching collapses
         # that. Returned nodes are shared read-only across rules, which is safe (eval + to_dict only).
-        self._acquire_cache: dict[tuple[str, frozenset, frozenset], object] = {}
+        self._acquire_cache: dict[tuple[str, frozenset, frozenset, bool], object] = {}
         # Structures whose "how do you find one" gate is being computed right now (see structure()).
         # It is part of the acquire() cache key because it changes the answer: while resolving the
         # stronghold's gate, ender pearls must not be sourced from a stronghold chest, and that
         # narrower result must not be cached over the ordinary one.
         self._finding_stack: frozenset = frozenset()
+        # True while working out what a trade COSTS (see _trade_currency). Like _finding_stack it is
+        # part of the acquire() cache key, because it changes the answer: while pricing the emeralds
+        # a trade needs, emeralds must not be sourced from a trade, and that narrower result must not
+        # be cached over the ordinary one.
+        self._pricing_trade: bool = False
         # Thunks (deferred so cross-referencing mobs don't recurse at construction).
         self.structure_bound_mobs = {
             # Overworld — structure-locked
@@ -1419,19 +1438,44 @@ class RuleHelper:
     # -----------------------------------------------------------------------
     # Trades
     # -----------------------------------------------------------------------
+    def _trade_currency(self):
+        """What a trade costs the player: emeralds.
+
+        Every buy offer takes them, and neither trade helper used to ask for any — which for a
+        villager merely made a real gate cheaper, but for the Wandering Trader (no village, no
+        profession, no trust tier) left ``can_trade_wandering_trader`` as nothing but "be in the
+        Overworld". Anything whose only source was a trader offer — a pufferfish bucket, a bucket of
+        tropical fish — was therefore obtainable holding nothing at all, and worse, a free branch in
+        an OR lets _unique_or absorption delete the gates beside it (``can_get_slimeball`` is slime
+        drop OR trader offer, so a seed locking hostiles lost its Slime gate to the free trader).
+
+        The ``_pricing_trade`` guard breaks the obvious cycle: emeralds are themselves traded, so
+        acquire("emerald") walks back here. Inside the guard emeralds resolve by their other routes
+        (ore, chest loot, mob drop) and this returns free rather than recursing — the trade route
+        cannot be what pays for itself."""
+        if self._pricing_trade:
+            return Const(True)
+        self._pricing_trade = True
+        try:
+            emeralds = self.acquire("minecraft:emerald")
+        finally:
+            self._pricing_trade = False
+        return emeralds if emeralds is not None else Const(True)
+
     def can_trade_villager(self, tier: int = 1):
         """Trade with a profession villager in a village at trade level ``tier``
-        (novice = 1 … master = 5). When the villager_trust option is on, the level
-        is gated behind that many Progressive Villager Trust items."""
-        base = self.all_of(self.entity(E_VILLAGER), self.any_village())
+        (novice = 1 … master = 5), holding the emeralds it costs. When the
+        villager_trust option is on, the level is gated behind that many
+        Progressive Villager Trust items."""
+        base = self.all_of(self.entity(E_VILLAGER), self.any_village(), self._trade_currency())
         if self.villager_trust:
             return self.all_of(base, self.has(ITEM_VILLAGER_TRUST, tier))
         return base
 
     def can_trade_wandering_trader(self):
-        """Trade with a Wandering Trader. It has no trade levels, so it is never
-        gated by villager_trust — only by reaching the mob."""
-        return self.entity(E_WANDERING_TRADER)
+        """Trade with a Wandering Trader: reach one, and hold the emeralds. It has
+        no trade levels, so it is never gated by villager_trust."""
+        return self.all_of(self.entity(E_WANDERING_TRADER), self._trade_currency())
 
     def can_trade(self):
         """The player can perform *some* trade — a novice (min-level) villager or a
@@ -1526,7 +1570,7 @@ class RuleHelper:
             return self.material(tier) if tier is not None else None
         # Memoize on (base, stack): the result is pure for this helper, so the same item is computed
         # once and shared. Datapack compilation calls acquire ~9M times for far fewer distinct keys.
-        key = (base, _stack, self._finding_stack)
+        key = (base, _stack, self._finding_stack, self._pricing_trade)
         cache = self._acquire_cache
         if key in cache:
             return cache[key]
@@ -1628,6 +1672,38 @@ class RuleHelper:
         # behind it) free in the Overworld. Model the real route: a brush, and the ruin to use it in.
         if base == "sniffer_egg":
             return self.all_of(self.has_brush(), self.structure(S_OCEAN_RUIN_WARM))
+
+        # A filled bucket is made by a USE interaction — right-click a fluid, a mob or a cauldron
+        # with an empty bucket — and that act appears in no recipe, loot table or trade, so the dump
+        # has no record of it. Two different failures followed from that, and this branch is here to
+        # end both:
+        #
+        #   * an item with NO record (lava, powder snow, axolotl, tadpole, salmon) fell through to
+        #     the `*_bucket` suffix rule in _acquire_fallback, which strips the suffix and asks for
+        #     the empty bucket — never for what fills it. An axolotl bucket, a tadpole bucket and a
+        #     salmon bucket compiled to rules byte-identical to a plain bucket: no axolotl, no frog.
+        #   * an item WITH a record never reached that fallback at all (_acquire_from_sources
+        #     returned non-None), so it was priced purely by whatever incidental route the dump
+        #     happened to find it on: milk was "loot a trial chamber" with no cow and no bucket in
+        #     the rule, water was "loot a village", and pufferfish/tropical fish were a lone
+        #     Wandering Trader offer, which coarsens to a bare region and left them free.
+        #
+        # So model the real route for EVERY filled bucket — the bucket, plus whatever fills it — and
+        # OR the record's own routes alongside it, because a bucket of fish bought from a trader or
+        # pulled out of a chest genuinely needs no bucket of your own.
+        if base.endswith("_bucket"):
+            routes = []
+            bucket = self.acquire("minecraft:bucket", _stack | {base})
+            if bucket is not None:
+                mobs = _BUCKET_CONTENT_MOBS.get(base, ())
+                content = self.any_of(*[self.entity(name) for name in mobs]) if mobs else Const(True)
+                routes.append(self.all_of(bucket, content))
+            sources = self._acquire_from_sources(base, _stack)
+            if sources is not None:
+                routes.append(sources)
+            if not routes:
+                return None
+            return self._with_reward(base, self._coarsen(self._unique_or(routes)))
 
         # Tools / armor / gated craftables (bow, fishing rod, shears, …) need their Knowledge to be
         # USED however they were obtained — but they are still obtained via their real sources, each
@@ -2132,6 +2208,7 @@ class RuleHelper:
         tier = _MATERIAL_TIER_BY_ITEM.get(base)
         if tier is not None:
             return self.material(tier)
-        if base.endswith("_bucket"):
-            return self.acquire("minecraft:bucket")  # a filled bucket needs a bucket
+        # (A filled bucket used to be caught here, by suffix, and priced as the empty bucket alone.
+        # _acquire_compute now models every one of them — bucket AND what fills it — before the
+        # fallback is ever consulted.)
         return None
