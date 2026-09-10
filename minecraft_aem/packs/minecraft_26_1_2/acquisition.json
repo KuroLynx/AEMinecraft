@@ -461,12 +461,12 @@
     ]
   },
   "angler_pottery_sherd": {
-    "chances": {
-      "structures/ocean_ruin_warm": 0.06667
-    },
-    "structures": [
+    "archaeology": [
       "ocean_ruin_warm"
-    ]
+    ],
+    "chances": {
+      "archaeology/ocean_ruin_warm": 0.06667
+    }
   },
   "anvil": {
     "mining": [
@@ -520,12 +520,12 @@
     ]
   },
   "archer_pottery_sherd": {
-    "chances": {
-      "structures/desert_pyramid": 0.125
-    },
-    "structures": [
+    "archaeology": [
       "desert_pyramid"
-    ]
+    ],
+    "chances": {
+      "archaeology/desert_pyramid": 0.125
+    }
   },
   "armadillo_scute": {
     "gameplay": [
@@ -549,12 +549,12 @@
     ]
   },
   "arms_up_pottery_sherd": {
-    "chances": {
-      "structures/desert_well": 0.25
-    },
-    "structures": [
+    "archaeology": [
       "desert_well"
-    ]
+    ],
+    "chances": {
+      "archaeology/desert_well": 0.25
+    }
   },
   "arrow": {
     "chances": {
@@ -1224,16 +1224,19 @@
     ]
   },
   "beetroot_seeds": {
+    "archaeology": [
+      "trail_ruins"
+    ],
     "breeding": [
       "chicken",
       "parrot"
     ],
     "chances": {
+      "archaeology/trail_ruins": 0.02222,
       "structures/end_city": 0.29314,
       "structures/mansion": 0.20972,
       "structures/mineshaft": 0.34983,
       "structures/monster_room": 0.28361,
-      "structures/trail_ruins": 0.02222,
       "structures/village_snowy": 0.81227
     },
     "mining": [
@@ -1244,7 +1247,6 @@
       "mansion",
       "mineshaft",
       "monster_room",
-      "trail_ruins",
       "village_snowy"
     ],
     "trades": [
@@ -2342,12 +2344,12 @@
     ]
   },
   "blade_pottery_sherd": {
-    "chances": {
-      "structures/ocean_ruin_cold": 0.06667
-    },
-    "structures": [
+    "archaeology": [
       "ocean_ruin_cold"
-    ]
+    ],
+    "chances": {
+      "archaeology/ocean_ruin_cold": 0.06667
+    }
   },
   "blast_furnace": {
     "mining": [
@@ -2727,8 +2729,11 @@
     ]
   },
   "blue_dye": {
+    "archaeology": [
+      "trail_ruins"
+    ],
     "chances": {
-      "structures/trail_ruins": 0.04444
+      "archaeology/trail_ruins": 0.04444
     },
     "recipes": [
       {
@@ -2747,9 +2752,6 @@
         ],
         "station": "crafting_shapeless"
       }
-    ],
-    "structures": [
-      "trail_ruins"
     ],
     "trades": [
       [
@@ -2990,8 +2992,11 @@
     ]
   },
   "blue_stained_glass_pane": {
+    "archaeology": [
+      "trail_ruins"
+    ],
     "chances": {
-      "structures/trail_ruins": 0.02222
+      "archaeology/trail_ruins": 0.02222
     },
     "recipes": [
       {
@@ -3016,9 +3021,6 @@
     ],
     "silk_mining": [
       "blue_stained_glass_pane"
-    ],
-    "structures": [
-      "trail_ruins"
     ]
   },
   "blue_terracotta": {
@@ -3552,12 +3554,12 @@
     ]
   },
   "brewer_pottery_sherd": {
-    "chances": {
-      "structures/desert_well": 0.25
-    },
-    "structures": [
+    "archaeology": [
       "desert_well"
-    ]
+    ],
+    "chances": {
+      "archaeology/desert_well": 0.25
+    }
   },
   "brewing_stand": {
     "mining": [
@@ -3588,9 +3590,13 @@
     ]
   },
   "brick": {
+    "archaeology": [
+      "desert_well",
+      "trail_ruins"
+    ],
     "chances": {
-      "structures/desert_well": 0.125,
-      "structures/trail_ruins": 0.04444
+      "archaeology/desert_well": 0.125,
+      "archaeology/trail_ruins": 0.04444
     },
     "recipes": [
       {
@@ -3601,10 +3607,6 @@
         ],
         "station": "smelting"
       }
-    ],
-    "structures": [
-      "desert_well",
-      "trail_ruins"
     ],
     "trades": [
       [
@@ -3911,8 +3913,11 @@
     ]
   },
   "brown_candle": {
+    "archaeology": [
+      "trail_ruins"
+    ],
     "chances": {
-      "structures/trail_ruins": 0.04444
+      "archaeology/trail_ruins": 0.04444
     },
     "mining": [
       "brown_candle",
@@ -3930,9 +3935,6 @@
         ],
         "station": "crafting_shapeless"
       }
-    ],
-    "structures": [
-      "trail_ruins"
     ]
   },
   "brown_carpet": {
@@ -4501,12 +4503,12 @@
     ]
   },
   "burn_pottery_sherd": {
-    "chances": {
-      "structures/trail_ruins": 0.08333
-    },
-    "structures": [
+    "archaeology": [
       "trail_ruins"
-    ]
+    ],
+    "chances": {
+      "archaeology/trail_ruins": 0.08333
+    }
   },
   "bush": {
     "mining": [
@@ -5884,8 +5886,11 @@
     ]
   },
   "clay": {
+    "archaeology": [
+      "trail_ruins"
+    ],
     "chances": {
-      "structures/trail_ruins": 0.04444
+      "archaeology/trail_ruins": 0.04444
     },
     "gameplay": [
       "mason_gift"
@@ -5902,9 +5907,6 @@
         ],
         "station": "crafting_shaped"
       }
-    ],
-    "structures": [
-      "trail_ruins"
     ]
   },
   "clay_ball": {
@@ -5962,18 +5964,23 @@
     ]
   },
   "coal": {
+    "archaeology": [
+      "ocean_ruin_cold",
+      "ocean_ruin_warm",
+      "trail_ruins"
+    ],
     "chances": {
+      "archaeology/ocean_ruin_cold": 0.96098,
+      "archaeology/ocean_ruin_warm": 0.96098,
+      "archaeology/trail_ruins": 0.02222,
       "drops/wither_skeleton": 0.5,
       "structures/ancient_city": 0.5811,
       "structures/igloo": 0.88645,
       "structures/mansion": 0.30124,
       "structures/mineshaft": 0.34983,
       "structures/monster_room": 0.4003,
-      "structures/ocean_ruin_cold": 0.96098,
-      "structures/ocean_ruin_warm": 0.96098,
       "structures/shipwreck": 0.5234,
       "structures/stronghold": 0.50518,
-      "structures/trail_ruins": 0.02222,
       "structures/village_desert": 0.63335,
       "structures/village_plains": 0.63335,
       "structures/village_savanna": 0.63335,
@@ -6035,11 +6042,8 @@
       "mansion",
       "mineshaft",
       "monster_room",
-      "ocean_ruin_cold",
-      "ocean_ruin_warm",
       "shipwreck",
       "stronghold",
-      "trail_ruins",
       "village_desert",
       "village_plains",
       "village_savanna",
@@ -8867,12 +8871,12 @@
     ]
   },
   "danger_pottery_sherd": {
-    "chances": {
-      "structures/trail_ruins": 0.08333
-    },
-    "structures": [
+    "archaeology": [
       "trail_ruins"
-    ]
+    ],
+    "chances": {
+      "archaeology/trail_ruins": 0.08333
+    }
   },
   "dark_oak_boat": {
     "recipes": [
@@ -9308,8 +9312,11 @@
     ]
   },
   "dead_bush": {
+    "archaeology": [
+      "trail_ruins"
+    ],
     "chances": {
-      "structures/trail_ruins": 0.02222,
+      "archaeology/trail_ruins": 0.02222,
       "structures/village_desert": 0.36699
     },
     "mining": [
@@ -9317,7 +9324,6 @@
       "potted_dead_bush"
     ],
     "structures": [
-      "trail_ruins",
       "village_desert"
     ]
   },
@@ -9862,7 +9868,11 @@
     ]
   },
   "diamond": {
+    "archaeology": [
+      "desert_pyramid"
+    ],
     "chances": {
+      "archaeology/desert_pyramid": 0.125,
       "gameplay/corridor": 0.01425,
       "structures/bastion_remnant": 0.12804,
       "structures/buried_treasure": 0.7037,
@@ -10635,20 +10645,28 @@
     ]
   },
   "emerald": {
+    "archaeology": [
+      "desert_pyramid",
+      "desert_well",
+      "ocean_ruin_cold",
+      "ocean_ruin_warm",
+      "trail_ruins"
+    ],
     "chances": {
+      "archaeology/desert_pyramid": 0.22167,
+      "archaeology/desert_well": 0.125,
+      "archaeology/ocean_ruin_cold": 0.23755,
+      "archaeology/ocean_ruin_warm": 0.23755,
+      "archaeology/trail_ruins": 0.04444,
       "drops/evoker": 0.66667,
       "drops/vindicator": 0.66667,
       "gameplay/corridor": 0.35613,
       "structures/buried_treasure": 0.7037,
       "structures/desert_pyramid": 0.22167,
-      "structures/desert_well": 0.125,
       "structures/end_city": 0.12748,
       "structures/igloo": 0.12015,
       "structures/jungle_pyramid": 0.12748,
-      "structures/ocean_ruin_cold": 0.23755,
-      "structures/ocean_ruin_warm": 0.23755,
       "structures/shipwreck": 0.84447,
-      "structures/trail_ruins": 0.04444,
       "structures/trial_chambers": 0.33333,
       "structures/village_desert": 0.48709,
       "structures/village_plains": 0.48709,
@@ -10712,14 +10730,10 @@
     "structures": [
       "buried_treasure",
       "desert_pyramid",
-      "desert_well",
       "end_city",
       "igloo",
       "jungle_pyramid",
-      "ocean_ruin_cold",
-      "ocean_ruin_warm",
       "shipwreck",
-      "trail_ruins",
       "trial_chambers",
       "village_desert",
       "village_plains",
@@ -11441,12 +11455,12 @@
     ]
   },
   "explorer_pottery_sherd": {
-    "chances": {
-      "structures/ocean_ruin_cold": 0.06667
-    },
-    "structures": [
+    "archaeology": [
       "ocean_ruin_cold"
-    ]
+    ],
+    "chances": {
+      "archaeology/ocean_ruin_cold": 0.06667
+    }
   },
   "exposed_chiseled_copper": {
     "mining": [
@@ -12051,8 +12065,11 @@
     ]
   },
   "flower_pot": {
+    "archaeology": [
+      "trail_ruins"
+    ],
     "chances": {
-      "structures/trail_ruins": 0.02222,
+      "archaeology/trail_ruins": 0.02222,
       "structures/village_desert": 0.32982,
       "structures/village_plains": 0.32982,
       "structures/village_savanna": 0.32982,
@@ -12111,7 +12128,6 @@
       }
     ],
     "structures": [
-      "trail_ruins",
       "village_desert",
       "village_plains",
       "village_savanna",
@@ -12138,12 +12154,12 @@
     ]
   },
   "friend_pottery_sherd": {
-    "chances": {
-      "structures/trail_ruins": 0.08333
-    },
-    "structures": [
+    "archaeology": [
       "trail_ruins"
-    ]
+    ],
+    "chances": {
+      "archaeology/trail_ruins": 0.08333
+    }
   },
   "furnace": {
     "chances": {
@@ -12550,15 +12566,20 @@
     ]
   },
   "gold_nugget": {
+    "archaeology": [
+      "ocean_ruin_cold",
+      "ocean_ruin_warm",
+      "trail_ruins"
+    ],
     "chances": {
+      "archaeology/ocean_ruin_cold": 0.94432,
+      "archaeology/ocean_ruin_warm": 0.94432,
+      "archaeology/trail_ruins": 0.02222,
       "drops/zombified_piglin": 0.66667,
       "structures/bastion_remnant": 0.5904,
       "structures/igloo": 0.74911,
-      "structures/ocean_ruin_cold": 0.94432,
-      "structures/ocean_ruin_warm": 0.94432,
       "structures/ruined_portal": 0.2646,
       "structures/shipwreck": 0.48709,
-      "structures/trail_ruins": 0.02222,
       "structures/village_plains": 0.17159,
       "structures/village_savanna": 0.16124
     },
@@ -12672,11 +12693,8 @@
     "structures": [
       "bastion_remnant",
       "igloo",
-      "ocean_ruin_cold",
-      "ocean_ruin_warm",
       "ruined_portal",
       "shipwreck",
-      "trail_ruins",
       "village_plains",
       "village_savanna"
     ]
@@ -14086,8 +14104,11 @@
     ]
   },
   "green_candle": {
+    "archaeology": [
+      "trail_ruins"
+    ],
     "chances": {
-      "structures/trail_ruins": 0.04444
+      "archaeology/trail_ruins": 0.04444
     },
     "mining": [
       "green_candle",
@@ -14105,9 +14126,6 @@
         ],
         "station": "crafting_shapeless"
       }
-    ],
-    "structures": [
-      "trail_ruins"
     ]
   },
   "green_carpet": {
@@ -14610,7 +14628,11 @@
     ]
   },
   "gunpowder": {
+    "archaeology": [
+      "desert_pyramid"
+    ],
     "chances": {
+      "archaeology/desert_pyramid": 0.5904,
       "drops/creeper": 0.75,
       "drops/ghast": 0.75,
       "drops/witch": 0.28822,
@@ -14675,20 +14697,20 @@
     ]
   },
   "heart_pottery_sherd": {
-    "chances": {
-      "structures/trail_ruins": 0.08333
-    },
-    "structures": [
+    "archaeology": [
       "trail_ruins"
-    ]
+    ],
+    "chances": {
+      "archaeology/trail_ruins": 0.08333
+    }
   },
   "heartbreak_pottery_sherd": {
-    "chances": {
-      "structures/trail_ruins": 0.08333
-    },
-    "structures": [
+    "archaeology": [
       "trail_ruins"
-    ]
+    ],
+    "chances": {
+      "archaeology/trail_ruins": 0.08333
+    }
   },
   "heavy_core": {
     "chances": {
@@ -14833,8 +14855,11 @@
     ]
   },
   "host_armor_trim_smithing_template": {
+    "archaeology": [
+      "trail_ruins"
+    ],
     "chances": {
-      "structures/trail_ruins": 0.08333
+      "archaeology/trail_ruins": 0.08333
     },
     "recipes": [
       {
@@ -14851,18 +14876,15 @@
         ],
         "station": "crafting_shaped"
       }
-    ],
-    "structures": [
-      "trail_ruins"
     ]
   },
   "howl_pottery_sherd": {
-    "chances": {
-      "structures/trail_ruins": 0.08333
-    },
-    "structures": [
+    "archaeology": [
       "trail_ruins"
-    ]
+    ],
+    "chances": {
+      "archaeology/trail_ruins": 0.08333
+    }
   },
   "ice": {
     "silk_mining": [
@@ -14881,10 +14903,14 @@
     ]
   },
   "iron_axe": {
+    "archaeology": [
+      "ocean_ruin_cold",
+      "ocean_ruin_warm"
+    ],
     "chances": {
+      "archaeology/ocean_ruin_cold": 0.06667,
+      "archaeology/ocean_ruin_warm": 0.06667,
       "gameplay/weaponsmith_gift": 0.33333,
-      "structures/ocean_ruin_cold": 0.06667,
-      "structures/ocean_ruin_warm": 0.06667,
       "structures/trial_chambers": 0.14973
     },
     "gameplay": [
@@ -14908,8 +14934,6 @@
       }
     ],
     "structures": [
-      "ocean_ruin_cold",
-      "ocean_ruin_warm",
       "trial_chambers"
     ],
     "trades": [
@@ -16203,10 +16227,13 @@
     ]
   },
   "lead": {
+    "archaeology": [
+      "trail_ruins"
+    ],
     "chances": {
+      "archaeology/trail_ruins": 0.02222,
       "structures/ancient_city": 0.21414,
-      "structures/mansion": 0.46247,
-      "structures/trail_ruins": 0.02222
+      "structures/mansion": 0.46247
     },
     "recipes": [
       {
@@ -16220,8 +16247,7 @@
     ],
     "structures": [
       "ancient_city",
-      "mansion",
-      "trail_ruins"
+      "mansion"
     ]
   },
   "leaf_litter": {
@@ -16918,8 +16944,11 @@
     ]
   },
   "light_blue_dye": {
+    "archaeology": [
+      "trail_ruins"
+    ],
     "chances": {
-      "structures/trail_ruins": 0.04444
+      "archaeology/trail_ruins": 0.04444
     },
     "recipes": [
       {
@@ -16941,9 +16970,6 @@
         ],
         "station": "crafting_shapeless"
       }
-    ],
-    "structures": [
-      "trail_ruins"
     ],
     "trades": [
       [
@@ -17137,8 +17163,11 @@
     ]
   },
   "light_blue_stained_glass_pane": {
+    "archaeology": [
+      "trail_ruins"
+    ],
     "chances": {
-      "structures/trail_ruins": 0.02222
+      "archaeology/trail_ruins": 0.02222
     },
     "recipes": [
       {
@@ -17163,9 +17192,6 @@
     ],
     "silk_mining": [
       "light_blue_stained_glass_pane"
-    ],
-    "structures": [
-      "trail_ruins"
     ]
   },
   "light_blue_terracotta": {
@@ -19427,8 +19453,11 @@
     ]
   },
   "magenta_stained_glass_pane": {
+    "archaeology": [
+      "trail_ruins"
+    ],
     "chances": {
-      "structures/trail_ruins": 0.02222
+      "archaeology/trail_ruins": 0.02222
     },
     "recipes": [
       {
@@ -19453,9 +19482,6 @@
     ],
     "silk_mining": [
       "magenta_stained_glass_pane"
-    ],
-    "structures": [
-      "trail_ruins"
     ]
   },
   "magenta_terracotta": {
@@ -20052,12 +20078,12 @@
     ]
   },
   "miner_pottery_sherd": {
-    "chances": {
-      "structures/desert_pyramid": 0.125
-    },
-    "structures": [
+    "archaeology": [
       "desert_pyramid"
-    ]
+    ],
+    "chances": {
+      "archaeology/desert_pyramid": 0.125
+    }
   },
   "mojang_banner_pattern": {
     "recipes": [
@@ -20308,12 +20334,12 @@
     ]
   },
   "mourner_pottery_sherd": {
-    "chances": {
-      "structures/ocean_ruin_cold": 0.06667
-    },
-    "structures": [
+    "archaeology": [
       "ocean_ruin_cold"
-    ]
+    ],
+    "chances": {
+      "archaeology/ocean_ruin_cold": 0.06667
+    }
   },
   "mud": {
     "mining": [
@@ -20531,12 +20557,12 @@
     ]
   },
   "music_disc_relic": {
-    "chances": {
-      "structures/trail_ruins": 0.08333
-    },
-    "structures": [
+    "archaeology": [
       "trail_ruins"
-    ]
+    ],
+    "chances": {
+      "archaeology/trail_ruins": 0.08333
+    }
   },
   "music_disc_tears": {
     "drops": [
@@ -21308,8 +21334,11 @@
     ]
   },
   "oak_hanging_sign": {
+    "archaeology": [
+      "trail_ruins"
+    ],
     "chances": {
-      "structures/trail_ruins": 0.02222
+      "archaeology/trail_ruins": 0.02222
     },
     "mining": [
       "oak_hanging_sign"
@@ -21326,9 +21355,6 @@
         ],
         "station": "crafting_shaped"
       }
-    ],
-    "structures": [
-      "trail_ruins"
     ]
   },
   "oak_leaves": {
@@ -21940,8 +21966,11 @@
     ]
   },
   "orange_dye": {
+    "archaeology": [
+      "trail_ruins"
+    ],
     "chances": {
-      "structures/trail_ruins": 0.04444
+      "archaeology/trail_ruins": 0.04444
     },
     "recipes": [
       {
@@ -21979,9 +22008,6 @@
         ],
         "station": "crafting_shapeless"
       }
-    ],
-    "structures": [
-      "trail_ruins"
     ],
     "trades": [
       [
@@ -23634,8 +23660,11 @@
     ]
   },
   "pink_stained_glass_pane": {
+    "archaeology": [
+      "trail_ruins"
+    ],
     "chances": {
-      "structures/trail_ruins": 0.02222
+      "archaeology/trail_ruins": 0.02222
     },
     "recipes": [
       {
@@ -23660,9 +23689,6 @@
     ],
     "silk_mining": [
       "pink_stained_glass_pane"
-    ],
-    "structures": [
-      "trail_ruins"
     ]
   },
   "pink_terracotta": {
@@ -23874,12 +23900,12 @@
     ]
   },
   "plenty_pottery_sherd": {
-    "chances": {
-      "structures/ocean_ruin_cold": 0.06667
-    },
-    "structures": [
+    "archaeology": [
       "ocean_ruin_cold"
-    ]
+    ],
+    "chances": {
+      "archaeology/ocean_ruin_cold": 0.06667
+    }
   },
   "podzol": {
     "mining": [
@@ -25087,12 +25113,12 @@
     ]
   },
   "prize_pottery_sherd": {
-    "chances": {
-      "structures/desert_pyramid": 0.125
-    },
-    "structures": [
+    "archaeology": [
       "desert_pyramid"
-    ]
+    ],
+    "chances": {
+      "archaeology/desert_pyramid": 0.125
+    }
   },
   "pufferfish": {
     "breeding": [
@@ -25435,8 +25461,11 @@
     ]
   },
   "purple_candle": {
+    "archaeology": [
+      "trail_ruins"
+    ],
     "chances": {
-      "structures/trail_ruins": 0.04444
+      "archaeology/trail_ruins": 0.04444
     },
     "mining": [
       "purple_candle",
@@ -25454,9 +25483,6 @@
         ],
         "station": "crafting_shapeless"
       }
-    ],
-    "structures": [
-      "trail_ruins"
     ]
   },
   "purple_carpet": {
@@ -25769,8 +25795,11 @@
     ]
   },
   "purple_stained_glass_pane": {
+    "archaeology": [
+      "trail_ruins"
+    ],
     "chances": {
-      "structures/trail_ruins": 0.02222
+      "archaeology/trail_ruins": 0.02222
     },
     "recipes": [
       {
@@ -25795,9 +25824,6 @@
     ],
     "silk_mining": [
       "purple_stained_glass_pane"
-    ],
-    "structures": [
-      "trail_ruins"
     ]
   },
   "purple_terracotta": {
@@ -26285,8 +26311,11 @@
     ]
   },
   "raiser_armor_trim_smithing_template": {
+    "archaeology": [
+      "trail_ruins"
+    ],
     "chances": {
-      "structures/trail_ruins": 0.08333
+      "archaeology/trail_ruins": 0.08333
     },
     "recipes": [
       {
@@ -26303,9 +26332,6 @@
         ],
         "station": "crafting_shaped"
       }
-    ],
-    "structures": [
-      "trail_ruins"
     ]
   },
   "raw_copper": {
@@ -26630,8 +26656,11 @@
     ]
   },
   "red_candle": {
+    "archaeology": [
+      "trail_ruins"
+    ],
     "chances": {
-      "structures/trail_ruins": 0.04444
+      "archaeology/trail_ruins": 0.04444
     },
     "mining": [
       "red_candle",
@@ -26649,9 +26678,6 @@
         ],
         "station": "crafting_shapeless"
       }
-    ],
-    "structures": [
-      "trail_ruins"
     ],
     "trades": [
       [
@@ -27218,8 +27244,11 @@
     ]
   },
   "red_stained_glass_pane": {
+    "archaeology": [
+      "trail_ruins"
+    ],
     "chances": {
-      "structures/trail_ruins": 0.02222
+      "archaeology/trail_ruins": 0.02222
     },
     "recipes": [
       {
@@ -27244,9 +27273,6 @@
     ],
     "silk_mining": [
       "red_stained_glass_pane"
-    ],
-    "structures": [
-      "trail_ruins"
     ]
   },
   "red_terracotta": {
@@ -28119,8 +28145,11 @@
     ]
   },
   "shaper_armor_trim_smithing_template": {
+    "archaeology": [
+      "trail_ruins"
+    ],
     "chances": {
-      "structures/trail_ruins": 0.08333
+      "archaeology/trail_ruins": 0.08333
     },
     "recipes": [
       {
@@ -28137,18 +28166,15 @@
         ],
         "station": "crafting_shaped"
       }
-    ],
-    "structures": [
-      "trail_ruins"
     ]
   },
   "sheaf_pottery_sherd": {
-    "chances": {
-      "structures/trail_ruins": 0.08333
-    },
-    "structures": [
+    "archaeology": [
       "trail_ruins"
-    ]
+    ],
+    "chances": {
+      "archaeology/trail_ruins": 0.08333
+    }
   },
   "shears": {
     "chances": {
@@ -28183,12 +28209,12 @@
     ]
   },
   "shelter_pottery_sherd": {
-    "chances": {
-      "structures/ocean_ruin_warm": 0.06667
-    },
-    "structures": [
+    "archaeology": [
       "ocean_ruin_warm"
-    ]
+    ],
+    "chances": {
+      "archaeology/ocean_ruin_warm": 0.06667
+    }
   },
   "sherds": {
     "mining": [
@@ -28355,12 +28381,12 @@
     ]
   },
   "skull_pottery_sherd": {
-    "chances": {
-      "structures/desert_pyramid": 0.125
-    },
-    "structures": [
+    "archaeology": [
       "desert_pyramid"
-    ]
+    ],
+    "chances": {
+      "archaeology/desert_pyramid": 0.125
+    }
   },
   "slime_ball": {
     "breeding": [
@@ -28881,23 +28907,23 @@
     ]
   },
   "sniffer_egg": {
+    "archaeology": [
+      "ocean_ruin_warm"
+    ],
     "chances": {
-      "structures/ocean_ruin_warm": 0.06667
+      "archaeology/ocean_ruin_warm": 0.06667
     },
     "mining": [
       "sniffer_egg"
-    ],
-    "structures": [
-      "ocean_ruin_warm"
     ]
   },
   "snort_pottery_sherd": {
-    "chances": {
-      "structures/ocean_ruin_warm": 0.06667
-    },
-    "structures": [
+    "archaeology": [
       "ocean_ruin_warm"
-    ]
+    ],
+    "chances": {
+      "archaeology/ocean_ruin_warm": 0.06667
+    }
   },
   "snout_armor_trim_smithing_template": {
     "chances": {
@@ -29421,8 +29447,11 @@
     ]
   },
   "spruce_hanging_sign": {
+    "archaeology": [
+      "trail_ruins"
+    ],
     "chances": {
-      "structures/trail_ruins": 0.02222
+      "archaeology/trail_ruins": 0.02222
     },
     "mining": [
       "spruce_hanging_sign"
@@ -29439,9 +29468,6 @@
         ],
         "station": "crafting_shaped"
       }
-    ],
-    "structures": [
-      "trail_ruins"
     ]
   },
   "spruce_leaves": {
@@ -29643,11 +29669,14 @@
     ]
   },
   "stick": {
+    "archaeology": [
+      "desert_well"
+    ],
     "chances": {
+      "archaeology/desert_well": 0.125,
       "drops/witch": 0.51494,
       "gameplay/junk": 0.04545,
       "mining/dead_bush": 0.66667,
-      "structures/desert_well": 0.125,
       "structures/trial_chambers": 0.36148,
       "structures/village_desert": 0.97741,
       "structures/village_plains": 0.97741,
@@ -29731,7 +29760,6 @@
       }
     ],
     "structures": [
-      "desert_well",
       "trial_chambers",
       "village_desert",
       "village_plains",
@@ -30240,7 +30268,11 @@
     ]
   },
   "string": {
+    "archaeology": [
+      "trail_ruins"
+    ],
     "chances": {
+      "archaeology/trail_ruins": 0.02222,
       "drops/cat": 0.66667,
       "drops/cave_spider": 0.75,
       "drops/spider": 0.75,
@@ -30251,8 +30283,7 @@
       "structures/desert_pyramid": 0.5904,
       "structures/mansion": 0.57813,
       "structures/monster_room": 0.57813,
-      "structures/pillager_outpost": 0.45229,
-      "structures/trail_ruins": 0.02222
+      "structures/pillager_outpost": 0.45229
     },
     "drops": [
       "cat",
@@ -30274,8 +30305,7 @@
       "desert_pyramid",
       "mansion",
       "monster_room",
-      "pillager_outpost",
-      "trail_ruins"
+      "pillager_outpost"
     ]
   },
   "stripped_acacia_log": {
@@ -30552,9 +30582,12 @@
     ]
   },
   "suspicious_stew": {
+    "archaeology": [
+      "desert_well"
+    ],
     "chances": {
+      "archaeology/desert_well": 0.125,
       "structures/ancient_city": 0.69205,
-      "structures/desert_well": 0.125,
       "structures/shipwreck": 0.71847
     },
     "recipes": [
@@ -30850,7 +30883,6 @@
     ],
     "structures": [
       "ancient_city",
-      "desert_well",
       "shipwreck"
     ],
     "trades": [
@@ -31008,9 +31040,12 @@
     ]
   },
   "tnt": {
+    "archaeology": [
+      "desert_pyramid"
+    ],
     "chances": {
+      "archaeology/desert_pyramid": 0.125,
       "structures/buried_treasure": 0.70864,
-      "structures/desert_pyramid": 0.125,
       "structures/shipwreck": 0.11287
     },
     "mining": [
@@ -31038,7 +31073,6 @@
     ],
     "structures": [
       "buried_treasure",
-      "desert_pyramid",
       "shipwreck"
     ]
   },
@@ -33440,8 +33474,11 @@
     ]
   },
   "wayfinder_armor_trim_smithing_template": {
+    "archaeology": [
+      "trail_ruins"
+    ],
     "chances": {
-      "structures/trail_ruins": 0.08333
+      "archaeology/trail_ruins": 0.08333
     },
     "recipes": [
       {
@@ -33458,9 +33495,6 @@
         ],
         "station": "crafting_shaped"
       }
-    ],
-    "structures": [
-      "trail_ruins"
     ]
   },
   "weathered_chiseled_copper": {
@@ -33683,6 +33717,11 @@
     ]
   },
   "wheat": {
+    "archaeology": [
+      "ocean_ruin_cold",
+      "ocean_ruin_warm",
+      "trail_ruins"
+    ],
     "breeding": [
       "cow",
       "goat",
@@ -33691,14 +33730,14 @@
       "sheep"
     ],
     "chances": {
+      "archaeology/ocean_ruin_cold": 0.96098,
+      "archaeology/ocean_ruin_warm": 0.96098,
+      "archaeology/trail_ruins": 0.04444,
       "structures/igloo": 0.74911,
       "structures/mansion": 0.38458,
       "structures/monster_room": 0.50213,
-      "structures/ocean_ruin_cold": 0.96098,
-      "structures/ocean_ruin_warm": 0.96098,
       "structures/pillager_outpost": 0.79646,
       "structures/shipwreck": 0.5811,
-      "structures/trail_ruins": 0.04444,
       "structures/village_desert": 0.92598,
       "structures/village_plains": 0.7794,
       "structures/village_savanna": 0.7794,
@@ -33722,11 +33761,8 @@
       "igloo",
       "mansion",
       "monster_room",
-      "ocean_ruin_cold",
-      "ocean_ruin_warm",
       "pillager_outpost",
       "shipwreck",
-      "trail_ruins",
       "village_desert",
       "village_plains",
       "village_savanna",
@@ -33735,16 +33771,19 @@
     ]
   },
   "wheat_seeds": {
+    "archaeology": [
+      "trail_ruins"
+    ],
     "breeding": [
       "chicken",
       "parrot"
     ],
     "chances": {
+      "archaeology/trail_ruins": 0.02222,
       "mining/fern": 0.125,
       "mining/large_fern": 0.23438,
       "mining/short_grass": 0.125,
       "mining/tall_grass": 0.23438,
-      "structures/trail_ruins": 0.02222,
       "structures/village_desert": 0.79654,
       "structures/village_plains": 0.79654,
       "structures/village_savanna": 0.85928,
@@ -33762,7 +33801,6 @@
       "wheat"
     ],
     "structures": [
-      "trail_ruins",
       "village_desert",
       "village_plains",
       "village_savanna",
@@ -34113,8 +34151,11 @@
     ]
   },
   "white_dye": {
+    "archaeology": [
+      "trail_ruins"
+    ],
     "chances": {
-      "structures/trail_ruins": 0.04444
+      "archaeology/trail_ruins": 0.04444
     },
     "recipes": [
       {
@@ -34133,9 +34174,6 @@
         ],
         "station": "crafting_shapeless"
       }
-    ],
-    "structures": [
-      "trail_ruins"
     ],
     "trades": [
       [
@@ -34642,10 +34680,15 @@
     ]
   },
   "wooden_hoe": {
+    "archaeology": [
+      "ocean_ruin_cold",
+      "ocean_ruin_warm",
+      "trail_ruins"
+    ],
     "chances": {
-      "structures/ocean_ruin_cold": 0.13333,
-      "structures/ocean_ruin_warm": 0.13333,
-      "structures/trail_ruins": 0.04444
+      "archaeology/ocean_ruin_cold": 0.13333,
+      "archaeology/ocean_ruin_warm": 0.13333,
+      "archaeology/trail_ruins": 0.04444
     },
     "recipes": [
       {
@@ -34696,11 +34739,6 @@
         ],
         "station": "crafting_shaped"
       }
-    ],
-    "structures": [
-      "ocean_ruin_cold",
-      "ocean_ruin_warm",
-      "trail_ruins"
     ]
   },
   "wooden_pickaxe": {
@@ -35288,8 +35326,11 @@
     ]
   },
   "yellow_dye": {
+    "archaeology": [
+      "trail_ruins"
+    ],
     "chances": {
-      "structures/trail_ruins": 0.04444,
+      "archaeology/trail_ruins": 0.04444,
       "structures/village_desert": 0.32982,
       "structures/village_plains": 0.32982,
       "structures/village_savanna": 0.32982,
@@ -35331,7 +35372,6 @@
       }
     ],
     "structures": [
-      "trail_ruins",
       "village_desert",
       "village_plains",
       "village_savanna",
@@ -35530,8 +35570,11 @@
     ]
   },
   "yellow_stained_glass_pane": {
+    "archaeology": [
+      "trail_ruins"
+    ],
     "chances": {
-      "structures/trail_ruins": 0.02222
+      "archaeology/trail_ruins": 0.02222
     },
     "recipes": [
       {
@@ -35556,9 +35599,6 @@
     ],
     "silk_mining": [
       "yellow_stained_glass_pane"
-    ],
-    "structures": [
-      "trail_ruins"
     ]
   },
   "yellow_terracotta": {

@@ -57,7 +57,8 @@ CASES = {
 }
 
 # The source keys an acquisition record can carry, in the order they read best in the report.
-SOURCE_KEYS = ("recipes", "mining", "silk_mining", "drops", "structures", "trades", "gameplay")
+SOURCE_KEYS = ("recipes", "mining", "silk_mining", "drops", "structures", "archaeology",
+               "trades", "gameplay")
 
 
 def _sources(base: str) -> str:

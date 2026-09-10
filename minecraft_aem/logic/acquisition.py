@@ -1823,8 +1823,9 @@ class RuleHelper:
 
     def _acquire_from_sources(self, base: str, _stack: frozenset):
         """OR over every modeled way to obtain ``base`` (recipe, drop, mining, silk-mining, trade,
-        structure loot, gameplay), each carrying its region/tier gate; ``None`` when the item has no
-        acquisition record or no usable source. Shared by ordinary items and tool/armor gates."""
+        structure loot, archaeology, gameplay), each carrying its region/tier gate; ``None`` when the
+        item has no acquisition record or no usable source. Shared by ordinary items and tool/armor
+        gates."""
         record = _acquisition_table().get(base)
         if record is None:
             return None
@@ -1936,6 +1937,18 @@ class RuleHelper:
                 # safe direction for logic. Folds away entirely when the gate is off.
                 add(self.all_of(self.structure(structure_name), self._loot_container_node()),
                     unreliable("structures", structure_name)
+                    or structure_name not in self.progression_structures)
+        for structure_name in record.get("archaeology", ()):
+            if structure_name in STRUCTURES:
+                # Archaeology loot is not chest loot: a pottery sherd, a sniffer egg or a trail-ruins
+                # trim template is BRUSHED out of suspicious sand or gravel, and breaking the block
+                # instead destroys what was inside. Both dumps used to fold these tables in with the
+                # chests, so the gate came out as Knowledge: Chest — which a player can hold while
+                # having no brush, no copper and no way to dig a single sherd out. Ask for the brush
+                # (Brush Handling + copper + a feather), which is what the hand-written sniffer_egg
+                # branch has always asked for.
+                add(self.all_of(self.structure(structure_name), self.has_brush()),
+                    unreliable("archaeology", structure_name)
                     or structure_name not in self.progression_structures)
         for table in record.get("gameplay", ()):
             add(self._gameplay_node(table, inner), unreliable("gameplay", table))
