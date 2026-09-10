@@ -602,19 +602,36 @@ class RuleHelper:
             S_STRONGHOLD: lambda: self.acquire("minecraft:ender_eye"),
         }
         # Mobs whose only natural spawn is a specific, searchable biome — gated on the Biome Finder
-        # (when enabled), since that's how you locate the biome. The Dried Ghast (→ Happy Ghast) can
-        # also come from Piglin bartering, so there the finder is only needed without that path.
-        self.biome_bound_mobs = {
-            E_AXOLOTL    : lambda: self.needs_biome_finder(),   # Lush Caves
-            E_GOAT       : lambda: self.needs_biome_finder(),   # mountain biomes
-            E_FROG       : lambda: self.needs_biome_finder(),   # temperate / warm / cold variants
-            E_CREAKING   : lambda: self.needs_biome_finder(),   # Pale Garden only
-            E_MOOSHROOM  : lambda: self.needs_biome_finder(),   # Mushroom Fields, and nowhere else
-            E_HAPPY_GHAST: lambda: self.any_of(                 # Dried Ghast: Soul Sand Valley or bartering
+        # (when enabled), since that's how you locate the biome.
+        #
+        # DERIVED, not curated: data.BIOME_BOUND_MOBS is every mob whose spawn biomes all sit in
+        # RARE_BIOMES, read off the dump's `biomes` field. The judgement lives in that biome list,
+        # where it belongs — this used to be five hand-written lambdas, and the mooshroom was simply
+        # missing from them, so 'Super Mooshroom' asked for no Mushroom Fields while its own parent
+        # advancement did.
+        self.biome_bound_mobs = {name: (lambda: self.needs_biome_finder())
+                                 for name in BIOME_BOUND_MOBS}
+        # …plus the three the spawn lists cannot speak for, because what they cost is not a search:
+        self.biome_bound_mobs.update({
+            # Frogs spawn in ordinary swamps, so the derivation rightly leaves them alone — but a frog
+            # is only interesting for its three CLIMATE variants (the three froglights), and those
+            # really are three journeys.
+            E_FROG       : lambda: self.needs_biome_finder(),
+            # No spawner entry at all: a creaking hatches from a creaking heart, which generates only
+            # in the Pale Garden.
+            E_CREAKING   : lambda: self.needs_biome_finder(),
+            # Likewise none: a happy ghast comes from a dried ghast, which is Soul Sand Valley — or
+            # Piglin bartering, so the finder is only needed without that path.
+            E_HAPPY_GHAST: lambda: self.any_of(
                 self.can_barter(),
                 self.needs_biome_finder(),
             ),
-        }
+        })
+        if not BIOME_BOUND_MOBS:
+            # A content pack dumped before `biomes` existed says nothing about spawn biomes, and
+            # silence must not read as "gate nothing" — that would quietly loosen every one of these.
+            for name in (E_AXOLOTL, E_GOAT, E_MOOSHROOM):
+                self.biome_bound_mobs.setdefault(name, lambda: self.needs_biome_finder())
 
     # -----------------------------------------------------------------------
     # Global

@@ -118,6 +118,11 @@ class MCMobData:
     tameable: bool
     leashable: bool
     game_id: str
+    # The biomes whose spawner list names this mob, bare and sorted (EntitiesDump's `biomes`). Empty
+    # means "no natural biome spawn at all" — a creaking hatched from a heart, a sniffer from an egg,
+    # a boss summoned — which is NOT the same claim as "spawns anywhere". Absent in a pack dumped
+    # before the field existed, which reads the same as empty; see data.BIOME_BOUND_MOBS.
+    biomes: tuple[str, ...] = ()
     # No unlock_classification: an Entity Unlock is always a logic gate, and whether it rises from
     # progression_skip_balancing to full progression depends on the seed (does it gate a goal boss?),
     # so it is computed at item creation — see MCWorld._mob_classification — exactly like structures.
@@ -356,8 +361,8 @@ def _load_entities(pack_dir) -> dict[str, MCMobData]:
     "Wither Skeleton") — the name every consumer uses (boss_list, mob_spawn_lock, kill locations,
     Entity Unlock labels). The list order is the stable Entity Unlock item id (id = index).
 
-    Each record carries only game-derived facts (category / region / breedable / tameable / leashable);
-    the unlock's AP classification is NOT here — it is derived per-seed from the goal (see
+    Each record carries only game-derived facts (category / region / biomes / breedable / tameable /
+    leashable); the unlock's AP classification is NOT here — it is derived per-seed from the goal (see
     ``MCWorld._mob_classification``), the same way structure unlock classifications are."""
     mobs = {}
     with pack_dir.joinpath("entities.json").open(encoding="utf-8") as f:
@@ -372,6 +377,7 @@ def _load_entities(pack_dir) -> dict[str, MCMobData]:
             tameable=bool(row["tameable"]),
             leashable=bool(row["leashable"]),
             game_id=game_id if ":" in game_id else f"minecraft:{game_id}",
+            biomes=tuple(row.get("biomes") or ()),
         )
     return mobs
 

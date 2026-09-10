@@ -90,7 +90,8 @@ public final class EntitiesDump {
     public static JsonArray build(MinecraftServer server) {
         ServerLevel level = server.overworld();
         ResourceManager rm = server.getResourceManager();
-        Map<String, String> regionByMob = regions(rm);
+        SpawnData spawns = spawnData(rm);
+        Map<String, String> regionByMob = spawns.regions();
 
         // game_id -> record, TreeMap keeps deterministic game_id order.
         Map<String, JsonObject> records = new TreeMap<>();
@@ -126,6 +127,7 @@ public final class EntitiesDump {
             record.addProperty("game_id", gameId);
             record.addProperty("category", category);
             record.addProperty("region", regionByMob.getOrDefault(gameId, FALLBACK_REGION.getOrDefault(gameId, "Overworld")));
+            record.add("biomes", stringArray(spawns.biomes().get(gameId)));
             record.addProperty("breedable", breedable);
             record.addProperty("tameable", tameable);
             record.addProperty("leashable", leashable);
@@ -298,17 +300,31 @@ public final class EntitiesDump {
 
     // -- region from biome spawn data ---------------------------------------
 
+    /** What one walk of the biome spawn lists yields: each mob's region, and the biomes it spawns in. */
+    private record SpawnData(Map<String, String> regions, Map<String, TreeSet<String>> biomes) {}
+
     /**
-     * {@code game_id -> region}: read every {@code worldgen/biome/*.json}'s {@code spawners}, recording
-     * which biomes each entity spawns in; a mob's region is the shallowest spawning dimension
-     * (Overworld < Nether < The End), classified via the {@code is_nether}/{@code is_end} biome tags.
+     * Read every {@code worldgen/biome/*.json}'s {@code spawners} and record, per entity, WHICH biomes
+     * it naturally spawns in and hence which dimension: a mob's region is the shallowest spawning one
+     * (Overworld &lt; Nether &lt; The End), classified via the {@code is_nether}/{@code is_end} biome tags.
+     *
+     * <p>The biome list is what the apworld needs to know that a mob is bound to one searchable place —
+     * a mooshroom to Mushroom Fields, an axolotl to Lush Caves — which is the whole cost of obtaining
+     * it, and what the Biome Finder exists to pay. That used to be a hand-written table of lambdas in
+     * acquisition.py, which is how the mooshroom came to be missing from it.
+     *
+     * <p>Names are bare (no namespace), matching how this class already compares them to biome tags.
+     * A mob with no natural spawn at all (the wither, a boat, a mob only a spawner or a structure
+     * places) gets an empty list, which is not the same claim as "spawns everywhere".
      */
-    private static Map<String, String> regions(ResourceManager rm) {
+    private static SpawnData spawnData(ResourceManager rm) {
         Set<String> nether = biomesInTag(rm, "is_nether");
         Set<String> end = biomesInTag(rm, "is_end");
 
         // entity game_id -> {overworld?, nether?, end?}
         Map<String, boolean[]> hit = new java.util.HashMap<>();
+        // entity game_id -> the biomes whose spawner list names it
+        Map<String, TreeSet<String>> spawnBiomes = new TreeMap<>();
         Map<Identifier, Resource> biomes =
                 rm.listResources("worldgen/biome", id -> id.getPath().endsWith(".json"));
         for (Map.Entry<Identifier, Resource> entry : biomes.entrySet()) {
@@ -330,10 +346,12 @@ public final class EntitiesDump {
                     if (typeEl == null || !typeEl.isJsonPrimitive()) {
                         continue;
                     }
-                    boolean[] flags = hit.computeIfAbsent(normalizeId(typeEl.getAsString()), k -> new boolean[3]);
+                    String mob = normalizeId(typeEl.getAsString());
+                    boolean[] flags = hit.computeIfAbsent(mob, k -> new boolean[3]);
                     if (dim.equals("overworld")) flags[0] = true;
                     else if (dim.equals("nether")) flags[1] = true;
                     else flags[2] = true;
+                    spawnBiomes.computeIfAbsent(mob, k -> new TreeSet<>()).add(biome);
                 }
             }
         }
@@ -343,7 +361,16 @@ public final class EntitiesDump {
             boolean[] f = e.getValue();
             out.put(e.getKey(), f[0] ? "Overworld" : f[1] ? "Nether" : f[2] ? "The End" : "Overworld");
         }
-        return out;
+        return new SpawnData(out, spawnBiomes);
+    }
+
+    /** A sorted json array of strings; an absent/empty set becomes an empty array, not null. */
+    private static JsonArray stringArray(Set<String> values) {
+        JsonArray array = new JsonArray();
+        if (values != null) {
+            values.forEach(array::add);
+        }
+        return array;
     }
 
     /** Resolve a biome tag (recursively through nested #tags) to its bare biome names. */
