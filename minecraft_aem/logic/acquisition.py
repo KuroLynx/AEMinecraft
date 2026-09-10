@@ -609,6 +609,7 @@ class RuleHelper:
             E_GOAT       : lambda: self.needs_biome_finder(),   # mountain biomes
             E_FROG       : lambda: self.needs_biome_finder(),   # temperate / warm / cold variants
             E_CREAKING   : lambda: self.needs_biome_finder(),   # Pale Garden only
+            E_MOOSHROOM  : lambda: self.needs_biome_finder(),   # Mushroom Fields, and nowhere else
             E_HAPPY_GHAST: lambda: self.any_of(                 # Dried Ghast: Soul Sand Valley or bartering
                 self.can_barter(),
                 self.needs_biome_finder(),
