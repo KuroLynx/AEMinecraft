@@ -1449,10 +1449,11 @@ class RuleHelper:
         an OR lets _unique_or absorption delete the gates beside it (``can_get_slimeball`` is slime
         drop OR trader offer, so a seed locking hostiles lost its Slime gate to the free trader).
 
-        The ``_pricing_trade`` guard breaks the obvious cycle: emeralds are themselves traded, so
-        acquire("emerald") walks back here. Inside the guard emeralds resolve by their other routes
-        (ore, chest loot, mob drop) and this returns free rather than recursing — the trade route
-        cannot be what pays for itself."""
+        Emeralds are themselves traded, so acquire("emerald") walks back here. In strict logic it
+        no longer can: emeralds resolve to can_sell_to_villager, which asks for no currency. The
+        ``_pricing_trade`` guard is what holds the glitch graph together, where the emerald branch
+        does read the record's own trade routes — inside the guard this returns free rather than
+        recursing, because a trade route cannot be what pays for itself."""
         if self._pricing_trade:
             return Const(True)
         self._pricing_trade = True
@@ -1462,15 +1463,24 @@ class RuleHelper:
             self._pricing_trade = False
         return emeralds if emeralds is not None else Const(True)
 
+    def can_sell_to_villager(self, tier: int = 1):
+        """Sell TO a profession villager at trade level ``tier`` — the way emeralds enter a world.
+
+        The same villager, village and trust tier a buy offer needs, minus the currency: a sell
+        offer is what *pays* you, so it must not ask for the emeralds it is how you get. Only
+        acquire("emerald") wants this shape; everything else trades in the other direction and
+        should use ``can_trade_villager``."""
+        base = self.all_of(self.entity(E_VILLAGER), self.any_village())
+        if self.villager_trust:
+            return self.all_of(base, self.has(ITEM_VILLAGER_TRUST, tier))
+        return base
+
     def can_trade_villager(self, tier: int = 1):
         """Trade with a profession villager in a village at trade level ``tier``
         (novice = 1 … master = 5), holding the emeralds it costs. When the
         villager_trust option is on, the level is gated behind that many
         Progressive Villager Trust items."""
-        base = self.all_of(self.entity(E_VILLAGER), self.any_village(), self._trade_currency())
-        if self.villager_trust:
-            return self.all_of(base, self.has(ITEM_VILLAGER_TRUST, tier))
-        return base
+        return self.all_of(self.can_sell_to_villager(tier), self._trade_currency())
 
     def can_trade_wandering_trader(self):
         """Trade with a Wandering Trader: reach one, and hold the emeralds. It has
@@ -1672,6 +1682,29 @@ class RuleHelper:
         # behind it) free in the Overworld. Model the real route: a brush, and the ruin to use it in.
         if base == "sniffer_egg":
             return self.all_of(self.has_brush(), self.structure(S_OCEAN_RUIN_WARM))
+
+        # Emeralds come out of a villager, and in strict logic out of nothing else.
+        #
+        # The dump lists three other families and every one of them is a route AP should not plan
+        # around. Emerald ore generates in ONE biome group (the windswept/mountain set) in one-block
+        # veins, so "mine it" is really "wander until you find that biome" — the same thing the
+        # Biome Finder exists for, and not a thing fill may assume; the smelting recipes are that
+        # same ore wearing a furnace. The chest routes (shipwreck, buried treasure, the five
+        # villages, a desert pyramid …) sit above the glitch threshold on paper, so _demote kept
+        # them, and they left emeralds — the currency every trade is priced in — reading as loot
+        # rather than as the thing a village gives you.
+        #
+        # So: sell to a villager. can_sell_to_villager, not can_trade_villager, because a sell offer
+        # is what pays you and must not be charged the emeralds it hands over (that is also what
+        # keeps _trade_currency's cycle from re-entering here). Everything else stays in the glitch
+        # graph, where a player who does find an emerald vein is not told they cannot have it.
+        if base == "emerald":
+            sell = self.can_sell_to_villager()
+            if not self.glitch:
+                return self._with_reward(base, sell)
+            sources = self._acquire_from_sources(base, _stack | {base})
+            found = sell if sources is None else self._unique_or([sell, sources])
+            return self._with_reward(base, self._coarsen(found))
 
         # A filled bucket is made by a USE interaction — right-click a fluid, a mob or a cauldron
         # with an empty bucket — and that act appears in no recipe, loot table or trade, so the dump
