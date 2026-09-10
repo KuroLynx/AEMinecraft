@@ -34,6 +34,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -125,7 +126,7 @@ public final class PackDump {
             done.add("tags");
         }
         if (selected.contains("meta")) {
-            write(packDir, "meta.json", metaFor(folder, ns, source));
+            write(packDir, "meta.json", metaFor(pack, folder, ns, source));
             done.add("meta");
         }
         if (selected.contains(RAW_DATAPACK)) {
@@ -817,7 +818,7 @@ public final class PackDump {
 
     // -- meta ---------------------------------------------------------------
 
-    private static JsonObject metaFor(String name, String namespace, String source) {
+    private static JsonObject metaFor(PackResources pack, String name, String namespace, String source) {
         String version = rawMcVersion();
         JsonObject meta = new JsonObject();
         meta.addProperty("name", name);
@@ -825,7 +826,63 @@ public final class PackDump {
         meta.addProperty("namespace", namespace);
         meta.addProperty("mc_version", version);
         meta.addProperty("description", name + " — dumped from the running game (MC " + version + ").");
+        if (!"vanilla".equals(source)) {
+            // An OVERLAY pack is checked on the player's machine before the world loads
+            // (ContentVerification, fed by data.py's OVERLAY_REQUIREMENTS -> slot_data
+            // required_content): `match` is the substring that finds it among the installed packs,
+            // `content_version` is the version the seed was generated against, and `display_name` is
+            // what the mismatch message calls it. Leaving them out is not neutral — an absent
+            // content_version downgrades the check to "installed at all", which lets a player load a
+            // seed against a different BACAP and desync every advancement location. They used to be
+            // hand-added to the dumped file for exactly that reason.
+            String contentVersion = contentVersionFor(pack, namespace);
+            if (!contentVersion.isEmpty()) {
+                meta.addProperty("content_version", contentVersion);
+            }
+            meta.addProperty("display_name", displayNameFor(pack, namespace));
+            meta.addProperty("match", namespace.toLowerCase(Locale.ROOT));
+        }
         return meta;
+    }
+
+    /**
+     * The pack's OWN version, dotted as it is written — a mod's Fabric version, else the version in
+     * the pack id (BACAP ships its version only in its filename, "…Pack 1.20.3.zip"). Empty when
+     * there is none to pin: ContentVerification reads that as "any installed copy will do", which is
+     * the honest answer rather than the Minecraft version {@link #versionForPack} falls back to for
+     * folder naming.
+     */
+    private static String contentVersionFor(PackResources pack, String namespace) {
+        Optional<ModContainer> mod = FabricLoader.getInstance().getModContainer(namespace);
+        if (mod.isPresent()) {
+            return mod.get().getMetadata().getVersion().getFriendlyString();
+        }
+        Matcher matcher = VERSION.matcher(pack.packId());
+        return matcher.find() ? matcher.group() : "";
+    }
+
+    /**
+     * What to call the pack in a mismatch message: a mod's declared name, else its pack id with any
+     * source prefix, file extension and trailing version dropped ("file/BlazeandCave's Advancements
+     * Pack 1.20.3.zip" -> "BlazeandCave's Advancements Pack"), else the namespace.
+     */
+    private static String displayNameFor(PackResources pack, String namespace) {
+        Optional<ModContainer> mod = FabricLoader.getInstance().getModContainer(namespace);
+        if (mod.isPresent()) {
+            return mod.get().getMetadata().getName();
+        }
+        String id = pack.packId();
+        id = id.substring(id.lastIndexOf('/') + 1);  // a zip datapack's id is "file/<name>.zip"
+        int dot = id.lastIndexOf('.');
+        if (dot > 0 && id.length() - dot <= 5) {
+            id = id.substring(0, dot);  // ".zip"
+        }
+        Matcher matcher = VERSION.matcher(id);
+        if (matcher.find()) {
+            id = id.substring(0, matcher.start());
+        }
+        id = id.trim();
+        return id.isEmpty() ? namespace : id;
     }
 
     // -- resource / json helpers --------------------------------------------
