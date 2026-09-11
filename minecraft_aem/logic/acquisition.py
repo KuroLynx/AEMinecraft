@@ -2013,7 +2013,7 @@ class RuleHelper:
         A tree that carries a real gate — a ``Has`` (structure/entity unlock, knowledge, material)
         or a reached-location — is left intact even when large, so a structure/mob lock or
         progression gate is never silently dropped (else a locked source would look reachable)."""
-        if node is None or len(node.canonical_json()) <= self._SIZE_CAP:
+        if node is None or node.serialized_size() <= self._SIZE_CAP:
             return node
         gated, regions = node.gate_summary()
         if gated or not regions:

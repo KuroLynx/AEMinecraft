@@ -167,7 +167,19 @@ def _dedup_rules(export: dict) -> None:
     # ("n", …) marks a composite (hoistable), ("l", …) a leaf.
     occurrences: Counter = Counter()
 
+    # Memoized on the dict's identity, not its contents: to_dict() is itself memoized, so a
+    # subtree shared by a thousand rules is ONE dict object reached a thousand times. Without this
+    # the walk re-descends each of those thousand paths — the serialized forest is a DAG, and
+    # treating it as a tree is what made a glitch-graph export unaffordable (each visit also
+    # rebuilds the nested key tuples). Counting still sees every occurrence: a memo hit adds the
+    # cached key's count without re-walking below it.
+    memo: dict[int, tuple] = {}
+
     def key_of(node: dict):
+        cached = memo.get(id(node))
+        if cached is not None:
+            occurrences[cached] += 1
+            return cached
         children = node.get("c")
         if children is None:
             key = ("l", node["k"], node.get("i"), node.get("n"), node.get("r"),
@@ -177,6 +189,7 @@ def _dedup_rules(export: dict) -> None:
             if node["k"] in ("and", "or", "atleast"):
                 child_keys = tuple(sorted(child_keys))
             key = ("n", node["k"], node.get("n"), child_keys)
+        memo[id(node)] = key
         occurrences[key] += 1
         return key
 
@@ -191,9 +204,15 @@ def _dedup_rules(export: dict) -> None:
     ref_ids: dict = {}
     definitions: dict = {}
 
+    rewritten_memo: dict[int, tuple] = {}
+
     def rewrite(node: dict):
         """Return ``(rewritten_node, original_canonical_key)`` — the key stays the pre-rewrite one
-        so a parent's key matches the counting pass even when a child became a ref."""
+        so a parent's key matches the counting pass even when a child became a ref. Memoized on
+        identity for the same reason ``key_of`` is: one shared subtree, one rewrite."""
+        cached = rewritten_memo.get(id(node))
+        if cached is not None:
+            return cached
         children = node.get("c")
         if children is None:
             key = ("l", node["k"], node.get("i"), node.get("n"), node.get("r"),
@@ -211,8 +230,11 @@ def _dedup_rules(export: dict) -> None:
             if ref_id is None:
                 ref_id = ref_ids[key] = len(ref_ids)
                 definitions[ref_id] = new_node  # children already refs → nested sharing
-            return {"k": "ref", "id": ref_id}, key
-        return new_node, key
+            result = ({"k": "ref", "id": ref_id}, key)
+        else:
+            result = (new_node, key)
+        rewritten_memo[id(node)] = result
+        return result
 
     for holder in holders:
         holder["rule"] = rewrite(holder["rule"])[0]
