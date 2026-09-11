@@ -262,8 +262,10 @@ public final class MinecraftEventBridge {
             // Name the speaker. One slot, several people: without this every player's chat reached
             // Archipelago as the slot with no way to tell who was talking — and since the vanilla
             // broadcast is suppressed below in favour of the echo, the name was missing in Minecraft
-            // chat too.
-            AEM.ARCHIPELAGO.client().send(new SayPacket(sender.getGameProfile().name() + ": " + text));
+            // chat too. A command is the exception: Archipelago only reads a Say as a command when
+            // '!' is the very first character, so prefixing one turns it back into ordinary chat.
+            String said = text.startsWith("!") ? text : sender.getGameProfile().name() + ": " + text;
+            AEM.ARCHIPELAGO.client().send(new SayPacket(said));
             return false;
         });
     }
