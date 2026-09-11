@@ -30,7 +30,17 @@ public final class BiomeFinderTrackerHud implements HudElement {
     private static final int VISIBLE_DEGREE_RANGE = 60;
     private static final float ICON_PX = 16.0F;
     // A compass reads as "find your way" without needing a dedicated texture asset.
-    private static final ItemStack ICON = new ItemStack(Items.COMPASS);
+    // Built on first render, not in a static initialiser: this class is touched while the client
+    // is still initialising, and an ItemStack constructed before the item components are bound
+    // throws "Components not bound yet". Same reason StructureIcons resolves its stacks on demand.
+    private static ItemStack icon;
+
+    private static ItemStack icon() {
+        if (icon == null) {
+            icon = new ItemStack(Items.COMPASS);
+        }
+        return icon;
+    }
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
@@ -66,7 +76,7 @@ public final class BiomeFinderTrackerHud implements HudElement {
         Matrix3x2fStack pose = graphics.pose();
         pose.pushMatrix();
         pose.translate(centerX - ICON_PX / 2.0F, centerY - ICON_PX / 2.0F);
-        graphics.item(ICON, 0, 0);
+        graphics.item(icon(), 0, 0);
         pose.popMatrix();
     }
 }

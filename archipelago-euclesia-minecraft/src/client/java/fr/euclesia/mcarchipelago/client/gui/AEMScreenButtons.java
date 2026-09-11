@@ -1,14 +1,17 @@
 package fr.euclesia.mcarchipelago.client.gui;
 
+import fr.euclesia.mcarchipelago.client.mixin.InventoryScreenAccessor;
 import fr.euclesia.mcarchipelago.client.net.BiomeFinderClient;
 import fr.euclesia.mcarchipelago.client.render.ConnectionStatusIndicator;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.SpriteIconButton;
+import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.navigation.ScreenPosition;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.gui.screens.options.OptionsScreen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.Items;
 import net.minecraft.resources.Identifier;
 
 /**
@@ -22,11 +25,12 @@ import net.minecraft.resources.Identifier;
  *       styled like the vanilla language / accessibility buttons. Opens the
  *       {@link ArchipelagoOptionScreen} options panel. Not added to the title screen — there is
  *       no connected session there to show options for.</li>
- *   <li>The Biome Finder button on the survival inventory screen, recipe-book-toggle-style: no
- *       physical item or slot behind it, just a click (or the {@code key.aem.biome_finder}
- *       keybind polled in {@link fr.euclesia.mcarchipelago.client.AEMClient}) that opens
- *       {@link BiomeFinderScreen} directly. Hidden until the Biome Finder Archipelago item is
- *       owned, same gate the keybind uses.</li>
+ *   <li>The Biome Finder button on the survival inventory screen: a vanilla-compass button sat
+ *       beside the recipe-book toggle and sized to match it, with no physical item or slot behind
+ *       it — just a click (or the {@code key.aem.biome_finder} keybind polled in
+ *       {@link fr.euclesia.mcarchipelago.client.AEMClient}) that opens {@link BiomeFinderScreen}
+ *       directly. Hidden until the Biome Finder Archipelago item is owned, same gate the keybind
+ *       uses.</li>
  * </ul>
  */
 public final class AEMScreenButtons {
@@ -38,8 +42,11 @@ public final class AEMScreenButtons {
     private static final int MARGIN = 6;
 
     private static final Component BIOME_FINDER_LABEL = Component.translatable("gui.aem.biome_finder.open");
-    private static final int BIOME_FINDER_WIDTH = 90;
-    private static final int BIOME_FINDER_HEIGHT = 20;
+    // Vanilla's recipe-book button is 20x18; matching it is what makes the pair read as one row.
+    private static final int RECIPE_BUTTON_WIDTH = 20;
+    private static final int BIOME_FINDER_WIDTH = 20;
+    private static final int BIOME_FINDER_HEIGHT = 18;
+    private static final int BIOME_FINDER_GAP = 2;
 
     private AEMScreenButtons() {}
 
@@ -63,12 +70,18 @@ public final class AEMScreenButtons {
                 Screens.getWidgets(screen).add(button);
             }
 
-            if (screen instanceof InventoryScreen && BiomeFinderClient.owns()) {
-                Button button = Button.builder(BIOME_FINDER_LABEL,
-                                ignored -> client.setScreen(new BiomeFinderScreen()))
-                        .bounds(MARGIN, height - BIOME_FINDER_HEIGHT - MARGIN,
-                                BIOME_FINDER_WIDTH, BIOME_FINDER_HEIGHT)
-                        .build();
+            if (screen instanceof InventoryScreen inventory && BiomeFinderClient.owns()) {
+                // Anchored to the recipe-book button rather than to the screen edge, so the two stay
+                // side by side wherever vanilla puts the inventory panel.
+                ScreenPosition recipeButton =
+                        ((InventoryScreenAccessor) inventory).archipelago_euclesia$recipeBookButtonPosition();
+                // A vanilla compass as the face — the same icon the Biome Finder's HUD locator bar
+                // uses, and no texture of our own to ship.
+                ItemIconButton button = new ItemIconButton(
+                        recipeButton.x() + RECIPE_BUTTON_WIDTH + BIOME_FINDER_GAP, recipeButton.y(),
+                        BIOME_FINDER_WIDTH, BIOME_FINDER_HEIGHT, BIOME_FINDER_LABEL, Items.COMPASS,
+                        ignored -> client.setScreen(new BiomeFinderScreen()));
+                button.setTooltip(Tooltip.create(BIOME_FINDER_LABEL));
                 Screens.getWidgets(screen).add(button);
             }
         });
