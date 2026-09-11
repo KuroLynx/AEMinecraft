@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_knowledge/shulker_box/1",
+  "parent": "aem:unlock_knowledge/biome_finder/1",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"
@@ -12,10 +12,10 @@
   ],
   "display": {
     "icon": {
-      "id": "minecraft:trapped_chest"
+      "id": "minecraft:totem_of_undying"
     },
-    "title": "Knowledge: Trapped Chest",
-    "description": "Unlock Knowledge: Trapped Chest",
+    "title": "Progressive Keep Inventory",
+    "description": "Unlock Progressive Keep Inventory",
     "frame": "task",
     "show_toast": false,
     "announce_to_chat": false,

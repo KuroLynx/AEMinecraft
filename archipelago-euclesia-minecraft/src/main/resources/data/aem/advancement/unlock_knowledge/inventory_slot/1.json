@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_knowledge/shulker_box/1",
+  "parent": "aem:unlock_knowledge/keep_inventory/1",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"
@@ -12,10 +12,10 @@
   ],
   "display": {
     "icon": {
-      "id": "minecraft:trapped_chest"
+      "id": "minecraft:bundle"
     },
-    "title": "Knowledge: Trapped Chest",
-    "description": "Unlock Knowledge: Trapped Chest",
+    "title": "Progressive Inventory Slot",
+    "description": "Unlock Progressive Inventory Slot",
     "frame": "task",
     "show_toast": false,
     "announce_to_chat": false,

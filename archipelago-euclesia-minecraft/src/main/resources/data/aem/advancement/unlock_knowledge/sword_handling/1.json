@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_knowledge/biome_finder/1",
+  "parent": "aem:unlock_knowledge/inventory_slot/1",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"
