@@ -32,6 +32,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  */
 @Mixin(targets = "betteradvancements.common.gui.BetterAdvancementWidget")
 public abstract class BetterAdvWidgetMixin {
+    /** Tile size, and so the size of the hold indicator drawn over it. */
+    private static final int TILE_SIZE = 26;
+
     @Shadow
     public abstract AdvancementNode getAdvancement();
 
@@ -61,8 +64,11 @@ public abstract class BetterAdvWidgetMixin {
     private void archipelago_euclesia$frame(GuiGraphicsExtractor graphics, RenderPipeline pipeline,
                                             Identifier sprite, int x, int y, int width, int height, int color) {
         Identifier id = archipelago_euclesia$id();
-        Integer rgb = id == null ? null : AdvancementRenderHooks.frameColor(id);
-        graphics.blitSprite(pipeline, sprite, x, y, width, height, rgb == null ? color : (0xFF000000 | rgb));
+        AdvancementRenderHooks.drawFrame(graphics, pipeline, sprite, x, y, width, height,
+                id == null ? null : AdvancementRenderHooks.frameColor(id), color);
+        // The indicator goes on beside the frame, in the coordinates this mod just drew in — the
+        // screen's render tail is a different pose, so drawing it there would misplace it.
+        HintHoldTracker.drawHold(graphics, id, x, y, TILE_SIZE, TILE_SIZE);
     }
 
     @Inject(method = "isMouseOver(DDDDF)Z", at = @At("RETURN"))
@@ -73,7 +79,7 @@ public abstract class BetterAdvWidgetMixin {
         }
         AdvancementNode node = getAdvancement();
         if (node != null) {
-            HintHoldTracker.reportHover(node.holder().id(), (int) scrollX + getX() + 3, (int) scrollY + getY(), true);
+            HintHoldTracker.reportHover(node.holder().id());
         }
     }
 

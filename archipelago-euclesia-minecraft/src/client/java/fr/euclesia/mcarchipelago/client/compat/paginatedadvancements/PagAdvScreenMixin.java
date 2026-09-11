@@ -17,6 +17,6 @@ public abstract class PagAdvScreenMixin {
     @Inject(method = "extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;IIF)V", at = @At("RETURN"))
     private void archipelago_euclesia$tickHint(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta,
                                                CallbackInfo ci) {
-        HintHoldTracker.tick(graphics);
+        HintHoldTracker.tick();
     }
 }
