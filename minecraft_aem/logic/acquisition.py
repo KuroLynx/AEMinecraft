@@ -1901,7 +1901,19 @@ class RuleHelper:
             # is as circular as mining the plain placed block, and the free region path it produced
             # let _unique_or absorb the item's real gates: 'The Ritual Begins' stayed free through
             # `candle_cake` even after string started asking for a sword.
-            is_variant = block != base and base in block
+            #
+            # An ORE is the opposite shape with the same spelling: `redstone_ore` contains `redstone`
+            # because it is where redstone COMES FROM. What separates the two is the block, not the
+            # name — an ore generates in the world (it has a block_mining entry) and cannot be
+            # crafted, while a candle cake, a filled cauldron or a bookshelf is only ever there
+            # because somebody made it. On the bare substring test, diamond, coal, emerald, quartz and
+            # redstone all lost their ore route and logic believed the only way to a diamond was a
+            # chest; lapis lazuli and raw iron kept theirs purely because their names are not
+            # substrings of `lapis_ore` / `iron_ore`. Stricter than the game rather than looser, so it
+            # leaked nothing — but it priced the ores the pickaxe and material tiers exist for.
+            natural_block = (_block_mining().get(block) is not None
+                             and not _acquisition_table().get(block, {}).get("recipes"))
+            is_variant = block != base and base in block and not natural_block
             if (block == base or (is_variant and placed_only))                     and placed_only and base not in _NATURAL_SELF_MINED:
                 # The self-mine is circular (placed-only), but the block may still generate naturally
                 # inside a structure's template (structures.json palette) — reaching that structure
