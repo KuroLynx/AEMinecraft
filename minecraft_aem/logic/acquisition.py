@@ -155,6 +155,12 @@ _NATURAL_SELF_MINED = frozenset({
     "cobbled_deepslate", "dripstone_block", "amethyst_block", "sandstone", "red_sandstone",
     "clay", "snow_block", "packed_ice", "blue_ice", "glowstone", "magma_block", "obsidian",
     "mossy_cobblestone", "mud", "packed_mud", "bone_block",
+    # Also here for _placed_block_origin rather than for self-mining: both are craftable from what
+    # they drop (a melon from 9 slices, a snow block from 4 snowballs) and neither has a recipe-free
+    # source in the packs, so without this a jungle melon and a snowy-biome snow layer would read as
+    # "someone must have placed that" and cost their own craft — a cycle, which would take
+    # melon_slice's and snowball's honest routes with it.
+    "melon", "snow",
 })
 # Blocks that cannot simply be found: they exist only where something put them there, so mining one
 # is not a free natural source the way mining gravel is. Not derivable from the packs — the palettes
@@ -2194,7 +2200,7 @@ class RuleHelper:
             return self.any_of(*routes) if routes else None
         entry = _BLOCK_ONLY_FROM.get(block)
         if entry is None:
-            return self.all_of()
+            return self._placed_block_origin(block, stack)
         kind, value = entry
         if kind == "boss":
             return self.can_defeat(value)
@@ -2209,6 +2215,39 @@ class RuleHelper:
             return self.any_of(*routes) if routes else None
         active = [name for name in value if name in self.active_structures]
         return self.any_of(*[self.structure(name) for name in active]) if active else None
+
+    def _placed_block_origin(self, block: str, stack: frozenset):
+        """Origin of a block nobody finds lying around, derived rather than curated: one whose record
+        has a recipe and NO source of its own — no loot chest, no mob drop, no gameplay or trade, and
+        nothing mined but itself. Such a block is where it is because a player crafted it or a
+        structure's palette placed it, so mining it for what it drops costs one of those two.
+
+        The case that found this: obsidian lists ``ender_chest`` among its mining blocks, because
+        breaking one drops its 8 obsidian. Nothing asked you to HAVE an ender chest, so obsidian —
+        and through the Nether portal edge, ``We Need to Go Deeper`` — was priced at a pickaxe and a
+        dimension. An ender chest is crafted from 8 obsidian and an eye of ender, and the only place
+        one generates is an End City: the craft route closes as the cycle it is (obsidian is already
+        on the stack), leaving the structure, which is where that route honestly belongs.
+
+        Blocks that really do generate keep costing nothing: stone, clay, glowstone, deepslate and
+        the rest carry their own mining/loot sources in the record, so they never reach the test.
+        ``None`` when neither origin exists this seed — the caller then drops the route."""
+        if block in _NATURAL_SELF_MINED:
+            return self.all_of()          # curated: it really is lying around out there
+        record = _acquisition_table().get(block)
+        if not record or not record.get("recipes"):
+            return self.all_of()
+        if any(record.get(key) for key in ("structures", "drops", "gameplay", "archaeology",
+                                           "trades", "silk_mining")):
+            return self.all_of()
+        if any(mined != block for mined in record.get("mining", ())):
+            return self.all_of()
+        routes = [self.structure(name) for name in _block_structures().get(block, ())
+                  if name in self.active_structures]
+        crafted = self.acquire(f"minecraft:{block}", stack)
+        if crafted is not None:
+            routes.append(crafted)
+        return self.any_of(*routes) if routes else None
 
     # Loot-table tool name -> the capability that satisfies it.
     def _drop_tool_node(self, block: str, info: dict, item: str, stack: frozenset):

@@ -47,6 +47,16 @@ from .constants import (
 )
 from ..content.registry import base_pack, overlay_packs
 
+# An exploding entity that is not a mob, mapped to the item a player must hold to set it off. Only
+# the ones a criterion's `cause` can name need an entry; a mob cause resolves through _entity_gid.
+_EXPLOSION_ITEM = {
+    "minecraft:primed_tnt": "minecraft:tnt",
+    "minecraft:tnt_minecart": "minecraft:tnt_minecart",
+    "minecraft:wind_charge": "minecraft:wind_charge",
+    "minecraft:breeze_wind_charge": "minecraft:wind_charge",
+}
+
+
 # Triggers that imply a specific tool/block the criterion never names: hitting a target block is
 # gated by crafting one (redstone + hay), brewing by a brewing stand, etc. Reaching the implied item
 # is the meaningful gate, so the advancement inherits its acquisition logic.
@@ -656,7 +666,18 @@ class TriggerCompiler:
             # Levitate (Shulker bullets) → reach a Shulker (End City).
             return self._entity_gid("minecraft:shulker")
         if trigger == "minecraft:fall_after_explosion":
-            # Be launched by an explosion → a wind charge (Breeze) or TNT.
+            # Be launched by an explosion. The criterion's `cause` says WHAT must explode, and it was
+            # never read: 'Who Needs Rockets?' pins a wind charge, but the trigger alone priced it at
+            # any explosion going — a creeper, a ghast, a witch, TNT out of a chest — so it read as
+            # doable on the first creeper you meet instead of on the Trial Chambers. With a cause
+            # named, that entity is the price; with none, either of the two a player sets off on
+            # purpose.
+            cause = self._predicate_value(cond.get("cause"), "type")
+            if isinstance(cause, str) and not cause.startswith("#"):
+                named = self._any_opt(self._entity_gid(cause),
+                                      self.h.acquire(_EXPLOSION_ITEM.get(cause, cause)))
+                if named is not None:
+                    return named
             return self._any_opt(self.h.acquire("minecraft:wind_charge"),
                                  self.h.acquire("minecraft:tnt"))
         if trigger == "minecraft:fall_from_height":
