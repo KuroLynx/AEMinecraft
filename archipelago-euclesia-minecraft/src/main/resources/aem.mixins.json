@@ -11,6 +11,8 @@
     "EnderDragonFightMixin",
     "EntityMixin",
     "GiveCommandMixin",
+    "InventoryLockAddMixin",
+    "InventoryLockArmorSlotMixin",
     "InventoryLockSlotMixin",
     "ItemEntityMixin",
     "KilledTriggerMixin",
