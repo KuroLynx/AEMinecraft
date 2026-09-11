@@ -402,20 +402,6 @@ class MCWorld(World):
                 {"to": to_region.value, "rule": rule}
             )
 
-        # BACAP reward events: an internal, always-origin location per rewarded item, holding a
-        # locked (non-networked) event item. Its rule (set in set_rules from build_location_rules) is
-        # the OR of reaching a granting advancement, so the event item is collected exactly when one of
-        # those advancements is reachable — letting acquire() source the item via a non-recursive
-        # has() leaf instead of a cycle-forming reached(). Empty unless bacap_rewards is on. The event
-        # carries no networked id, so it sits outside the create_items pool/location balance.
-        menu_region = added_regions[MCRegion.MENU]
-        for base in helper.reward_events:
-            event_name = f"{REWARD_EVENT_PREFIX}{base}"
-            event_location = MCLocation(self.player, event_name, None, menu_region)
-            event_location.place_locked_item(
-                MCItem(event_name, ItemClassification.progression, None, self.player))
-            menu_region.locations.append(event_location)
-
         self.multiworld.regions += list(added_regions.values())
 
     def create_items(self) -> None:

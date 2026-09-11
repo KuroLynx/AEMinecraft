@@ -74,7 +74,7 @@ def _acquisition_table() -> dict:
         # Overlay packs (BACAP) contribute ONLY their `advancements` reward source onto the base
         # table (item -> advancement game_ids that grant it). Other overlay sources are intentionally
         # not merged yet (see registry.overlay_packs / the items-merge TODO). The advancements source
-        # is gated per seed by the bacap_rewards option in _acquire_from_sources, so merging it into
+        # is gated per seed by the bacap_rewards option in reward_sources, so merging it into
         # the once-cached, option-independent table is safe — an unused source for seeds with the
         # rewards (or the pack) off.
         for pack_dir in overlay_packs().values():
@@ -98,18 +98,14 @@ def _load_pack_acquisition(pack_dir_name: str) -> dict:
         return json.load(handle)
 
 
-def reward_events(world) -> dict[str, list[str]]:
+def reward_sources(world) -> dict[str, list[str]]:
     """Item base -> the active location names whose completion grants it as a BACAP advancement
     reward. Empty unless the pack AND its rewards are on (bacap_rewards), mirroring the mod disabling
     BACAP rewards on world load — with them off a reward is not a real way to obtain the item.
 
-    Drives the reward *event* model (see REWARD_EVENT_PREFIX, create_regions, build_location_rules):
-    each entry becomes an internal event location (rule = OR of reaching those advancements) holding a
-    locked event item, and ``acquire`` sources the item through ``has(event)`` — a non-recursive leaf.
-    AP's monotone event sweep then resolves rewards to a fixed point, instead of the recursive
-    ``reached()`` source that forms ``acquire(X) -> reached(A) -> A's rule -> acquire(X)`` cycles.
-    Only advancements that are an active check this seed contribute (an inactive tab / challenge_sanity
-    drop is simply absent), so an event with no granting location is never created."""
+    Read only by ``_with_reward``, i.e. by the GLITCH graph — strict logic never sources an item
+    through a reward. Only advancements that are an active check this seed contribute (an inactive
+    tab / challenge_sanity drop is simply absent), so an item nothing active grants is left out."""
     if not (bool(world.options.blazeandcave.value) and bool(world.options.bacap_rewards.value)):
         return {}
     location_by_gid = {
@@ -376,11 +372,9 @@ class RuleHelper:
         # to wear anything in (see InventoryLock.armor_unlock_items / self.inventory_slots). 0 when
         # armor isn't part of the lock this seed, same "no requirement" shape as self.knowledge.
         self.armor_unlock_items = world.options.inventory_lock.armor_unlock_items
-        # BACAP advancement rewards, modeled as event items: base item -> active location names that
-        # grant it (empty unless bacap_rewards is on). acquire() sources a rewarded item via
-        # has(REWARD_EVENT_PREFIX + base); the event location carrying the reached() OR is created in
-        # create_regions / build_location_rules. See reward_events for the cycle rationale.
-        self.reward_events = reward_events(world)
+        # BACAP advancement rewards: base item -> the active location names that grant it (empty
+        # unless bacap_rewards is on). Consumed by _with_reward, glitch graph only.
+        self.reward_sources = reward_sources(world)
         # -- glitch partition ------------------------------------------------
         # Two graphs come out of this compiler. STRICT (glitch=False) is what Archipelago fills
         # against: it drops any alternate route that leans on luck or on content the seed doesn't
@@ -1825,18 +1819,16 @@ class RuleHelper:
 
         A reward is an alternate route that depends on finishing other advancements, so strict logic
         ignores it: fill must not hand you a tool through a reward and call Pickaxe Handling
-        satisfied. That also means the cycle this used to have to dodge (``acquire -> reached -> rule
-        -> acquire``) can't arise, because the graph carrying rewards is never filled against.
+        satisfied. That also means the cycle this would otherwise have to dodge (``acquire ->
+        reached -> rule -> acquire``) can't arise, because the graph carrying rewards is never
+        filled against — AP's recursive reached() only evaluates the strict graph.
 
-        Which is why the glitch graph states it as ``loc(<granting advancement>)`` rather than the
-        internal reward EVENT item: the mod resolves ``has()`` against items the slot actually
-        received, and an event item never is one, so a ``has`` form would evaluate false in the
-        tracker forever. ``loc`` is a node the mod's evaluator resolves by its own fixed point
-        (RuleNode/LogicEvaluation), cycles and all. reward_events is empty unless bacap_rewards is
-        on, so this is a no-op otherwise."""
-        if not self.glitch or base not in self.reward_events:
+        So the route is stated as ``loc(<granting advancement>)``, which the mod resolves by its own
+        fixed point (RuleNode/LogicEvaluation), cycles and all. reward_sources is empty unless
+        bacap_rewards is on, so this is a no-op otherwise."""
+        if not self.glitch or base not in self.reward_sources:
             return node
-        reward = self.any_of(*[self.reached(name) for name in self.reward_events[base]])
+        reward = self.any_of(*[self.reached(name) for name in self.reward_sources[base]])
         return reward if node is None else self.any_of(node, reward)
 
     def _acquire_from_sources(self, base: str, _stack: frozenset):
