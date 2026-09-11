@@ -3,6 +3,8 @@ package fr.euclesia.mcarchipelago.server.gameplay;
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.archipelago.slot.APSlotData.InventoryLock;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.Slot;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,6 +37,15 @@ public final class InventoryLockService {
     private static final int OFFHAND = 40;
 
     private InventoryLockService() {}
+
+    /**
+     * Whether this slot is a locked slot of the player's own inventory — the single test both the
+     * placement mixins and the lock overlay use, so what is drawn locked is exactly what refuses an
+     * item. A slot backed by any other container (a chest, a workstation) is never locked here.
+     */
+    public static boolean isLocked(Slot slot) {
+        return slot.container instanceof Inventory && isLocked(slot.getContainerSlot());
+    }
 
     /** Whether {@code containerSlotIndex} (an index into the player's own Inventory) is locked. */
     public static boolean isLocked(int containerSlotIndex) {
