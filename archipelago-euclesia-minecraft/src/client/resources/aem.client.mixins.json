@@ -9,8 +9,10 @@
 		"AdvancementWidgetAccessor",
 		"AdvancementWidgetMixin",
 		"CreateWorldScreenMixin",
+		"GuiSpritesAccessor",
 		"InventoryLockRenderMixin",
 		"MinecraftWorldLoadMixin",
+		"SpriteContentsAccessor",
 		"WorldListEntryMixin"
 	],
 	"injectors": {

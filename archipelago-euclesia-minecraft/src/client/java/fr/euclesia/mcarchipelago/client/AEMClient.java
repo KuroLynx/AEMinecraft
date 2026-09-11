@@ -22,6 +22,11 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import fr.euclesia.mcarchipelago.client.render.AdvancementRenderHooks;
+import net.fabricmc.fabric.api.resource.v1.ResourceLoader;
+import net.fabricmc.fabric.api.resource.v1.reloader.SimpleReloadListener;
+import net.minecraft.server.packs.PackType;
+import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.resources.Identifier;
 
@@ -90,5 +95,22 @@ public class AEMClient implements ClientModInitializer {
 		HudElementRegistry.addLast(
 				Identifier.fromNamespaceAndPath(AEM.MOD_ID, "biome_finder_tracker"),
 				new BiomeFinderTrackerHud());
+
+		// Advancement frames are repainted from their own artwork (AdvancementRenderHooks), so a
+		// resource reload — a pack switched on, F3+T — has to throw those repaints away: the sprite
+		// they were built from may look nothing like it did.
+		ResourceLoader.get(PackType.CLIENT_RESOURCES).registerReloadListener(
+				Identifier.fromNamespaceAndPath(AEM.MOD_ID, "repainted_sprites"),
+				new SimpleReloadListener<Void>() {
+					@Override
+					protected Void prepare(PreparableReloadListener.SharedState state) {
+						return null;
+					}
+
+					@Override
+					protected void apply(Void prepared, PreparableReloadListener.SharedState state) {
+						AdvancementRenderHooks.clearRepaints();
+					}
+				});
 	}
 }

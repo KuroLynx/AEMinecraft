@@ -53,12 +53,8 @@ public abstract class PagAdvWidgetMixin {
     private void archipelago_euclesia$frame(GuiGraphicsExtractor graphics, RenderPipeline pipeline,
                                             Identifier sprite, int x, int y, int width, int height) {
         Identifier id = archipelago_euclesia$id();
-        Integer rgb = id == null ? null : AdvancementRenderHooks.frameColor(id);
-        if (rgb == null) {
-            graphics.blitSprite(pipeline, sprite, x, y, width, height);
-        } else {
-            graphics.blitSprite(pipeline, sprite, x, y, width, height, 0xFF000000 | rgb);
-        }
+        AdvancementRenderHooks.drawFrame(graphics, pipeline, sprite, x, y, width, height,
+                id == null ? null : AdvancementRenderHooks.frameColor(id), AdvancementRenderHooks.NO_TINT);
     }
 
     private Identifier archipelago_euclesia$id() {
