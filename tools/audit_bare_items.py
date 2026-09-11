@@ -6,8 +6,9 @@ check? This asks it of the thing a rule is usually built out of. The two find di
 item one finds them earlier: an item that compiles to a bare `Region(Overworld)` doesn't only make
 the advancement that wants it free, it *deletes* the gates of every rule that ORs it with a real
 source — `_unique_or` absorption reads `A ∨ (A ∧ B)` as `A`, so one free path takes the structure
-and mob-lock branches with it (see the 2026-09-06 farmland-crop report in
-`docs/item_gate_bug_reports.md`, which is what this script was written to generalize).
+and mob-lock branches with it. Written to generalize a player report where potato, beetroot and
+carrot did exactly that: a crop block is only there because somebody planted a seed, so mining it
+back is circular, and the bare region path it produced deleted their real structure/mob gates.
 
 An item reads as free for one of two reasons, and only a human can tell them apart:
 
