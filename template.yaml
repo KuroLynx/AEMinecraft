@@ -235,6 +235,48 @@ AEMinecraft:
     'true': 50
 
   # -------------------------------------------------------------------------
+  # Keep Inventory
+  # -------------------------------------------------------------------------
+
+  keep_inventory:
+    # How much of your inventory survives your death.
+    #
+    # Vanilla drops everything you carry when you die. This option lets you keep some or all of it —
+    # main inventory, armor and offhand, exactly the scope the keepInventory gamerule covers. Dropped
+    # experience is never affected: you lose your XP on death whatever this is set to.
+    #
+    # - disabled (default): vanilla. Everything drops.
+    # - active: you always keep your whole inventory, from the first death onwards. No item needed.
+    # - progressive: 'Progressive Keep Inventory' items are shuffled into the multiworld, and how much
+    #   you keep grows as you find them. With none received you drop everything, as in vanilla; with
+    #   every copy received you keep everything, as in active.
+    #
+    # Under progressive, each copy is worth an equal share of the total: with N of the
+    # keep_inventory_pool_size copies received you keep N / pool_size of what you carry, rounded to
+    # whole slots and picked at random from the slots that actually hold something. So the item is a
+    # gamble at first (half your slots, but you don't choose which half) and becomes a certainty once
+    # you have them all.
+    disabled: 50
+    active: 0
+    progressive: 0
+
+  keep_inventory_pool_size:
+    # How many 'Progressive Keep Inventory' items exist, when keep_inventory is progressive.
+    #
+    # This is the granularity of the gauge, not a cap: collecting every copy always reaches 100% kept,
+    # whatever the number is. A low value makes each copy a large, rare jump (2 copies = +50% each); a
+    # high value makes them small, common steps (100 copies = +1% each) that take most of the seed to
+    # complete.
+    #
+    # Ignored unless keep_inventory is set to progressive.
+    #
+    # Minimum value is 1
+    # Maximum value is 100
+    10: 50
+    4: 0
+    25: 0
+
+  # -------------------------------------------------------------------------
   # Challenge Sanity
   # -------------------------------------------------------------------------
   challenge_sanity:
@@ -381,6 +423,54 @@ AEMinecraft:
     container: true
     pickup: true
     given: false
+
+  # -------------------------------------------------------------------------
+  # Inventory Lock
+  # -------------------------------------------------------------------------
+
+  inventory_lock:
+    # Restrict how many inventory slots you can actually use.
+    #
+    # Three modes:
+    #     - disabled (default): your full inventory is available, as normal.
+    #     - fixed: only 'slots' of your 36 hotbar+main-inventory slots are ever usable. The rest are
+    #       locked for the whole game — there is no item that unlocks them.
+    #     - progressive: you start with 'slots' of those 36 locked, and copies of the 'Progressive
+    #       Inventory Slot' item are shuffled into the multiworld — each one unlocks 'slots_per_item'
+    #       more, until everything locked is open.
+    #
+    # Locked slots open in a fixed order: the hotbar first, then the offhand slot (if 'offhand' is
+    # included), then the main-inventory row closest to the hotbar, then your armor slots (if 'armor'
+    # is included), then the two remaining main-inventory rows.
+    #
+    # 'offhand' and 'armor' mean different things depending on 'mode':
+    #     - fixed: true means that slot group is EXEMPT from the restriction — always usable
+    #       regardless of 'slots'. false means it is locked for the whole game, same as any
+    #       hotbar/main slot beyond 'slots'.
+    #     - progressive: true means that slot group is ADDED to what starts locked (offhand adds 1,
+    #       armor adds 4) and gets its own share of the unlock items. false means it is left alone,
+    #       always usable, with no unlock items generated for it.
+    #
+    # Keys, with their defaults:
+    #     - mode: "disabled", "fixed" or "progressive". Default "disabled".
+    #     - slots: how many of your 36 hotbar+main-inventory slots are usable (fixed) or start locked
+    #       (progressive). 1-36. Default 36.
+    #     - slots_per_item: progressive only — how many slots each 'Progressive Inventory Slot' item
+    #       unlocks. Default 1.
+    #     - offhand: true/false, see above. Default false.
+    #     - armor: true/false, see above. Default false.
+    #
+    # Any key you omit keeps its default, so you only need to list what you're changing. Example — a
+    # progressive lock starting with 10 main/hotbar slots plus your armor locked, two slots per item:
+    #     mode: progressive
+    #     slots: 10
+    #     slots_per_item: 2
+    #     armor: true
+    mode: disabled
+    slots: 36
+    slots_per_item: 1
+    offhand: false
+    armor: false
 
   # -------------------------------------------------------------------------
   # Standard item/location options
