@@ -49,6 +49,10 @@ from ..content.registry import base_pack, overlay_packs
 
 # An exploding entity that is not a mob, mapped to the item a player must hold to set it off. Only
 # the ones a criterion's `cause` can name need an entry; a mob cause resolves through _entity_gid.
+# The station key the pack's container dump records for the smithing table. Trim recipes run on the
+# same block as transforms, so they share its Knowledge and its block requirement.
+_SMITHING_STATION = "smithing_transform"
+
 _EXPLOSION_ITEM = {
     "minecraft:primed_tnt": "minecraft:tnt",
     "minecraft:tnt_minecart": "minecraft:tnt_minecart",
@@ -1114,17 +1118,28 @@ class TriggerCompiler:
 
     def _recipe_id_node(self, recipe_id) -> Rule | None:
         """``recipe_crafted`` with no ``ingredients`` (only a ``recipe_id``). An armor-trim smithing
-        recipe (``<template>_smithing_trim``) → a smithing table + that trim template (structure loot);
-        otherwise treat the recipe id as its crafted item id and acquire that (cake, melon, templates)."""
+        recipe (``<template>_smithing_trim``) is priced below; otherwise treat the recipe id as its
+        crafted item id and acquire that (cake, melon, templates)."""
         if not isinstance(recipe_id, str):
             return None
         base = recipe_id.split(":", 1)[-1]
         suffix = "_smithing_trim"
         if base.endswith(suffix):
             template = base[: -len(suffix)]
-            return self._all_req(self.h.acquire("minecraft:smithing_table"),
-                                 self.h.acquire(f"minecraft:{template}"))
+            # Applying a trim takes four things, and this asked for two — the smithing table ITEM and
+            # the template. So 'Crafting a New Look' read as doable with no armor to trim, nothing to
+            # trim it with, and without Knowledge: Smithing Table, since owning the block is not
+            # permission to use it (_station_node is the half that says so, and it also asks for the
+            # block). The tags name exactly what the recipe accepts in its other two slots.
+            return self._all_req(self.h._station_node(_SMITHING_STATION),
+                                 self.h.acquire(f"minecraft:{template}"),
+                                 self._tag_acquire("#minecraft:trimmable_armor"),
+                                 self._tag_acquire("#minecraft:trim_materials"))
         return self.h.acquire(recipe_id)
+
+    def _tag_acquire(self, tag: str) -> Rule | None:
+        """Obtain ANY member of an item tag — the cheapest member is the real price, so they OR."""
+        return self._any_opt(*[self.h.acquire(item) for item in self._expand_item(tag)])
 
     def _location_node(self, cond: dict) -> Rule | None:
         """The `player` predicate, in either of its forms: a bare dict, or a list of
