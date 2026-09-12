@@ -154,6 +154,8 @@ KNOWLEDGE_ICONS = {
     "Progressive Villager Trust": "minecraft:emerald",
     "Progressive Structure Finder": "minecraft:recovery_compass",
     "Progressive Keep Inventory": "minecraft:totem_of_undying",
+    # A bundle is the game's own "you can carry more" item, which is what each copy buys you.
+    "Progressive Inventory Slot": "minecraft:bundle",
     "Biome Finder": "minecraft:compass",
     "Dimension Unlock: Overworld": "minecraft:grass_block",
     "Dimension Unlock: Nether": "minecraft:netherrack",
