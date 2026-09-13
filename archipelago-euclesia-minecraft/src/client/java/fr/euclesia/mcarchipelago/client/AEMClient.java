@@ -9,6 +9,7 @@ import fr.euclesia.mcarchipelago.client.finder.BiomeFinderTrackerHud;
 import fr.euclesia.mcarchipelago.client.finder.StructureFinderBarHud;
 import fr.euclesia.mcarchipelago.client.gui.AEMScreenButtons;
 import fr.euclesia.mcarchipelago.client.gui.BiomeFinderScreen;
+import fr.euclesia.mcarchipelago.client.hint.HintHoldTracker;
 import fr.euclesia.mcarchipelago.client.logic.DataLogicProvider;
 import fr.euclesia.mcarchipelago.client.net.APStateSyncClient;
 import fr.euclesia.mcarchipelago.client.net.BiomeFinderClient;
@@ -68,6 +69,7 @@ public class AEMClient implements ClientModInitializer {
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			WorldLoadResume.runPending();
 			HeadlessWorldDump.clientTick(client);
+			HintHoldTracker.clientTick();
 			while (TOGGLE_CHAT_FILTER.consumeClick()) {
 				ChatFilterClient.requestToggle();
 			}

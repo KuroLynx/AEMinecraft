@@ -6,6 +6,7 @@ import fr.euclesia.mcarchipelago.registry.APTrackerRegistry;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.resources.Identifier;
 import org.lwjgl.glfw.GLFW;
 
@@ -170,9 +171,41 @@ public final class HintHoldTracker {
             lastFiredAt.put(id, System.currentTimeMillis());
             HintClient.requestHint(id);
             // Close the screen: tiles read their description when the screen builds them, so the
-            // hinted location only shows on a fresh open. Deferred, because this runs mid-render.
+            // hinted location only shows on a fresh open. Kept, to be reopened once the hint is in
+            // (see reopenAfterHint). Deferred, because this runs mid-render.
             Minecraft minecraft = Minecraft.getInstance();
+            closedForHint = minecraft.screen;
+            reopenDeadlineMillis = System.currentTimeMillis() + REOPEN_TIMEOUT_MILLIS;
             minecraft.execute(() -> minecraft.setScreen(null));
+        }
+    }
+
+    // The screen a hint request closed, waiting to be put back, and when to stop waiting for the answer.
+    private static Screen closedForHint;
+    private static long reopenDeadlineMillis;
+    // A hint that changes nothing (the item was already hinted, or no room is connected) never sends
+    // a new hint list, so the screen comes back on its own after this long.
+    private static final long REOPEN_TIMEOUT_MILLIS = 5_000;
+
+    /**
+     * Puts back the screen the last hint request closed, now that the hint list has arrived. The same
+     * instance, not a new one: reopening it re-runs its init, which rebuilds every tile (so the new
+     * description shows) and keeps the tab that was selected, and it works the same for a compat
+     * mod's replacement screen. Skipped if the player has opened something else in the meantime.
+     */
+    public static void reopenAfterHint() {
+        Screen screen = closedForHint;
+        closedForHint = null;
+        Minecraft minecraft = Minecraft.getInstance();
+        if (screen != null && minecraft.screen == null && minecraft.player != null) {
+            minecraft.setScreen(screen);
+        }
+    }
+
+    /** Once per client tick: reopens the screen anyway if no hint list arrived in time. */
+    public static void clientTick() {
+        if (closedForHint != null && System.currentTimeMillis() > reopenDeadlineMillis) {
+            reopenAfterHint();
         }
     }
 

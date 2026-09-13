@@ -8,6 +8,7 @@ import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.AEMDebug;
 import fr.euclesia.mcarchipelago.archipelago.ArchipelagoClient;
 import fr.euclesia.mcarchipelago.archipelago.ChatFilterPreference;
+import fr.euclesia.mcarchipelago.client.hint.HintHoldTracker;
 import fr.euclesia.mcarchipelago.net.APProgressPayload;
 import fr.euclesia.mcarchipelago.net.APStateSyncPayload;
 import fr.euclesia.mcarchipelago.net.BiomeTrackerSyncPayload;
@@ -115,7 +116,10 @@ public final class APStateSyncClient {
         // Where this slot's hinted items are, for the unlock tiles' descriptions. In singleplayer the
         // server already filled this same map, so setting it again changes nothing.
         ClientPlayNetworking.registerGlobalReceiver(HintLocationsPayload.TYPE,
-                (payload, context) -> context.client().execute(() -> HintLocationListener.set(payload.spots())));
+                (payload, context) -> context.client().execute(() -> {
+                    HintLocationListener.set(payload.spots());
+                    HintHoldTracker.reopenAfterHint();
+                }));
 
         // Leaving a server (or an integrated world) drops the mirror. In singleplayer this instance
         // is the REAL session, so only clear what we ourselves populated.
