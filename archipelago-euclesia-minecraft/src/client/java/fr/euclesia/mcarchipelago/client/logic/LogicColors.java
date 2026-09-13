@@ -1,5 +1,7 @@
 package fr.euclesia.mcarchipelago.client.logic;
 
+import net.minecraft.ChatFormatting;
+
 /**
  * Maps a {@link LogicState} to its indicator colour, shared by the icon-background
  * and (stashed) sphere renderers so they always agree.
@@ -11,11 +13,13 @@ package fr.euclesia.mcarchipelago.client.logic;
  * appear — so they can now be re-tuned on how they look, with nothing else to account for.
  */
 public final class LogicColors {
-    public static final int RGB_IN_LOGIC = 0x4CD964;     // green
-    public static final int RGB_OUT_OF_LOGIC = 0xE53935; // red
+    // Minecraft's own text colours, so the tiles speak the palette the rest of the game already uses.
+    public static final int RGB_IN_LOGIC = ChatFormatting.GREEN.getColor();
+    public static final int RGB_OUT_OF_LOGIC = ChatFormatting.RED.getColor();
     /** Dim, so a completed tile reads as done and stops competing with the ones still to do. */
-    public static final int RGB_CHECKED = 0x595959;      // dim gray
-    public static final int RGB_GLITCHABLE = 0xFFF64D;   // yellow
+    public static final int RGB_CHECKED = ChatFormatting.DARK_GRAY.getColor();
+    public static final int RGB_GLITCHABLE = ChatFormatting.YELLOW.getColor();
+    public static final int RGB_COLLECTED = ChatFormatting.BLUE.getColor();
 
     private LogicColors() {}
 
@@ -26,6 +30,7 @@ public final class LogicColors {
             case OUT_OF_LOGIC -> RGB_OUT_OF_LOGIC;
             case CHECKED -> RGB_CHECKED;
             case GLITCHABLE -> RGB_GLITCHABLE;
+            case COLLECTED -> RGB_COLLECTED;
             case UNKNOWN -> null;
         };
     }
