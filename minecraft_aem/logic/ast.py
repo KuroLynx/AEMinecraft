@@ -29,6 +29,12 @@ import json
 from typing import Iterable
 
 
+# Rule.key() interning table: structural shape -> small int.
+# ponytail: process-global and never cleared, one entry per distinct subtree; fine for a Generate run,
+# scope it per world if a long-lived process ever generates many seeds.
+_KEY_IDS: dict = {}
+
+
 class Rule:
     """Base class: a node is callable against an AP state and serializable to a dict.
 
@@ -90,12 +96,18 @@ class Rule:
         return len(self._canonical_json())
 
     def key(self):
-        """Hashable structural key, memoized. Two subtrees share a key iff their canonical_json is
+        """Structural key, memoized: an int, equal for two subtrees iff their canonical_json is
         equal (same kind/fields and same child keys, order-sensitive) — the cheap dedup key used by
-        _unique_or in place of serializing every OR operand."""
+        _unique_or and and_ in place of serializing every operand.
+
+        An int, not the nested tuple ``_key`` describes: CPython never caches a tuple's hash, so
+        every set lookup re-hashed the whole subtree as if it were a tree, not the shared DAG it is.
+        A BACAP glitch export sat at "Beginning output..." for 15+ minutes doing exactly that.
+        Interning makes each ``_key`` a flat tuple of the children's ints."""
         cached = self._key_cache
         if cached is None:
-            cached = self._key_cache = self._key()
+            shape = self._key()
+            cached = self._key_cache = _KEY_IDS.setdefault(shape, len(_KEY_IDS))
         return cached
 
     def _key(self):  # pragma: no cover - overridden
