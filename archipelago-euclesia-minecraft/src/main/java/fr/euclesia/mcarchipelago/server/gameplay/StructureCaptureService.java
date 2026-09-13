@@ -19,13 +19,25 @@ import net.minecraft.world.level.storage.TagValueInput;
 import net.minecraft.world.level.storage.TagValueOutput;
 import net.minecraft.world.level.storage.ValueInput;
 
+import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Bridges the structure-lock between worldgen (where a locked structure's writes are captured) and the
- * moment its unlock item arrives (where the captured writes are applied to the live world). Structure
- * mobs whose own type is still locked are held in {@link PendingMobData} and spawned when that mob
- * unlocks. All world mutation here runs on the server thread.
+ * Bridges a locked placement to the moment its unlock item arrives, for everything that is still
+ * captured block by block:
+ *
+ * <ul>
+ *   <li>feature-based "structures" — a desert well, a fossil — which are {@link
+ *       net.minecraft.world.level.levelgen.placement.PlacedFeature}s with no {@code StructureStart}
+ *       to regenerate, and which are tens of blocks each ({@code PlacedFeatureMixin});
+ *   <li>the captured placements of worlds written before real structures moved to being rebuilt from
+ *       their origin chunk, drained and applied exactly as they always were.
+ * </ul>
+ *
+ * Real structures no longer come through here at all: they are skipped at worldgen and regenerated on
+ * unlock by {@link StructureReplayService}, because capturing every block of every locked structure is
+ * what ran a server out of heap. Structure mobs whose own type is still locked are held in
+ * {@link PendingMobData} by both paths. All world mutation here runs on the server thread.
  */
 public final class StructureCaptureService {
     private StructureCaptureService() {}
@@ -53,9 +65,15 @@ public final class StructureCaptureService {
         server.execute(() -> captureData(level).add(structureId, placement));
     }
 
-    /** Structure ids holding captured placements in this level (see SlotReleaseService). */
+    /**
+     * Structure ids this level is holding back, from either store (see SlotReleaseService): instances
+     * whose placement was suppressed and awaits a rebuild, plus the captured blocks of a world written
+     * before the rebuild path existed.
+     */
     public static Set<String> capturedStructureIds(ServerLevel level) {
-        return captureData(level).capturedIds();
+        Set<String> ids = new HashSet<>(captureData(level).capturedIds());
+        ids.addAll(StructureReplayService.suppressedStructureIds(level));
+        return Set.copyOf(ids);
     }
 
     /** Mob ids holding deferred worldgen spawns in this level (see SlotReleaseService). */
@@ -75,6 +93,9 @@ public final class StructureCaptureService {
         if (structureIds.isEmpty()) {
             return;
         }
+        // The structures of any world created from here on: regenerated from their origin chunk.
+        StructureReplayService.replayUnlocked(server, structureIds);
+        // And the captured blocks of a world that predates that, drained as they always were.
         int queued = 0;
         for (ServerLevel level : server.getAllLevels()) {
             StructureCaptureData data = captureData(level);
@@ -86,7 +107,7 @@ public final class StructureCaptureService {
             }
         }
         if (queued > 0) {
-            AEM.LOGGER.info("Unlocked {} structure type(s): {} placement(s) queued.",
+            AEM.LOGGER.info("Unlocked {} structure type(s): {} captured placement(s) queued.",
                     structureIds.size(), queued);
         }
     }
