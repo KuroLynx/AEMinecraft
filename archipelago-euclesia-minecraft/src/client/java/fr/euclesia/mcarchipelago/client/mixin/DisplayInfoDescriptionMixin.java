@@ -60,7 +60,8 @@ public abstract class DisplayInfoDescriptionMixin {
             }
             description.append(Component.translatable("gui.aem.hint.spot", base,
                     Component.literal(spot.location()).withStyle(ChatFormatting.GREEN),
-                    Component.literal(spot.player()).withStyle(ChatFormatting.YELLOW)));
+                    Component.literal(spot.player()).withStyle(ChatFormatting.YELLOW))
+                    .withStyle(ChatFormatting.WHITE)); // the joining words; each argument keeps its own colour
         }
         cir.setReturnValue(description);
     }
