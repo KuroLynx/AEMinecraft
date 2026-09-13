@@ -17,9 +17,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.List;
 
 /**
- * Tells an unlock tile's reader where its item is. Under the description: one line per hinted copy
- * still waiting ("Player @ Location"), or a reminder that holding the tile asks for a hint. Nothing
- * once the tile is satisfied — the item has arrived, so where it was no longer matters.
+ * Tells an unlock tile's reader where its item is. Once hinted, the description becomes one line per
+ * copy still waiting ("Unlock X @ Location in Slot's world"); until then it gains a reminder that
+ * holding the tile asks for a hint. Nothing once the tile is satisfied — the item has arrived, so
+ * where it was no longer matters.
  *
  * <p>Hooked on the display rather than the widget so every advancement screen shows it, vanilla's
  * and the compat mods' alike. Screens read the description when they build a tile, so a hint that
@@ -38,16 +39,22 @@ public abstract class DisplayInfoDescriptionMixin {
                 || AEM.ARCHIPELAGO.client().registries().apItems().receivedCount(tracker.itemId()) >= tracker.count()) {
             return;
         }
-        MutableComponent description = cir.getReturnValue().copy();
+        Component base = cir.getReturnValue();
         List<HintLocationListener.Spot> spots = HintLocationListener.spots(tracker.itemId());
         if (spots.isEmpty()) {
-            description.append("\n").append(Component.translatable("gui.aem.hint.hold")
-                    .withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC));
+            cir.setReturnValue(base.copy().append("\n").append(Component.translatable("gui.aem.hint.hold")
+                    .withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC)));
+            return;
         }
+        // The hint takes the description's place, one line per copy: "Unlock X @ Location in Slot's world".
+        MutableComponent description = Component.empty();
         for (HintLocationListener.Spot spot : spots) {
-            description.append("\n").append(Component.translatable("gui.aem.hint.spot",
-                    Component.literal(spot.player()).withStyle(ChatFormatting.YELLOW),
-                    Component.literal(spot.location()).withStyle(ChatFormatting.GREEN)));
+            if (!description.getSiblings().isEmpty()) {
+                description.append("\n");
+            }
+            description.append(Component.translatable("gui.aem.hint.spot", base,
+                    Component.literal(spot.location()).withStyle(ChatFormatting.GREEN),
+                    Component.literal(spot.player()).withStyle(ChatFormatting.YELLOW)));
         }
         cir.setReturnValue(description);
     }

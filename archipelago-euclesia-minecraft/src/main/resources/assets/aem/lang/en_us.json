@@ -88,7 +88,7 @@
   "gui.aem.biome_finder.empty": "No biomes available here.",
 
   "gui.aem.hint.hold": "Hold to hint",
-  "gui.aem.hint.spot": "%s @ %s",
+  "gui.aem.hint.spot": "%s @ %s in %s's world",
 
   "gui.aem.common.close": "Close",
 
