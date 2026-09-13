@@ -87,6 +87,9 @@
   "gui.aem.biome_finder.loading": "Asking the server…",
   "gui.aem.biome_finder.empty": "No biomes available here.",
 
+  "gui.aem.hint.hold": "Hold to hint",
+  "gui.aem.hint.spot": "%s @ %s",
+
   "gui.aem.common.close": "Close",
 
   "gui.aem.connect.status.slot_required": "Slot name is required",

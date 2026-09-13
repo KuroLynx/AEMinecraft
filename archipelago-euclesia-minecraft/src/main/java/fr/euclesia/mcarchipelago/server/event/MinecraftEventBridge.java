@@ -207,6 +207,7 @@ public final class MinecraftEventBridge {
             // The chat filter is world-persisted and run-wide; a freshly joined player's options
             // screen should reflect it immediately rather than only after the next toggle.
             APStateSync.sendChatFilter(player, ChatFilterPreference.enabled());
+            APStateSync.sendHints(player);
         });
 
         // A player who logs out between being link-killed and the death landing would otherwise keep

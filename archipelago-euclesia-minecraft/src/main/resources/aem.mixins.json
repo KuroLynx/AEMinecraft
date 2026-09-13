@@ -3,11 +3,13 @@
   "package": "fr.euclesia.mcarchipelago.mixin",
   "compatibilityLevel": "JAVA_25",
   "mixins": [
+    "AdvancementHolderMixin",
     "AdvancementRewardsMixin",
     "AdvancementVisibilityEvaluatorMixin",
     "BadOmenMobEffectMixin",
     "BeehiveBlockEntityMixin",
     "CreeperMixin",
+    "DisplayInfoMixin",
     "EnderDragonFightMixin",
     "EntityMixin",
     "GiveCommandMixin",

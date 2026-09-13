@@ -9,6 +9,7 @@
 		"AdvancementWidgetAccessor",
 		"AdvancementWidgetMixin",
 		"CreateWorldScreenMixin",
+		"DisplayInfoDescriptionMixin",
 		"GuiSpritesAccessor",
 		"InventoryLockRenderMixin",
 		"InventoryScreenAccessor",

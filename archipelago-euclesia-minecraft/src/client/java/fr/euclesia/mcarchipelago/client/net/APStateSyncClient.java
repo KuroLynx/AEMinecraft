@@ -13,6 +13,8 @@ import fr.euclesia.mcarchipelago.net.APStateSyncPayload;
 import fr.euclesia.mcarchipelago.net.BiomeTrackerSyncPayload;
 import fr.euclesia.mcarchipelago.net.ChatFilterSyncPayload;
 import fr.euclesia.mcarchipelago.net.FinderSyncPayload;
+import fr.euclesia.mcarchipelago.net.HintLocationsPayload;
+import fr.euclesia.mcarchipelago.server.ap.HintLocationListener;
 import fr.euclesia.mcarchipelago.server.gameplay.BiomeFinderTrackerState;
 import fr.euclesia.mcarchipelago.server.gameplay.StructureFinderState;
 import fr.euclesia.mcarchipelago.protocol.APItemClassification;
@@ -24,6 +26,7 @@ import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Applies the server's session snapshot into the client's own Archipelago instance.
@@ -108,6 +111,11 @@ public final class APStateSyncClient {
                         BiomeFinderTrackerState.get().putTarget(player.getUUID(), target);
                     }
                 }));
+
+        // Where this slot's hinted items are, for the unlock tiles' descriptions. In singleplayer the
+        // server already filled this same map, so setting it again changes nothing.
+        ClientPlayNetworking.registerGlobalReceiver(HintLocationsPayload.TYPE,
+                (payload, context) -> context.client().execute(() -> HintLocationListener.set(payload.spots())));
 
         // Leaving a server (or an integrated world) drops the mirror. In singleplayer this instance
         // is the REAL session, so only clear what we ourselves populated.
@@ -206,6 +214,7 @@ public final class APStateSyncClient {
         StructureFinderState.get().clear();
         lastKnownChatFilter = null;
         BiomeFinderTrackerState.get().clear();
+        HintLocationListener.set(Map.of());
         mirrored = false;
         AEMDebug.log("apStateSync cleared (left the server)");
     }
