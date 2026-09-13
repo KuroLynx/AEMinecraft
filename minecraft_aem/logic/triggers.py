@@ -1074,13 +1074,26 @@ class TriggerCompiler:
         """``killed_by_arrow``: kill with an arrow/projectile. The victim(s) are on ``victims`` (an AND
         of OR-groups), not ``entity``; the launcher is on ``fired_from_weapon``. Require the weapon
         (the pinned one, else any bow/crossbow + arrow) AND defeating each pinned victim group."""
-        weapon = self._any_acquire((cond.get("fired_from_weapon") or {}).get("items"))
+        # The launcher is a full item predicate, not just an id — read it as one, so an enchantment
+        # it demands is priced. Only `items` was read, so BACAP's multishot check asked for a plain
+        # crossbow.
+        weapon = self._item_predicate(cond.get("fired_from_weapon"))
         if weapon is None:
             weapon = self._all_req(
                 self._any_opt(self.h.acquire("minecraft:bow"), self.h.acquire("minecraft:crossbow")),
                 self.h.can_get_arrow(),
             )
-        return self._all_opt(weapon, self._victims_node(cond))
+        return self._all_opt(weapon, self._victims_node(cond), self._piercing_gate(cond))
+
+    def _piercing_gate(self, cond: dict) -> Rule | None:
+        """One arrow, more than one victim — that only happens with Piercing, and no criterion ever
+        says so. 'Two Birds, One Arrow' (2 victim groups), 'Arbalistic' (5 unique types), 'Justice'
+        and 'Good Luck Getting This One' all read as "own a crossbow" without it."""
+        victims = cond.get("victims") or []
+        unique = cond.get("unique_entity_types") or 0
+        if len(victims) < 2 and unique < 2:
+            return None
+        return self._enchant_source_node("piercing", True)
 
     def _victims_node(self, cond: dict) -> Rule | None:
         """The ``victims`` list as a gate: an AND over the groups, each an OR over the species it
