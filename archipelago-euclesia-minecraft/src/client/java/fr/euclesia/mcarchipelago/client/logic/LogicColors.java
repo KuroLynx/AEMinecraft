@@ -16,6 +16,7 @@ public final class LogicColors {
     /** Dim, so a completed tile reads as done and stops competing with the ones still to do. */
     public static final int RGB_CHECKED = 0x595959;      // dim gray
     public static final int RGB_GLITCHABLE = 0xFFF64D;   // yellow
+    public static final int RGB_COLLECTED = 0x3F76E4;    // blue
 
     private LogicColors() {}
 
@@ -26,6 +27,7 @@ public final class LogicColors {
             case OUT_OF_LOGIC -> RGB_OUT_OF_LOGIC;
             case CHECKED -> RGB_CHECKED;
             case GLITCHABLE -> RGB_GLITCHABLE;
+            case COLLECTED -> RGB_COLLECTED;
             case UNKNOWN -> null;
         };
     }
