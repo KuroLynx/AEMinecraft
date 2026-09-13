@@ -118,7 +118,7 @@ public final class APStateSyncClient {
         ClientPlayNetworking.registerGlobalReceiver(HintLocationsPayload.TYPE,
                 (payload, context) -> context.client().execute(() -> {
                     HintLocationListener.set(payload.spots());
-                    HintHoldTracker.reopenAfterHint();
+                    HintHoldTracker.onHintsArrived();
                 }));
 
         // Leaving a server (or an integrated world) drops the mirror. In singleplayer this instance

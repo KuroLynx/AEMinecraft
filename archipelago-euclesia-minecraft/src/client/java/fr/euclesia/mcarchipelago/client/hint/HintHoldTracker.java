@@ -172,40 +172,56 @@ public final class HintHoldTracker {
             HintClient.requestHint(id);
             // Close the screen: tiles read their description when the screen builds them, so the
             // hinted location only shows on a fresh open. Kept, to be reopened once the hint is in
-            // (see reopenAfterHint). Deferred, because this runs mid-render.
+            // (see clientTick). Deferred, because this runs mid-render.
             Minecraft minecraft = Minecraft.getInstance();
             closedForHint = minecraft.screen;
-            reopenDeadlineMillis = System.currentTimeMillis() + REOPEN_TIMEOUT_MILLIS;
+            closedAtMillis = System.currentTimeMillis();
+            hintArrived = false;
             minecraft.execute(() -> minecraft.setScreen(null));
         }
     }
 
-    // The screen a hint request closed, waiting to be put back, and when to stop waiting for the answer.
+    // The screen a hint request closed, waiting to be put back; when it closed; and whether the new
+    // hint list is in yet.
     private static Screen closedForHint;
-    private static long reopenDeadlineMillis;
+    private static long closedAtMillis;
+    private static boolean hintArrived;
+    // The answer is usually back within a frame or two, and a screen that blinks shut and straight
+    // back open reads as a glitch rather than as "your hint is in". So it stays closed at least this
+    // long, however fast the answer.
+    private static final long REOPEN_MIN_MILLIS = 1_000;
     // A hint that changes nothing (the item was already hinted, or no room is connected) never sends
     // a new hint list, so the screen comes back on its own after this long.
     private static final long REOPEN_TIMEOUT_MILLIS = 5_000;
 
+    /** The hint list has arrived: the closed screen can come back once {@link #REOPEN_MIN_MILLIS} is up. */
+    public static void onHintsArrived() {
+        hintArrived = true;
+    }
+
+    /** Once per client tick: reopens the closed screen once its hint is in, or once waiting is pointless. */
+    public static void clientTick() {
+        if (closedForHint == null) {
+            return;
+        }
+        long waited = System.currentTimeMillis() - closedAtMillis;
+        if ((hintArrived && waited >= REOPEN_MIN_MILLIS) || waited >= REOPEN_TIMEOUT_MILLIS) {
+            reopen();
+        }
+    }
+
     /**
-     * Puts back the screen the last hint request closed, now that the hint list has arrived. The same
-     * instance, not a new one: reopening it re-runs its init, which rebuilds every tile (so the new
-     * description shows) and keeps the tab that was selected, and it works the same for a compat
-     * mod's replacement screen. Skipped if the player has opened something else in the meantime.
+     * Puts back the screen the last hint request closed. The same instance, not a new one: reopening
+     * it re-runs its init, which rebuilds every tile (so the new description shows) and keeps the tab
+     * that was selected, and it works the same for a compat mod's replacement screen. Skipped if the
+     * player has opened something else in the meantime.
      */
-    public static void reopenAfterHint() {
+    private static void reopen() {
         Screen screen = closedForHint;
         closedForHint = null;
         Minecraft minecraft = Minecraft.getInstance();
         if (screen != null && minecraft.screen == null && minecraft.player != null) {
             minecraft.setScreen(screen);
-        }
-    }
-
-    /** Once per client tick: reopens the screen anyway if no hint list arrived in time. */
-    public static void clientTick() {
-        if (closedForHint != null && System.currentTimeMillis() > reopenDeadlineMillis) {
-            reopenAfterHint();
         }
     }
 
