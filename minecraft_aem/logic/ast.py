@@ -29,13 +29,30 @@ import json
 from typing import Iterable
 
 
-# Rule.key() interning table: structural shape -> small int.
-# ponytail: process-global and never cleared, one entry per distinct subtree; fine for a Generate run,
-# scope it per world if a long-lived process ever generates many seeds.
+# Rule.key() interning table: structural shape -> small int; and _NODES, key -> the one node of that
+# shape. ponytail: process-global and never cleared — one entry per DISTINCT subtree (~12k for the
+# heaviest BACAP seed), so a long-lived process generating many seeds keeps a few MB; scope per world
+# if that ever matters. Never reuse ids: a live node's cached key must not be handed to a new shape.
 _KEY_IDS: dict = {}
+_NODES: dict = {}
 
 
-class Rule:
+class _Interned(type):
+    """Hash-consing: constructing a node whose shape already exists returns the existing object.
+
+    Rule construction is massively redundant — acquire() caches per (item, recursion stack), so the
+    same subtree is rebuilt for every stack it's reached from, and the glitch twin rebuilds it all
+    again. The heaviest BACAP seed made 6.6M node objects of 12k distinct shapes, ~5 GB of generation
+    memory. Nodes are immutable and carry no world reference (the player id is part of a leaf's key),
+    so one shared instance per shape is indistinguishable from the copies — memoized to_dict/key/size
+    caches included."""
+
+    def __call__(cls, *args, **kwargs):
+        node = super().__call__(*args, **kwargs)
+        return _NODES.setdefault(node.key(), node)
+
+
+class Rule(metaclass=_Interned):
     """Base class: a node is callable against an AP state and serializable to a dict.
 
     Nodes are immutable once built and shared read-only across rules (the acquire() cache hands the
@@ -96,7 +113,7 @@ class Rule:
         return len(self._canonical_json())
 
     def key(self):
-        """Structural key, memoized: an int, equal for two subtrees iff their canonical_json is
+        """Structural key, memoized: an int, equal for two subtrees iff their canonical_json (and player) is
         equal (same kind/fields and same child keys, order-sensitive) — the cheap dedup key used by
         _unique_or and and_ in place of serializing every operand.
 
@@ -182,7 +199,7 @@ class Has(Rule):
         return {"k": "has", "i": self.item, "n": self.count}
 
     def _key(self):
-        return ("has", self.item, self.count)
+        return ("has", self.player, self.item, self.count)
 
     def _gate_summary(self) -> tuple:
         return (True, frozenset())
@@ -202,7 +219,7 @@ class ReachRegion(Rule):
         return {"k": "region", "r": self.region}
 
     def _key(self):
-        return ("region", self.region)
+        return ("region", self.player, self.region)
 
     def _gate_summary(self) -> tuple:
         return (False, frozenset((self.region,)))
@@ -220,7 +237,7 @@ class ReachLocation(Rule):
         return {"k": "loc", "l": self.location}
 
     def _key(self):
-        return ("loc", self.location)
+        return ("loc", self.player, self.location)
 
     def _gate_summary(self) -> tuple:
         return (True, frozenset())
