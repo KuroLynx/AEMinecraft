@@ -21,9 +21,9 @@ import java.util.List;
 /**
  * Rewrites an unlock tile's description in Archipelago's terms. It names the item as AP does
  * ("Structure Unlock: Ancient City"), in AP's colour for its classification. While the item has not
- * arrived it also says where it is: once hinted, one line per copy still waiting ("Structure Unlock:
- * Ancient City @ Location in Slot's world"); until then, a reminder that holding the tile asks for a
- * hint.
+ * arrived it also says where it is: once hinted, "Structure Unlock: Ancient City @ Location in Slot's
+ * world" (a progressive item's levels each take their own copy's hint, in hint order); until then, a
+ * reminder that holding the tile asks for a hint.
  *
  * <p>Hooked on the display rather than the widget so every advancement screen shows it, vanilla's
  * and the compat mods' alike. Screens read the description when they build a tile, so a hint that
@@ -43,27 +43,26 @@ public abstract class DisplayInfoDescriptionMixin {
             return;
         }
         Component base = archipelago_euclesia$apName(cir.getReturnValue(), tracker, registries);
-        if (registries.apItems().receivedCount(tracker.itemId()) >= tracker.count()) {
+        int received = registries.apItems().receivedCount(tracker.itemId());
+        if (received >= tracker.count()) {
             cir.setReturnValue(base);
             return;
         }
+        // One hint per tile. The copies still out are this tile's and the ones above it, oldest hint
+        // first: level received+1 takes the first, the next level the second, and so on — so a level
+        // keeps its copy until an earlier level's arrives, and then everything moves up one.
         List<HintLocationListener.Spot> spots = HintLocationListener.spots(tracker.itemId());
-        if (spots.isEmpty()) {
+        int index = tracker.count() - received - 1;
+        if (index >= spots.size()) {
             cir.setReturnValue(base.copy().append("\n").append(Component.translatable("gui.aem.hint.hold")
                     .withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC)));
             return;
         }
-        MutableComponent description = Component.empty();
-        for (HintLocationListener.Spot spot : spots) {
-            if (!description.getSiblings().isEmpty()) {
-                description.append("\n");
-            }
-            description.append(Component.translatable("gui.aem.hint.spot", base,
-                    Component.literal(spot.location()).withStyle(ChatFormatting.GREEN),
-                    Component.literal(spot.player()).withStyle(ChatFormatting.YELLOW))
-                    .withStyle(ChatFormatting.WHITE)); // the joining words; each argument keeps its own colour
-        }
-        cir.setReturnValue(description);
+        HintLocationListener.Spot spot = spots.get(index);
+        cir.setReturnValue(Component.translatable("gui.aem.hint.spot", base,
+                Component.literal(spot.location()).withStyle(ChatFormatting.GREEN),
+                Component.literal(spot.player()).withStyle(ChatFormatting.YELLOW))
+                .withStyle(ChatFormatting.WHITE)); // the joining words; each argument keeps its own colour
     }
 
     /**

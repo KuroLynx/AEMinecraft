@@ -37,7 +37,7 @@ public final class HintLocationListener implements APEventListener {
 
     private static volatile Map<Long, List<Spot>> spots = Map.of();
 
-    /** The unfound hinted copies of {@code itemId}; empty when it has not been hinted. */
+    /** The unfound hinted copies of {@code itemId}, oldest hint first; empty when it has not been hinted. */
     public static List<Spot> spots(long itemId) {
         return spots.getOrDefault(itemId, List.of());
     }
@@ -101,6 +101,15 @@ public final class HintLocationListener implements APEventListener {
             byItem.computeIfAbsent(APJson.getLong(hint, "item", -1L), id -> new ArrayList<>())
                     .add(new Spot(player != null ? player : String.valueOf(finder), location));
         }
+        // Keep each item's copies in the order they were first hinted, so a progressive item's Nth tile
+        // keeps pointing at the same copy. AP stores hints as a set, so the list it sends has no stable
+        // order of its own: copies already known keep their place, new ones go after them.
+        byItem.replaceAll((itemId, fresh) -> {
+            List<Spot> ordered = new ArrayList<>(spots(itemId));
+            ordered.retainAll(fresh);
+            fresh.stream().filter(spot -> !ordered.contains(spot)).forEach(ordered::add);
+            return ordered;
+        });
         set(byItem);
         AEMDebug.log("hints: {} unfound hinted items for this slot", byItem.size());
 
