@@ -80,6 +80,28 @@ public final class MobSpawnLockService {
         return firstLockedInStack(entity) != null;
     }
 
+    /**
+     * Cut a refused spawn out of the world's object graph, so nothing that DID enter still points at
+     * it. Vanilla assembles a jockey by mounting the rider BEFORE either half is added: a chicken
+     * jockey is a baby zombie that already rides its chicken by the time the add is offered, and
+     * {@code Zombie#finalizeSpawn} adds the chicken itself. Refusing the zombie therefore left it
+     * hanging off a chicken that IS in the world — and {@code Entity#saveWithoutId} writes
+     * {@code Passengers} straight from {@code getPassengers()}, with no check that the passenger was
+     * ever added. The refused zombie was saved with the chunk and came back on the next load through
+     * the disk path, which does not pass through {@code ServerLevel#addEntity}: baby zombies appeared
+     * in trial chambers with Zombie still locked.
+     *
+     * <p>Ejecting passengers matters for the mirror case (a locked mount whose rider is unlocked),
+     * where the rider is offered separately and would otherwise end up riding a vehicle that is not
+     * in the world. Deliberately not {@code discard()}: on a {@code LivingEntity} that fires
+     * {@code triggerOnDeathMobEffects}, and an ominous trial spawner hands out exactly the effects
+     * (Oozing, Infested, Weaving) that would then spawn mobs from a spawn we just refused.
+     */
+    public static void detachRefused(Entity entity) {
+        entity.stopRiding();
+        entity.ejectPassengers();
+    }
+
     /** Id-based variant, for callers that gate on a specific mob (e.g. the Ender Dragon fight). */
     public static boolean isMobLocked(String mobGameId) {
         if (!AEMServerRuntime.isArchipelagoReady()) {
