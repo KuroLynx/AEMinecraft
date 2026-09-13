@@ -128,7 +128,8 @@ public final class ArchipelagoChatListener implements APEventListener {
         };
     }
 
-    private static ChatFormatting itemColor(int flags) {
+    /** AP's item colours by classification flags, as its own clients draw item names. */
+    public static ChatFormatting itemColor(int flags) {
         if ((flags & 0b100) != 0) {
             return ChatFormatting.RED;          // trap
         }

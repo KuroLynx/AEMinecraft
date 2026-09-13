@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.AEMDebug;
 import fr.euclesia.mcarchipelago.archipelago.ArchipelagoClient;
+import fr.euclesia.mcarchipelago.server.ap.HintLocationListener;
 import fr.euclesia.mcarchipelago.server.gameplay.BiomeFinderTrackerState;
 import fr.euclesia.mcarchipelago.server.gameplay.FinderTarget;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
@@ -61,6 +62,7 @@ public final class APStateSync {
         PayloadTypeRegistry.clientboundPlay()
                 .register(BiomeTrackerSyncPayload.TYPE, BiomeTrackerSyncPayload.CODEC);
         PayloadTypeRegistry.clientboundPlay().register(APProgressPayload.TYPE, APProgressPayload.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(HintLocationsPayload.TYPE, HintLocationsPayload.CODEC);
         // Progress updates are coalesced onto the tick; see markProgressDirty.
         ServerTickEvents.END_SERVER_TICK.register(server -> flushProgress());
     }
@@ -118,6 +120,13 @@ public final class APStateSync {
             return;
         }
         ServerPlayNetworking.send(player, new ChatFilterSyncPayload(enabled));
+    }
+
+    /** Pushes where this slot's hinted items are to one player. Sent on join and on every hint change. */
+    public static void sendHints(ServerPlayer player) {
+        if (ServerPlayNetworking.canSend(player, HintLocationsPayload.TYPE)) {
+            ServerPlayNetworking.send(player, new HintLocationsPayload(HintLocationListener.all()));
+        }
     }
 
     /** Pushes one player's tracked biome (the Biome Finder HUD indicator). Sent on each pick. */

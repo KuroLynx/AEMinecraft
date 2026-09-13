@@ -1,11 +1,13 @@
 package fr.euclesia.mcarchipelago.client.hint;
 
 import fr.euclesia.mcarchipelago.AEM;
+import fr.euclesia.mcarchipelago.client.mixin.ScreenAccessor;
 import fr.euclesia.mcarchipelago.client.net.HintClient;
 import fr.euclesia.mcarchipelago.registry.APTrackerRegistry;
-import net.minecraft.ChatFormatting;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.resources.Identifier;
 import org.lwjgl.glfw.GLFW;
 
@@ -169,6 +171,61 @@ public final class HintHoldTracker {
             fired = true;
             lastFiredAt.put(id, System.currentTimeMillis());
             HintClient.requestHint(id);
+            // Close the screen: tiles read their description when the screen builds them, so the
+            // hinted location only shows on a fresh open. Kept, to be reopened once the hint is in
+            // (see clientTick). Deferred, because this runs mid-render.
+            Minecraft minecraft = Minecraft.getInstance();
+            closedForHint = minecraft.screen;
+            closedAtMillis = System.currentTimeMillis();
+            hintArrived = false;
+            minecraft.execute(() -> minecraft.setScreen(null));
+        }
+    }
+
+    // The screen a hint request closed, waiting to be put back; when it closed; and whether the new
+    // hint list is in yet.
+    private static Screen closedForHint;
+    private static long closedAtMillis;
+    private static boolean hintArrived;
+    // The answer is usually back within a frame or two, and a screen that blinks shut and straight
+    // back open reads as a glitch rather than as "your hint is in". So it stays closed at least this
+    // long, however fast the answer.
+    private static final long REOPEN_MIN_MILLIS = 1_000;
+    // A hint that changes nothing (the item was already hinted, or no room is connected) never sends
+    // a new hint list, so the screen comes back on its own after this long.
+    private static final long REOPEN_TIMEOUT_MILLIS = 5_000;
+
+    /** The hint list has arrived: the closed screen can come back once {@link #REOPEN_MIN_MILLIS} is up. */
+    public static void onHintsArrived() {
+        hintArrived = true;
+    }
+
+    /** Once per client tick: reopens the closed screen once its hint is in, or once waiting is pointless. */
+    public static void clientTick() {
+        if (closedForHint == null) {
+            return;
+        }
+        long waited = System.currentTimeMillis() - closedAtMillis;
+        if ((hintArrived && waited >= REOPEN_MIN_MILLIS) || waited >= REOPEN_TIMEOUT_MILLIS) {
+            reopen();
+        }
+    }
+
+    /**
+     * Puts back the screen the last hint request closed. The same instance, not a new one, so it works
+     * the same for a compat mod's replacement screen — but rebuilt: vanilla only runs a screen's init
+     * the first time it is shown, and without it the advancement screen would come back with the
+     * tiles (and descriptions) it had before the hint, no longer listening for advancement changes
+     * either. Its init re-registers it, which rebuilds every tile and restores the selected tab.
+     * Skipped if the player has opened something else in the meantime.
+     */
+    private static void reopen() {
+        Screen screen = closedForHint;
+        closedForHint = null;
+        Minecraft minecraft = Minecraft.getInstance();
+        if (screen != null && minecraft.screen == null && minecraft.player != null) {
+            minecraft.setScreen(screen);
+            ((ScreenAccessor) screen).archipelago_euclesia$rebuildWidgets();
         }
     }
 

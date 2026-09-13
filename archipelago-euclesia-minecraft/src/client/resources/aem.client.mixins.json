@@ -10,10 +10,12 @@
 		"AdvancementWidgetMixin",
 		"ClientAdvancementsAccessor",
 		"CreateWorldScreenMixin",
+		"DisplayInfoDescriptionMixin",
 		"GuiSpritesAccessor",
 		"InventoryLockRenderMixin",
 		"InventoryScreenAccessor",
 		"MinecraftWorldLoadMixin",
+		"ScreenAccessor",
 		"SpriteContentsAccessor",
 		"WorldListEntryMixin"
 	],
