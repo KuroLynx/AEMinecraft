@@ -15,6 +15,7 @@
 		"InventoryLockRenderMixin",
 		"InventoryScreenAccessor",
 		"MinecraftWorldLoadMixin",
+		"ScreenAccessor",
 		"SpriteContentsAccessor",
 		"WorldListEntryMixin"
 	],

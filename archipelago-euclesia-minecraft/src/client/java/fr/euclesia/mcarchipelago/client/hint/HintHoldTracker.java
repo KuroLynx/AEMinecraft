@@ -1,6 +1,7 @@
 package fr.euclesia.mcarchipelago.client.hint;
 
 import fr.euclesia.mcarchipelago.AEM;
+import fr.euclesia.mcarchipelago.client.mixin.ScreenAccessor;
 import fr.euclesia.mcarchipelago.client.net.HintClient;
 import fr.euclesia.mcarchipelago.registry.APTrackerRegistry;
 import net.minecraft.ChatFormatting;
@@ -211,10 +212,12 @@ public final class HintHoldTracker {
     }
 
     /**
-     * Puts back the screen the last hint request closed. The same instance, not a new one: reopening
-     * it re-runs its init, which rebuilds every tile (so the new description shows) and keeps the tab
-     * that was selected, and it works the same for a compat mod's replacement screen. Skipped if the
-     * player has opened something else in the meantime.
+     * Puts back the screen the last hint request closed. The same instance, not a new one, so it works
+     * the same for a compat mod's replacement screen — but rebuilt: vanilla only runs a screen's init
+     * the first time it is shown, and without it the advancement screen would come back with the
+     * tiles (and descriptions) it had before the hint, no longer listening for advancement changes
+     * either. Its init re-registers it, which rebuilds every tile and restores the selected tab.
+     * Skipped if the player has opened something else in the meantime.
      */
     private static void reopen() {
         Screen screen = closedForHint;
@@ -222,6 +225,7 @@ public final class HintHoldTracker {
         Minecraft minecraft = Minecraft.getInstance();
         if (screen != null && minecraft.screen == null && minecraft.player != null) {
             minecraft.setScreen(screen);
+            ((ScreenAccessor) screen).archipelago_euclesia$rebuildWidgets();
         }
     }
 
