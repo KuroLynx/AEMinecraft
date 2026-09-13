@@ -164,7 +164,7 @@ def _dedup_rules(export: dict) -> None:
         holders.extend(edges)
 
     # Canonical key of a subtree (commutative children sorted so reordered ANDs/ORs still share).
-    # ("n", …) marks a composite (hoistable), ("l", …) a leaf.
+    # ("n", …) marks a composite (hoistable), ("l", …) a leaf; ``composites`` records which ids are which.
     occurrences: Counter = Counter()
 
     # Memoized on the dict's identity, not its contents: to_dict() is itself memoized, so a
@@ -173,7 +173,17 @@ def _dedup_rules(export: dict) -> None:
     # treating it as a tree is what made a glitch-graph export unaffordable (each visit also
     # rebuilds the nested key tuples). Counting still sees every occurrence: a memo hit adds the
     # cached key's count without re-walking below it.
-    memo: dict[int, tuple] = {}
+    memo: dict[int, int] = {}
+
+    # Keys are interned to ints, so a composite's key is a flat tuple of its children's ints. As
+    # nested tuples, every Counter bump, sort and set lookup re-hashed or deep-compared the whole
+    # subtree (CPython never caches a tuple's hash) — a BACAP glitch export spent 10+ minutes here.
+    # Only equality between keys matters (ref ids follow traversal order), which interning keeps.
+    key_ids: dict[tuple, int] = {}
+    composites: set[int] = set()
+
+    def intern(shape: tuple) -> int:
+        return key_ids.setdefault(shape, len(key_ids))
 
     def key_of(node: dict):
         cached = memo.get(id(node))
@@ -182,13 +192,14 @@ def _dedup_rules(export: dict) -> None:
             return cached
         children = node.get("c")
         if children is None:
-            key = ("l", node["k"], node.get("i"), node.get("n"), node.get("r"),
-                   node.get("l"), node.get("v"))
+            key = intern(("l", node["k"], node.get("i"), node.get("n"), node.get("r"),
+                          node.get("l"), node.get("v")))
         else:
             child_keys = tuple(key_of(child) for child in children)
             if node["k"] in ("and", "or", "atleast"):
                 child_keys = tuple(sorted(child_keys))
-            key = ("n", node["k"], node.get("n"), child_keys)
+            key = intern(("n", node["k"], node.get("n"), child_keys))
+            composites.add(key)
         memo[id(node)] = key
         occurrences[key] += 1
         return key
@@ -196,7 +207,7 @@ def _dedup_rules(export: dict) -> None:
     for holder in holders:
         key_of(holder["rule"])
 
-    shareable = {key for key, count in occurrences.items() if count >= 2 and key[0] == "n"}
+    shareable = {key for key, count in occurrences.items() if count >= 2 and key in composites}
     if not shareable:
         export["definitions"] = {}
         return
@@ -215,15 +226,16 @@ def _dedup_rules(export: dict) -> None:
             return cached
         children = node.get("c")
         if children is None:
-            key = ("l", node["k"], node.get("i"), node.get("n"), node.get("r"),
-                   node.get("l"), node.get("v"))
+            key = intern(("l", node["k"], node.get("i"), node.get("n"), node.get("r"),
+                          node.get("l"), node.get("v")))
             new_node = node
         else:
             rewritten = [rewrite(child) for child in children]
             child_keys = tuple(child_key for _, child_key in rewritten)
             if node["k"] in ("and", "or", "atleast"):
                 child_keys = tuple(sorted(child_keys))
-            key = ("n", node["k"], node.get("n"), child_keys)
+            key = intern(("n", node["k"], node.get("n"), child_keys))
+            composites.add(key)
             new_node = {**node, "c": [child for child, _ in rewritten]}
         if key in shareable:
             ref_id = ref_ids.get(key)
