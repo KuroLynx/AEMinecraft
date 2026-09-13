@@ -3,7 +3,7 @@ package fr.euclesia.mcarchipelago.client.hint;
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.client.net.HintClient;
 import fr.euclesia.mcarchipelago.registry.APTrackerRegistry;
-import net.minecraft.ChatFormatting;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.resources.Identifier;
@@ -169,6 +169,10 @@ public final class HintHoldTracker {
             fired = true;
             lastFiredAt.put(id, System.currentTimeMillis());
             HintClient.requestHint(id);
+            // Close the screen: tiles read their description when the screen builds them, so the
+            // hinted location only shows on a fresh open. Deferred, because this runs mid-render.
+            Minecraft minecraft = Minecraft.getInstance();
+            minecraft.execute(() -> minecraft.setScreen(null));
         }
     }
 
