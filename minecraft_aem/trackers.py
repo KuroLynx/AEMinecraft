@@ -199,4 +199,16 @@ def build_trackers_export(world) -> dict:
                 "count": level,
             }
 
+    # How AP classifies each unlock item, as the network flags (progression 1, useful 2, trap 4), so
+    # the tile can draw its name in AP's colour before the item ever arrives. Read off the placed
+    # items rather than the item table: classification is decided per world at creation.
+    flags_by_id: dict[int, int] = {}
+    placed = [loc.item for loc in world.multiworld.get_locations() if loc.item]
+    for item in placed + list(world.multiworld.precollected_items[world.player]):
+        if item.player == world.player and item.code is not None:
+            flags_by_id[item.code] = flags_by_id.get(item.code, 0) | item.flags
+    for descriptor in trackers.values():
+        if descriptor["kind"] == "unlock" and descriptor["item_id"] in flags_by_id:
+            descriptor["flags"] = flags_by_id[descriptor["item_id"]]
+
     return trackers
