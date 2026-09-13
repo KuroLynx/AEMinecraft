@@ -47,6 +47,20 @@ from .constants import (
 )
 from ..content.registry import base_pack, overlay_packs
 
+# An exploding entity that is not a mob, mapped to the item a player must hold to set it off. Only
+# the ones a criterion's `cause` can name need an entry; a mob cause resolves through _entity_gid.
+# The station key the pack's container dump records for the smithing table. Trim recipes run on the
+# same block as transforms, so they share its Knowledge and its block requirement.
+_SMITHING_STATION = "smithing_transform"
+
+_EXPLOSION_ITEM = {
+    "minecraft:primed_tnt": "minecraft:tnt",
+    "minecraft:tnt_minecart": "minecraft:tnt_minecart",
+    "minecraft:wind_charge": "minecraft:wind_charge",
+    "minecraft:breeze_wind_charge": "minecraft:wind_charge",
+}
+
+
 # Triggers that imply a specific tool/block the criterion never names: hitting a target block is
 # gated by crafting one (redstone + hay), brewing by a brewing stand, etc. Reaching the implied item
 # is the meaningful gate, so the advancement inherits its acquisition logic.
@@ -656,7 +670,18 @@ class TriggerCompiler:
             # Levitate (Shulker bullets) → reach a Shulker (End City).
             return self._entity_gid("minecraft:shulker")
         if trigger == "minecraft:fall_after_explosion":
-            # Be launched by an explosion → a wind charge (Breeze) or TNT.
+            # Be launched by an explosion. The criterion's `cause` says WHAT must explode, and it was
+            # never read: 'Who Needs Rockets?' pins a wind charge, but the trigger alone priced it at
+            # any explosion going — a creeper, a ghast, a witch, TNT out of a chest — so it read as
+            # doable on the first creeper you meet instead of on the Trial Chambers. With a cause
+            # named, that entity is the price; with none, either of the two a player sets off on
+            # purpose.
+            cause = self._predicate_value(cond.get("cause"), "type")
+            if isinstance(cause, str) and not cause.startswith("#"):
+                named = self._any_opt(self._entity_gid(cause),
+                                      self.h.acquire(_EXPLOSION_ITEM.get(cause, cause)))
+                if named is not None:
+                    return named
             return self._any_opt(self.h.acquire("minecraft:wind_charge"),
                                  self.h.acquire("minecraft:tnt"))
         if trigger == "minecraft:fall_from_height":
@@ -1049,13 +1074,26 @@ class TriggerCompiler:
         """``killed_by_arrow``: kill with an arrow/projectile. The victim(s) are on ``victims`` (an AND
         of OR-groups), not ``entity``; the launcher is on ``fired_from_weapon``. Require the weapon
         (the pinned one, else any bow/crossbow + arrow) AND defeating each pinned victim group."""
-        weapon = self._any_acquire((cond.get("fired_from_weapon") or {}).get("items"))
+        # The launcher is a full item predicate, not just an id — read it as one, so an enchantment
+        # it demands is priced. Only `items` was read, so BACAP's multishot check asked for a plain
+        # crossbow.
+        weapon = self._item_predicate(cond.get("fired_from_weapon"))
         if weapon is None:
             weapon = self._all_req(
                 self._any_opt(self.h.acquire("minecraft:bow"), self.h.acquire("minecraft:crossbow")),
                 self.h.can_get_arrow(),
             )
-        return self._all_opt(weapon, self._victims_node(cond))
+        return self._all_opt(weapon, self._victims_node(cond), self._piercing_gate(cond))
+
+    def _piercing_gate(self, cond: dict) -> Rule | None:
+        """One arrow, more than one victim — that only happens with Piercing, and no criterion ever
+        says so. 'Two Birds, One Arrow' (2 victim groups), 'Arbalistic' (5 unique types), 'Justice'
+        and 'Good Luck Getting This One' all read as "own a crossbow" without it."""
+        victims = cond.get("victims") or []
+        unique = cond.get("unique_entity_types") or 0
+        if len(victims) < 2 and unique < 2:
+            return None
+        return self._enchant_source_node("piercing", True)
 
     def _victims_node(self, cond: dict) -> Rule | None:
         """The ``victims`` list as a gate: an AND over the groups, each an OR over the species it
@@ -1093,17 +1131,28 @@ class TriggerCompiler:
 
     def _recipe_id_node(self, recipe_id) -> Rule | None:
         """``recipe_crafted`` with no ``ingredients`` (only a ``recipe_id``). An armor-trim smithing
-        recipe (``<template>_smithing_trim``) → a smithing table + that trim template (structure loot);
-        otherwise treat the recipe id as its crafted item id and acquire that (cake, melon, templates)."""
+        recipe (``<template>_smithing_trim``) is priced below; otherwise treat the recipe id as its
+        crafted item id and acquire that (cake, melon, templates)."""
         if not isinstance(recipe_id, str):
             return None
         base = recipe_id.split(":", 1)[-1]
         suffix = "_smithing_trim"
         if base.endswith(suffix):
             template = base[: -len(suffix)]
-            return self._all_req(self.h.acquire("minecraft:smithing_table"),
-                                 self.h.acquire(f"minecraft:{template}"))
+            # Applying a trim takes four things, and this asked for two — the smithing table ITEM and
+            # the template. So 'Crafting a New Look' read as doable with no armor to trim, nothing to
+            # trim it with, and without Knowledge: Smithing Table, since owning the block is not
+            # permission to use it (_station_node is the half that says so, and it also asks for the
+            # block). The tags name exactly what the recipe accepts in its other two slots.
+            return self._all_req(self.h._station_node(_SMITHING_STATION),
+                                 self.h.acquire(f"minecraft:{template}"),
+                                 self._tag_acquire("#minecraft:trimmable_armor"),
+                                 self._tag_acquire("#minecraft:trim_materials"))
         return self.h.acquire(recipe_id)
+
+    def _tag_acquire(self, tag: str) -> Rule | None:
+        """Obtain ANY member of an item tag — the cheapest member is the real price, so they OR."""
+        return self._any_opt(*[self.h.acquire(item) for item in self._expand_item(tag)])
 
     def _location_node(self, cond: dict) -> Rule | None:
         """The `player` predicate, in either of its forms: a bare dict, or a list of

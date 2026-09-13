@@ -291,6 +291,51 @@ class BiomeFinder(Choice):
     default = 2
 
 
+class KeepInventory(Choice):
+    """How much of your inventory survives your death.
+
+    Vanilla drops everything you carry when you die. This option lets you keep some or all of it —
+    main inventory, armor and offhand, exactly the scope the keepInventory gamerule covers. Dropped
+    experience is never affected: you lose your XP on death whatever this is set to.
+
+    - disabled (default): vanilla. Everything drops.
+    - active: you always keep your whole inventory, from the first death onwards. No item needed.
+    - progressive: 'Progressive Keep Inventory' items are shuffled into the multiworld, and how much
+      you keep grows as you find them. With none received you drop everything, as in vanilla; with
+      every copy received you keep everything, as in active.
+
+    Under progressive, each copy is worth an equal share of the total: with N of the
+    keep_inventory_pool_size copies received you keep N / pool_size of what you carry, rounded to
+    whole slots and picked at random from the slots that actually hold something. So the item is a
+    gamble at first (half your slots, but you don't choose which half) and becomes a certainty once
+    you have them all.
+    """
+    display_name = "Keep Inventory"
+    option_disabled = 0
+    option_active = 1
+    option_progressive = 2
+    default = 0
+
+
+class KeepInventoryPoolSize(Range):
+    """How many 'Progressive Keep Inventory' items exist, when keep_inventory is progressive.
+
+    This is the granularity of the gauge, not a cap: collecting every copy always reaches 100% kept,
+    whatever the number is. A low value makes each copy a large, rare jump (2 copies = +50% each); a
+    high value makes them small, common steps (100 copies = +1% each) that take most of the seed to
+    complete.
+
+    Ignored unless keep_inventory is set to progressive.
+
+    Minimum value is 1
+    Maximum value is 100
+    """
+    display_name = "Keep Inventory Pool Size"
+    range_start = 1
+    range_end = 100
+    default = 10
+
+
 class BlazeAndCave(Toggle):
     """Include the BlazeandCave's Advancements Pack as extra checks.
 
@@ -417,6 +462,123 @@ class ItemGateBehavior(OptionDict):
                 raise OptionError(f"Player {player_name}: route '{route}' — {error}")
 
 
+class InventoryLock(OptionDict):
+    """Restrict how many inventory slots you can actually use.
+
+    Three modes:
+        - disabled (default): your full inventory is available, as normal.
+        - fixed: only 'slots' of your 36 hotbar+main-inventory slots are ever usable. The rest are
+          locked for the whole game — there is no item that unlocks them.
+        - progressive: you start with 'slots' of those 36 locked, and copies of the 'Progressive
+          Inventory Slot' item are shuffled into the multiworld — each one unlocks 'slots_per_item'
+          more, until everything locked is open.
+
+    Locked slots open in a fixed order: the hotbar first, then the offhand slot (if 'offhand' is
+    included), then the main-inventory row closest to the hotbar, then your armor slots (if
+    'armor' is included), then the two remaining main-inventory rows.
+
+    'offhand' and 'armor' mean different things depending on 'mode':
+        - fixed: true means that slot group is EXEMPT from the restriction — always usable
+          regardless of 'slots'. false means it is locked for the whole game, same as any
+          hotbar/main slot beyond 'slots'.
+        - progressive: true means that slot group is ADDED to what starts locked (offhand adds 1,
+          armor adds 4) and gets its own share of the unlock items. false means it is left alone,
+          always usable, with no unlock items generated for it.
+
+    Keys:
+        - mode: "disabled", "fixed", or "progressive". Default "disabled".
+        - slots: how many of your 36 hotbar+main-inventory slots are usable (fixed) or start
+          locked (progressive). 1-36. Default 36 (i.e. no restriction even if mode is turned on
+          without changing this).
+        - slots_per_item: progressive only — how many slots each 'Progressive Inventory Slot' item
+          unlocks. Default 1.
+        - offhand: true/false, see above. Default false.
+        - armor: true/false, see above. Default false.
+
+    Any key you omit keeps its default, so you only need to list what you're changing.
+
+    Example (progressive, starting with 10 main/hotbar slots locked plus your armor, two slots per
+    item):
+        inventory_lock:
+            mode: progressive
+            slots: 10
+            slots_per_item: 2
+            armor: true
+    """
+    display_name = "Inventory Lock"
+    valid_keys = {"mode", "slots", "slots_per_item", "offhand", "armor"}
+    default = {"mode": "disabled", "slots": 36, "slots_per_item": 1, "offhand": False, "armor": False}
+
+    _MODES = {"disabled", "fixed", "progressive"}
+
+    def verify(self, world, player_name: str, plando_options) -> None:
+        super().verify(world, player_name, plando_options)
+        mode = self.value.get("mode", "disabled")
+        if mode not in self._MODES:
+            raise OptionError(
+                f"Player {player_name}: inventory_lock mode must be one of {sorted(self._MODES)}, "
+                f"got '{mode}'."
+            )
+        slots = self.value.get("slots", 36)
+        if not isinstance(slots, int) or not (1 <= slots <= 36):
+            raise OptionError(f"Player {player_name}: inventory_lock slots must be 1-36, got '{slots}'.")
+        slots_per_item = self.value.get("slots_per_item", 1)
+        if not isinstance(slots_per_item, int) or slots_per_item < 1:
+            raise OptionError(
+                f"Player {player_name}: inventory_lock slots_per_item must be at least 1, "
+                f"got '{slots_per_item}'."
+            )
+
+    @property
+    def mode(self) -> str:
+        return self.value.get("mode", "disabled")
+
+    @property
+    def slots(self) -> int:
+        return self.value.get("slots", 36)
+
+    @property
+    def slots_per_item(self) -> int:
+        return self.value.get("slots_per_item", 1)
+
+    @property
+    def offhand(self) -> bool:
+        return bool(self.value.get("offhand", False))
+
+    @property
+    def armor(self) -> bool:
+        return bool(self.value.get("armor", False))
+
+    @property
+    def total_locked(self) -> int:
+        """Slots locked at the start of the game (progressive) — the base count plus offhand/armor
+        if included. Meaningless for fixed/disabled."""
+        return self.slots + (1 if self.offhand else 0) + (4 if self.armor else 0)
+
+    @property
+    def armor_unlock_items(self) -> int:
+        """Copies of 'Progressive Inventory Slot' needed before an armor slot exists to wear
+        anything in, in progressive mode with 'armor' included — 0 otherwise (fixed/disabled, or
+        armor not part of the lock, need no such requirement).
+
+        The unlock order is hotbar -> offhand -> the row closest to the hotbar -> armor -> the
+        rest, and only 'slots' worth of the 36-slot hotbar+main pool is ever locked, counted from
+        the LOW-priority end (the two rows farthest from the hotbar) — so the hotbar and the row
+        next to it are only part of what armor has to wait for once 'slots' pushes past 18, then
+        27. Below that (the common case), armor only waits on offhand (if included) plus its own
+        4 slots. Mirrors InventoryLockService.progressiveOrder on the mod side exactly — the two
+        must agree, since this is what makes the multiworld's fill place the items where this
+        logic says they're needed.
+        """
+        if self.mode != "progressive" or not self.armor:
+            return 0
+        hotbar_locked = max(self.slots - 27, 0)
+        nearest_row_locked = min(max(self.slots - 18, 0), 9)
+        offhand_count = 1 if self.offhand else 0
+        rank = hotbar_locked + offhand_count + nearest_row_locked + 4  # +4 = the armor slots themselves
+        return -(-rank // self.slots_per_item)  # ceil division
+
+
 @dataclass
 class MCOptions(PerGameCommonOptions):
     boss_list: BossList
@@ -432,7 +594,10 @@ class MCOptions(PerGameCommonOptions):
     challenge_sanity: ChallengeSanity
     structure_finder: StructureFinder
     biome_finder: BiomeFinder
+    keep_inventory: KeepInventory
+    keep_inventory_pool_size: KeepInventoryPoolSize
     blazeandcave: BlazeAndCave
     bacap_rewards: BacapRewards
     item_gate_behavior: ItemGateBehavior
     glitch_logic: GlitchLogic
+    inventory_lock: InventoryLock

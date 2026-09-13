@@ -60,13 +60,6 @@ def build_location_rules(world, glitch: bool = False) -> dict:
         if location_name in existing:
             rules[location_name] = condition
 
-    # BACAP reward events: one internal location per rewarded item, reachable once any advancement
-    # that grants it is reached. acquire() sources the item via has(<event>), so this is the only
-    # place the recursive reached() touches a reward — and the event location is a sink (nothing
-    # reaches FOR it), keeping the reached() graph acyclic. The matching event locations + locked
-    # items are created in create_regions; with bacap_rewards off, reward_events is empty.
-    for base, granting in helper.reward_events.items():
-        rules[f"{REWARD_EVENT_PREFIX}{base}"] = helper.any_of(*[helper.reached(n) for n in granting])
     return rules
 
 

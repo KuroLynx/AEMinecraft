@@ -6,6 +6,8 @@ import com.google.gson.JsonObject;
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.AEMDebug;
 import fr.euclesia.mcarchipelago.archipelago.ArchipelagoClient;
+import fr.euclesia.mcarchipelago.server.ap.HintLocationListener;
+import fr.euclesia.mcarchipelago.server.gameplay.BiomeFinderTrackerState;
 import fr.euclesia.mcarchipelago.server.gameplay.FinderTarget;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
 import fr.euclesia.mcarchipelago.server.runtime.APSlotGate;
@@ -55,7 +57,12 @@ public final class APStateSync {
         PayloadTypeRegistry.clientboundPlay()
                 .registerLarge(APStateSyncPayload.TYPE, APStateSyncPayload.CODEC, MAX_PAYLOAD_BYTES);
         PayloadTypeRegistry.clientboundPlay().register(FinderSyncPayload.TYPE, FinderSyncPayload.CODEC);
+        PayloadTypeRegistry.clientboundPlay()
+                .register(ChatFilterSyncPayload.TYPE, ChatFilterSyncPayload.CODEC);
+        PayloadTypeRegistry.clientboundPlay()
+                .register(BiomeTrackerSyncPayload.TYPE, BiomeTrackerSyncPayload.CODEC);
         PayloadTypeRegistry.clientboundPlay().register(APProgressPayload.TYPE, APProgressPayload.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(HintLocationsPayload.TYPE, HintLocationsPayload.CODEC);
         // Progress updates are coalesced onto the tick; see markProgressDirty.
         ServerTickEvents.END_SERVER_TICK.register(server -> flushProgress());
     }
@@ -105,6 +112,29 @@ public final class APStateSync {
             return;
         }
         ServerPlayNetworking.send(player, new FinderSyncPayload(tier, targets));
+    }
+
+    /** Pushes the chat filter's current on/off state to one player. Sent on toggle and on join. */
+    public static void sendChatFilter(ServerPlayer player, boolean enabled) {
+        if (!ServerPlayNetworking.canSend(player, ChatFilterSyncPayload.TYPE)) {
+            return;
+        }
+        ServerPlayNetworking.send(player, new ChatFilterSyncPayload(enabled));
+    }
+
+    /** Pushes where this slot's hinted items are to one player. Sent on join and on every hint change. */
+    public static void sendHints(ServerPlayer player) {
+        if (ServerPlayNetworking.canSend(player, HintLocationsPayload.TYPE)) {
+            ServerPlayNetworking.send(player, new HintLocationsPayload(HintLocationListener.all()));
+        }
+    }
+
+    /** Pushes one player's tracked biome (the Biome Finder HUD indicator). Sent on each pick. */
+    public static void sendBiomeTracker(ServerPlayer player, BiomeFinderTrackerState.Target target) {
+        if (!ServerPlayNetworking.canSend(player, BiomeTrackerSyncPayload.TYPE)) {
+            return;
+        }
+        ServerPlayNetworking.send(player, BiomeTrackerSyncPayload.of(target));
     }
 
     /** Pushes the current session to one player. */

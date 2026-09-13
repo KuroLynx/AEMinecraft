@@ -1,6 +1,7 @@
 package fr.euclesia.mcarchipelago.server.event;
 
 import fr.euclesia.mcarchipelago.AEM;
+import fr.euclesia.mcarchipelago.archipelago.ChatFilterPreference;
 import fr.euclesia.mcarchipelago.protocol.packet.outbound.SayPacket;
 import fr.euclesia.mcarchipelago.net.APStateSync;
 import fr.euclesia.mcarchipelago.server.connect.AEMServerConfig;
@@ -8,8 +9,8 @@ import fr.euclesia.mcarchipelago.server.connect.APWorldConnection;
 import fr.euclesia.mcarchipelago.server.connect.APWorldConnector;
 import fr.euclesia.mcarchipelago.server.gameplay.AdvancementBridge;
 import fr.euclesia.mcarchipelago.server.gameplay.BacapConfigService;
-import fr.euclesia.mcarchipelago.server.gameplay.BiomeFinderService;
 import fr.euclesia.mcarchipelago.server.gameplay.FillerTrapService;
+import fr.euclesia.mcarchipelago.server.gameplay.KeepInventoryService;
 import fr.euclesia.mcarchipelago.server.gameplay.KnowledgeUseGate;
 import fr.euclesia.mcarchipelago.server.gameplay.MobKillBridge;
 import fr.euclesia.mcarchipelago.server.gameplay.RootAdvancementService;
@@ -24,6 +25,7 @@ import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
 import fr.euclesia.mcarchipelago.server.session.APSessionCache;
 import fr.euclesia.mcarchipelago.server.session.PendingChecks;
 import fr.euclesia.mcarchipelago.server.runtime.APSlotGate;
+import fr.euclesia.mcarchipelago.server.service.ChatFilterSetting;
 import fr.euclesia.mcarchipelago.server.service.DeathLinkService;
 import fr.euclesia.mcarchipelago.server.service.DeathLinkSetting;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
@@ -64,6 +66,10 @@ public final class MinecraftEventBridge {
             // route other worlds' deaths here, so an operator's /aem deathlink off has to be known
             // by then or the run comes back up receiving the deaths they switched off.
             DeathLinkSetting.load(worldDir);
+            // The chat filter has no such timing constraint (it only affects what gets printed
+            // locally), but loading it here alongside DeathLink keeps every world-persisted
+            // Archipelago setting restored in one place, before anyone can join.
+            ChatFilterSetting.load(worldDir);
 
             APWorldConnection pending = APWorldConnection.takePending();
             if (pending != null) {
@@ -192,14 +198,16 @@ public final class MinecraftEventBridge {
             // scan sees the shared book rather than whatever this player personally happened to have.
             SharedAdvancementService.onPlayerJoin(player);
             AdvancementBridge.scanPlayer(player);
-            // Give back the soulbound Biome Finder if this slot owns it (covers first join and relog).
-            BiomeFinderService.ensureGranted(player);
             // Collect the filler banked while they were away. CATCH_UP: the traps in that backlog
             // went off for whoever was in the world at the time and are not re-run at a latecomer.
             FillerTrapService.applyPending(player, FillerTrapService.Mode.CATCH_UP);
             // Hand this client the session, so its advancement overlay and tracker tab have
             // something to draw. Last, so it reflects everything the join just did.
             APStateSync.sendTo(player);
+            // The chat filter is world-persisted and run-wide; a freshly joined player's options
+            // screen should reflect it immediately rather than only after the next toggle.
+            APStateSync.sendChatFilter(player, ChatFilterPreference.enabled());
+            APStateSync.sendHints(player);
         });
 
         // A player who logs out between being link-killed and the death landing would otherwise keep
@@ -212,17 +220,18 @@ public final class MinecraftEventBridge {
             StructureFinderDriver.onPlayerLeave(player);
         });
 
-        // The Biome Finder is soulbound: restore the exact stack saved at death (keeping its tracked
-        // biome), or grant a fresh one if none was saved.
-        ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
-            BiomeFinderService.restoreOnRespawn(newPlayer);
-        });
+        // Hand back what death took: the share of slots the keep_inventory option saved, each to the
+        // exact index it came from (which is why they must land in an inventory death has emptied).
+        // The Biome Finder no longer takes part — it is access, not an item, since it moved to a
+        // keybind and an inventory-screen button, so there is nothing of it to drop or restore.
+        ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) ->
+                KeepInventoryService.restoreOnRespawn(newPlayer));
 
-        // Before death drops are computed, save the finder (with its tracking) and strip it from the
-        // inventory so it isn't dropped; AFTER_RESPAWN restores it. Always allow the death itself.
+        // Before death drops are computed, strip the kept share out of the inventory so vanilla only
+        // drops the rest; AFTER_RESPAWN puts it back. Always allow the death itself.
         ServerLivingEntityEvents.ALLOW_DEATH.register((entity, damageSource, damageAmount) -> {
             if (entity instanceof ServerPlayer player) {
-                BiomeFinderService.onDeath(player);
+                KeepInventoryService.onDeath(player);
             }
             return true;
         });
@@ -254,8 +263,10 @@ public final class MinecraftEventBridge {
             // Name the speaker. One slot, several people: without this every player's chat reached
             // Archipelago as the slot with no way to tell who was talking — and since the vanilla
             // broadcast is suppressed below in favour of the echo, the name was missing in Minecraft
-            // chat too.
-            AEM.ARCHIPELAGO.client().send(new SayPacket(sender.getGameProfile().name() + ": " + text));
+            // chat too. A command is the exception: Archipelago only reads a Say as a command when
+            // '!' is the very first character, so prefixing one turns it back into ordinary chat.
+            String said = text.startsWith("!") ? text : sender.getGameProfile().name() + ": " + text;
+            AEM.ARCHIPELAGO.client().send(new SayPacket(said));
             return false;
         });
     }

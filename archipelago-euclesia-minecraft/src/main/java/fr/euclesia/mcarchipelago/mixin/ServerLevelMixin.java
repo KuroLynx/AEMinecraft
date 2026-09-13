@@ -22,6 +22,7 @@ public abstract class ServerLevelMixin {
     @Inject(method = "addEntity", at = @At("HEAD"), cancellable = true)
     private void archipelago_euclesia$blockLockedSpawn(Entity entity, CallbackInfoReturnable<Boolean> cir) {
         if (MobSpawnLockService.shouldBlockSpawn(entity)) {
+            MobSpawnLockService.detachRefused(entity);
             cir.setReturnValue(false);
         }
     }
@@ -41,6 +42,7 @@ public abstract class ServerLevelMixin {
         // would let it enter while addEntity separately refuses the locked rider, leaving a riderless
         // mount the spawner still counts as delivered.
         if (MobSpawnLockService.shouldBlockStack(entity)) {
+            MobSpawnLockService.detachRefused(entity);
             cir.setReturnValue(false);
         }
     }

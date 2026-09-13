@@ -44,9 +44,10 @@ public final class APTrackerRegistry {
      * One tracker's linkage. {@code locationName}/{@code locationId} are set for kill/boss
      * (an AP location); {@code itemId} is set for unlocks (a received AP item). {@code count} is the
      * number of copies needed to satisfy an unlock tile — 1 for normal unlocks, N for level N of a
-     * progressive item (e.g. Progressive Material Handling).
+     * progressive item (e.g. Progressive Material Handling). {@code flags} is the unlock item's AP
+     * classification as network flags, or {@code null} when the slot data predates it.
      */
-    public record Tracker(String kind, String locationName, Long locationId, Long itemId, int count) {}
+    public record Tracker(String kind, String locationName, Long locationId, Long itemId, int count, Integer flags) {}
 
     private final Map<String, Tracker> byId = new HashMap<>();
     // Category sub-root ids that have ≥1 active tracker this seed (so empty branches stay hidden).
@@ -66,7 +67,8 @@ public final class APTrackerRegistry {
                     data.has("location_name") ? data.get("location_name").getAsString() : null,
                     data.has("location_id") ? data.get("location_id").getAsLong() : null,
                     data.has("item_id") ? data.get("item_id").getAsLong() : null,
-                    data.has("count") ? data.get("count").getAsInt() : 1));
+                    data.has("count") ? data.get("count").getAsInt() : 1,
+                    data.has("flags") ? data.get("flags").getAsInt() : null));
             String category = categoryFor(entry.getKey());
             if (category != null) {
                 activeCategories.add(category);

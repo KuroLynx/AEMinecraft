@@ -7,7 +7,12 @@ import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.archipelago.ArchipelagoClient;
 import fr.euclesia.mcarchipelago.registry.APItemRegistry;
 import fr.euclesia.mcarchipelago.registry.APLocationRegistry;
+import fr.euclesia.mcarchipelago.client.mixin.ClientAdvancementsAccessor;
 import fr.euclesia.mcarchipelago.registry.APTrackerRegistry;
+import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.advancements.AdvancementProgress;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.resources.Identifier;
 
 import java.util.Map;
@@ -24,7 +29,7 @@ import java.util.Optional;
  * All caching is touched only from the render thread that calls {@link #stateFor}.
  *
  * <p>{@code GLITCHABLE} comes from the export's permissive twin rule (see stateFrom); otherwise
- * {@link LogicState#CHECKED}, {@link LogicState#IN_LOGIC} or {@link LogicState#OUT_OF_LOGIC}.
+ * {@link LogicState#CHECKED}, {@link LogicState#COLLECTED}, {@link LogicState#IN_LOGIC} or {@link LogicState#OUT_OF_LOGIC}.
  */
 public final class DataLogicProvider implements LogicProvider {
     private JsonObject parsedFrom;        // slot_data["logic"] object identity last parsed
@@ -80,7 +85,7 @@ public final class DataLogicProvider implements LogicProvider {
         APLocationRegistry locations = client.registries().apLocations();
         Optional<Long> locationId = locations.idForGameId(gameId);
         if (locationId.isPresent() && locations.isChecked(locationId.get())) {
-            return LogicState.CHECKED;
+            return isEarned(advancementId) ? LogicState.CHECKED : LogicState.COLLECTED;
         }
 
         return stateFrom(currentEvaluation(client, graph), locationName);
@@ -128,6 +133,26 @@ public final class DataLogicProvider implements LogicProvider {
             return LogicState.OUT_OF_LOGIC;
         }
         return stateFrom(currentEvaluation(client, graph), locationName);
+    }
+
+    /**
+     * Whether this client holds the advancement as done. A checked location is not proof of that: a
+     * release or collect from another game checks it too. Unknown (no connection, or the tile is not
+     * in the client's tree) counts as earned, so a tile only turns blue when we can actually see it
+     * was not.
+     */
+    private static boolean isEarned(Identifier advancementId) {
+        ClientPacketListener connection = Minecraft.getInstance().getConnection();
+        if (connection == null) {
+            return true;
+        }
+        AdvancementHolder holder = connection.getAdvancements().get(advancementId);
+        if (holder == null) {
+            return true;
+        }
+        AdvancementProgress progress = ((ClientAdvancementsAccessor) connection.getAdvancements())
+                .archipelago_euclesia$getProgress().get(holder);
+        return progress != null && progress.isDone(); // the server sends no progress for one never started
     }
 
     private static boolean isCategoryRoot(String gameId) {

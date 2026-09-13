@@ -9,7 +9,8 @@ from .logic.ast import Const
 from .logic.constants import *
 from .logic.root import set_rules
 from .logic_export import build_logic_export
-from .options import ChallengeSanity, ItemGateBehavior, MCOptions, StartDimension, StructureFinder
+from .options import (ChallengeSanity, ItemGateBehavior, KeepInventory, MCOptions, StartDimension,
+                      StructureFinder)
 from .regions import MCRegion
 from .trackers import build_trackers_export
 
@@ -271,6 +272,13 @@ class MCWorld(World):
         # them, so set_rules compiles their logic from BACAP's criteria instead — see set_rules).
         if self.options.blazeandcave:
             locations.update(LOCATIONS_BACAP)
+            # ...minus the vanilla ones BACAP deletes rather than rewrites. Its
+            # husbandry/obtain_netherite_hoe is a display-less `minecraft:impossible` stub, so the
+            # check could never be sent — and read as free, since an impossible criterion defers to a
+            # parent chain the stub does not have. BACAP ships its own "Serious Dedication" instead.
+            if BACAP_REMOVED:
+                locations = {name: loc_data for name, loc_data in locations.items()
+                             if loc_data.game_id not in BACAP_REMOVED}
 
         if self.options.challenge_sanity == ChallengeSanity.option_none:
             # A reused vanilla location's challenge-ness follows the active manifest: BACAP's frame
@@ -394,20 +402,6 @@ class MCWorld(World):
                 {"to": to_region.value, "rule": rule}
             )
 
-        # BACAP reward events: an internal, always-origin location per rewarded item, holding a
-        # locked (non-networked) event item. Its rule (set in set_rules from build_location_rules) is
-        # the OR of reaching a granting advancement, so the event item is collected exactly when one of
-        # those advancements is reachable — letting acquire() source the item via a non-recursive
-        # has() leaf instead of a cycle-forming reached(). Empty unless bacap_rewards is on. The event
-        # carries no networked id, so it sits outside the create_items pool/location balance.
-        menu_region = added_regions[MCRegion.MENU]
-        for base in helper.reward_events:
-            event_name = f"{REWARD_EVENT_PREFIX}{base}"
-            event_location = MCLocation(self.player, event_name, None, menu_region)
-            event_location.place_locked_item(
-                MCItem(event_name, ItemClassification.progression, None, self.player))
-            menu_region.locations.append(event_location)
-
         self.multiworld.regions += list(added_regions.values())
 
     def create_items(self) -> None:
@@ -438,6 +432,9 @@ class MCWorld(World):
                 continue
             if name in finder_modes:
                 continue
+            # Both counts are option-driven rather than items.csv's — see below.
+            if name in (ITEM_KEEP_INVENTORY, ITEM_INVENTORY_SLOT):
+                continue
             for _ in range(item_data.count):
                 pool.append(self.create_item(name))
 
@@ -451,6 +448,26 @@ class MCWorld(World):
             elif mode == StructureFinder.option_start:
                 for _ in range(count):
                     self.multiworld.push_precollected(self.create_item(finder_name))
+
+        # Keep Inventory: only 'progressive' puts items in the pool, and how many is the player's
+        # choice (keep_inventory_pool_size), since that count IS the mechanic — each copy is worth
+        # 100/count percentage points, so collecting them all always reaches 100% kept whatever the
+        # size. 'active' is inherent (always 100%) and 'disabled' is vanilla, so neither needs an
+        # item: nothing goes in the pool and nothing is precollected.
+        if self.options.keep_inventory == KeepInventory.option_progressive:
+            for _ in range(self.options.keep_inventory_pool_size.value):
+                pool.append(self.create_item(ITEM_KEEP_INVENTORY))
+
+        # Inventory Lock, progressive mode: enough copies to unlock everything that starts locked
+        # (slots + offhand/armor if included), 'slots_per_item' slots each, rounded up so the last
+        # copy still fully opens the inventory even if the split isn't even. disabled/fixed add
+        # nothing — fixed's restriction is permanent and needs no item.
+        if self.options.inventory_lock.mode == "progressive":
+            total_locked = self.options.inventory_lock.total_locked
+            per_item = self.options.inventory_lock.slots_per_item
+            item_count = -(-total_locked // per_item)  # ceil division
+            for _ in range(item_count):
+                pool.append(self.create_item(ITEM_INVENTORY_SLOT))
 
         # Mob spawn unlocks: only the mobs locked by the mob_spawn_lock option are added.
         for mob_name in self._get_locked_mobs():
@@ -703,6 +720,13 @@ class MCWorld(World):
             # Whether the Structure Finder exists at all this seed (disabled = no item in the pool /
             # on start). The mod uses this to skip its proactive structure scan when the finder is off.
             "structure_finder"     : self.options.structure_finder.value != self.options.structure_finder.option_disabled,
+            # How much of the inventory survives a death: "disabled" (vanilla), "active" (always
+            # everything) or "progressive" (a share that grows with the Progressive Keep Inventory
+            # items received). The pool size is the denominator the mod turns that count into a
+            # percentage with; emitted whatever the mode, like any other option (the mod only reads
+            # it when progressive).
+            "keep_inventory_mode"  : self.options.keep_inventory.current_key,
+            "keep_inventory_pool_size": self.options.keep_inventory_pool_size.value,
             # BACAP integration: whether the pack is in play, and whether to keep its item/XP rewards.
             # The mod runs blazeandcave's reward-disable functions on first world load accordingly.
             "blazeandcave"         : bool(self.options.blazeandcave.value),
@@ -714,6 +738,17 @@ class MCWorld(World):
             # The two workstation/storage routes inherit an explicit 'crafting' when they are absent, so a
             # config written before the GUI routes were split keeps meaning the same thing.
             "item_gate_behavior"   : self._item_gate_routes(),
+
+            # How much of the inventory is usable (see InventoryLock). Exported verbatim — the mod
+            # applies its own default (disabled) when this key is absent, so it is purely additive
+            # and needs no SLOT_DATA_VERSION bump.
+            "inventory_lock"       : {
+                "mode"          : self.options.inventory_lock.mode,
+                "slots"         : self.options.inventory_lock.slots,
+                "slots_per_item": self.options.inventory_lock.slots_per_item,
+                "offhand"       : self.options.inventory_lock.offhand,
+                "armor"         : self.options.inventory_lock.armor,
+            },
 
             # Datapacks/mods this seed REQUIRES to be installed at a matching version. The mod verifies
             # each against the loaded datapacks (pack repository) / Fabric mods on world load and refuses

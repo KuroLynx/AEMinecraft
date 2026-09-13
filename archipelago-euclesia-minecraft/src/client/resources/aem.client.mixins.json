@@ -3,11 +3,20 @@
 	"package": "fr.euclesia.mcarchipelago.client.mixin",
 	"compatibilityLevel": "JAVA_25",
 	"client": [
+		"AdvancementsScreenMixin",
 		"AdvancementTabMixin",
 		"AdvancementTabTypeMixin",
+		"AdvancementWidgetAccessor",
 		"AdvancementWidgetMixin",
+		"ClientAdvancementsAccessor",
 		"CreateWorldScreenMixin",
+		"DisplayInfoDescriptionMixin",
+		"GuiSpritesAccessor",
+		"InventoryLockRenderMixin",
+		"InventoryScreenAccessor",
 		"MinecraftWorldLoadMixin",
+		"ScreenAccessor",
+		"SpriteContentsAccessor",
 		"WorldListEntryMixin"
 	],
 	"injectors": {

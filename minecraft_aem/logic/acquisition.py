@@ -74,7 +74,7 @@ def _acquisition_table() -> dict:
         # Overlay packs (BACAP) contribute ONLY their `advancements` reward source onto the base
         # table (item -> advancement game_ids that grant it). Other overlay sources are intentionally
         # not merged yet (see registry.overlay_packs / the items-merge TODO). The advancements source
-        # is gated per seed by the bacap_rewards option in _acquire_from_sources, so merging it into
+        # is gated per seed by the bacap_rewards option in reward_sources, so merging it into
         # the once-cached, option-independent table is safe — an unused source for seeds with the
         # rewards (or the pack) off.
         for pack_dir in overlay_packs().values():
@@ -98,18 +98,14 @@ def _load_pack_acquisition(pack_dir_name: str) -> dict:
         return json.load(handle)
 
 
-def reward_events(world) -> dict[str, list[str]]:
+def reward_sources(world) -> dict[str, list[str]]:
     """Item base -> the active location names whose completion grants it as a BACAP advancement
     reward. Empty unless the pack AND its rewards are on (bacap_rewards), mirroring the mod disabling
     BACAP rewards on world load — with them off a reward is not a real way to obtain the item.
 
-    Drives the reward *event* model (see REWARD_EVENT_PREFIX, create_regions, build_location_rules):
-    each entry becomes an internal event location (rule = OR of reaching those advancements) holding a
-    locked event item, and ``acquire`` sources the item through ``has(event)`` — a non-recursive leaf.
-    AP's monotone event sweep then resolves rewards to a fixed point, instead of the recursive
-    ``reached()`` source that forms ``acquire(X) -> reached(A) -> A's rule -> acquire(X)`` cycles.
-    Only advancements that are an active check this seed contribute (an inactive tab / challenge_sanity
-    drop is simply absent), so an event with no granting location is never created."""
+    Read only by ``_with_reward``, i.e. by the GLITCH graph — strict logic never sources an item
+    through a reward. Only advancements that are an active check this seed contribute (an inactive
+    tab / challenge_sanity drop is simply absent), so an item nothing active grants is left out."""
     if not (bool(world.options.blazeandcave.value) and bool(world.options.bacap_rewards.value)):
         return {}
     location_by_gid = {
@@ -159,6 +155,12 @@ _NATURAL_SELF_MINED = frozenset({
     "cobbled_deepslate", "dripstone_block", "amethyst_block", "sandstone", "red_sandstone",
     "clay", "snow_block", "packed_ice", "blue_ice", "glowstone", "magma_block", "obsidian",
     "mossy_cobblestone", "mud", "packed_mud", "bone_block",
+    # Also here for _placed_block_origin rather than for self-mining: both are craftable from what
+    # they drop (a melon from 9 slices, a snow block from 4 snowballs) and neither has a recipe-free
+    # source in the packs, so without this a jungle melon and a snowy-biome snow layer would read as
+    # "someone must have placed that" and cost their own craft — a cycle, which would take
+    # melon_slice's and snowball's honest routes with it.
+    "melon", "snow",
 })
 # Blocks that cannot simply be found: they exist only where something put them there, so mining one
 # is not a free natural source the way mining gravel is. Not derivable from the packs — the palettes
@@ -171,11 +173,22 @@ _NATURAL_SELF_MINED = frozenset({
 # Keyed by block; the value is what the mining route must additionally require.
 #   * a carved pumpkin is a pumpkin carved WITH SHEARS; the ones you can simply find are the
 #     decorations in a woodland mansion or a pillager outpost ('Pumpa kungen!').
+#   * a wet sponge is in the sponge room of an OCEAN MONUMENT and nowhere else (the elder guardian's
+#     own drop is a separate source on the item). Mining it read as "be in the Overworld", which made
+#     wet_sponge — and through the furnace, sponge — free.
+#   * a decorated pot you can break for its sherds is one somebody assembled; the ones that generate
+#     are the trial chambers' (structures.json's palette says so). Mining a pot back for `sherds`
+#     skipped both the pot's own recipe and the brushing the sherds really come from.
+#   * a copper golem statue is a copper golem that finished oxidizing — no recipe, and it generates
+#     nowhere — so the golem is the price ("entity": its gate carries the copper and the pumpkin).
 _BLOCK_ONLY_FROM = {
     "nether_wart": ("structures", ("fortress", "bastion_remnant")),
     "wither_rose": ("boss", E_WITHER),
     "carved_pumpkin": ("structures_or_craft",
                        (("mansion", "pillager_outpost"), "minecraft:shears", "minecraft:pumpkin")),
+    "wet_sponge": ("structures", (S_OCEAN_MONUMENT,)),
+    "decorated_pot": ("structures", (S_TRIAL_CHAMBERS,)),
+    "copper_golem_statue": ("entity", E_COPPER_GOLEM),
 }
 # Blocks that are the PLACED FORM of the item they drop, under a different name — so mining one back
 # is circular the way mining a potted plant is, and reading it as a natural source makes the item
@@ -184,6 +197,37 @@ _BLOCK_ONLY_FROM = {
 # whose black candle needs string) costing nothing even once cobweb asked for a sword. The item's
 # own structure routes still stand — string is in plenty of chests.
 _PLACED_FORM_BLOCKS = frozenset({"tripwire"})
+# Farmland crops. Not one of these blocks generates in the open world: a crop is where somebody
+# PLANTED a seed — the player, or a village farmer inside a village's own farm — so mining one back
+# is as circular as mining a placed slime block, and the bare `access_region(Overworld)` it compiled
+# to let _unique_or absorption delete the item's real structure/mob gates (beetroot had no other
+# source at all, so it was simply free; potato and carrot lost their village/husk gates). The honest
+# price of a crop is the SEED you plant, which has its own sources — so that is what the mining route
+# asks for here. Keyed by crop block -> the item planted to grow it. A crop whose seed IS the item
+# being acquired (potato, carrot) resolves to the acquisition cycle it really is, and acquire() drops
+# the route, leaving the item's chest/mob sources to carry it.
+_PLANTED_CROPS = {
+    "wheat": "minecraft:wheat_seeds",
+    "carrots": "minecraft:carrot",
+    "potatoes": "minecraft:potato",
+    "beetroots": "minecraft:beetroot_seeds",
+    "melon_stem": "minecraft:melon_seeds",
+    "pumpkin_stem": "minecraft:pumpkin_seeds",
+    "torchflower_crop": "minecraft:torchflower_seeds",
+    "pitcher_crop": "minecraft:pitcher_pod",
+    # The grown plants themselves: the crop's last stage is a block of its own, and mining THAT was
+    # the free path that kept torchflower and pitcher plant (and with them the sniffer's whole point)
+    # costing nothing.
+    "torchflower": "minecraft:torchflower_seeds",
+    "pitcher_plant": "minecraft:pitcher_pod",
+}
+# Copper ages where it stands. An `exposed_/weathered_/oxidized_` block is the plain one after it
+# weathered, so mining one back is circular — but nothing in the dump says so: you don't CRAFT an
+# aged block (you wait), so it has no "recipes" key, `placed_only` read False, and every aged copper
+# item compiled to a bare Overworld region. Exposed copper bars cost nothing while plain ones cost a
+# copper ingot. The aged block's real price is the plain item plus time; the structures that generate
+# copper already aged still come through the palette route in _block_origin_node.
+_AGING_PREFIXES = ("exposed_", "weathered_", "oxidized_")
 # Tools a block demands for a drop that its loot table does not state, because the demand is the
 # block's HARDNESS rather than a match_tool condition. Cobweb is the case: the table hands out string
 # to anything that is not shears, but cobweb takes so long to break by hand that a sword is the only
@@ -200,6 +244,20 @@ _EXTRA_DROP_KNOWLEDGE = {
 _EXTRA_BLOCK_STRUCTURES = {
     "dried_ghast": ("nether_fossil",),
 }
+# What has to be standing in front of you before an empty bucket becomes a FULL one. Filling a bucket
+# is a use-interaction, which appears in no recipe, loot table or trade, so the dump has no record of
+# the act at all — see the filled-bucket branch in _acquire_compute for what that cost. Keyed by the
+# filled item -> the mobs that can fill it (OR: any one of them will do). A bucket filled from the
+# world rather than from a mob — water, lava, powder snow — is absent, and needs only the bucket.
+_BUCKET_CONTENT_MOBS: dict[str, tuple[str, ...]] = {
+    "axolotl_bucket": (E_AXOLOTL,),
+    "tadpole_bucket": (E_TADPOLE,),
+    "cod_bucket": (E_COD,),
+    "salmon_bucket": (E_SALMON,),
+    "pufferfish_bucket": (E_PUFFERFISH,),
+    "tropical_fish_bucket": (E_TROPICAL_FISH,),
+    "milk_bucket": (E_COW, E_MOOSHROOM, E_GOAT),  # any of the three gives milk
+}
 # needs_<tier>_tool tag -> the material tier the mining pickaxe (and the player) must have reached.
 _NEEDS_TIER = {"stone": MAT_STONE, "iron": MAT_IRON, "diamond": MAT_DIAMOND}
 _BLOCK_MINING: dict | None = None
@@ -215,6 +273,18 @@ def _block_mining() -> dict:
 
 
 _BLOCK_STRUCTURES: dict | None = None
+
+
+def _aged_source(block: str) -> str | None:
+    """The plain item an aged copper block weathered FROM (``exposed_copper_bars`` ->
+    ``minecraft:copper_bars``), or ``None`` when the block is not an aged form of something the
+    acquisition table knows. See ``_AGING_PREFIXES``."""
+    for prefix in _AGING_PREFIXES:
+        if block.startswith(prefix):
+            plain = block[len(prefix):]
+            if plain in _acquisition_table():
+                return f"minecraft:{plain}"
+    return None
 
 
 def _block_structures() -> dict:
@@ -304,11 +374,13 @@ class RuleHelper:
         # off there is no such item, so the requirement vanishes rather than blocking everything.
         self.structure_finder_enabled = (world.options.structure_finder.value
                                          != world.options.structure_finder.option_disabled)
-        # BACAP advancement rewards, modeled as event items: base item -> active location names that
-        # grant it (empty unless bacap_rewards is on). acquire() sources a rewarded item via
-        # has(REWARD_EVENT_PREFIX + base); the event location carrying the reached() OR is created in
-        # create_regions / build_location_rules. See reward_events for the cycle rationale.
-        self.reward_events = reward_events(world)
+        # inventory_lock: copies of 'Progressive Inventory Slot' needed before an armor slot exists
+        # to wear anything in (see InventoryLock.armor_unlock_items / self.inventory_slots). 0 when
+        # armor isn't part of the lock this seed, same "no requirement" shape as self.knowledge.
+        self.armor_unlock_items = world.options.inventory_lock.armor_unlock_items
+        # BACAP advancement rewards: base item -> the active location names that grant it (empty
+        # unless bacap_rewards is on). Consumed by _with_reward, glitch graph only.
+        self.reward_sources = reward_sources(world)
         # -- glitch partition ------------------------------------------------
         # Two graphs come out of this compiler. STRICT (glitch=False) is what Archipelago fills
         # against: it drops any alternate route that leans on luck or on content the seed doesn't
@@ -346,17 +418,37 @@ class RuleHelper:
         # acquire(base, stack) is pure. Datapack-scale compilation calls it millions of times for the
         # same (base, stack) pairs (planks/sticks/ingots recur in every recipe); caching collapses
         # that. Returned nodes are shared read-only across rules, which is safe (eval + to_dict only).
-        self._acquire_cache: dict[tuple[str, frozenset, frozenset], object] = {}
+        self._acquire_cache: dict[tuple[str, frozenset, frozenset, bool], object] = {}
         # Structures whose "how do you find one" gate is being computed right now (see structure()).
         # It is part of the acquire() cache key because it changes the answer: while resolving the
         # stronghold's gate, ender pearls must not be sourced from a stronghold chest, and that
         # narrower result must not be cached over the ordinary one.
         self._finding_stack: frozenset = frozenset()
+        # True while working out what a trade COSTS (see _trade_currency). Like _finding_stack it is
+        # part of the acquire() cache key, because it changes the answer: while pricing the emeralds
+        # a trade needs, emeralds must not be sourced from a trade, and that narrower result must not
+        # be cached over the ordinary one.
+        self._pricing_trade: bool = False
         # Thunks (deferred so cross-referencing mobs don't recurse at construction).
         self.structure_bound_mobs = {
             # Overworld — structure-locked
             E_CAT            : lambda: self.any_of(self.any_village(), self.structure(S_SWAMP_HUT)),
             E_ALLAY          : lambda: self.any_of(self.structure(S_PILLAGER_OUTPOST), self.structure(S_MANSION)),
+            # A villager is only ever IN a village — nothing spawns one in the open world. Without
+            # this, 'Entity Unlock: Villager' alone was the whole price: 'Kill Entity: Villager' (and
+            # every rule that just wants a villager nearby) read in logic with all five villages
+            # still locked.
+            #
+            # Curing a zombie villager is the one route that needs no village, and it is deliberately
+            # NOT modelled here. Naming it — either rebuilt through acquire() or as
+            # reached('Zombie Doctor') — puts a villager back inside its own price: the golden apple
+            # and the weakness potion resolve through ingredients that list villager trades, so
+            # can_trade_villager leads back to this thunk. As a rule tree that is a location cycle,
+            # and AP's can_reach_location has no cycle guard — it recursed until the interpreter's
+            # stack gave out, mid-fill (a full-pool reachability check never notices; only a real
+            # Generate.py run does). Ignoring the route only makes logic stricter than the game, which
+            # is the safe direction.
+            E_VILLAGER       : lambda: self.any_village(),
             E_SILVERFISH     : lambda: self.structure(S_STRONGHOLD),
             E_WARDEN         : lambda: self.structure(S_ANCIENT_CITY),
             E_ENDERMITE      : lambda: self.entity(E_ENDERMAN),  # spawns from Ender Pearl throws
@@ -510,18 +602,36 @@ class RuleHelper:
             S_STRONGHOLD: lambda: self.acquire("minecraft:ender_eye"),
         }
         # Mobs whose only natural spawn is a specific, searchable biome — gated on the Biome Finder
-        # (when enabled), since that's how you locate the biome. The Dried Ghast (→ Happy Ghast) can
-        # also come from Piglin bartering, so there the finder is only needed without that path.
-        self.biome_bound_mobs = {
-            E_AXOLOTL    : lambda: self.needs_biome_finder(),   # Lush Caves
-            E_GOAT       : lambda: self.needs_biome_finder(),   # mountain biomes
-            E_FROG       : lambda: self.needs_biome_finder(),   # temperate / warm / cold variants
-            E_CREAKING   : lambda: self.needs_biome_finder(),   # Pale Garden only
-            E_HAPPY_GHAST: lambda: self.any_of(                 # Dried Ghast: Soul Sand Valley or bartering
+        # (when enabled), since that's how you locate the biome.
+        #
+        # DERIVED, not curated: data.BIOME_BOUND_MOBS is every mob whose spawn biomes all sit in
+        # RARE_BIOMES, read off the dump's `biomes` field. The judgement lives in that biome list,
+        # where it belongs — this used to be five hand-written lambdas, and the mooshroom was simply
+        # missing from them, so 'Super Mooshroom' asked for no Mushroom Fields while its own parent
+        # advancement did.
+        self.biome_bound_mobs = {name: (lambda: self.needs_biome_finder())
+                                 for name in BIOME_BOUND_MOBS}
+        # …plus the three the spawn lists cannot speak for, because what they cost is not a search:
+        self.biome_bound_mobs.update({
+            # Frogs spawn in ordinary swamps, so the derivation rightly leaves them alone — but a frog
+            # is only interesting for its three CLIMATE variants (the three froglights), and those
+            # really are three journeys.
+            E_FROG       : lambda: self.needs_biome_finder(),
+            # No spawner entry at all: a creaking hatches from a creaking heart, which generates only
+            # in the Pale Garden.
+            E_CREAKING   : lambda: self.needs_biome_finder(),
+            # Likewise none: a happy ghast comes from a dried ghast, which is Soul Sand Valley — or
+            # Piglin bartering, so the finder is only needed without that path.
+            E_HAPPY_GHAST: lambda: self.any_of(
                 self.can_barter(),
                 self.needs_biome_finder(),
             ),
-        }
+        })
+        if not BIOME_BOUND_MOBS:
+            # A content pack dumped before `biomes` existed says nothing about spawn biomes, and
+            # silence must not read as "gate nothing" — that would quietly loosen every one of these.
+            for name in (E_AXOLOTL, E_GOAT, E_MOOSHROOM):
+                self.biome_bound_mobs.setdefault(name, lambda: self.needs_biome_finder())
 
     # -----------------------------------------------------------------------
     # Global
@@ -1201,7 +1311,7 @@ class RuleHelper:
     def can_get_slimeball(self):
         return self.any_of(
             self.entity(E_SLIME),  # Slime drop
-            self.can_trade_wandering_trader(),  # Wandering Trader sells slime balls
+            self.can_trade_wandering_trader(),  # a trader sells them — glitch graph only
         )
 
     def can_get_seagrass(self):
@@ -1346,19 +1456,67 @@ class RuleHelper:
     # -----------------------------------------------------------------------
     # Trades
     # -----------------------------------------------------------------------
-    def can_trade_villager(self, tier: int = 1):
-        """Trade with a profession villager in a village at trade level ``tier``
-        (novice = 1 … master = 5). When the villager_trust option is on, the level
-        is gated behind that many Progressive Villager Trust items."""
+    def _trade_currency(self):
+        """What a trade costs the player: emeralds.
+
+        Every buy offer takes them, and neither trade helper used to ask for any — which for a
+        villager merely made a real gate cheaper, but for the Wandering Trader (no village, no
+        profession, no trust tier) left ``can_trade_wandering_trader`` as nothing but "be in the
+        Overworld". Anything whose only source was a trader offer — a pufferfish bucket, a bucket of
+        tropical fish — was therefore obtainable holding nothing at all, and worse, a free branch in
+        an OR lets _unique_or absorption delete the gates beside it (``can_get_slimeball`` is slime
+        drop OR trader offer, so a seed locking hostiles lost its Slime gate to the free trader).
+
+        Emeralds are themselves traded, so acquire("emerald") walks back here. In strict logic it
+        no longer can: emeralds resolve to can_sell_to_villager, which asks for no currency. The
+        ``_pricing_trade`` guard is what holds the glitch graph together, where the emerald branch
+        does read the record's own trade routes — inside the guard this returns free rather than
+        recursing, because a trade route cannot be what pays for itself."""
+        if self._pricing_trade:
+            return Const(True)
+        self._pricing_trade = True
+        try:
+            emeralds = self.acquire("minecraft:emerald")
+        finally:
+            self._pricing_trade = False
+        return emeralds if emeralds is not None else Const(True)
+
+    def can_sell_to_villager(self, tier: int = 1):
+        """Sell TO a profession villager at trade level ``tier`` — the way emeralds enter a world.
+
+        The same villager, village and trust tier a buy offer needs, minus the currency: a sell
+        offer is what *pays* you, so it must not ask for the emeralds it is how you get. Only
+        acquire("emerald") wants this shape; everything else trades in the other direction and
+        should use ``can_trade_villager``."""
         base = self.all_of(self.entity(E_VILLAGER), self.any_village())
         if self.villager_trust:
             return self.all_of(base, self.has(ITEM_VILLAGER_TRUST, tier))
         return base
 
+    def can_trade_villager(self, tier: int = 1):
+        """Trade with a profession villager in a village at trade level ``tier``
+        (novice = 1 … master = 5), holding the emeralds it costs. When the
+        villager_trust option is on, the level is gated behind that many
+        Progressive Villager Trust items."""
+        return self.all_of(self.can_sell_to_villager(tier), self._trade_currency())
+
     def can_trade_wandering_trader(self):
-        """Trade with a Wandering Trader. It has no trade levels, so it is never
-        gated by villager_trust — only by reaching the mob."""
-        return self.entity(E_WANDERING_TRADER)
+        """Trade with a Wandering Trader — GLITCH GRAPH ONLY. Strict logic never sees this route.
+
+        You cannot make a trader spawn, and you cannot make one roll the offer you want, so it is
+        not a route fill may plan around. Being merely *demoted* was not enough: _demote only
+        applies to routes that come out of the acquisition table, so a hand-written helper that
+        OR-ed this in — can_get_slimeball is slime drop OR trader offer — put the trade straight
+        into the strict graph, where _unique_or absorption reads ``A ∨ (A ∧ B)`` as ``A`` and the
+        cheaper trade branch deleted the Slime gate beside it. Returning Const(False) in strict mode
+        makes that impossible from every call site at once: or_ drops a false branch instead of
+        letting it swallow its siblings.
+
+        In the glitch graph it is the real thing: reach one, and hold the emeralds it charges (no
+        trade levels, so villager_trust never applies)."""
+        if not self.glitch:
+            return Const(False)
+        return self.all_of(self.entity(E_WANDERING_TRADER), self._trade_currency())
 
     def can_trade(self):
         """The player can perform *some* trade — a novice (min-level) villager or a
@@ -1418,6 +1576,13 @@ class RuleHelper:
             return Const(True)
         return Has(self.player, f"{KNOWLEDGE_PREFIX}{item}")
 
+    def inventory_slots(self, count: int):
+        # Same "no requirement" shape as self.knowledge: 0 means either the lock isn't in a mode
+        # that generates this item, or the slot group in question isn't part of it this seed.
+        if count <= 0:
+            return Const(True)
+        return self.has(ITEM_INVENTORY_SLOT, count)
+
     # -----------------------------------------------------------------------
     # Item acquisition (used by the trigger compiler to resolve item criteria)
     #
@@ -1446,7 +1611,7 @@ class RuleHelper:
             return self.material(tier) if tier is not None else None
         # Memoize on (base, stack): the result is pure for this helper, so the same item is computed
         # once and shared. Datapack compilation calls acquire ~9M times for far fewer distinct keys.
-        key = (base, _stack, self._finding_stack)
+        key = (base, _stack, self._finding_stack, self._pricing_trade)
         cache = self._acquire_cache
         if key in cache:
             return cache[key]
@@ -1508,7 +1673,18 @@ class RuleHelper:
         if base in _PALE_GARDEN_BLOCKS:
             found = self.all_of(self.strict_only(self.needs_biome_finder()),
                                 self.access_region(REGION_OVERWORLD))
-            return self.all_of(found, self.entity(E_CREAKING)) if base == "creaking_heart" else found
+            # Finding the biome is ON TOP of the block's own price, not instead of it. Returning the
+            # biome alone threw away everything _acquire_from_sources knows, and for the two blocks
+            # that only drop to a tool that mattered: pale oak leaves and pale moss want shears or
+            # Silk Touch (block_mining says so), so a pale leaf block was obtainable with a Biome
+            # Finder and nothing else while ordinary oak leaves correctly asked for Knowledge: Shear
+            # Handling. The creaking heart carries the mob on top: it is only a creaking heart while
+            # the creaking it spawns is alive.
+            sources = self._acquire_from_sources(base, _stack | {base})
+            parts = [found] if sources is None else [found, sources]
+            if base == "creaking_heart":
+                parts.append(self.entity(E_CREAKING))
+            return self.all_of(*parts)
 
         # An elytra exists only in an End City ship — placed in an item frame, not a loot table the
         # indexer reads — so it has no acquisition record and would fall back to its bare material
@@ -1538,6 +1714,61 @@ class RuleHelper:
         if base == "sniffer_egg":
             return self.all_of(self.has_brush(), self.structure(S_OCEAN_RUIN_WARM))
 
+        # Emeralds come out of a villager, and in strict logic out of nothing else.
+        #
+        # The dump lists three other families and every one of them is a route AP should not plan
+        # around. Emerald ore generates in ONE biome group (the windswept/mountain set) in one-block
+        # veins, so "mine it" is really "wander until you find that biome" — the same thing the
+        # Biome Finder exists for, and not a thing fill may assume; the smelting recipes are that
+        # same ore wearing a furnace. The chest routes (shipwreck, buried treasure, the five
+        # villages, a desert pyramid …) sit above the glitch threshold on paper, so _demote kept
+        # them, and they left emeralds — the currency every trade is priced in — reading as loot
+        # rather than as the thing a village gives you.
+        #
+        # So: sell to a villager. can_sell_to_villager, not can_trade_villager, because a sell offer
+        # is what pays you and must not be charged the emeralds it hands over (that is also what
+        # keeps _trade_currency's cycle from re-entering here). Everything else stays in the glitch
+        # graph, where a player who does find an emerald vein is not told they cannot have it.
+        if base == "emerald":
+            sell = self.can_sell_to_villager()
+            if not self.glitch:
+                return self._with_reward(base, sell)
+            sources = self._acquire_from_sources(base, _stack | {base})
+            found = sell if sources is None else self._unique_or([sell, sources])
+            return self._with_reward(base, self._coarsen(found))
+
+        # A filled bucket is made by a USE interaction — right-click a fluid, a mob or a cauldron
+        # with an empty bucket — and that act appears in no recipe, loot table or trade, so the dump
+        # has no record of it. Two different failures followed from that, and this branch is here to
+        # end both:
+        #
+        #   * an item with NO record (lava, powder snow, axolotl, tadpole, salmon) fell through to
+        #     the `*_bucket` suffix rule in _acquire_fallback, which strips the suffix and asks for
+        #     the empty bucket — never for what fills it. An axolotl bucket, a tadpole bucket and a
+        #     salmon bucket compiled to rules byte-identical to a plain bucket: no axolotl, no frog.
+        #   * an item WITH a record never reached that fallback at all (_acquire_from_sources
+        #     returned non-None), so it was priced purely by whatever incidental route the dump
+        #     happened to find it on: milk was "loot a trial chamber" with no cow and no bucket in
+        #     the rule, water was "loot a village", and pufferfish/tropical fish were a lone
+        #     Wandering Trader offer, which coarsens to a bare region and left them free.
+        #
+        # So model the real route for EVERY filled bucket — the bucket, plus whatever fills it — and
+        # OR the record's own routes alongside it, because a bucket of fish bought from a trader or
+        # pulled out of a chest genuinely needs no bucket of your own.
+        if base.endswith("_bucket"):
+            routes = []
+            bucket = self.acquire("minecraft:bucket", _stack | {base})
+            if bucket is not None:
+                mobs = _BUCKET_CONTENT_MOBS.get(base, ())
+                content = self.any_of(*[self.entity(name) for name in mobs]) if mobs else Const(True)
+                routes.append(self.all_of(bucket, content))
+            sources = self._acquire_from_sources(base, _stack)
+            if sources is not None:
+                routes.append(sources)
+            if not routes:
+                return None
+            return self._with_reward(base, self._coarsen(self._unique_or(routes)))
+
         # Tools / armor / gated craftables (bow, fishing rod, shears, …) need their Knowledge to be
         # USED however they were obtained — but they are still obtained via their real sources, each
         # carrying its own region. So gate on the Knowledge AND the obtainability (recipe ingredients,
@@ -1549,9 +1780,14 @@ class RuleHelper:
             knowledge_name, tier = TOOL_LOCKS[base]
             sources = self._acquire_from_sources(base, _stack)
             obtain = self._coarsen(sources) if sources is not None else self.material(tier)
-            # A tool granted as a reward still needs its Knowledge to be used, so the reward joins
-            # `obtain` (inside the Knowledge gate), not the whole node.
-            return self.all_of(self.knowledge(knowledge_name), self._with_reward(base, obtain))
+            gates = [self.knowledge(knowledge_name)]
+            # Armor pieces additionally need an armor slot to wear them in (inventory_lock): having
+            # the Knowledge and the material is not enough if there is nowhere to put the thing on.
+            if knowledge_name == K_ARMOR:
+                gates.append(self.inventory_slots(self.armor_unlock_items))
+            # A tool granted as a reward still needs its Knowledge (and, for armor, a slot) to be
+            # used, so the reward joins `obtain` (inside the gates), not the whole node.
+            return self.all_of(*gates, self._with_reward(base, obtain))
 
         # A gated station/container block is the same shape as a tool: its Knowledge blocks crafting and
         # picking it up (tool_locks), so obtaining the BLOCK ITEM needs the Knowledge on top of its
@@ -1589,24 +1825,23 @@ class RuleHelper:
 
         A reward is an alternate route that depends on finishing other advancements, so strict logic
         ignores it: fill must not hand you a tool through a reward and call Pickaxe Handling
-        satisfied. That also means the cycle this used to have to dodge (``acquire -> reached -> rule
-        -> acquire``) can't arise, because the graph carrying rewards is never filled against.
+        satisfied. That also means the cycle this would otherwise have to dodge (``acquire ->
+        reached -> rule -> acquire``) can't arise, because the graph carrying rewards is never
+        filled against — AP's recursive reached() only evaluates the strict graph.
 
-        Which is why the glitch graph states it as ``loc(<granting advancement>)`` rather than the
-        internal reward EVENT item: the mod resolves ``has()`` against items the slot actually
-        received, and an event item never is one, so a ``has`` form would evaluate false in the
-        tracker forever. ``loc`` is a node the mod's evaluator resolves by its own fixed point
-        (RuleNode/LogicEvaluation), cycles and all. reward_events is empty unless bacap_rewards is
-        on, so this is a no-op otherwise."""
-        if not self.glitch or base not in self.reward_events:
+        So the route is stated as ``loc(<granting advancement>)``, which the mod resolves by its own
+        fixed point (RuleNode/LogicEvaluation), cycles and all. reward_sources is empty unless
+        bacap_rewards is on, so this is a no-op otherwise."""
+        if not self.glitch or base not in self.reward_sources:
             return node
-        reward = self.any_of(*[self.reached(name) for name in self.reward_events[base]])
+        reward = self.any_of(*[self.reached(name) for name in self.reward_sources[base]])
         return reward if node is None else self.any_of(node, reward)
 
     def _acquire_from_sources(self, base: str, _stack: frozenset):
         """OR over every modeled way to obtain ``base`` (recipe, drop, mining, silk-mining, trade,
-        structure loot, gameplay), each carrying its region/tier gate; ``None`` when the item has no
-        acquisition record or no usable source. Shared by ordinary items and tool/armor gates."""
+        structure loot, archaeology, gameplay), each carrying its region/tier gate; ``None`` when the
+        item has no acquisition record or no usable source. Shared by ordinary items and tool/armor
+        gates."""
         record = _acquisition_table().get(base)
         if record is None:
             return None
@@ -1619,8 +1854,16 @@ class RuleHelper:
         loose: list = []
 
         def add(node, glitchy: bool = False):
-            if node is not None:
-                (loose if glitchy else options).append(node)
+            # Const(False) is not a source, it is the absence of one — an inactive structure, or a
+            # route this graph doesn't carry (the Wandering Trader in strict mode). Dropping it here
+            # rather than letting or_ swallow it later matters, because _demote counts the lists it
+            # is given: a lone Const(False) in `strict` would read as "something dependable exists"
+            # and throw away the flimsy routes that are the item's real ones, and a lone Const(False)
+            # in `loose` would make an item whose only listed source is a trade read as unobtainable
+            # instead of falling through to _acquire_fallback.
+            if node is None or (isinstance(node, Const) and not node.value):
+                return
+            (loose if glitchy else options).append(node)
 
         def unreliable(kind: str, name: str) -> bool:
             return chances.get(f"{kind}/{name}", 1.0) < self._GLITCH_CHANCE
@@ -1664,7 +1907,19 @@ class RuleHelper:
             # is as circular as mining the plain placed block, and the free region path it produced
             # let _unique_or absorb the item's real gates: 'The Ritual Begins' stayed free through
             # `candle_cake` even after string started asking for a sword.
-            is_variant = block != base and base in block
+            #
+            # An ORE is the opposite shape with the same spelling: `redstone_ore` contains `redstone`
+            # because it is where redstone COMES FROM. What separates the two is the block, not the
+            # name — an ore generates in the world (it has a block_mining entry) and cannot be
+            # crafted, while a candle cake, a filled cauldron or a bookshelf is only ever there
+            # because somebody made it. On the bare substring test, diamond, coal, emerald, quartz and
+            # redstone all lost their ore route and logic believed the only way to a diamond was a
+            # chest; lapis lazuli and raw iron kept theirs purely because their names are not
+            # substrings of `lapis_ore` / `iron_ore`. Stricter than the game rather than looser, so it
+            # leaked nothing — but it priced the ores the pickaxe and material tiers exist for.
+            natural_block = (_block_mining().get(block) is not None
+                             and not _acquisition_table().get(block, {}).get("recipes"))
+            is_variant = block != base and base in block and not natural_block
             if (block == base or (is_variant and placed_only))                     and placed_only and base not in _NATURAL_SELF_MINED:
                 # The self-mine is circular (placed-only), but the block may still generate naturally
                 # inside a structure's template (structures.json palette) — reaching that structure
@@ -1679,7 +1934,7 @@ class RuleHelper:
                 continue
             node = self._mining_node(block, base, stack=inner)
             if node is not None:
-                origin = self._block_origin_node(block)
+                origin = self._block_origin_node(block, inner, outer=_stack)
                 if origin is None:
                     continue          # the block cannot exist for this seed — not a source at all
                 add(self.all_of(node, origin), unreliable("mining", block))
@@ -1710,6 +1965,18 @@ class RuleHelper:
                 # safe direction for logic. Folds away entirely when the gate is off.
                 add(self.all_of(self.structure(structure_name), self._loot_container_node()),
                     unreliable("structures", structure_name)
+                    or structure_name not in self.progression_structures)
+        for structure_name in record.get("archaeology", ()):
+            if structure_name in STRUCTURES:
+                # Archaeology loot is not chest loot: a pottery sherd, a sniffer egg or a trail-ruins
+                # trim template is BRUSHED out of suspicious sand or gravel, and breaking the block
+                # instead destroys what was inside. Both dumps used to fold these tables in with the
+                # chests, so the gate came out as Knowledge: Chest — which a player can hold while
+                # having no brush, no copper and no way to dig a single sherd out. Ask for the brush
+                # (Brush Handling + copper + a feather), which is what the hand-written sniffer_egg
+                # branch has always asked for.
+                add(self.all_of(self.structure(structure_name), self.has_brush()),
+                    unreliable("archaeology", structure_name)
                     or structure_name not in self.progression_structures)
         for table in record.get("gameplay", ()):
             add(self._gameplay_node(table, inner), unreliable("gameplay", table))
@@ -1752,7 +2019,7 @@ class RuleHelper:
         A tree that carries a real gate — a ``Has`` (structure/entity unlock, knowledge, material)
         or a reached-location — is left intact even when large, so a structure/mob lock or
         progression gate is never silently dropped (else a locked source would look reachable)."""
-        if node is None or len(node.canonical_json()) <= self._SIZE_CAP:
+        if node is None or node.serialized_size() <= self._SIZE_CAP:
             return node
         gated, regions = node.gate_summary()
         if gated or not regions:
@@ -1787,7 +2054,7 @@ class RuleHelper:
         """A recipe is satisfied when every distinct ingredient is obtainable (AND), and the station it
         runs on is usable."""
         parts = []
-        station = self._station_node(recipe.get("station"))
+        station = self._station_node(recipe.get("station"), stack)
         if station is not None:
             parts.append(station)
         for ingredient in recipe.get("ingredients", ()):
@@ -1812,31 +2079,47 @@ class RuleHelper:
             return Const(True)
         return self.knowledge(BLOCK_KNOWLEDGE.get("minecraft:chest", ""))
 
-    def _station_node(self, station: str | None):
-        """The Knowledge a recipe's station demands, or None when nothing gates it.
+    def _station_node(self, station: str | None, stack: frozenset = frozenset()):
+        """What a recipe's station costs: permission to use one, AND one to use.
 
         ``station`` is the recipe type the pack dumped (``smelting``, ``stonecutting``,
-        ``crafting_shaped``, …); RECIPE_STATION_KNOWLEDGE maps it to the block(s) that run it, ORed
-        because either a Crafting Table or a Crafter does crafting. Gates the seed switched off fold
-        away in self.knowledge, so this costs nothing when they are.
+        ``crafting_shaped``, …). RECIPE_STATION_KNOWLEDGE maps it to the Knowledge that unlocks it
+        and RECIPE_STATION_BLOCKS to the block(s) that run it, each ORed because either a Crafting
+        Table or a Crafter does crafting. Gates the seed switched off fold away in self.knowledge.
 
-        Every ``crafting_*`` type is treated as needing the crafting station. That is deliberately
-        strict: the acquisition dump doesn't record a shaped recipe's grid size, so a 2x2 recipe you
-        could do in your own inventory is indistinguishable from a 3x3 one. Over-requiring only makes
-        logic more conservative, while under-requiring would hand out seeds that can't be finished.
+        The BLOCK is the half that was missing, and it is not the same requirement as the Knowledge:
+        a seed with `knowledge_gates: [All, -Furnace]` used to price a smelt at nothing at all, so
+        glass came out FREE while the furnace that makes it was correctly gated behind a pickaxe and
+        a stack of cobblestone. That is how BACAP's 'Translucence' — all sixteen stained glass —
+        landed in sphere 1. You need a furnace to smelt whether or not an AP item gates its use, so
+        the block is required regardless of route_open, which only waives the Knowledge.
+
+        CRAFTING is the exception, on both halves. Every ``crafting_*`` type is treated as needing
+        the station: the dump doesn't record a shaped recipe's grid size, so a 2x2 recipe you could
+        do in your own inventory is indistinguishable from a 3x3 one (see docs — the 2x2 gap is a
+        known open question). Asking for the crafting table ITEM there would also be circular, since
+        a crafting table is itself crafted, so crafting keeps the Knowledge-only treatment.
         """
         if not station:
             return None
         key = "crafting" if station.startswith("crafting") else station
+        parts = []
         # item_gate_behavior splits the GUI gates: hand-crafting is the `crafting` route, everything
         # that runs on a placed block (smelting, stonecutting, smithing …) is `station`. With the
-        # seed's route open the permissive graph asks for no Knowledge at all.
-        if self.route_open("crafting" if key == "crafting" else "station"):
-            return None
-        names = RECIPE_STATION_KNOWLEDGE.get(key)
-        if not names:
-            return None
-        return self.any_of(*(self.knowledge(name) for name in names))
+        # seed's route open the permissive graph asks for no Knowledge — but still for the block.
+        if not self.route_open("crafting" if key == "crafting" else "station"):
+            names = RECIPE_STATION_KNOWLEDGE.get(key)
+            if names:
+                parts.append(self.any_of(*(self.knowledge(name) for name in names)))
+        if key != "crafting":
+            # Obtaining the station, threading the recipe's own stack so a station that somehow
+            # depends on its own output drops out (None) instead of recursing. If every candidate
+            # drops out, the Knowledge alone carries the recipe rather than making it unobtainable.
+            blocks = [self.acquire(block, stack) for block in RECIPE_STATION_BLOCKS.get(key, ())]
+            blocks = [node for node in blocks if node is not None]
+            if blocks:
+                parts.append(self.any_of(*blocks))
+        return self.all_of(*parts) if parts else None
 
     def _ingredient_node(self, ingredient: dict, stack: frozenset):
         if "any_of" in ingredient:
@@ -1886,16 +2169,43 @@ class RuleHelper:
             parts.append(silk_gate)
         return self.all_of(*parts)
 
-    def _block_origin_node(self, block: str):
+    def _block_origin_node(self, block: str, stack: frozenset = frozenset(),
+                           outer: frozenset | None = None):
         """What a block needs to EXIST before it can be mined (see ``_BLOCK_ONLY_FROM``), or an
         empty AND for the ordinary block that simply generates in the world. ``None`` when the only
-        thing that would place it is inactive this seed, so the caller drops the route."""
+        thing that would place it is inactive this seed, so the caller drops the route.
+
+        ``stack`` is the acquisition recursion stack, needed by the crop route: a crop block exists
+        only because its seed was planted (see ``_PLANTED_CROPS``), and for potato/carrot that seed
+        is the item being acquired — the stack is what turns that into the cycle it is instead of
+        infinite recursion.
+
+        ``outer`` is that stack without the item being acquired, and only the aging route uses it:
+        weathering is the SAME item a while later, not another crafting step, so it must not spend a
+        depth level of its own — with one it spends, the four-deep waxed-lantern chain (waxed ->
+        exposed -> plain -> copper torch -> copper nugget) runs out of ``_MAX_DEPTH`` and the waxed
+        lanterns lose their last source. Cycles still terminate: the plain item is on the stack for
+        everything below it, so a route back into the aged block dead-ends one level down."""
+        seed = _PLANTED_CROPS.get(block)
+        if seed is not None:
+            return self.acquire(seed, stack)
+        aged = _aged_source(block)
+        if aged is not None:
+            # The plain item, weathered — plus mining one that generated already aged, which only the
+            # structure palettes know about (and which _unique_or collapses when it is redundant).
+            aged_stack = stack if outer is None else outer
+            routes = [route for route in (self.acquire(aged, aged_stack),) if route is not None]
+            routes += [self.structure(name) for name in _block_structures().get(block, ())
+                       if name in self.active_structures]
+            return self.any_of(*routes) if routes else None
         entry = _BLOCK_ONLY_FROM.get(block)
         if entry is None:
-            return self.all_of()
+            return self._placed_block_origin(block, stack)
         kind, value = entry
         if kind == "boss":
             return self.can_defeat(value)
+        if kind == "entity":
+            return self.entity(value)
         if kind == "structures_or_craft":
             names, tool_id, source_id = value
             routes = [self.structure(name) for name in names if name in self.active_structures]
@@ -1905,6 +2215,39 @@ class RuleHelper:
             return self.any_of(*routes) if routes else None
         active = [name for name in value if name in self.active_structures]
         return self.any_of(*[self.structure(name) for name in active]) if active else None
+
+    def _placed_block_origin(self, block: str, stack: frozenset):
+        """Origin of a block nobody finds lying around, derived rather than curated: one whose record
+        has a recipe and NO source of its own — no loot chest, no mob drop, no gameplay or trade, and
+        nothing mined but itself. Such a block is where it is because a player crafted it or a
+        structure's palette placed it, so mining it for what it drops costs one of those two.
+
+        The case that found this: obsidian lists ``ender_chest`` among its mining blocks, because
+        breaking one drops its 8 obsidian. Nothing asked you to HAVE an ender chest, so obsidian —
+        and through the Nether portal edge, ``We Need to Go Deeper`` — was priced at a pickaxe and a
+        dimension. An ender chest is crafted from 8 obsidian and an eye of ender, and the only place
+        one generates is an End City: the craft route closes as the cycle it is (obsidian is already
+        on the stack), leaving the structure, which is where that route honestly belongs.
+
+        Blocks that really do generate keep costing nothing: stone, clay, glowstone, deepslate and
+        the rest carry their own mining/loot sources in the record, so they never reach the test.
+        ``None`` when neither origin exists this seed — the caller then drops the route."""
+        if block in _NATURAL_SELF_MINED:
+            return self.all_of()          # curated: it really is lying around out there
+        record = _acquisition_table().get(block)
+        if not record or not record.get("recipes"):
+            return self.all_of()
+        if any(record.get(key) for key in ("structures", "drops", "gameplay", "archaeology",
+                                           "trades", "silk_mining")):
+            return self.all_of()
+        if any(mined != block for mined in record.get("mining", ())):
+            return self.all_of()
+        routes = [self.structure(name) for name in _block_structures().get(block, ())
+                  if name in self.active_structures]
+        crafted = self.acquire(f"minecraft:{block}", stack)
+        if crafted is not None:
+            routes.append(crafted)
+        return self.any_of(*routes) if routes else None
 
     # Loot-table tool name -> the capability that satisfies it.
     def _drop_tool_node(self, block: str, info: dict, item: str, stack: frozenset):
@@ -2009,6 +2352,7 @@ class RuleHelper:
         tier = _MATERIAL_TIER_BY_ITEM.get(base)
         if tier is not None:
             return self.material(tier)
-        if base.endswith("_bucket"):
-            return self.acquire("minecraft:bucket")  # a filled bucket needs a bucket
+        # (A filled bucket used to be caught here, by suffix, and priced as the empty bucket alone.
+        # _acquire_compute now models every one of them — bucket AND what fills it — before the
+        # fallback is ever consulted.)
         return None

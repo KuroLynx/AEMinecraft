@@ -5,6 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import fr.euclesia.mcarchipelago.archipelago.APEventListener;
 import fr.euclesia.mcarchipelago.archipelago.ArchipelagoClient;
+import fr.euclesia.mcarchipelago.archipelago.ChatFilterPreference;
 import fr.euclesia.mcarchipelago.protocol.APJson;
 import fr.euclesia.mcarchipelago.protocol.APReceivedPacket;
 import fr.euclesia.mcarchipelago.registry.AEMRegistries;
@@ -14,24 +15,65 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.MinecraftServer;
 
+import java.util.Set;
+
 /**
  * Mirrors Archipelago {@code PrintJSON} messages (item sends, checks, hints, chat, joins…) into
  * the in-game chat — the same stream a text client shows. Ids in the message are resolved to
  * names via the registries / session state so it reads as e.g. "Player found Item (Location)".
+ *
+ * <p>When {@link ChatFilterPreference} is on, the multiworld firehose is trimmed to what actually
+ * concerns this slot: an {@code ItemSend} or {@code Hint} is kept only if this slot is the
+ * receiving end or the location's owner; {@code Join}, {@code Goal}, {@code Chat} and
+ * {@code ServerChat} always pass regardless of whose slot they're about (connecting, reaching a
+ * goal, and ordinary conversation are never "noise"); everything else ({@code Part},
+ * {@code Tutorial}, {@code TagsChanged}, {@code CommandResult}, …) is dropped. See the
+ * <a href="https://github.com/ArchipelagoMW/Archipelago/blob/main/docs/network%20protocol.md">AP
+ * network protocol</a> for the {@code type}/{@code receiving}/{@code item} envelope fields this
+ * reads.
  */
 public final class ArchipelagoChatListener implements APEventListener {
+    /** PrintJSON types that always pass the filter, regardless of which slot they're about. */
+    private static final Set<String> ALWAYS_SHOWN = Set.of("Join", "Goal", "Chat", "ServerChat");
+
     @Override
     public void onPrintJson(ArchipelagoClient client, APReceivedPacket packet) {
         MinecraftServer server = AEMServerRuntime.server();
         if (server == null) {
             return;
         }
-        JsonElement data = packet.payload().get("data");
+        JsonObject payload = packet.payload();
+        if (ChatFilterPreference.enabled() && !passesFilter(client, payload)) {
+            return;
+        }
+        JsonElement data = payload.get("data");
         if (data == null || !data.isJsonArray()) {
             return;
         }
         Component message = render(client, data.getAsJsonArray());
         server.execute(() -> server.getPlayerList().broadcastSystemMessage(message, false));
+    }
+
+    /** Whether this PrintJSON message should show while the chat filter is on. */
+    private boolean passesFilter(ArchipelagoClient client, JsonObject payload) {
+        String type = APJson.getString(payload, "type", "");
+        if (ALWAYS_SHOWN.contains(type)) {
+            return true;
+        }
+        if (!"ItemSend".equals(type) && !"Hint".equals(type)) {
+            return false;
+        }
+        int mySlot = client.state().slot();
+        int receiving = APJson.getInt(payload, "receiving", -1);
+        if (receiving == mySlot) {
+            return true;
+        }
+        JsonElement itemElement = payload.get("item");
+        if (itemElement == null || !itemElement.isJsonObject()) {
+            return false;
+        }
+        int locationOwner = APJson.getInt(itemElement.getAsJsonObject(), "player", -1);
+        return locationOwner == mySlot;
     }
 
     private Component render(ArchipelagoClient client, JsonArray data) {
@@ -86,7 +128,8 @@ public final class ArchipelagoChatListener implements APEventListener {
         };
     }
 
-    private static ChatFormatting itemColor(int flags) {
+    /** AP's item colours by classification flags, as its own clients draw item names. */
+    public static ChatFormatting itemColor(int flags) {
         if ((flags & 0b100) != 0) {
             return ChatFormatting.RED;          // trap
         }

@@ -1,8 +1,10 @@
 package fr.euclesia.mcarchipelago.client.net;
 
+import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.net.BiomeListPayload;
 import fr.euclesia.mcarchipelago.net.BiomeListRequestPayload;
 import fr.euclesia.mcarchipelago.net.BiomeSearchPayload;
+import fr.euclesia.mcarchipelago.server.gameplay.BiomeFinderService;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.resources.Identifier;
@@ -64,7 +66,17 @@ public final class BiomeFinderClient {
         return biomes;
     }
 
-    /** Sends a pick; the server runs the search and points the needle. */
+    /**
+     * Whether this client's session has received the Biome Finder Archipelago item — mirrors
+     * {@link BiomeFinderService#owns()}'s server-side truth. Safe to read even when there is no
+     * session: the item registry resets on disconnect, so this reads {@code false} rather than a
+     * stale value from a previous world.
+     */
+    public static boolean owns() {
+        return AEM.ARCHIPELAGO.client().registries().apItems().receivedCount(BiomeFinderService.AP_ITEM) > 0;
+    }
+
+    /** Sends a pick; the server runs the search and points the HUD tracker bar. */
     public static void pick(Identifier biomeId) {
         if (ClientPlayNetworking.canSend(BiomeSearchPayload.TYPE)) {
             ClientPlayNetworking.send(new BiomeSearchPayload(biomeId.toString()));

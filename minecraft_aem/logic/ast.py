@@ -42,6 +42,7 @@ class Rule:
     _json_cache = None
     _key_cache = None
     _gate_cache = None
+    _size_cache = None
 
     def __call__(self, state) -> bool:  # pragma: no cover - overridden
         raise NotImplementedError
@@ -68,6 +69,25 @@ class Rule:
     def _canonical_json(self) -> str:
         # Leaves have no children to reuse — encode directly (also handles string escaping).
         return json.dumps(self._to_dict(), sort_keys=True)
+
+    def serialized_size(self) -> int:
+        """Length of ``canonical_json()`` WITHOUT building it — memoized, bottom-up.
+
+        The size cap in ``_coarsen`` only ever asked how long the serialization would be, but
+        ``canonical_json`` answers that by caching, on every node, a string holding its entire
+        subtree. In the strict graph _demote keeps subtrees small; in the glitch graph with
+        structure and mob unlocks on, nothing is pruned, so those strings go quadratic — a single
+        no-BACAP world reached 22 GB and was OOM-killed at output. A length is additive, so a
+        composite gets it from its children's cached lengths and allocates nothing.
+        """
+        cached = self._size_cache
+        if cached is None:
+            cached = self._size_cache = self._serialized_size()
+        return cached
+
+    def _serialized_size(self) -> int:
+        # Leaves: the string is small, and building it is the honest way to count its escaping.
+        return len(self._canonical_json())
 
     def key(self):
         """Hashable structural key, memoized. Two subtrees share a key iff their canonical_json is
@@ -103,6 +123,21 @@ class Rule:
             gated = gated or c_gated
             regions |= c_regions
         return gated, frozenset(regions)
+
+
+# Literal pieces of a composite's canonical JSON, so serialized_size counts exactly what
+# _canonical_json would have written.
+_JSON_OPEN = '{"c": ['
+_JSON_SEP = ", "
+
+
+def _composite_size(children, close: str) -> int:
+    """Serialized length of a composite: the open bracket, the children joined by ", ", the close."""
+    total = len(_JSON_OPEN) + len(close)
+    if children:
+        total += sum(child.serialized_size() for child in children)
+        total += len(_JSON_SEP) * (len(children) - 1)
+    return total
 
 
 class Const(Rule):
@@ -203,6 +238,9 @@ class AtLeast(Rule):
         return ('{"c": [' + ", ".join(c.canonical_json() for c in self.children)
                 + '], "k": "atleast", "n": ' + str(self.n) + "}")
 
+    def _serialized_size(self) -> int:
+        return _composite_size(self.children, '], "k": "atleast", "n": ' + str(self.n) + "}")
+
     def _key(self):
         return ("atleast", self.n, tuple(c.key() for c in self.children))
 
@@ -223,6 +261,9 @@ class And(Rule):
     def _canonical_json(self) -> str:
         return '{"c": [' + ", ".join(c.canonical_json() for c in self.children) + '], "k": "and"}'
 
+    def _serialized_size(self) -> int:
+        return _composite_size(self.children, '], "k": "and"}')
+
     def _key(self):
         return ("and", tuple(c.key() for c in self.children))
 
@@ -242,6 +283,9 @@ class Or(Rule):
 
     def _canonical_json(self) -> str:
         return '{"c": [' + ", ".join(c.canonical_json() for c in self.children) + '], "k": "or"}'
+
+    def _serialized_size(self) -> int:
+        return _composite_size(self.children, '], "k": "or"}')
 
     def _key(self):
         return ("or", tuple(c.key() for c in self.children))

@@ -35,6 +35,7 @@ from .content.registry import (  # noqa: F401
     load_containers,
     load_manifest_advancements,
     load_manifest_challenge,
+    load_manifest_removed,
     load_pack,
     load_structures,
     overlay_packs,
@@ -214,15 +215,49 @@ BLOCK_KNOWLEDGE = {block: name for block, name in BLOCK_KNOWLEDGE.items() if nam
 # it, ORed: "crafting" is satisfied by a Crafting Table OR a Crafter. Derived from the dump's
 # recipe_station field, which is how a smelting recipe learns it needs the Furnace gate.
 RECIPE_STATION_KNOWLEDGE: dict[str, list[str]] = {}
+# The same key -> the BLOCKS that run it ("smelting" -> the furnace). The Knowledge above is only the
+# permission to use one; this is the block itself, which a recipe needs whether or not a gate is on.
+RECIPE_STATION_BLOCKS: dict[str, list[str]] = {}
 for _record in load_containers(base_pack()):
     _station = _record.get("recipe_station")
+    if not _station:
+        continue
     _knowledge = BLOCK_KNOWLEDGE.get(_record["block"])
-    if _station and _knowledge and _knowledge not in RECIPE_STATION_KNOWLEDGE.setdefault(_station, []):
+    if _knowledge and _knowledge not in RECIPE_STATION_KNOWLEDGE.setdefault(_station, []):
         RECIPE_STATION_KNOWLEDGE[_station].append(_knowledge)
+    if _record["block"] not in RECIPE_STATION_BLOCKS.setdefault(_station, []):
+        RECIPE_STATION_BLOCKS[_station].append(_record["block"])
 
 # Legacy alias: the two stations gated before the option existed. STATION_KNOWLEDGE_LOCKS is now the
 # whole BLOCK_KNOWLEDGE catalogue (keyed by full id), kept under its old name for fill_slot_data.
 STATION_KNOWLEDGE_LOCKS: dict[str, str] = dict(BLOCK_KNOWLEDGE)
+
+# Biomes you cannot expect to walk into — the ones the Biome Finder exists to point at. This is the
+# ONE judgement call in the mob-biome gating, and it is deliberately about BIOMES rather than mobs:
+# how hard a place is to find is a property of the place, and a mob bound to it inherits that cost.
+#
+# It replaced a hand-written table of per-mob lambdas, which is how the mooshroom came to be missing
+# from it for so long. Note that "few biomes" is NOT the test and never was: a turtle (beach), a husk
+# and a camel (desert) and a stray (snowy plains) each spawn in one or two biomes you trip over
+# constantly, and gating those on a Finder would be worse than the bug. Only rarity counts.
+RARE_BIOMES: frozenset[str] = frozenset({
+    "mushroom_fields",                                   # the mooshroom's whole world
+    "lush_caves",                                        # axolotl
+    "pale_garden",                                       # (the creaking has no spawner entry, below)
+    "deep_dark",                                         # no biome-spawned mob; the warden comes from a shrieker
+    "jagged_peaks", "frozen_peaks", "snowy_slopes",      # goat
+    "jungle", "bamboo_jungle", "sparse_jungle",          # panda, parrot, ocelot
+})
+
+# Mobs whose EVERY natural spawn biome is a rare one, so obtaining one IS finding that biome. Derived
+# from EntitiesDump's `biomes`; a mob with no biomes at all (a boss, a creaking, a sniffer) is not
+# claimed either way here — acquisition.py adds those few explicitly, since what they cost is not a
+# biome search. Empty on a pack dumped before the field existed, which is why the explicit entries
+# there are a fallback rather than an override.
+BIOME_BOUND_MOBS: frozenset[str] = frozenset(
+    name for name, mob in MOBS_ALL.items()
+    if mob.biomes and all(biome in RARE_BIOMES for biome in mob.biomes)
+)
 
 MOBS_PASSIVE  = {k: v for k, v in MOBS_ALL.items() if v.category == MCEntityCategory.PASSIVE}
 MOBS_NEUTRAL  = {k: v for k, v in MOBS_ALL.items() if v.category == MCEntityCategory.NEUTRAL}
@@ -278,3 +313,10 @@ BACAP_REWRITE_CHALLENGE: dict[str, bool] = {
     game_id: _BACAP_CHALLENGE[game_id]
     for game_id in _VANILLA_ADVANCEMENT_GAME_IDS if game_id in _BACAP_CHALLENGE
 }
+
+# Vanilla advancements BACAP DELETES outright (its rewrite strips the display — see
+# load_manifest_removed). While blazeandcave is on these cannot be earned at all, so they must not be
+# created as checks: "Serious Dedication" (vanilla's netherite hoe) is the one, and BACAP replaces it
+# with a same-titled advancement of its own under a different id.
+BACAP_REMOVED: frozenset[str] = (
+    load_manifest_removed(BACAP_PACK) & _VANILLA_ADVANCEMENT_GAME_IDS) if BACAP_PACK else frozenset()

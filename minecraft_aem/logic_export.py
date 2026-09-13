@@ -33,12 +33,10 @@ its definition (``RuleNode.Ref`` / ``LogicGraph``); the apworld's own reachabili
 """
 from __future__ import annotations
 
-import copy
 from collections import Counter
 
 from .data import MCLocationCategory
 from .logic.ast import ReachLocation, at_least
-from .logic.constants import REWARD_EVENT_PREFIX
 from .regions import MCRegion
 
 # game_id of the Archipelago advancement-tab root tile (mirrors APTrackerRegistry.TAB_ROOT_ID).
@@ -69,18 +67,9 @@ def build_logic_export(world) -> dict:
     placed_region = {loc.name: _region_name(loc.parent_region.name)
                      for loc in world.multiworld.get_locations(world.player)}
 
-    # Per-location rules captured during set_rules (only locations created this seed). BACAP reward
-    # events (REWARD_EVENT_PREFIX) are internal generation-only locations holding a non-networked
-    # event item that the Java client never receives — so a has(<event>) leaf would read 0 in-game.
-    # They're held out here and inlined below: each event's rule (OR of reaching a granting
-    # advancement) replaces every has(<event>) leaf, so the mod's monotone sweep evaluates rewards
-    # through plain loc nodes (it resolves cycles by fixed point, unlike AP's recursive reached()).
+    # Per-location rules captured during set_rules (only locations created this seed).
     locations: dict[str, dict] = {}
-    reward_event_rules: dict[str, dict] = {}
     for name, rule in getattr(world, "logic_rules", {}).items():
-        if name.startswith(REWARD_EVENT_PREFIX):
-            reward_event_rules[name] = rule.to_dict()
-            continue
         loc_data = loc_lookup[name]
         locations[name] = {
             "game_id": loc_data.game_id,
@@ -95,15 +84,6 @@ def build_logic_export(world) -> dict:
             {"to": entrance["to"], "rule": entrance["rule"].to_dict()}
             for entrance in entrances
         ]
-
-    # Inline reward-event leaves in every exported rule (location + region edge) before the tab root
-    # and dedup pass, so the CSE in _dedup_rules can hoist the shared event subtrees.
-    if reward_event_rules:
-        for entry in locations.values():
-            entry["rule"] = _inline_reward_events(entry["rule"], reward_event_rules)
-        for edges in regions.values():
-            for edge in edges:
-                edge["rule"] = _inline_reward_events(edge["rule"], reward_event_rules)
 
     origin = MCRegion.MENU.value
 
@@ -128,13 +108,13 @@ def build_logic_export(world) -> dict:
         "origin": origin,
         "regions": regions,
         "locations": locations,
-        "glitch": _glitch_rules(world, locations, reward_event_rules),
+        "glitch": _glitch_rules(world, locations),
     }
     _dedup_rules(export)
     return export
 
 
-def _glitch_rules(world, locations: dict, reward_event_rules: dict) -> dict:
+def _glitch_rules(world, locations: dict) -> dict:
     """The permissive twin of each location rule, ``{name: {"rule": <ast>}}`` — but ONLY where it
     differs from the strict one.
 
@@ -162,25 +142,11 @@ def _glitch_rules(world, locations: dict, reward_event_rules: dict) -> dict:
     glitch: dict[str, dict] = {}
     for name, rule in build_location_rules(world, glitch=True).items():
         if name not in locations:
-            continue  # a reward event or a location this seed didn't create
-        as_dict = _inline_reward_events(rule.to_dict(), reward_event_rules) \
-            if reward_event_rules else rule.to_dict()
+            continue  # a location this seed didn't create
+        as_dict = rule.to_dict()
         if as_dict != locations[name]["rule"]:
             glitch[name] = {"rule": as_dict}
     return glitch
-
-
-def _inline_reward_events(node: dict, reward_event_rules: dict[str, dict]) -> dict:
-    """Replace every ``has(<reward event>)`` leaf with that event's rule (the OR of reaching a granting
-    advancement), recursively. Returns a new tree; a leaf with no matching event (shouldn't occur)
-    collapses to ``const False`` so a stray reference never reads as obtainable in-game."""
-    if node.get("k") == "has" and node.get("i", "").startswith(REWARD_EVENT_PREFIX):
-        replacement = reward_event_rules.get(node["i"])
-        return copy.deepcopy(replacement) if replacement is not None else {"k": "const", "v": False}
-    children = node.get("c")
-    if children is not None:
-        return {**node, "c": [_inline_reward_events(child, reward_event_rules) for child in children]}
-    return node
 
 
 def _dedup_rules(export: dict) -> None:
@@ -201,7 +167,19 @@ def _dedup_rules(export: dict) -> None:
     # ("n", …) marks a composite (hoistable), ("l", …) a leaf.
     occurrences: Counter = Counter()
 
+    # Memoized on the dict's identity, not its contents: to_dict() is itself memoized, so a
+    # subtree shared by a thousand rules is ONE dict object reached a thousand times. Without this
+    # the walk re-descends each of those thousand paths — the serialized forest is a DAG, and
+    # treating it as a tree is what made a glitch-graph export unaffordable (each visit also
+    # rebuilds the nested key tuples). Counting still sees every occurrence: a memo hit adds the
+    # cached key's count without re-walking below it.
+    memo: dict[int, tuple] = {}
+
     def key_of(node: dict):
+        cached = memo.get(id(node))
+        if cached is not None:
+            occurrences[cached] += 1
+            return cached
         children = node.get("c")
         if children is None:
             key = ("l", node["k"], node.get("i"), node.get("n"), node.get("r"),
@@ -211,6 +189,7 @@ def _dedup_rules(export: dict) -> None:
             if node["k"] in ("and", "or", "atleast"):
                 child_keys = tuple(sorted(child_keys))
             key = ("n", node["k"], node.get("n"), child_keys)
+        memo[id(node)] = key
         occurrences[key] += 1
         return key
 
@@ -225,9 +204,15 @@ def _dedup_rules(export: dict) -> None:
     ref_ids: dict = {}
     definitions: dict = {}
 
+    rewritten_memo: dict[int, tuple] = {}
+
     def rewrite(node: dict):
         """Return ``(rewritten_node, original_canonical_key)`` — the key stays the pre-rewrite one
-        so a parent's key matches the counting pass even when a child became a ref."""
+        so a parent's key matches the counting pass even when a child became a ref. Memoized on
+        identity for the same reason ``key_of`` is: one shared subtree, one rewrite."""
+        cached = rewritten_memo.get(id(node))
+        if cached is not None:
+            return cached
         children = node.get("c")
         if children is None:
             key = ("l", node["k"], node.get("i"), node.get("n"), node.get("r"),
@@ -245,8 +230,11 @@ def _dedup_rules(export: dict) -> None:
             if ref_id is None:
                 ref_id = ref_ids[key] = len(ref_ids)
                 definitions[ref_id] = new_node  # children already refs → nested sharing
-            return {"k": "ref", "id": ref_id}, key
-        return new_node, key
+            result = ({"k": "ref", "id": ref_id}, key)
+        else:
+            result = (new_node, key)
+        rewritten_memo[id(node)] = result
+        return result
 
     for holder in holders:
         holder["rule"] = rewrite(holder["rule"])[0]

@@ -1,11 +1,12 @@
 package fr.euclesia.mcarchipelago;
 
 import fr.euclesia.mcarchipelago.content.AEMEffects;
-import fr.euclesia.mcarchipelago.content.BiomeFinderItem;
 import fr.euclesia.mcarchipelago.content.FillerBuffEffects;
 import fr.euclesia.mcarchipelago.engine.ap.ArchipelagoService;
 import fr.euclesia.mcarchipelago.net.APStateSync;
 import fr.euclesia.mcarchipelago.net.BiomeFinderNet;
+import fr.euclesia.mcarchipelago.net.ChatFilterNet;
+import fr.euclesia.mcarchipelago.net.HintNet;
 import fr.euclesia.mcarchipelago.server.AEMServerBridge;
 import net.fabricmc.api.ModInitializer;
 
@@ -23,14 +24,14 @@ public class AEM implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
-		// Register custom data components (e.g. the Biome Finder marker) and status effects (trap
-		// items) before registries freeze.
-		BiomeFinderItem.register();
+		// Register status effects (trap items) before registries freeze.
 		AEMEffects.register();
 		FillerBuffEffects.register();
 		// Payload types must be registered on BOTH sides, at init, before any send.
 		APStateSync.register();
 		BiomeFinderNet.register();
+		HintNet.register();
+		ChatFilterNet.register();
 		AEMServerBridge.register();
 		LOGGER.info("Archipelago Euclesia Minecraft initialized");
 	}

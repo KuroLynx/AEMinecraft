@@ -118,6 +118,11 @@ class MCMobData:
     tameable: bool
     leashable: bool
     game_id: str
+    # The biomes whose spawner list names this mob, bare and sorted (EntitiesDump's `biomes`). Empty
+    # means "no natural biome spawn at all" — a creaking hatched from a heart, a sniffer from an egg,
+    # a boss summoned — which is NOT the same claim as "spawns anywhere". Absent in a pack dumped
+    # before the field existed, which reads the same as empty; see data.BIOME_BOUND_MOBS.
+    biomes: tuple[str, ...] = ()
     # No unlock_classification: an Entity Unlock is always a logic gate, and whether it rises from
     # progression_skip_balancing to full progression depends on the seed (does it gate a goal boss?),
     # so it is computed at item creation — see MCWorld._mob_classification — exactly like structures.
@@ -356,8 +361,8 @@ def _load_entities(pack_dir) -> dict[str, MCMobData]:
     "Wither Skeleton") — the name every consumer uses (boss_list, mob_spawn_lock, kill locations,
     Entity Unlock labels). The list order is the stable Entity Unlock item id (id = index).
 
-    Each record carries only game-derived facts (category / region / breedable / tameable / leashable);
-    the unlock's AP classification is NOT here — it is derived per-seed from the goal (see
+    Each record carries only game-derived facts (category / region / biomes / breedable / tameable /
+    leashable); the unlock's AP classification is NOT here — it is derived per-seed from the goal (see
     ``MCWorld._mob_classification``), the same way structure unlock classifications are."""
     mobs = {}
     with pack_dir.joinpath("entities.json").open(encoding="utf-8") as f:
@@ -372,6 +377,7 @@ def _load_entities(pack_dir) -> dict[str, MCMobData]:
             tameable=bool(row["tameable"]),
             leashable=bool(row["leashable"]),
             game_id=game_id if ":" in game_id else f"minecraft:{game_id}",
+            biomes=tuple(row.get("biomes") or ()),
         )
     return mobs
 
@@ -479,6 +485,25 @@ def load_manifest_advancements(pack_name: str, id_base: int, region: str = "Over
             tab=tab or "",
         )
     return locations
+
+
+def load_manifest_removed(pack_name: str) -> frozenset[str]:
+    """Advancement ids this pack defines but strips of any DISPLAY — a datapack deleting one it
+    inherits, rather than rewriting it.
+
+    BACAP does this to ``minecraft:husbandry/obtain_netherite_hoe``: it replaces the vanilla file
+    with no title, no parent and a single ``minecraft:impossible`` criterion, then ships its own
+    "Serious Dedication" (wear out a diamond hoe) under a new id. An advancement with no display is
+    one a player can neither see nor earn, so it must not be a check while this pack is on — left in,
+    it is an unwinnable location, and one the trigger compiler reads as FREE besides (an impossible
+    criterion defers to the parent chain, and the rewrite has no parent either).
+
+    The title is the signal, NOT the impossible trigger: 63 of BACAP's own advancements are
+    all-impossible and perfectly earnable — the datapack grants those from its own scoreboard logic,
+    which is exactly why TriggerCompiler defers them to the parent chain instead of refusing them."""
+    with _pack_dir(pack_name).joinpath("manifest.json").open(encoding="utf-8") as handle:
+        manifest = json.load(handle)
+    return frozenset(gid for gid, entry in manifest.items() if not entry.get("title"))
 
 
 def load_manifest_challenge(pack_name: str) -> dict[str, bool]:

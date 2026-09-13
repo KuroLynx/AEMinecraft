@@ -7,18 +7,27 @@ import com.google.gson.JsonParser;
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.AEMDebug;
 import fr.euclesia.mcarchipelago.archipelago.ArchipelagoClient;
+import fr.euclesia.mcarchipelago.archipelago.ChatFilterPreference;
+import fr.euclesia.mcarchipelago.client.hint.HintHoldTracker;
 import fr.euclesia.mcarchipelago.net.APProgressPayload;
 import fr.euclesia.mcarchipelago.net.APStateSyncPayload;
+import fr.euclesia.mcarchipelago.net.BiomeTrackerSyncPayload;
+import fr.euclesia.mcarchipelago.net.ChatFilterSyncPayload;
 import fr.euclesia.mcarchipelago.net.FinderSyncPayload;
+import fr.euclesia.mcarchipelago.net.HintLocationsPayload;
+import fr.euclesia.mcarchipelago.server.ap.HintLocationListener;
+import fr.euclesia.mcarchipelago.server.gameplay.BiomeFinderTrackerState;
 import fr.euclesia.mcarchipelago.server.gameplay.StructureFinderState;
 import fr.euclesia.mcarchipelago.protocol.APItemClassification;
 import fr.euclesia.mcarchipelago.protocol.packet.inbound.APNetworkItem;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Applies the server's session snapshot into the client's own Archipelago instance.
@@ -70,6 +79,48 @@ public final class APStateSyncClient {
                             new StructureFinderState.Snapshot(payload.tier(), payload.targets()));
                 }));
 
+        // The chat filter's on/off state. Only the first sync after (re)connecting is silent — a
+        // freshly joined client should not announce whatever the world already had persisted;
+        // every sync after that reflects an actual toggle, so it is worth a confirmation line.
+        ClientPlayNetworking.registerGlobalReceiver(ChatFilterSyncPayload.TYPE,
+                (payload, context) -> context.client().execute(() -> {
+                    ChatFilterPreference.setEnabled(payload.enabled());
+                    Boolean previous = lastKnownChatFilter;
+                    lastKnownChatFilter = payload.enabled();
+                    if (previous != null && previous != payload.enabled()) {
+                        LocalPlayer player = context.client().player;
+                        if (player != null) {
+                            player.sendSystemMessage(Component.translatable(
+                                    payload.enabled() ? "message.aem.chatfilter.on" : "message.aem.chatfilter.off"));
+                        }
+                    }
+                }));
+
+        // The Biome Finder HUD tracker. Same reasoning as the Structure Finder bar above: this
+        // JVM's own BiomeFinderTrackerState is empty on a dedicated server, so the pushed target
+        // is poured into it under our own uuid.
+        ClientPlayNetworking.registerGlobalReceiver(BiomeTrackerSyncPayload.TYPE,
+                (payload, context) -> context.client().execute(() -> {
+                    LocalPlayer player = context.client().player;
+                    if (player == null) {
+                        return;
+                    }
+                    BiomeFinderTrackerState.Target target = payload.toTarget();
+                    if (target == null) {
+                        BiomeFinderTrackerState.get().remove(player.getUUID());
+                    } else {
+                        BiomeFinderTrackerState.get().putTarget(player.getUUID(), target);
+                    }
+                }));
+
+        // Where this slot's hinted items are, for the unlock tiles' descriptions. In singleplayer the
+        // server already filled this same map, so setting it again changes nothing.
+        ClientPlayNetworking.registerGlobalReceiver(HintLocationsPayload.TYPE,
+                (payload, context) -> context.client().execute(() -> {
+                    HintLocationListener.set(payload.spots());
+                    HintHoldTracker.onHintsArrived();
+                }));
+
         // Leaving a server (or an integrated world) drops the mirror. In singleplayer this instance
         // is the REAL session, so only clear what we ourselves populated.
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
@@ -81,6 +132,9 @@ public final class APStateSyncClient {
 
     /** Whether the local session is a mirror of a server's rather than our own connection. */
     private static volatile boolean mirrored;
+
+    /** {@code null} until the first chat-filter sync arrives; see the receiver above. */
+    private static volatile Boolean lastKnownChatFilter;
 
     public static boolean isMirrored() {
         return mirrored;
@@ -162,6 +216,9 @@ public final class APStateSyncClient {
         client.registries().apItems().resetReceived();
         // The finder bar too, or it hangs around pointing at the last server's structures.
         StructureFinderState.get().clear();
+        lastKnownChatFilter = null;
+        BiomeFinderTrackerState.get().clear();
+        HintLocationListener.set(Map.of());
         mirrored = false;
         AEMDebug.log("apStateSync cleared (left the server)");
     }

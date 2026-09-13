@@ -29,7 +29,8 @@ import java.util.TreeSet;
  * processed id-sorted, so the output is deterministic.
  *
  * <p>Per-item record (only non-empty keys), {@code <ing> = {"item":x} | {"tag":x} | {"any_of":[...]}}:
- * {@code advancements / recipes / drops / mining / silk_mining / structures / trades / breeding / gameplay},
+ * {@code advancements / recipes / drops / mining / silk_mining / structures / archaeology / trades /
+ * breeding / gameplay},
  * plus {@code chances} — {@code {"<kind>/<source>": p}} for the sources that are not a sure thing.
  *
  * <p>The {@code advancements} source (item -> advancement game_ids that grant it as a completion reward)
@@ -79,6 +80,8 @@ final class AcquisitionDump {
     private final Map<String, TreeSet<String>> mining = new TreeMap<>();
     private final Map<String, TreeSet<String>> silkMining = new TreeMap<>();
     private final Map<String, TreeSet<String>> structures = new TreeMap<>();
+    /** Brushed out of suspicious sand/gravel — a different gate from a chest, so a separate key. */
+    private final Map<String, TreeSet<String>> archaeology = new TreeMap<>();
     private final Map<String, TreeSet<String>> trades = new TreeMap<>();  // "proffile"
     private final Map<String, TreeSet<String>> breeding = new TreeMap<>();
     private final Map<String, TreeSet<String>> gameplay = new TreeMap<>();
@@ -265,7 +268,15 @@ final class AcquisitionDump {
         for (String item : items) {
             switch (category) {
                 case "entities" -> drops.computeIfAbsent(item, k -> new TreeSet<>()).add(fileName);
-                case "chests", "archaeology", "dispensers", "spawners" -> {
+                case "archaeology" -> {
+                    // Suspicious sand/gravel: the loot comes out with a BRUSH, and breaking the
+                    // block destroys it. Folding it in with the chests made a sherd read as
+                    // "reach the structure and open a container", which is not how you get one.
+                    for (String struct : structuresFor(rel)) {
+                        archaeology.computeIfAbsent(item, k -> new TreeSet<>()).add(struct);
+                    }
+                }
+                case "chests", "dispensers", "spawners" -> {
                     for (String struct : structuresFor(rel)) {
                         structures.computeIfAbsent(item, k -> new TreeSet<>()).add(struct);
                     }
@@ -276,7 +287,8 @@ final class AcquisitionDump {
         }
         switch (category) {
             case "entities" -> recordChances(loot.get("pools"), "drops", fileName);
-            case "chests", "archaeology", "dispensers", "spawners" ->
+            case "archaeology" -> recordChances(loot.get("pools"), "archaeology", structuresFor(rel));
+            case "chests", "dispensers", "spawners" ->
                     recordChances(loot.get("pools"), "structures", structuresFor(rel));
             case "shearing" -> { /* not a source, so no chance either */ }
             default -> recordChances(loot.get("pools"), "gameplay", fileName);
@@ -785,6 +797,7 @@ final class AcquisitionDump {
         items.addAll(mining.keySet());
         items.addAll(silkMining.keySet());
         items.addAll(structures.keySet());
+        items.addAll(archaeology.keySet());
         items.addAll(trades.keySet());
         items.addAll(breeding.keySet());
         items.addAll(gameplay.keySet());
@@ -794,6 +807,9 @@ final class AcquisitionDump {
             JsonObject record = new JsonObject();  // keys inserted alphabetically (sort_keys parity)
             if (advancements.containsKey(item)) {
                 record.add("advancements", stringArray(advancements.get(item)));
+            }
+            if (archaeology.containsKey(item)) {
+                record.add("archaeology", stringArray(archaeology.get(item)));
             }
             if (breeding.containsKey(item)) {
                 record.add("breeding", stringArray(breeding.get(item)));
@@ -864,6 +880,7 @@ final class AcquisitionDump {
         addKept(kept, "mining", mining.get(item));
         addKept(kept, "silk_mining", silkMining.get(item));
         addKept(kept, "structures", structures.get(item));
+        addKept(kept, "archaeology", archaeology.get(item));
         for (Map.Entry<String, Double> hit : known.entrySet()) {
             if (kept.contains(hit.getKey())) {
                 out.addProperty(hit.getKey(), hit.getValue());

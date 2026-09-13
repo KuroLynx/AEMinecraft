@@ -10,11 +10,13 @@ import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.stats.Stat;
+import net.minecraft.stats.Stats;
 import net.minecraft.world.damagesource.DamageSource;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.random.RandomGenerator;
@@ -47,8 +49,11 @@ public final class DeathLinkService {
      * Players we are in the middle of killing because of an incoming link, whose imminent death must
      * not send a bounce of its own. Held until the death arrives rather than for the duration of the
      * kill call, because those are not the same moment.
+     *
+     * <p>The value is the victim's insomnia counter as it stood before the kill, so {@link
+     * #onLocalPlayerDeath} can put it back — see there for why.
      */
-    private static final Set<UUID> linkKilled = ConcurrentHashMap.newKeySet();
+    private static final Map<UUID, Integer> linkKilled = new ConcurrentHashMap<>();
 
     private DeathLinkService() {}
 
@@ -57,9 +62,16 @@ public final class DeathLinkService {
             return;
         }
         // A death we caused is not news. The mark is consumed here, where the death finally lands.
-        if (linkKilled.remove(player.getUUID())) {
-            AEMDebug.log("deathLink.local suppressed for {} (we killed them)",
-                    player.getGameProfile().name());
+        Integer insomniaBeforeLink = linkKilled.remove(player.getUUID());
+        if (insomniaBeforeLink != null) {
+            // Give the insomnia counter back. ServerPlayer#die resets TIME_SINCE_REST, and phantoms
+            // need it past 72000 ticks — an hour of real time. A death somebody else died is not rest,
+            // so letting it reset the counter meant that on a busy multiworld with DeathLink on the
+            // timer restarted often enough that phantoms never spawned at all (and Two Birds, One
+            // Arrow with them). Deaths the player earns themselves still reset it, as vanilla does.
+            player.getStats().setValue(player, insomniaStat(), insomniaBeforeLink);
+            AEMDebug.log("deathLink.local suppressed for {} (we killed them); insomnia restored to {}",
+                    player.getGameProfile().name(), insomniaBeforeLink);
             return;
         }
         if (DeathLinkPreference.enabled()) {
@@ -100,12 +112,17 @@ public final class DeathLinkService {
 
             // Marked BEFORE the kill and left marked: onLocalPlayerDeath consumes it whenever the
             // death event actually lands, which is not necessarily within this call.
-            linkKilled.add(victim.getUUID());
+            linkKilled.put(victim.getUUID(), victim.getStats().getValue(insomniaStat()));
             server.getPlayerList().broadcastSystemMessage(
                     Component.translatable("message.aem.deathlink.victim",
                             victim.getDisplayName(), message), false);
             victim.kill(victim.level());
         });
+    }
+
+    /** Ticks since the player last slept — the counter {@code PhantomSpawner} reads. */
+    private static Stat<?> insomniaStat() {
+        return Stats.CUSTOM.get(Stats.TIME_SINCE_REST);
     }
 
     /** Drops a pending suppression, so a disconnect mid-kill cannot leave a player permanently muted. */

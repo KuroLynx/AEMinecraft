@@ -1,0 +1,24 @@
+{
+  "parent": "aem:unlock_knowledge/keep_inventory/1",
+  "criteria": {
+    "never": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "never"
+    ]
+  ],
+  "display": {
+    "icon": {
+      "id": "minecraft:bundle"
+    },
+    "title": "Progressive Inventory Slot",
+    "description": "Unlock Progressive Inventory Slot",
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": false
+  }
+}

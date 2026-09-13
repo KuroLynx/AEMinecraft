@@ -11,3 +11,5 @@ __pycache__/
 
 # Refactor equivalence-gate fixtures (large, regenerable via `python tools/snapshot_slotdata.py write`)
 /tools/_slotdata_baseline/
+/dist/
+.mcp.json

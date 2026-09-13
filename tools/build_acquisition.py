@@ -13,7 +13,8 @@ Per-item record (only non-empty keys present); ``<ing>`` is
       "recipes":    [ {"station": "<id>", "ingredients": [ <ing>, ... ]}, ... ],
       "drops":      ["<mob>", ...],                    # mob loot table
       "mining":     ["<block>", ...],                  # block loot table
-      "structures": ["<real structure name>", ...],    # chest / archaeology loot
+      "structures": ["<real structure name>", ...],    # chest / dispenser / spawner loot
+      "archaeology": ["<real structure name>", ...],   # brushed out of suspicious sand/gravel
       "trades":     [["<profession>", "<file>"], ...],
       "breeding":   ["<mob>", ...],                    # appears in a mob's food/tempt tag
       "gameplay":   ["<table>", ...]                   # fishing / sniffing / misc
@@ -104,6 +105,7 @@ class AcquisitionBuilder:
         self.mining: dict[str, set] = {}
         self.silk_mining: dict[str, set] = {}  # block self-drops only a Silk-Touch tool yields
         self.structures: dict[str, set] = {}
+        self.archaeology: dict[str, set] = {}  # brushed out of suspicious sand/gravel, not looted
         self.trades: dict[str, set] = {}
         self.breeding: dict[str, set] = {}
         self.gameplay: dict[str, set] = {}
@@ -270,7 +272,12 @@ class AcquisitionBuilder:
         for item in items:
             if category == "entities":
                 self.drops.setdefault(item, set()).add(file_name)
-            elif category in ("chests", "archaeology", "dispensers", "spawners"):
+            elif category == "archaeology":
+                # Suspicious sand/gravel: the loot comes out with a BRUSH, and breaking the block
+                # destroys it — a different gate from opening a chest, so a different key.
+                for struct in self._structures_for(rel):
+                    self.archaeology.setdefault(item, set()).add(struct)
+            elif category in ("chests", "dispensers", "spawners"):
                 for struct in self._structures_for(rel):
                     self.structures.setdefault(item, set()).add(struct)
             elif category == "shearing":
@@ -331,7 +338,8 @@ class AcquisitionBuilder:
         for item, mobs in _HARDCODED_DROPS.items():
             self.drops.setdefault(item, set()).update(mobs)
         items = set(self.recipes) | set(self.drops) | set(self.mining) | set(self.silk_mining) \
-            | set(self.structures) | set(self.trades) | set(self.breeding) | set(self.gameplay)
+            | set(self.structures) | set(self.archaeology) | set(self.trades) \
+            | set(self.breeding) | set(self.gameplay)
         out: dict[str, dict] = {}
         for item in sorted(items):
             rec: dict = {}
@@ -345,6 +353,8 @@ class AcquisitionBuilder:
                 rec["silk_mining"] = sorted(self.silk_mining[item])
             if item in self.structures:
                 rec["structures"] = sorted(self.structures[item])
+            if item in self.archaeology:
+                rec["archaeology"] = sorted(self.archaeology[item])
             if item in self.trades:
                 rec["trades"] = sorted([list(t) for t in self.trades[item]])
             if item in self.breeding:

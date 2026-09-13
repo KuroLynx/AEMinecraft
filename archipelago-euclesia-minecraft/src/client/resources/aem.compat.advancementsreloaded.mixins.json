@@ -1,0 +1,13 @@
+{
+	"required": true,
+	"package": "fr.euclesia.mcarchipelago.client.compat.advancementsreloaded",
+	"compatibilityLevel": "JAVA_25",
+	"plugin": "fr.euclesia.mcarchipelago.client.compat.advancementsreloaded.AdvReloadedMixinPlugin",
+	"client": [
+		"AdvReloadedWidgetMixin",
+		"AdvReloadedScreenMixin"
+	],
+	"injectors": {
+		"defaultRequire": 0
+	}
+}
