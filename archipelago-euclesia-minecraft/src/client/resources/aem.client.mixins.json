@@ -8,6 +8,7 @@
 		"AdvancementTabTypeMixin",
 		"AdvancementWidgetAccessor",
 		"AdvancementWidgetMixin",
+		"ClientAdvancementsAccessor",
 		"CreateWorldScreenMixin",
 		"DisplayInfoDescriptionMixin",
 		"GuiSpritesAccessor",
