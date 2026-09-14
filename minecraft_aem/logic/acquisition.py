@@ -289,6 +289,16 @@ def _item_tag(tag: str) -> frozenset:
 # names flow/guster/scrape only inside trial_chambers structure templates. A pot drops its sherds only
 # when broken 'cracked', which data/minecraft/loot_table/blocks/decorated_pot.json ties to breaking it
 # with an item in #breaks_decorated_pots; broken otherwise it drops itself, sherds sealed in.
+# Suspicious sand and gravel break to nothing, and no recipe, loot table or trade makes them — but they
+# fall, and a falling block that lands on a cobweb drops as an item. Where each generates is decided in
+# code, not in the palettes: DesertPyramidStructure and DesertWellFeature place sand, OceanRuinPieces
+# puts sand in warm ruins and gravel in cold ones, and the trail_ruins *_archaeology processor lists
+# place gravel.
+_SUSPICIOUS_BLOCK_STRUCTURES: dict[str, tuple[str, ...]] = {
+    "suspicious_sand": (S_DESERT_PYRAMID, S_OCEAN_RUIN_WARM),
+    "suspicious_gravel": (S_TRAIL_RUINS, S_OCEAN_RUIN_COLD),
+}
+
 _STRUCTURE_POT_SHERDS: dict[str, str] = {
     "flow_pottery_sherd": S_TRIAL_CHAMBERS,
     "guster_pottery_sherd": S_TRIAL_CHAMBERS,
@@ -1815,6 +1825,18 @@ class RuleHelper:
             if sources is not None:
                 routes.append(sources)
             return self._with_reward(base, self._coarsen(self._unique_or(routes)))
+
+        suspicious = _SUSPICIOUS_BLOCK_STRUCTURES.get(base)
+        if suspicious is not None:
+            places = [self.structure(name) for name in suspicious]
+            if base == "suspicious_sand":
+                # A desert well is a biome feature, not a structure: any desert has one.
+                places.append(self.all_of(self.access_region(REGION_OVERWORLD),
+                                          self.strict_only(self.needs_biome_finder())))
+            cobweb = self.acquire("minecraft:cobweb", _stack | {base})
+            if cobweb is None:
+                return None
+            return self.all_of(self.any_of(*places), cobweb)
 
         structure_pot = _STRUCTURE_POT_SHERDS.get(base)
         if structure_pot is not None:
