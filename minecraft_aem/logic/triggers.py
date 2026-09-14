@@ -304,6 +304,23 @@ _BLOCK_GATE = {
 # Requirements the game enforces that the criteria never state, AND-ed onto a compiled record by
 # game_id. Deliberately a short list: anything derivable from the criteria belongs in a handler, and
 # every entry here is a fact about how the advancement is actually done.
+# Triggers that cannot fire without a living mob taking part: something killed, hurt, bred, tamed,
+# traded with, interacted with, or picking an item up. When a criterion pins no entity type at all,
+# the handler has nothing to reach, and several priced only the weapon, the place or the item — so
+# 'Death by Magic', 'Arbalistic', 'It Spreads' and "What's Up, Doc?" were reachable with every mob
+# locked. An armor stand is no substitute: ArmorStand.kill() removes it without LivingEntity.die, so
+# it never awards a kill. entity_killed_player is left out: its killer need not be a mob.
+_NEEDS_A_MOB = frozenset({
+    "minecraft:player_killed_entity", "minecraft:player_hurt_entity", "minecraft:bred_animals",
+    "minecraft:tame_animal", "minecraft:villager_trade", "minecraft:cured_zombie_villager",
+    "minecraft:summoned_entity", "minecraft:player_interacted_with_entity",
+    "minecraft:kill_mob_near_sculk_catalyst", "minecraft:killed_by_arrow",
+    "minecraft:channeled_lightning", "minecraft:spear_mobs", "minecraft:thrown_item_picked_up_by_entity",
+})
+# Criterion keys that name a participating entity (as opposed to a projectile or the damage source).
+_PARTICIPANT_KEYS = frozenset({"entity", "victims", "villager", "child", "parent", "partner", "zombie",
+                               "bystander"})
+
 # The effects a spider can spawn with on Hard difficulty (Spider$SpiderEffectsGroupData.setRandomEffect).
 _SPIDER_SPAWN_EFFECTS = frozenset({"minecraft:speed", "minecraft:strength", "minecraft:regeneration",
                                    "minecraft:invisibility"})
@@ -494,8 +511,27 @@ class TriggerCompiler:
         rule = self._criterion_trigger(crit)
         if rule is None:
             return None
+        cond = crit.get("conditions") or {}
+        if crit.get("trigger") in _NEEDS_A_MOB and not self._pins_participant_type(cond):
+            rule = and_(rule, self.h.can_kill_any_mob())
         where = self._location_node(crit.get("conditions") or {})
         return rule if where is None else and_(rule, where)
+
+    @staticmethod
+    def _pins_participant_type(cond) -> bool:
+        """Whether a participant predicate names an entity `type` (outside an inverted condition). A
+        pinned type is priced by its handler — and may be no mob at all, like Living Dummy's armor
+        stand — so only a criterion that pins none gets the generic "some mob" requirement."""
+        def walk(node, participant):
+            if isinstance(node, list):
+                return any(walk(item, participant) for item in node)
+            if not isinstance(node, dict) or str(node.get("condition", "")).endswith("inverted"):
+                return False
+            if participant and isinstance(node.get("type"), str):
+                return True
+            return any(walk(value, participant or key in _PARTICIPANT_KEYS)
+                       for key, value in node.items() if key not in ("damage", "killing_blow"))
+        return walk(cond, False)
 
     def _criterion_trigger(self, crit: dict) -> Rule | None:
         trigger = crit.get("trigger")
@@ -720,7 +756,11 @@ class TriggerCompiler:
             # villager it is about, which the `bystander` predicate pins.
             bystander = cond.get("bystander")
             return (self._entity_node({"entity": bystander}) if bystander else None) or and_()
-        if trigger in ("minecraft:channeled_lightning", "minecraft:spear_mobs"):
+        if trigger == "minecraft:spear_mobs":
+            # A spear's Charge attack (the KineticWeapon component only spears carry — "Hit five mobs
+            # in the same Charge attack using the Spear"). It used to ask for a trident.
+            return self._tag_acquire("#minecraft:spears")
+        if trigger == "minecraft:channeled_lightning":
             # Channel lightning with a trident / spear mobs with one → obtain a trident, AND reach
             # whatever the criterion says you must hit: 'Electrifying Alliance' names its victims, and
             # asking only for the trident let it pass without them.
