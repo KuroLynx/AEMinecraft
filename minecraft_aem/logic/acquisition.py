@@ -2110,7 +2110,10 @@ class RuleHelper:
         if not self.route_open("crafting" if key == "crafting" else "station"):
             names = RECIPE_STATION_KNOWLEDGE.get(key)
             if names:
-                parts.append(self.any_of(*(self.knowledge(name) for name in names)))
+                # A crafter is itself crafted on a crafting table, so Knowledge: Crafter alone crafts
+                # nothing — it read as "can craft" and put composters in logic with no way to make one.
+                table = self.knowledge("Crafting Table") if key == "crafting" else self.all_of()
+                parts.append(self.any_of(*(self.all_of(self.knowledge(name), table) for name in names)))
         if key != "crafting":
             # Obtaining the station, threading the recipe's own stack so a station that somehow
             # depends on its own output drops out (None) instead of recursing. If every candidate
