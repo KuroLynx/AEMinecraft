@@ -59,6 +59,8 @@ _GAMEPLAY_HARVEST: dict[str, tuple] = {
     "beehive": (REGION_OVERWORLD, True), "pumpkin": (REGION_OVERWORLD, True),
     "cave_vine": (REGION_OVERWORLD, False), "sweet_berry_bush": (REGION_OVERWORLD, False),
 }
+# A harvest table named differently from the block it is picked off.
+_HARVEST_BLOCK = {"cave_vine": "cave_vines"}
 
 # Lazily-loaded acquisition table (tools/build_acquisition.py) + reverse id lookups. Cached because
 # they are read once per generation but queried thousands of times by the trigger compiler.
@@ -273,6 +275,54 @@ def _block_mining() -> dict:
 
 
 _BLOCK_STRUCTURES: dict | None = None
+_ITEM_TAGS: dict | None = None
+_BLOCK_BIOMES: dict | None = None
+
+
+def _rare_biome_block(block: str) -> bool:
+    """Whether ``block`` generates only in RARE_BIOMES (tools/build_block_biomes.py, read off the jar's
+    worldgen), so mining it where it grows means finding one of those biomes. A block the table does
+    not list is not biome worldgen at all and gets no gate. Same rarity judgement as BIOME_BOUND_MOBS."""
+    global _BLOCK_BIOMES
+    if _BLOCK_BIOMES is None:
+        path = files(_MC_ROOT).joinpath("packs", base_pack(), "block_biomes.json")
+        try:
+            with path.open(encoding="utf-8") as handle:
+                _BLOCK_BIOMES = json.load(handle)
+        except FileNotFoundError:
+            _BLOCK_BIOMES = {}
+    biomes = _BLOCK_BIOMES.get(block)
+    return bool(biomes) and all(biome in RARE_BIOMES for biome in biomes)
+
+
+def _item_tag(tag: str) -> frozenset:
+    """Members of a vanilla item tag (tags.json, already expanded), as bare paths."""
+    global _ITEM_TAGS
+    if _ITEM_TAGS is None:
+        with files(_MC_ROOT).joinpath("packs", base_pack(), "tags.json").open(encoding="utf-8") as handle:
+            _ITEM_TAGS = json.load(handle).get("item", {})
+    return frozenset(member.split(":", 1)[-1] for member in _ITEM_TAGS.get(tag, ()))
+
+
+# Sherds that come out of a structure's own decorated pots and no loot table at all — the 26.1.2 jar
+# names flow/guster/scrape only inside trial_chambers structure templates. A pot drops its sherds only
+# when broken 'cracked', which data/minecraft/loot_table/blocks/decorated_pot.json ties to breaking it
+# with an item in #breaks_decorated_pots; broken otherwise it drops itself, sherds sealed in.
+# Suspicious sand and gravel break to nothing, and no recipe, loot table or trade makes them — but they
+# fall, and a falling block that lands on a cobweb drops as an item. Where each generates is decided in
+# code, not in the palettes: DesertPyramidStructure and DesertWellFeature place sand, OceanRuinPieces
+# puts sand in warm ruins and gravel in cold ones, and the trail_ruins *_archaeology processor lists
+# place gravel.
+_SUSPICIOUS_BLOCK_STRUCTURES: dict[str, tuple[str, ...]] = {
+    "suspicious_sand": (S_DESERT_PYRAMID, S_OCEAN_RUIN_WARM),
+    "suspicious_gravel": (S_TRAIL_RUINS, S_OCEAN_RUIN_COLD),
+}
+
+_STRUCTURE_POT_SHERDS: dict[str, str] = {
+    "flow_pottery_sherd": S_TRIAL_CHAMBERS,
+    "guster_pottery_sherd": S_TRIAL_CHAMBERS,
+    "scrape_pottery_sherd": S_TRIAL_CHAMBERS,
+}
 
 
 def _aged_source(block: str) -> str | None:
@@ -609,29 +659,31 @@ class RuleHelper:
         # where it belongs — this used to be five hand-written lambdas, and the mooshroom was simply
         # missing from them, so 'Super Mooshroom' asked for no Mushroom Fields while its own parent
         # advancement did.
-        self.biome_bound_mobs = {name: (lambda: self.needs_biome_finder())
+        # strict_only, like a criterion that names a biome: the glitch graph waives the Finder, never the
+        # mob's Entity Unlock, which entity() asks for separately.
+        self.biome_bound_mobs = {name: (lambda: self.strict_only(self.needs_biome_finder()))
                                  for name in BIOME_BOUND_MOBS}
         # …plus the three the spawn lists cannot speak for, because what they cost is not a search:
         self.biome_bound_mobs.update({
             # Frogs spawn in ordinary swamps, so the derivation rightly leaves them alone — but a frog
             # is only interesting for its three CLIMATE variants (the three froglights), and those
             # really are three journeys.
-            E_FROG       : lambda: self.needs_biome_finder(),
+            E_FROG       : lambda: self.strict_only(self.needs_biome_finder()),
             # No spawner entry at all: a creaking hatches from a creaking heart, which generates only
             # in the Pale Garden.
-            E_CREAKING   : lambda: self.needs_biome_finder(),
+            E_CREAKING   : lambda: self.strict_only(self.needs_biome_finder()),
             # Likewise none: a happy ghast comes from a dried ghast, which is Soul Sand Valley — or
             # Piglin bartering, so the finder is only needed without that path.
             E_HAPPY_GHAST: lambda: self.any_of(
                 self.can_barter(),
-                self.needs_biome_finder(),
+                self.strict_only(self.needs_biome_finder()),
             ),
         })
         if not BIOME_BOUND_MOBS:
             # A content pack dumped before `biomes` existed says nothing about spawn biomes, and
             # silence must not read as "gate nothing" — that would quietly loosen every one of these.
             for name in (E_AXOLOTL, E_GOAT, E_MOOSHROOM):
-                self.biome_bound_mobs.setdefault(name, lambda: self.needs_biome_finder())
+                self.biome_bound_mobs.setdefault(name, lambda: self.strict_only(self.needs_biome_finder()))
 
     # -----------------------------------------------------------------------
     # Global
@@ -1518,6 +1570,34 @@ class RuleHelper:
             return Const(False)
         return self.all_of(self.entity(E_WANDERING_TRADER), self._trade_currency())
 
+    def meet_wandering_trader(self):
+        """Trade with a Wandering Trader when the check itself names one — BOTH graphs.
+
+        can_trade_wandering_trader is glitch-only because a trader is a flimsy *source* of an item:
+        which offer it rolls is luck. A criterion that pins the trader has no alternative to it, and
+        traders do keep spawning near the player on their own, so strict logic asks for the unlock
+        and the emeralds rather than calling the check impossible."""
+        return self.all_of(self.entity(E_WANDERING_TRADER), self._trade_currency())
+
+    def take_lock(self, item_id: str, route: str):
+        """What the mod demands before ``item_id`` can be TAKEN from a GUI or the floor, not how to
+        get it: MaterialLockService's raw-material tier, and a tool lock's Knowledge + tier (a gated
+        station/container block's Knowledge counts as one). ``route`` is the item_gate_behavior
+        channel the take happens on; an open route asks for nothing."""
+        if self.route_open(route):
+            return Const(True)
+        base = item_id.split(":", 1)[-1]
+        parts = []
+        tier = _MATERIAL_TIER_BY_ITEM.get(base)
+        if tier:
+            parts.append(self.has(ITEM_MATERIAL_HANDLING, tier))
+        knowledge_name, tool_tier = TOOL_LOCKS.get(base, (BLOCK_KNOWLEDGE.get(f"minecraft:{base}"), 0))
+        if knowledge_name is not None and knowledge_name in self.active_knowledges:
+            parts.append(self.knowledge(knowledge_name))
+            if tool_tier > 0:
+                parts.append(self.has(ITEM_MATERIAL_HANDLING, tool_tier))
+        return self.all_of(*parts)
+
     def can_trade(self):
         """The player can perform *some* trade — a novice (min-level) villager or a
         Wandering Trader. Use for rules that only need "a trade happened" with no
@@ -1622,7 +1702,11 @@ class RuleHelper:
         # Wood is free once its dimension is reached; collapse it instead of fanning out variants.
         wood_region = _wood_region(base)
         if wood_region is not None:
-            return self.access_region(wood_region)
+            if base == "stick":
+                return self.access_region(wood_region)
+            species = base.removeprefix("stripped_").rsplit("_", 1)[0]
+            # Jungle wood grows only in jungles — see _natural_origin.
+            return self.all_of(self.access_region(wood_region), self._natural_origin(f"{species}_log"))
 
         # Dragon's breath has no recipe or loot table — you bottle it from the Ender Dragon's breath
         # mid-fight — so it is modeled here: the dragon must be reachable (and unlocked, when the
@@ -1755,6 +1839,39 @@ class RuleHelper:
         # So model the real route for EVERY filled bucket — the bucket, plus whatever fills it — and
         # OR the record's own routes alongside it, because a bucket of fish bought from a trader or
         # pulled out of a chest genuinely needs no bucket of your own.
+        # A creeper killed by a skeleton drops a disc from #creeper_drop_music_discs (the creeper loot
+        # table's `attacker` condition). The dump records no such source, so ward, chirp, far, mall,
+        # mellohi, stal, strad, wait, 11 and blocks had none at all, and every check wanting one fell
+        # back to its parent chain — 'All the Items!' came out as reaching 'All the Blocks!'.
+        if base in _item_tag("minecraft:creeper_drop_music_discs"):
+            routes = [self.all_of(self.has_any_entities(E_SKELETON, E_STRAY, E_BOGGED, E_PARCHED),
+                                  self.entity(E_CREEPER))]
+            sources = self._acquire_from_sources(base, _stack)
+            if sources is not None:
+                routes.append(sources)
+            return self._with_reward(base, self._coarsen(self._unique_or(routes)))
+
+        suspicious = _SUSPICIOUS_BLOCK_STRUCTURES.get(base)
+        if suspicious is not None:
+            places = [self.structure(name) for name in suspicious]
+            if base == "suspicious_sand":
+                # A desert well is a biome feature, not a structure: any desert has one.
+                places.append(self.all_of(self.access_region(REGION_OVERWORLD),
+                                          self.strict_only(self.needs_biome_finder())))
+            cobweb = self.acquire("minecraft:cobweb", _stack | {base})
+            if cobweb is None:
+                return None
+            return self.all_of(self.any_of(*places), cobweb)
+
+        structure_pot = _STRUCTURE_POT_SHERDS.get(base)
+        if structure_pot is not None:
+            breakers = [self.acquire(f"minecraft:{tool}", _stack | {base})
+                        for tool in sorted(_item_tag("minecraft:breaks_decorated_pots"))]
+            breakers = [node for node in breakers if node is not None]
+            if structure_pot not in self.active_structures or not breakers:
+                return None
+            return self.all_of(self.structure(structure_pot), self.any_of(*breakers))
+
         if base.endswith("_bucket"):
             routes = []
             bucket = self.acquire("minecraft:bucket", _stack | {base})
@@ -1781,6 +1898,13 @@ class RuleHelper:
             sources = self._acquire_from_sources(base, _stack)
             obtain = self._coarsen(sources) if sources is not None else self.material(tier)
             gates = [self.knowledge(knowledge_name)]
+            # The mod's tool lock asks for the tier too, on every route the item arrives by
+            # (MaterialLockService: Knowledge AND Material Handling >= tier). A crafted tool carries
+            # it through its ingredients, but a traded, looted or dropped one did not: a stone pickaxe
+            # bought from a toolsmith read as obtainable with no Material Handling at all. The lock is
+            # only shipped while its Knowledge gate is on, so the tier is only asked for then.
+            if tier > 0 and knowledge_name in self.active_knowledges and not self.route_open("pickup"):
+                gates.append(self.has(ITEM_MATERIAL_HANDLING, tier))
             # Armor pieces additionally need an armor slot to wear them in (inventory_lock): having
             # the Knowledge and the material is not enough if there is nowhere to put the thing on.
             if knowledge_name == K_ARMOR:
@@ -2110,7 +2234,10 @@ class RuleHelper:
         if not self.route_open("crafting" if key == "crafting" else "station"):
             names = RECIPE_STATION_KNOWLEDGE.get(key)
             if names:
-                parts.append(self.any_of(*(self.knowledge(name) for name in names)))
+                # A crafter is itself crafted on a crafting table, so Knowledge: Crafter alone crafts
+                # nothing — it read as "can craft" and put composters in logic with no way to make one.
+                table = self.knowledge("Crafting Table") if key == "crafting" else self.all_of()
+                parts.append(self.any_of(*(self.all_of(self.knowledge(name), table) for name in names)))
         if key != "crafting":
             # Obtaining the station, threading the recipe's own stack so a station that somehow
             # depends on its own output drops out (None) instead of recursing. If every candidate
@@ -2216,10 +2343,21 @@ class RuleHelper:
         active = [name for name in value if name in self.active_structures]
         return self.any_of(*[self.structure(name) for name in active]) if active else None
 
+    def _natural_origin(self, block: str):
+        """What a block that simply generates costs to find: nothing — unless it generates only in rare
+        biomes (_rare_biome_block), where finding it IS finding the biome. Cocoa beans, glow berries,
+        jungle logs, sculk and mycelium were all priced as "be in the Overworld". The Finder is how
+        strict logic finds a biome (strict_only, as for a criterion that names one); a structure whose
+        palette places the block is the other way to stand next to one."""
+        if not _rare_biome_block(block):
+            return self.all_of()
+        return self.any_of(self.strict_only(self.needs_biome_finder()),
+                           *[self.structure(name) for name in _block_structures().get(block, ())])
+
     def _placed_block_origin(self, block: str, stack: frozenset):
         """Origin of a block nobody finds lying around, derived rather than curated: one whose record
-        has a recipe and NO source of its own — no loot chest, no mob drop, no gameplay or trade, and
-        nothing mined but itself. Such a block is where it is because a player crafted it or a
+        has a recipe and nothing that generates it — no gameplay or silk-mining source, and nothing
+        mined but itself (a chest, a drop or a trade gives you the item, not a placed block). Such a block is where it is because a player crafted it or a
         structure's palette placed it, so mining it for what it drops costs one of those two.
 
         The case that found this: obsidian lists ``ender_chest`` among its mining blocks, because
@@ -2233,15 +2371,18 @@ class RuleHelper:
         the rest carry their own mining/loot sources in the record, so they never reach the test.
         ``None`` when neither origin exists this seed — the caller then drops the route."""
         if block in _NATURAL_SELF_MINED:
-            return self.all_of()          # curated: it really is lying around out there
+            return self._natural_origin(block)  # curated: it really is lying around out there
         record = _acquisition_table().get(block)
         if not record or not record.get("recipes"):
-            return self.all_of()
-        if any(record.get(key) for key in ("structures", "drops", "gameplay", "archaeology",
-                                           "trades", "silk_mining")):
-            return self.all_of()
+            return self._natural_origin(block)
+        # Only a source that PUTS the block somewhere says it can be found standing. Loot, drops,
+        # archaeology and trades hand you the item, which still has to be placed — and that is what
+        # the crafted route below prices, since acquire() already includes them. Counting a trade as
+        # "lying around" made a fisherman's campfire free to break, and so charcoal free with it.
+        if any(record.get(key) for key in ("gameplay", "silk_mining")):
+            return self._natural_origin(block)
         if any(mined != block for mined in record.get("mining", ())):
-            return self.all_of()
+            return self._natural_origin(block)
         routes = [self.structure(name) for name in _block_structures().get(block, ())
                   if name in self.active_structures]
         crafted = self.acquire(f"minecraft:{block}", stack)
@@ -2327,12 +2468,13 @@ class RuleHelper:
         harvest = _GAMEPLAY_HARVEST.get(table)
         if harvest is not None:
             region, needs_shears = harvest
+            grows = self.all_of(self.access_region(region), self._natural_origin(_HARVEST_BLOCK.get(table, table)))
             if needs_shears:
                 shears = self.acquire("minecraft:shears", stack)
                 if shears is None:
                     return None  # can't shear-harvest without shears (circular here)
-                return self.all_of(self.access_region(region), shears)
-            return self.access_region(region)
+                return self.all_of(grows, shears)
+            return grows
         if table in ("corridor", "trial_chamber_melee", "trial_chamber_ranged"):
             return self.structure(S_TRIAL_CHAMBERS)
         return None
@@ -2349,6 +2491,17 @@ class RuleHelper:
         if base in TOOL_LOCKS:
             knowledge_name, tier = TOOL_LOCKS[base]
             return self.all_of(self.knowledge(knowledge_name), self.material(tier))
+        if base == "firework_star":
+            # A special recipe type (data/minecraft/recipe/firework_star.json), which the dump does not
+            # record: gunpowder and a dye are required, the shape and effect slots optional. With no
+            # record the star was unpriceable, and 'All the Items!' fell back to its parent chain.
+            stack = frozenset({base})
+            dyes = [node for node in (self.acquire(f"minecraft:{dye}", stack)
+                                      for dye in sorted(_item_tag("minecraft:dyes"))) if node is not None]
+            gunpowder = self.acquire("minecraft:gunpowder", stack)
+            if gunpowder is None or not dyes:
+                return None
+            return self.all_of(self._station_node("crafting_special", stack), gunpowder, self.any_of(*dyes))
         tier = _MATERIAL_TIER_BY_ITEM.get(base)
         if tier is not None:
             return self.material(tier)
