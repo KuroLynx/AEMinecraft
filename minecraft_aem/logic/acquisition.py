@@ -59,6 +59,8 @@ _GAMEPLAY_HARVEST: dict[str, tuple] = {
     "beehive": (REGION_OVERWORLD, True), "pumpkin": (REGION_OVERWORLD, True),
     "cave_vine": (REGION_OVERWORLD, False), "sweet_berry_bush": (REGION_OVERWORLD, False),
 }
+# A harvest table named differently from the block it is picked off.
+_HARVEST_BLOCK = {"cave_vine": "cave_vines"}
 
 # Lazily-loaded acquisition table (tools/build_acquisition.py) + reverse id lookups. Cached because
 # they are read once per generation but queried thousands of times by the trigger compiler.
@@ -274,6 +276,23 @@ def _block_mining() -> dict:
 
 _BLOCK_STRUCTURES: dict | None = None
 _ITEM_TAGS: dict | None = None
+_BLOCK_BIOMES: dict | None = None
+
+
+def _rare_biome_block(block: str) -> bool:
+    """Whether ``block`` generates only in RARE_BIOMES (tools/build_block_biomes.py, read off the jar's
+    worldgen), so mining it where it grows means finding one of those biomes. A block the table does
+    not list is not biome worldgen at all and gets no gate. Same rarity judgement as BIOME_BOUND_MOBS."""
+    global _BLOCK_BIOMES
+    if _BLOCK_BIOMES is None:
+        path = files(_MC_ROOT).joinpath("packs", base_pack(), "block_biomes.json")
+        try:
+            with path.open(encoding="utf-8") as handle:
+                _BLOCK_BIOMES = json.load(handle)
+        except FileNotFoundError:
+            _BLOCK_BIOMES = {}
+    biomes = _BLOCK_BIOMES.get(block)
+    return bool(biomes) and all(biome in RARE_BIOMES for biome in biomes)
 
 
 def _item_tag(tag: str) -> frozenset:
@@ -640,29 +659,31 @@ class RuleHelper:
         # where it belongs — this used to be five hand-written lambdas, and the mooshroom was simply
         # missing from them, so 'Super Mooshroom' asked for no Mushroom Fields while its own parent
         # advancement did.
-        self.biome_bound_mobs = {name: (lambda: self.needs_biome_finder())
+        # strict_only, like a criterion that names a biome: the glitch graph waives the Finder, never the
+        # mob's Entity Unlock, which entity() asks for separately.
+        self.biome_bound_mobs = {name: (lambda: self.strict_only(self.needs_biome_finder()))
                                  for name in BIOME_BOUND_MOBS}
         # …plus the three the spawn lists cannot speak for, because what they cost is not a search:
         self.biome_bound_mobs.update({
             # Frogs spawn in ordinary swamps, so the derivation rightly leaves them alone — but a frog
             # is only interesting for its three CLIMATE variants (the three froglights), and those
             # really are three journeys.
-            E_FROG       : lambda: self.needs_biome_finder(),
+            E_FROG       : lambda: self.strict_only(self.needs_biome_finder()),
             # No spawner entry at all: a creaking hatches from a creaking heart, which generates only
             # in the Pale Garden.
-            E_CREAKING   : lambda: self.needs_biome_finder(),
+            E_CREAKING   : lambda: self.strict_only(self.needs_biome_finder()),
             # Likewise none: a happy ghast comes from a dried ghast, which is Soul Sand Valley — or
             # Piglin bartering, so the finder is only needed without that path.
             E_HAPPY_GHAST: lambda: self.any_of(
                 self.can_barter(),
-                self.needs_biome_finder(),
+                self.strict_only(self.needs_biome_finder()),
             ),
         })
         if not BIOME_BOUND_MOBS:
             # A content pack dumped before `biomes` existed says nothing about spawn biomes, and
             # silence must not read as "gate nothing" — that would quietly loosen every one of these.
             for name in (E_AXOLOTL, E_GOAT, E_MOOSHROOM):
-                self.biome_bound_mobs.setdefault(name, lambda: self.needs_biome_finder())
+                self.biome_bound_mobs.setdefault(name, lambda: self.strict_only(self.needs_biome_finder()))
 
     # -----------------------------------------------------------------------
     # Global
@@ -1681,7 +1702,11 @@ class RuleHelper:
         # Wood is free once its dimension is reached; collapse it instead of fanning out variants.
         wood_region = _wood_region(base)
         if wood_region is not None:
-            return self.access_region(wood_region)
+            if base == "stick":
+                return self.access_region(wood_region)
+            species = base.removeprefix("stripped_").rsplit("_", 1)[0]
+            # Jungle wood grows only in jungles — see _natural_origin.
+            return self.all_of(self.access_region(wood_region), self._natural_origin(f"{species}_log"))
 
         # Dragon's breath has no recipe or loot table — you bottle it from the Ender Dragon's breath
         # mid-fight — so it is modeled here: the dragon must be reachable (and unlocked, when the
@@ -2318,6 +2343,17 @@ class RuleHelper:
         active = [name for name in value if name in self.active_structures]
         return self.any_of(*[self.structure(name) for name in active]) if active else None
 
+    def _natural_origin(self, block: str):
+        """What a block that simply generates costs to find: nothing — unless it generates only in rare
+        biomes (_rare_biome_block), where finding it IS finding the biome. Cocoa beans, glow berries,
+        jungle logs, sculk and mycelium were all priced as "be in the Overworld". The Finder is how
+        strict logic finds a biome (strict_only, as for a criterion that names one); a structure whose
+        palette places the block is the other way to stand next to one."""
+        if not _rare_biome_block(block):
+            return self.all_of()
+        return self.any_of(self.strict_only(self.needs_biome_finder()),
+                           *[self.structure(name) for name in _block_structures().get(block, ())])
+
     def _placed_block_origin(self, block: str, stack: frozenset):
         """Origin of a block nobody finds lying around, derived rather than curated: one whose record
         has a recipe and nothing that generates it — no gameplay or silk-mining source, and nothing
@@ -2335,18 +2371,18 @@ class RuleHelper:
         the rest carry their own mining/loot sources in the record, so they never reach the test.
         ``None`` when neither origin exists this seed — the caller then drops the route."""
         if block in _NATURAL_SELF_MINED:
-            return self.all_of()          # curated: it really is lying around out there
+            return self._natural_origin(block)  # curated: it really is lying around out there
         record = _acquisition_table().get(block)
         if not record or not record.get("recipes"):
-            return self.all_of()
+            return self._natural_origin(block)
         # Only a source that PUTS the block somewhere says it can be found standing. Loot, drops,
         # archaeology and trades hand you the item, which still has to be placed — and that is what
         # the crafted route below prices, since acquire() already includes them. Counting a trade as
         # "lying around" made a fisherman's campfire free to break, and so charcoal free with it.
         if any(record.get(key) for key in ("gameplay", "silk_mining")):
-            return self.all_of()
+            return self._natural_origin(block)
         if any(mined != block for mined in record.get("mining", ())):
-            return self.all_of()
+            return self._natural_origin(block)
         routes = [self.structure(name) for name in _block_structures().get(block, ())
                   if name in self.active_structures]
         crafted = self.acquire(f"minecraft:{block}", stack)
@@ -2432,12 +2468,13 @@ class RuleHelper:
         harvest = _GAMEPLAY_HARVEST.get(table)
         if harvest is not None:
             region, needs_shears = harvest
+            grows = self.all_of(self.access_region(region), self._natural_origin(_HARVEST_BLOCK.get(table, table)))
             if needs_shears:
                 shears = self.acquire("minecraft:shears", stack)
                 if shears is None:
                     return None  # can't shear-harvest without shears (circular here)
-                return self.all_of(self.access_region(region), shears)
-            return self.access_region(region)
+                return self.all_of(grows, shears)
+            return grows
         if table in ("corridor", "trial_chamber_melee", "trial_chamber_ranged"):
             return self.structure(S_TRIAL_CHAMBERS)
         return None
