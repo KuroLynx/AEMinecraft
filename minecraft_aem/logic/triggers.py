@@ -32,6 +32,18 @@ from ..data import (
 from .acquisition import RuleHelper, _acquisition_table
 from .ast import Const, Rule, and_, or_
 from .constants import (
+    E_ARMADILLO,
+    E_CAVE_SPIDER,
+    E_CHICKEN,
+    E_COPPER_GOLEM,
+    E_COW,
+    E_ENDER_DRAGON,
+    E_PIG,
+    E_SKELETON,
+    E_SPIDER,
+    E_WARDEN,
+    E_WITHER,
+    E_ZOMBIE,
     K_ARMOR,
     K_BREWING,
     K_HOE,
@@ -292,11 +304,34 @@ _BLOCK_GATE = {
 # Requirements the game enforces that the criteria never state, AND-ed onto a compiled record by
 # game_id. Deliberately a short list: anything derivable from the criteria belongs in a handler, and
 # every entry here is a fact about how the advancement is actually done.
+# The effects a spider can spawn with on Hard difficulty (Spider$SpiderEffectsGroupData.setRandomEffect).
+_SPIDER_SPAWN_EFFECTS = frozenset({"minecraft:speed", "minecraft:strength", "minecraft:regeneration",
+                                   "minecraft:invisibility"})
+
 _EXTRA_REQUIREMENT = {
     # Unending Hell: be in the Nether having already been to the End, WITHOUT dying in between
     # (an inverted death score). Surviving that round trip means setting spawn on the Nether side,
     # and the anchor is the only way to do it — the criteria only describe the two dimensions.
     "blazeandcave:end/unending_hell": lambda h: h.acquire("minecraft:respawn_anchor"),
+    # Checks BACAP grants from its own functions (`minecraft:impossible` criteria), so the compiler has
+    # nothing to read and they fall back to their parent chain. That chain never needed the mob the
+    # check is ABOUT — each of these stayed reachable with that mob's unlock removed. Only what the
+    # in-game description names is added; the rest of what they cost is still the parent chain's.
+    "blazeandcave:animal/beef_moover": lambda h: h.entity(E_COW),                  # unite all Cow variants
+    "blazeandcave:animal/the_three_little_pigs": lambda h: h.entity(E_PIG),        # unite all Pig variants
+    "blazeandcave:redstone/splatfest": lambda h: h.entity(E_CHICKEN),              # every type of Chicken Egg
+    "blazeandcave:challenges/dragon_vs_dragon_ii_electric_boogaloo":
+        lambda h: h.can_defeat(E_ENDER_DRAGON),                                     # defeat the Ender Dragon
+    "blazeandcave:challenges/dragon_vs_wither_the_pre_sequel": lambda h: h.can_defeat(E_WITHER),
+    "blazeandcave:challenges/the_world_is_ending": lambda h: h.summon(E_WITHER),   # summon ten withers
+    "blazeandcave:challenges/overwarden": lambda h: h.entity(E_WARDEN),            # fifty Wardens nearby
+    "blazeandcave:enchanting/whack_a_mole": lambda h: h.entity(E_ARMADILLO),       # hit eight Armadillos
+    "blazeandcave:end/why_do_i_hear_boss_music": lambda h: h.entity(E_ENDER_DRAGON),  # while fighting it
+    "blazeandcave:mining/copper_golem_overlord": lambda h: h.entity(E_COPPER_GOLEM),
+    "blazeandcave:monsters/bone_to_party": lambda h: h.all_of(h.entity(E_SKELETON), h.entity(E_WITHER)),
+    "blazeandcave:monsters/family_reunion": lambda h: h.entity(E_ZOMBIE),
+    # Fill the inventory with Totems of Undying: an Evoker is the only source the game data lists.
+    "blazeandcave:challenges/immortal": lambda h: h.acquire("minecraft:totem_of_undying"),
 }
 
 # Crops that can only be planted in farmland, which only a hoe makes. (Cocoa goes on jungle logs,
@@ -425,15 +460,21 @@ class TriggerCompiler:
             groups.append(extra(self.h))
         return and_(*groups)
 
-    def parent_rule(self, record: dict) -> Rule | None:
+    def parent_rule(self, record: dict, gid: str | None = None) -> Rule | None:
         """Fallback logic: reach the parent advancement (datapack trees are parent-rooted). Returns
         ``None`` for roots / parents that aren't AP advancement locations, leaving the caller to
         default to always-reachable (region reachability still gates it elsewhere)."""
         parent_gid = record.get("parent")
         loc = self._adv_loc_by_gid.get(parent_gid) if parent_gid else None
-        if loc is None or (self._active is not None and loc not in self._active):
-            return None
-        return self.h.reached(loc)
+        parent = None
+        if loc is not None and (self._active is None or loc in self._active):
+            parent = self.h.reached(loc)
+        # An _EXTRA_REQUIREMENT applies on this path too, or a check whose criteria can't be read
+        # would lose the one requirement written down for exactly that case.
+        extra = _EXTRA_REQUIREMENT.get(gid) if gid else None
+        if extra is None:
+            return parent
+        return extra(self.h) if parent is None else and_(parent, extra(self.h))
 
     # -- per-criterion dispatch --------------------------------------------
     def _criterion(self, crit: dict) -> Rule | None:
@@ -578,9 +619,24 @@ class TriggerCompiler:
             # another dimension, which means hauling a villager through a portal. The traded `item`
             # is deliberately NOT gated — it is the trade's OUTPUT, so demanding it separately would
             # price the reward as a prerequisite for earning it.
+            #
+            # Not gating the output as a SOURCE is still right, but the mod refuses to let you take a
+            # locked result out of the trade slot (SlotMixin, MerchantMenu = the station route), and
+            # the trade trigger only fires on that take — so the item's take lock is a requirement.
+            # 'Retro Future Knight' read as doable with no Armor Handling and no iron tier.
             villager = self._predicate_value(cond.get("villager"), "location")
             where = self._loc_value_node(villager) if isinstance(villager, dict) else None
-            return self._all_opt(self.h.can_trade_villager(), where)
+            trader = self._predicate_value(cond.get("villager"), "type")
+            # The trader's species was never read: 'Travelling Merchant' is a Wandering Trader, and a
+            # village trade satisfied it with no Wandering Trader unlock.
+            if isinstance(trader, str) and self._ns(trader) == "minecraft:wandering_trader":
+                trade = self.h.meet_wandering_trader()
+            else:
+                trade = self.h.can_trade_villager()
+            ids = (cond.get("item") or {}).get("items")
+            ids = [ids] if isinstance(ids, str) else (ids or [])
+            outputs = [self.h.take_lock(i, "station") for raw in ids for i in self._expand_item(raw)]
+            return self._all_opt(trade, where, or_(*outputs) if outputs else None)
         if trigger == "minecraft:slept_in_bed":
             # This used to return the bare region on the reasoning "a bed needs wool + planks" — and
             # then never asked for either, which is why 'Sweet Dreams' was green on a fresh world.
@@ -658,8 +714,13 @@ class TriggerCompiler:
         if trigger == "minecraft:avoid_vibration":
             # Sneak past a sculk sensor → the Deep Dark (Ancient City).
             return self._struct_gid("minecraft:ancient_city")
-        if trigger in ("minecraft:channeled_lightning", "minecraft:lightning_strike",
-                       "minecraft:spear_mobs"):
+        if trigger == "minecraft:lightning_strike":
+            # A bolt striking near you — a thunderstorm does that; the criterion names no trident. It
+            # shared the channeling branch, so 'Surge Protector' asked for a trident and never for the
+            # villager it is about, which the `bystander` predicate pins.
+            bystander = cond.get("bystander")
+            return (self._entity_node({"entity": bystander}) if bystander else None) or and_()
+        if trigger in ("minecraft:channeled_lightning", "minecraft:spear_mobs"):
             # Channel lightning with a trident / spear mobs with one → obtain a trident, AND reach
             # whatever the criterion says you must hit: 'Electrifying Alliance' names its victims, and
             # asking only for the trident let it pass without them.
@@ -777,6 +838,7 @@ class TriggerCompiler:
         # missing species threw all of that away.
         extras = (self._entity_equipment_node(cond), self._entity_location_node(cond),
                   self._entity_variant_node(cond), self._entity_mount_node(cond),
+                  self._entity_effects_node(cond),
                   self._type_specific_node(self._predicate_value(cond.get("entity"), "type_specific")))
         options = [gate(name) for name in self._entity_names(cond)]
         if not options:
@@ -824,6 +886,22 @@ class TriggerCompiler:
             if names:
                 parts.append(or_(*[self.h.entity(name) for name in names]))
         return self._all_opt(*parts)
+
+    def _entity_effects_node(self, cond: dict) -> Rule | None:
+        """Status effects the target has to be carrying, or ``None`` if it names none. A mob does not
+        drink potions for you: 'Gas Bomb' is igniting a creeper under each effect, and it compiled to
+        flint and steel alone. Priced the way a player's own effect is (_effect_node)."""
+        effects = self._predicate_value(cond.get("entity"), "effects")
+        if not isinstance(effects, dict) or not effects:
+            return None
+        node = self._effect_node(effects)
+        names = set(self._entity_names(cond))
+        if names and names <= {E_SPIDER, E_CAVE_SPIDER} and set(effects) <= _SPIDER_SPAWN_EFFECTS:
+            # A spider rolls one of these on spawn when the world is on Hard (Spider.finalizeSpawn,
+            # Difficulty.HARD -> SpiderEffectsGroupData.setRandomEffect; CaveSpider extends Spider).
+            # Difficulty is the player's setting, so fill keeps the potion and the tile doesn't.
+            node = self.h.strict_only(node)
+        return node
 
     def _entity_location_node(self, cond: dict) -> Rule | None:
         """Where an `entity` predicate says the entity has to be, or ``None`` if it doesn't say."""
@@ -955,6 +1033,9 @@ class TriggerCompiler:
             # something with a stick) and 'Snowball Fight'. Covers the lava case too (I'm in Lava
             # With You pins only "an entity in lava"): any reachable mob satisfies it, bare-handed.
             victim = self.h.can_kill_any_mob()
+        elif not self._entity_names(cond):
+            # No species, but other facets did gate (an effect, a place): still needs a mob to hit.
+            victim = and_(victim, self.h.can_kill_any_mob())
         parts = [n for n in (weapon, victim) if n is not None]
         return and_(*parts) if parts else None
 
@@ -989,6 +1070,10 @@ class TriggerCompiler:
         always used can_defeat (engine.collect_entity_rules)."""
         weapon = self._killing_blow_gear(cond.get("killing_blow"))
         victim = self._entity_node(cond, gate=self.h.can_defeat)
+        if victim is not None and not self._entity_names(cond):
+            # A victim pinned only by its facets ('Final Shout': anything under three effects) is
+            # still some mob that has to exist to be killed.
+            victim = and_(victim, self.h.can_kill_any_mob())
         parts = [n for n in (weapon, victim) if n is not None]
         if victim is None and cond.get("entity"):
             # Victim pinned only by what it wears (Trick or Treat!: kill any mob in a carved pumpkin):
@@ -1046,6 +1131,11 @@ class TriggerCompiler:
         source = damage.get("source_entity")
         attacker = (self._entity_gid(source.get("type"))
                     if isinstance(source, dict) and isinstance(source.get("type"), str) else None)
+        if attacker is None and isinstance(source, dict):
+            # An attacker pinned only by what it carries ('A Furious Test Subject': hit by a mob under
+            # every effect) — the facets, plus a mob to do the hitting.
+            facets = self._entity_node({"entity": source})
+            attacker = and_(facets, self.h.can_kill_any_mob()) if facets is not None else None
         if attacker is None:
             attacker = self._entity_node(cond)
         if damage.get("blocked"):
@@ -1217,6 +1307,14 @@ class TriggerCompiler:
             if node is not None:
                 parts.append(node)
         parts += self._equipment_nodes(pred.get("equipment"))
+        nbt = pred.get("nbt")
+        if isinstance(nbt, str) and nbt.startswith("{Inventory:"):
+            # Carried items spelled as NBT ('Explosive Fire': a crossbow loaded with a firework). The
+            # unread predicate made the criterion unpriceable, which sent the whole check to its
+            # parent chain. Every item id it names has to be in the inventory; other NBT is not read.
+            nodes = [self.h.acquire(item) for item in sorted(set(re.findall(r'id:"([a-z0-9_:]+)"', nbt)))]
+            if nodes and all(node is not None for node in nodes):
+                parts.extend(nodes)
         stepping = pred.get("stepping_on")
         if isinstance(stepping, dict):
             ids = self._block_ids(stepping.get("block"))
@@ -1452,6 +1550,11 @@ class TriggerCompiler:
         if items is not None:
             parts.append(items)
         parts += self._equipment_nodes(self._predicate_value(cond.get("player"), "equipment"))
+        if not parts and "items" not in cond and cond.get("player"):
+            # No items list at all, only a player predicate ('Explosive Fire' spells its loaded
+            # crossbow as inventory NBT). The trigger itself asks nothing, and returning None here
+            # meant _criterion never applied the predicate that carries the whole requirement.
+            return and_()
         return self._all_req(*parts) if parts else None
 
     def _all_items(self, predicates) -> Rule | None:
@@ -2184,14 +2287,20 @@ class TriggerCompiler:
         on brewing capability; a few environmental ones map to their source."""
         names = list(effects) if isinstance(effects, dict) else []
         parts = []
+        brewed = False
         for effect in names:
             source = _EFFECT_SOURCE.get(effect)
-            if source is not None:
-                node = source(self)
-                if node is not None:
-                    parts.append(node)
-        parts.append(self.h.all_of(self.h.acquire("minecraft:brewing_stand"),
-                                   self.h.knowledge(K_BREWING)))
+            node = source(self) if source is not None else None
+            if node is None:
+                brewed = True
+            else:
+                parts.append(node)
+        # Only an effect with no other source is a potion. The brewing stand used to be asked for
+        # every time, so Levitation (a shulker's bullet), Dolphin's Grace and Conduit Power — none of
+        # which a brewing stand can make — each cost one anyway.
+        if brewed or not names:
+            parts.append(self.h.all_of(self.h.acquire("minecraft:brewing_stand"),
+                                       self.h.knowledge(K_BREWING)))
         return self.h.all_of(*parts)
 
     def _used_on_block_node(self, cond: dict) -> Rule | None:

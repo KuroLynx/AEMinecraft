@@ -273,6 +273,27 @@ def _block_mining() -> dict:
 
 
 _BLOCK_STRUCTURES: dict | None = None
+_ITEM_TAGS: dict | None = None
+
+
+def _item_tag(tag: str) -> frozenset:
+    """Members of a vanilla item tag (tags.json, already expanded), as bare paths."""
+    global _ITEM_TAGS
+    if _ITEM_TAGS is None:
+        with files(_MC_ROOT).joinpath("packs", base_pack(), "tags.json").open(encoding="utf-8") as handle:
+            _ITEM_TAGS = json.load(handle).get("item", {})
+    return frozenset(member.split(":", 1)[-1] for member in _ITEM_TAGS.get(tag, ()))
+
+
+# Sherds that come out of a structure's own decorated pots and no loot table at all — the 26.1.2 jar
+# names flow/guster/scrape only inside trial_chambers structure templates. A pot drops its sherds only
+# when broken 'cracked', which data/minecraft/loot_table/blocks/decorated_pot.json ties to breaking it
+# with an item in #breaks_decorated_pots; broken otherwise it drops itself, sherds sealed in.
+_STRUCTURE_POT_SHERDS: dict[str, str] = {
+    "flow_pottery_sherd": S_TRIAL_CHAMBERS,
+    "guster_pottery_sherd": S_TRIAL_CHAMBERS,
+    "scrape_pottery_sherd": S_TRIAL_CHAMBERS,
+}
 
 
 def _aged_source(block: str) -> str | None:
@@ -1518,6 +1539,34 @@ class RuleHelper:
             return Const(False)
         return self.all_of(self.entity(E_WANDERING_TRADER), self._trade_currency())
 
+    def meet_wandering_trader(self):
+        """Trade with a Wandering Trader when the check itself names one — BOTH graphs.
+
+        can_trade_wandering_trader is glitch-only because a trader is a flimsy *source* of an item:
+        which offer it rolls is luck. A criterion that pins the trader has no alternative to it, and
+        traders do keep spawning near the player on their own, so strict logic asks for the unlock
+        and the emeralds rather than calling the check impossible."""
+        return self.all_of(self.entity(E_WANDERING_TRADER), self._trade_currency())
+
+    def take_lock(self, item_id: str, route: str):
+        """What the mod demands before ``item_id`` can be TAKEN from a GUI or the floor, not how to
+        get it: MaterialLockService's raw-material tier, and a tool lock's Knowledge + tier (a gated
+        station/container block's Knowledge counts as one). ``route`` is the item_gate_behavior
+        channel the take happens on; an open route asks for nothing."""
+        if self.route_open(route):
+            return Const(True)
+        base = item_id.split(":", 1)[-1]
+        parts = []
+        tier = _MATERIAL_TIER_BY_ITEM.get(base)
+        if tier:
+            parts.append(self.has(ITEM_MATERIAL_HANDLING, tier))
+        knowledge_name, tool_tier = TOOL_LOCKS.get(base, (BLOCK_KNOWLEDGE.get(f"minecraft:{base}"), 0))
+        if knowledge_name is not None and knowledge_name in self.active_knowledges:
+            parts.append(self.knowledge(knowledge_name))
+            if tool_tier > 0:
+                parts.append(self.has(ITEM_MATERIAL_HANDLING, tool_tier))
+        return self.all_of(*parts)
+
     def can_trade(self):
         """The player can perform *some* trade — a novice (min-level) villager or a
         Wandering Trader. Use for rules that only need "a trade happened" with no
@@ -1755,6 +1804,27 @@ class RuleHelper:
         # So model the real route for EVERY filled bucket — the bucket, plus whatever fills it — and
         # OR the record's own routes alongside it, because a bucket of fish bought from a trader or
         # pulled out of a chest genuinely needs no bucket of your own.
+        # A creeper killed by a skeleton drops a disc from #creeper_drop_music_discs (the creeper loot
+        # table's `attacker` condition). The dump records no such source, so ward, chirp, far, mall,
+        # mellohi, stal, strad, wait, 11 and blocks had none at all, and every check wanting one fell
+        # back to its parent chain — 'All the Items!' came out as reaching 'All the Blocks!'.
+        if base in _item_tag("minecraft:creeper_drop_music_discs"):
+            routes = [self.all_of(self.has_any_entities(E_SKELETON, E_STRAY, E_BOGGED, E_PARCHED),
+                                  self.entity(E_CREEPER))]
+            sources = self._acquire_from_sources(base, _stack)
+            if sources is not None:
+                routes.append(sources)
+            return self._with_reward(base, self._coarsen(self._unique_or(routes)))
+
+        structure_pot = _STRUCTURE_POT_SHERDS.get(base)
+        if structure_pot is not None:
+            breakers = [self.acquire(f"minecraft:{tool}", _stack | {base})
+                        for tool in sorted(_item_tag("minecraft:breaks_decorated_pots"))]
+            breakers = [node for node in breakers if node is not None]
+            if structure_pot not in self.active_structures or not breakers:
+                return None
+            return self.all_of(self.structure(structure_pot), self.any_of(*breakers))
+
         if base.endswith("_bucket"):
             routes = []
             bucket = self.acquire("minecraft:bucket", _stack | {base})
@@ -1781,6 +1851,13 @@ class RuleHelper:
             sources = self._acquire_from_sources(base, _stack)
             obtain = self._coarsen(sources) if sources is not None else self.material(tier)
             gates = [self.knowledge(knowledge_name)]
+            # The mod's tool lock asks for the tier too, on every route the item arrives by
+            # (MaterialLockService: Knowledge AND Material Handling >= tier). A crafted tool carries
+            # it through its ingredients, but a traded, looted or dropped one did not: a stone pickaxe
+            # bought from a toolsmith read as obtainable with no Material Handling at all. The lock is
+            # only shipped while its Knowledge gate is on, so the tier is only asked for then.
+            if tier > 0 and knowledge_name in self.active_knowledges and not self.route_open("pickup"):
+                gates.append(self.has(ITEM_MATERIAL_HANDLING, tier))
             # Armor pieces additionally need an armor slot to wear them in (inventory_lock): having
             # the Knowledge and the material is not enough if there is nowhere to put the thing on.
             if knowledge_name == K_ARMOR:
@@ -2355,6 +2432,17 @@ class RuleHelper:
         if base in TOOL_LOCKS:
             knowledge_name, tier = TOOL_LOCKS[base]
             return self.all_of(self.knowledge(knowledge_name), self.material(tier))
+        if base == "firework_star":
+            # A special recipe type (data/minecraft/recipe/firework_star.json), which the dump does not
+            # record: gunpowder and a dye are required, the shape and effect slots optional. With no
+            # record the star was unpriceable, and 'All the Items!' fell back to its parent chain.
+            stack = frozenset({base})
+            dyes = [node for node in (self.acquire(f"minecraft:{dye}", stack)
+                                      for dye in sorted(_item_tag("minecraft:dyes"))) if node is not None]
+            gunpowder = self.acquire("minecraft:gunpowder", stack)
+            if gunpowder is None or not dyes:
+                return None
+            return self.all_of(self._station_node("crafting_special", stack), gunpowder, self.any_of(*dyes))
         tier = _MATERIAL_TIER_BY_ITEM.get(base)
         if tier is not None:
             return self.material(tier)
