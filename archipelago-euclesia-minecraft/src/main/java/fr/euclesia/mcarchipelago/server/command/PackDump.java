@@ -60,7 +60,7 @@ public final class PackDump {
 
     /** Dumpable file ids (UI checkboxes); {@code meta} + {@code acquisition} etc. map to one file each. */
     public static final List<String> FILES = List.of(
-            "advancements", "structures", "acquisition", "block_mining", "tags", "meta");
+            "advancements", "structures", "acquisition", "block_mining", "block_biomes", "tags", "meta");
 
     /** Opt-in heavy target: copy the loaded datapacks VERBATIM into {@code <outDir>/datapack/} as a
      *  real, loadable datapack tree (not the derived content-pack JSON). Not part of the default
@@ -120,6 +120,9 @@ public final class PackDump {
         }
         if (selected.contains("block_mining")) {
             done.add("block_mining " + writeCount(packDir, "block_mining.json", blockMining(rm)));
+        }
+        if (selected.contains("block_biomes")) {
+            done.add("block_biomes " + writeCount(packDir, "block_biomes.json", blockBiomes(rm)));
         }
         if (selected.contains("tags")) {
             write(packDir, "tags.json", tags(rm));
@@ -373,6 +376,203 @@ public final class PackDump {
             out.add(block, record);
         }
         return out;
+    }
+
+    // -- block_biomes (data/<ns>/worldgen/{biome,placed_feature,configured_feature,noise_settings}) ---
+
+    /** Tree decorators place blocks by decorator TYPE; their config never spells the block out. */
+    private static final Map<String, String> DECORATOR_BLOCKS = Map.of(
+            "minecraft:cocoa", "cocoa",
+            "minecraft:beehive", "bee_nest",
+            "minecraft:trunk_vine", "vine",
+            "minecraft:leave_vine", "vine",
+            "minecraft:pale_moss", "pale_hanging_moss",
+            "minecraft:creaking_heart", "creaking_heart");
+
+    /** Feature types that place blocks in code, with no block state in their config. */
+    private static final Map<String, List<String>> FEATURE_TYPE_BLOCKS = Map.of(
+            "minecraft:bamboo", List.of("bamboo", "podzol"),
+            "minecraft:sculk_patch", List.of("sculk", "sculk_vein", "sculk_catalyst", "sculk_shrieker"));
+
+    /**
+     * Which biomes each block generates in: {@code {"<block>": ["<biome>", ...]}}, the same file
+     * {@code tools/build_block_biomes.py} writes. Read from the biomes' feature lists (placed feature ->
+     * configured feature -> block states, nested features and tree decorators) and from the dimension
+     * surface rules, whose {@code biome} conditions narrow where each surface block lands. The apworld
+     * gates a block that only generates in rare biomes behind the Biome Finder.
+     */
+    private static JsonObject blockBiomes(ResourceManager rm) {
+        FeatureBlocks features = new FeatureBlocks(idMap(rm, "worldgen/placed_feature"),
+                idMap(rm, "worldgen/configured_feature"));
+        Map<String, TreeSet<String>> result = new TreeMap<>();
+        TreeSet<String> allBiomes = new TreeSet<>();
+        for (Map.Entry<Identifier, JsonObject> entry : jsonResources(rm, "worldgen/biome")) {
+            String biome = stripExt(entry.getKey().getPath().substring("worldgen/biome/".length()));
+            allBiomes.add(biome);
+            for (JsonElement step : array(entry.getValue().get("features"))) {
+                for (JsonElement feature : step.isJsonArray() ? array(step) : List.of(step)) {
+                    for (String block : features.placed(feature)) {
+                        result.computeIfAbsent(block, key -> new TreeSet<>()).add(biome);
+                    }
+                }
+            }
+        }
+        Map<String, JsonObject> settings = idMap(rm, "worldgen/noise_settings");
+        for (String dimension : List.of("minecraft:overworld", "minecraft:nether", "minecraft:end")) {
+            JsonObject body = settings.get(dimension);
+            if (body != null) {
+                surfaceBlocks(body.get("surface_rule"), allBiomes, result);
+            }
+        }
+        JsonObject out = new JsonObject();
+        result.forEach((block, biomes) -> {
+            if (!biomes.isEmpty() && !block.equals("air")) {
+                JsonArray list = new JsonArray();
+                biomes.forEach(list::add);
+                out.add(block, list);
+            }
+        });
+        return out;
+    }
+
+    /** {@code <prefix>/**.json} keyed by namespaced id ({@code minecraft:trees_jungle}). */
+    private static Map<String, JsonObject> idMap(ResourceManager rm, String prefix) {
+        Map<String, JsonObject> out = new HashMap<>();
+        for (Map.Entry<Identifier, JsonObject> entry : jsonResources(rm, prefix)) {
+            Identifier id = entry.getKey();
+            out.put(id.getNamespace() + ":" + stripExt(id.getPath().substring(prefix.length() + 1)), entry.getValue());
+        }
+        return out;
+    }
+
+    /** Walks a surface rule tree, narrowing the biome set on each {@code biome} condition. A {@code not}
+     *  around one is read as no narrowing: wider, never falsely rare. */
+    private static void surfaceBlocks(JsonElement element, Set<String> biomes, Map<String, TreeSet<String>> out) {
+        if (element == null || !element.isJsonObject()) {
+            return;
+        }
+        JsonObject rule = element.getAsJsonObject();
+        switch (stripNs(string(rule.get("type"), ""))) {
+            case "block" -> {
+                String block = stripNs(string(obj(rule.get("result_state")).get("Name"), ""));
+                if (!block.isEmpty()) {
+                    out.computeIfAbsent(block, key -> new TreeSet<>()).addAll(biomes);
+                }
+            }
+            case "sequence" -> {
+                for (JsonElement child : array(rule.get("sequence"))) {
+                    surfaceBlocks(child, biomes, out);
+                }
+            }
+            case "condition" -> {
+                JsonObject test = obj(rule.get("if_true"));
+                Set<String> narrowed = biomes;
+                if (stripNs(string(test.get("type"), "")).equals("biome")) {
+                    narrowed = new TreeSet<>();
+                    for (JsonElement biome : array(test.get("biome_is"))) {
+                        String name = stripNs(biome.getAsString());
+                        if (biomes.contains(name)) {
+                            narrowed.add(name);
+                        }
+                    }
+                }
+                surfaceBlocks(rule.get("then_run"), narrowed, out);
+            }
+            default -> { }
+        }
+    }
+
+    /** Resolves feature references to the blocks they place. A placed feature and the configured
+     *  feature it wraps often share an id ({@code trees_jungle}), so the two are cached apart: a placed
+     *  feature's {@code feature} names a configured one, a configured feature's nested refs name placed
+     *  ones. An empty set is stored before resolving, as the cycle guard. */
+    private static final class FeatureBlocks {
+        private final Map<String, JsonObject> placedDefs;
+        private final Map<String, JsonObject> configuredDefs;
+        private final Map<String, Set<String>> placedCache = new HashMap<>();
+        private final Map<String, Set<String>> configuredCache = new HashMap<>();
+
+        FeatureBlocks(Map<String, JsonObject> placedDefs, Map<String, JsonObject> configuredDefs) {
+            this.placedDefs = placedDefs;
+            this.configuredDefs = configuredDefs;
+        }
+
+        Set<String> placed(JsonElement ref) {
+            if (ref != null && ref.isJsonPrimitive()) {
+                String id = namespaced(ref.getAsString());
+                Set<String> cached = placedCache.get(id);
+                if (cached == null) {
+                    placedCache.put(id, Set.of());
+                    JsonObject body = placedDefs.get(id);
+                    cached = body != null ? placedBody(body) : configured(ref);
+                    placedCache.put(id, cached);
+                }
+                return cached;
+            }
+            return ref != null && ref.isJsonObject() ? placedBody(ref.getAsJsonObject()) : Set.of();
+        }
+
+        private Set<String> placedBody(JsonObject body) {
+            return body.has("placement") ? configured(body.get("feature")) : configured(body);
+        }
+
+        Set<String> configured(JsonElement ref) {
+            if (ref != null && ref.isJsonPrimitive()) {
+                String id = namespaced(ref.getAsString());
+                Set<String> cached = configuredCache.get(id);
+                if (cached == null) {
+                    configuredCache.put(id, Set.of());
+                    JsonObject body = configuredDefs.get(id);
+                    cached = body != null ? configured(body) : Set.of();
+                    configuredCache.put(id, cached);
+                }
+                return cached;
+            }
+            Set<String> found = new TreeSet<>();
+            if (ref != null && ref.isJsonObject()) {
+                JsonObject body = ref.getAsJsonObject();
+                found.addAll(FEATURE_TYPE_BLOCKS.getOrDefault(string(body.get("type"), ""), List.of()));
+                walk(body.get("config"), found);
+            }
+            return found;
+        }
+
+        private void walk(JsonElement element, Set<String> found) {
+            if (element == null) {
+                return;
+            }
+            if (element.isJsonArray()) {
+                for (JsonElement item : element.getAsJsonArray()) {
+                    walk(item, found);
+                }
+                return;
+            }
+            if (!element.isJsonObject()) {
+                return;
+            }
+            JsonObject node = element.getAsJsonObject();
+            String name = string(node.get("Name"), null);
+            if (name != null) {
+                found.add(stripNs(name));
+            }
+            String decorator = DECORATOR_BLOCKS.get(string(node.get("type"), ""));
+            if (decorator != null) {
+                found.add(decorator);
+            }
+            for (Map.Entry<String, JsonElement> entry : node.entrySet()) {
+                String key = entry.getKey();
+                if (key.equals("feature") || key.equals("features") || key.equals("default") || key.endsWith("_feature")) {
+                    JsonElement value = entry.getValue();
+                    for (JsonElement item : value.isJsonArray() ? value.getAsJsonArray() : List.of(value)) {
+                        JsonElement target = item.isJsonObject() && item.getAsJsonObject().has("chance")
+                                ? item.getAsJsonObject().get("feature") : item;
+                        found.addAll(placed(target));
+                    }
+                } else {
+                    walk(entry.getValue(), found);
+                }
+            }
+        }
     }
 
     /** Per-item tool requirements for one block loot table: {@code {"<item>": ["shears","silk"]}}. */

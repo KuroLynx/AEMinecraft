@@ -22,7 +22,8 @@ import java.util.function.Supplier;
  * whole pack.
  *
  * <p>Subcommands mirror {@link PackDump#FILES}: {@code pack} (default), {@code advancements},
- * {@code structures}, {@code acquisition}, {@code block_mining}, {@code tags}, {@code meta}; plus
+ * {@code structures}, {@code acquisition}, {@code block_mining}, {@code block_biomes}, {@code tags},
+ * {@code meta}; plus
  * {@code entities} (the data-driven mob registry, {@link EntitiesDump}) and {@code containers} (the
  * GUI/storage block registry behind the station and container Knowledge gates, {@link ContainersDump}).
  * Those two are NOT part of {@link PackDump} because they read runtime entity/block-entity behaviour and
