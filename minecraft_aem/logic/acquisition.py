@@ -2110,7 +2110,10 @@ class RuleHelper:
         if not self.route_open("crafting" if key == "crafting" else "station"):
             names = RECIPE_STATION_KNOWLEDGE.get(key)
             if names:
-                parts.append(self.any_of(*(self.knowledge(name) for name in names)))
+                # A crafter is itself crafted on a crafting table, so Knowledge: Crafter alone crafts
+                # nothing — it read as "can craft" and put composters in logic with no way to make one.
+                table = self.knowledge("Crafting Table") if key == "crafting" else self.all_of()
+                parts.append(self.any_of(*(self.all_of(self.knowledge(name), table) for name in names)))
         if key != "crafting":
             # Obtaining the station, threading the recipe's own stack so a station that somehow
             # depends on its own output drops out (None) instead of recursing. If every candidate
@@ -2218,8 +2221,8 @@ class RuleHelper:
 
     def _placed_block_origin(self, block: str, stack: frozenset):
         """Origin of a block nobody finds lying around, derived rather than curated: one whose record
-        has a recipe and NO source of its own — no loot chest, no mob drop, no gameplay or trade, and
-        nothing mined but itself. Such a block is where it is because a player crafted it or a
+        has a recipe and nothing that generates it — no gameplay or silk-mining source, and nothing
+        mined but itself (a chest, a drop or a trade gives you the item, not a placed block). Such a block is where it is because a player crafted it or a
         structure's palette placed it, so mining it for what it drops costs one of those two.
 
         The case that found this: obsidian lists ``ender_chest`` among its mining blocks, because
@@ -2237,8 +2240,11 @@ class RuleHelper:
         record = _acquisition_table().get(block)
         if not record or not record.get("recipes"):
             return self.all_of()
-        if any(record.get(key) for key in ("structures", "drops", "gameplay", "archaeology",
-                                           "trades", "silk_mining")):
+        # Only a source that PUTS the block somewhere says it can be found standing. Loot, drops,
+        # archaeology and trades hand you the item, which still has to be placed — and that is what
+        # the crafted route below prices, since acquire() already includes them. Counting a trade as
+        # "lying around" made a fisherman's campfire free to break, and so charcoal free with it.
+        if any(record.get(key) for key in ("gameplay", "silk_mining")):
             return self.all_of()
         if any(mined != block for mined in record.get("mining", ())):
             return self.all_of()

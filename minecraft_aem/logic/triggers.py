@@ -29,8 +29,8 @@ from ..data import (
     MOBS_TAMEABLE,
     STRUCTURES,
 )
-from .acquisition import RuleHelper
-from .ast import Rule, and_, or_
+from .acquisition import RuleHelper, _acquisition_table
+from .ast import Const, Rule, and_, or_
 from .constants import (
     K_ARMOR,
     K_BREWING,
@@ -780,8 +780,11 @@ class TriggerCompiler:
                   self._type_specific_node(self._predicate_value(cond.get("entity"), "type_specific")))
         options = [gate(name) for name in self._entity_names(cond)]
         if not options:
-            # Callers keep their own "any mob" fallbacks for the fully unpinned predicate.
-            return self._all_opt(*extras)
+            # Callers keep their own "any mob" fallbacks for the fully unpinned predicate, and only
+            # reach them on None — so a facet that pins nothing (a fluid or light threshold compiles
+            # to an empty AND) must not count as a gate. It did: 'I'm in Lava With You' (hit anything
+            # standing in lava) came out as True, with every mob still locked.
+            return self._all_opt(*[e for e in extras if not (isinstance(e, Const) and e.value)])
         # _all_opt, not _all_req: species / gear / place / mount are independent requirements, so an
         # unresolvable one leaves a sound-but-weaker rule rather than voiding the whole gate.
         # _all_opt, not _all_req: species / gear / place / mount are independent requirements, so an
@@ -1148,7 +1151,18 @@ class TriggerCompiler:
                                  self.h.acquire(f"minecraft:{template}"),
                                  self._tag_acquire("#minecraft:trimmable_armor"),
                                  self._tag_acquire("#minecraft:trim_materials"))
-        return self.h.acquire(recipe_id)
+        # The recipe itself, not the item: 'Renewable Energy' is smelting a log into charcoal, and
+        # acquire() also accepts breaking a campfire for it — a way to HAVE charcoal that never runs
+        # the recipe. AND-ed with acquire() so the item's own gates (material tier, Knowledge) stay.
+        # An empty stack, not {base}: this runs the recipe once rather than acquiring the item, and a
+        # duplication recipe takes the item itself — 'Mold Maker' copies a template with a template,
+        # which read as a cycle and dropped the whole check to its parent chain.
+        obtain = self.h.acquire(recipe_id)
+        recipes = _acquisition_table().get(base, {}).get("recipes")
+        if obtain is None or not recipes:
+            return obtain
+        made = self._any_opt(*[self.h._recipe_node(recipe, frozenset()) for recipe in recipes])
+        return self._all_req(made, obtain)
 
     def _tag_acquire(self, tag: str) -> Rule | None:
         """Obtain ANY member of an item tag — the cheapest member is the real price, so they OR."""
@@ -1274,9 +1288,11 @@ class TriggerCompiler:
             parts.append(self.h.access_region(region))
         position = loc.get("position")
         if isinstance(position, dict):
+            # A threshold you can simply walk to still pins the criterion down — it is priced, at
+            # nothing. Returning None read as "unreadable", so 'Kilometre Walk' (1000 blocks from
+            # the centre, any dimension) fell back to its parent chain.
             node = self._position_node(position, region)
-            if node is not None:
-                parts.append(node)
+            parts.append(node if node is not None else and_())
         elif "light" in loc or "fluid" in loc:
             # A light-level / standing-in-fluid threshold isn't a logic gate (Heart of Darkness is
             # just "be somewhere dark"; the fluid half of Marine Marauder / Stayin' Frosty pairs
