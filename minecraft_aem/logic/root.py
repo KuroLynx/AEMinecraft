@@ -46,7 +46,7 @@ def build_location_rules(world, glitch: bool = False) -> dict:
         if condition is None:
             condition = curated.get(name)
         if condition is None and record is not None:
-            condition = compiler.parent_rule(record)
+            condition = compiler.parent_rule(record, loc_data.game_id)
         if condition is None:
             condition = Const(True)
         rules[location_name] = condition
