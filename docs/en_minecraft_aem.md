@@ -155,6 +155,39 @@ identical either way — so turning it off simply puts the tracker back to green
 - That is why some checks the tracker paints **yellow** look perfectly ordinary: they are reachable,
   just not by a route the randomizer was willing to promise.
 
+## How do I report a logic error or a bug?
+
+A **logic error** is a check the tracker gets wrong: it is green (in logic) but you have no way to do it
+yet, or it needs something the logic never asked you for. The game can write a report for you.
+
+1. Open the advancement screen (`L` by default) and click the **writable book** button in the
+   bottom-left corner. A yellow line at the top asks you to pick an advancement; right-click cancels.
+2. Click the advancement that is wrong.
+3. Choose **Wrong logic** (it asks for the wrong things) or **Should not be accessible yet** (it is in
+   logic, but you cannot actually do it). Add a short note if you can: what you tried, or what you
+   think is missing.
+4. A chat message tells you where the report was saved: the `archipelago/logic_reports/` folder inside
+   your world's save folder (`.minecraft/saves/<your world>/archipelago/logic_reports/`). On a dedicated
+   server it is in the server's world folder instead, so ask whoever runs the server for it.
+
+You can report several advancements; each one adds its own file. The folder holds:
+
+- `slot_data.json` — your slot's data, which includes your YAML options, plus the mod and Minecraft
+  versions. This is what lets us rebuild your exact logic.
+- `latest.log` — a copy of the game log from the moment of your latest report.
+- one `report_<date>_<advancement>.json` per report — the advancement, what you said is wrong, the
+  colour your tracker showed, and every item you had received and check you had done at that moment.
+
+**Zip the whole `logic_reports` folder** and send it to us in either place:
+
+- a new issue on GitHub: [github.com/KuroLynx/AEMinecraft/issues](https://github.com/KuroLynx/AEMinecraft/issues)
+- the **AEMinecraft thread in `#future-game-designs`** on the
+  [Archipelago Discord server](https://discord.gg/8Z65BR2)
+
+For any other bug (a crash, a lock that does not hold, a connection problem), post in the same places
+with your game log attached: `.minecraft/logs/latest.log`, taken right after it happened, before you
+restart the game. Your YAML and, if you have it, the spoiler log help a lot as well.
+
 ## Is there anything else I should know?
 
 - **Death Link** can be enabled from your YAML and toggled in-game from the connection screen.
@@ -177,4 +210,5 @@ questions** — weighing options, sanity-checking logic, and shaping features �
 doing so going forward.
 
 If you run into a bug or something that feels off, please don't take it as a lack of care. Bug reports
-and suggestions are very welcome and genuinely help us steer the project.
+and suggestions are very welcome and genuinely help us steer the project — see
+[How do I report a logic error or a bug?](#how-do-i-report-a-logic-error-or-a-bug) for where to send them.
