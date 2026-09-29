@@ -881,6 +881,14 @@ class TriggerCompiler:
                   self._entity_effects_node(cond),
                   self._type_specific_node(self._predicate_value(cond.get("entity"), "type_specific")))
         options = [gate(name) for name in self._entity_names(cond)]
+        gid = self._predicate_value(cond.get("entity"), "type")
+        if not options and isinstance(gid, str) and not gid.startswith("#"):
+            # A pinned type that is no mob but an item you place — a glow item frame, a boat, a
+            # minecart. Unresolved, it fell to the caller's "any leashable mob", so 'Flashy Items'
+            # asked for an allay and never for the glow ink sac. The price is placing one.
+            placed = self.h.acquire(self._ns(gid))
+            if placed is not None:
+                options = [placed]
         if not options:
             # Callers keep their own "any mob" fallbacks for the fully unpinned predicate, and only
             # reach them on None — so a facet that pins nothing (a fluid or light threshold compiles
@@ -1149,7 +1157,11 @@ class TriggerCompiler:
             # No projectile named: _equipment_nodes has already priced the mainhand weapon, so the
             # damage tag is consulted only when the slots yielded nothing — as before.
             weapon = self._damage_tag_node(kb) if not worn else None
-        parts = [part for part in (weapon, *worn) if part is not None]
+        # The killer's status effects: 'You're doing it wrong' is a mace kill while LEVITATING, which
+        # only a shulker gives — End-only, yet it compiled to the mace and sat in logic before the Nether.
+        effects = source.get("effects") if isinstance(source, dict) else None
+        affected = self._effect_node(effects) if isinstance(effects, dict) and effects else None
+        parts = [part for part in (weapon, *worn, affected) if part is not None]
         return and_(*parts) if parts else None
 
     def _damage_tag_node(self, holder: dict) -> Rule | None:
