@@ -7,6 +7,7 @@ import fr.euclesia.mcarchipelago.net.APStateSync;
 import fr.euclesia.mcarchipelago.net.BiomeFinderNet;
 import fr.euclesia.mcarchipelago.net.ChatFilterNet;
 import fr.euclesia.mcarchipelago.net.HintNet;
+import fr.euclesia.mcarchipelago.net.LogicReportNet;
 import fr.euclesia.mcarchipelago.server.AEMServerBridge;
 import net.fabricmc.api.ModInitializer;
 
@@ -31,6 +32,7 @@ public class AEM implements ModInitializer {
 		APStateSync.register();
 		BiomeFinderNet.register();
 		HintNet.register();
+		LogicReportNet.register();
 		ChatFilterNet.register();
 		AEMServerBridge.register();
 		LOGGER.info("Archipelago Euclesia Minecraft initialized");

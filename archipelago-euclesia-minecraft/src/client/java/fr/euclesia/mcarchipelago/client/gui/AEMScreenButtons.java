@@ -3,11 +3,14 @@ package fr.euclesia.mcarchipelago.client.gui;
 import fr.euclesia.mcarchipelago.client.mixin.InventoryScreenAccessor;
 import fr.euclesia.mcarchipelago.client.net.BiomeFinderClient;
 import fr.euclesia.mcarchipelago.client.render.ConnectionStatusIndicator;
+import fr.euclesia.mcarchipelago.client.report.LogicReportMode;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
+import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
 import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.navigation.ScreenPosition;
+import net.minecraft.client.gui.screens.advancements.AdvancementsScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.gui.screens.options.OptionsScreen;
 import net.minecraft.network.chat.Component;
@@ -48,6 +51,9 @@ public final class AEMScreenButtons {
     private static final int BIOME_FINDER_HEIGHT = 18;
     private static final int BIOME_FINDER_GAP = 2;
 
+    private static final Component REPORT_LABEL = Component.translatable("gui.aem.logic_report.open");
+    private static final Component REPORT_PICK = Component.translatable("gui.aem.logic_report.pick");
+
     private AEMScreenButtons() {}
 
     public static void register() {
@@ -68,6 +74,22 @@ public final class AEMScreenButtons {
                 button.setX(MARGIN);
                 button.setY(height - SIZE - MARGIN);
                 Screens.getWidgets(screen).add(button);
+            }
+
+            // Logic report: arm, then click the advancement that is wrong (LogicReportMode). Vanilla
+            // screen only; the compat adapters' screens still feed the hover, but get no button.
+            if (screen instanceof AdvancementsScreen) {
+                LogicReportMode.disarm();
+                ItemIconButton report = new ItemIconButton(MARGIN, height - SIZE - MARGIN, SIZE, SIZE,
+                        REPORT_LABEL, Items.WRITABLE_BOOK, ignored -> LogicReportMode.toggle());
+                report.setTooltip(Tooltip.create(REPORT_LABEL));
+                Screens.getWidgets(screen).add(report);
+                ScreenMouseEvents.allowMouseClick(screen).register(LogicReportMode::allowClick);
+                ScreenEvents.afterExtract(screen).register((s, graphics, mouseX, mouseY, tickDelta) -> {
+                    if (LogicReportMode.armed()) {
+                        graphics.centeredText(client.font, REPORT_PICK.getString(), width / 2, MARGIN, 0xFFFFFF55);
+                    }
+                });
             }
 
             if (screen instanceof InventoryScreen inventory && BiomeFinderClient.owns()) {
