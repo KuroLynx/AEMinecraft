@@ -12,6 +12,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Container;
 import net.minecraft.world.MenuProvider;
+import net.minecraft.world.WorldlyContainerHolder;
 import net.minecraft.world.inventory.CraftingContainer;
 import net.minecraft.world.inventory.RecipeCraftingHolder;
 import net.minecraft.world.item.DyeColor;
@@ -40,7 +41,11 @@ import java.util.TreeMap;
  *       entity is a {@link MenuProvider} that is not a {@link Container} (beacon) — a GUI with no
  *       storage, so: station;</li>
  *   <li>its block entity is a {@link Container} (chest, barrel, shulker box, hopper, dispenser,
- *       chiseled bookshelf, decorated pot, …) — storage, so: container.</li>
+ *       chiseled bookshelf, decorated pot, …) — storage, so: container;</li>
+ *   <li>the BLOCK itself is a {@link WorldlyContainerHolder} (the composter): no block entity and no
+ *       GUI, it takes items in and hands a product out through the block, so: station. Without this
+ *       the composter never reached the dump, so nothing gated it and it stayed a free source of bone
+ *       meal.</li>
  * </ul>
  * Three things resist derivation and are listed below as game knowledge, the same way
  * {@link EntitiesDump} carries its boss/fallback sets: {@link #STATION_HOLDOUTS},
@@ -110,7 +115,8 @@ public final class ContainersDump {
                 stateMenu = probePlacedMenu(level, scratch, state);
             }
 
-            String kind = classify(blockId, blockEntity, stateMenu);
+            String kind = block instanceof WorldlyContainerHolder
+                    ? "station" : classify(blockId, blockEntity, stateMenu);
             if (kind == null) {
                 continue;  // neither a GUI nor a holder of items
             }

@@ -258,6 +258,9 @@ _AGING_PREFIXES = ("exposed_", "weathered_", "oxidized_")
 # (a black candle needs string) with it. Keyed by (block, dropped item).
 _EXTRA_DROP_KNOWLEDGE = {
     ("cobweb", "string"): K_SWORD,
+    # A composter only holds bone meal after you fill it, and filling is a right-click the station
+    # gate refuses — so even a village composter costs the Knowledge. Derived name: containers.json.
+    ("composter", "bone_meal"): BLOCK_KNOWLEDGE.get("minecraft:composter", ""),
 }
 # Blocks the jar places in CODE rather than in a structure's template palette, so build_structures
 # cannot see them: a dried ghast generates in the Nether fossils of a soul sand valley, but the only
