@@ -59,7 +59,9 @@ public final class LogicReportNet {
             return;
         }
         try {
-            Path dir = Files.createDirectories(APWorldPaths.dir(player.level().getServer()).resolve(DIR_NAME));
+            // normalize: the world root comes back as "saves/<world>/.", which printed as "<world>\.\archipelago".
+            Path dir = Files.createDirectories(APWorldPaths.dir(player.level().getServer()).resolve(DIR_NAME))
+                    .toAbsolutePath().normalize();
             ArchipelagoClient client = AEM.ARCHIPELAGO.client();
 
             JsonObject slot = new JsonObject();
