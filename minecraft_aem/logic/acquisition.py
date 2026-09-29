@@ -232,6 +232,17 @@ _PLANTED_CROPS = {
     "torchflower": "minecraft:torchflower_seeds",
     "pitcher_plant": "minecraft:pitcher_pod",
 }
+# Same shape, not crops: a block that is another item after the world acted on it. Concrete is its
+# powder touching water; a chipped or damaged anvil is an anvil worn by use. Neither act is a recipe,
+# so the dump records only "mines into itself", which read as natural and free — 'Concrete Evidence'
+# asked for no dye, 'Baron of Blacksmiths' for no iron.
+_PLACED_FROM = {
+    **{f"{color}_concrete": f"minecraft:{color}_concrete_powder" for color in (
+        "white", "orange", "magenta", "light_blue", "yellow", "lime", "pink", "gray",
+        "light_gray", "cyan", "purple", "blue", "brown", "green", "red", "black")},
+    "chipped_anvil": "minecraft:anvil",
+    "damaged_anvil": "minecraft:anvil",
+}
 # Copper ages where it stands. An `exposed_/weathered_/oxidized_` block is the plain one after it
 # weathered, so mining one back is circular — but nothing in the dump says so: you don't CRAFT an
 # aged block (you wait), so it has no "recipes" key, `placed_only` read False, and every aged copper
@@ -2322,7 +2333,7 @@ class RuleHelper:
         exposed -> plain -> copper torch -> copper nugget) runs out of ``_MAX_DEPTH`` and the waxed
         lanterns lose their last source. Cycles still terminate: the plain item is on the stack for
         everything below it, so a route back into the aged block dead-ends one level down."""
-        seed = _PLANTED_CROPS.get(block)
+        seed = _PLANTED_CROPS.get(block) or _PLACED_FROM.get(block)
         if seed is not None:
             return self.acquire(seed, stack)
         aged = _aged_source(block)
