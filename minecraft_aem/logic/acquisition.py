@@ -183,7 +183,16 @@ _NATURAL_SELF_MINED = frozenset({
 #     skipped both the pot's own recipe and the brushing the sherds really come from.
 #   * a copper golem statue is a copper golem that finished oxidizing — no recipe, and it generates
 #     nowhere — so the golem is the price ("entity": its gate carries the copper and the pumpkin).
+#   * no recipe also means "natural" to _placed_block_origin, so a block that generates NOWHERE read
+#     as free to mine: a heavy core (ominous vault loot only) put 'Core Keeper' in sphere 2 with no
+#     Trial Chambers. An empty structure list drops the route; the item's own loot route stands.
+#     The dragon egg appears when the dragon dies, the dragon head hangs on an End City ship.
 _BLOCK_ONLY_FROM = {
+    "heavy_core": ("structures", ()),
+    "player_head": ("structures", ()),
+    "petrified_oak_slab": ("structures", ()),
+    "dragon_egg": ("boss", E_ENDER_DRAGON),
+    "dragon_head": ("structures", (S_END_CITY,)),
     "nether_wart": ("structures", ("fortress", "bastion_remnant")),
     "wither_rose": ("boss", E_WITHER),
     "carved_pumpkin": ("structures_or_craft",
