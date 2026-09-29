@@ -317,6 +317,10 @@ _NEEDS_A_MOB = frozenset({
     "minecraft:kill_mob_near_sculk_catalyst", "minecraft:killed_by_arrow",
     "minecraft:channeled_lightning", "minecraft:spear_mobs", "minecraft:thrown_item_picked_up_by_entity",
 })
+# From this many of one item a criterion is pricing a STACK, which chest loot does not supply — see
+# RuleHelper.bulk_mode. The packs ask for 2, 4, 16 or 64: a pair or four of something can come out
+# of one chest, 16 buckets or 64 bone blocks cannot.
+_BULK_COUNT = 16
 # Criterion keys that name a participating entity (as opposed to a projectile or the damage source).
 _PARTICIPANT_KEYS = frozenset({"entity", "victims", "villager", "child", "parent", "partner", "zombie",
                                "bystander"})
@@ -1646,10 +1650,20 @@ class TriggerCompiler:
             return potion
         # The base item (when named) AND any capability its predicate demands: being enchanted, or
         # carrying an armor trim of a specific material (Chromatic Armory / Coordinated Flair).
-        parts = [self._any_acquire(pred.get("items")), self._enchant_gate(pred), self._trim_gate(pred),
+        with self.h.bulk_mode(self._item_count(pred) >= _BULK_COUNT):
+            obtained = self._any_acquire(pred.get("items"))
+        parts = [obtained, self._enchant_gate(pred), self._trim_gate(pred),
                  self._contents_gate(pred), self._jukebox_gate(pred)]
         parts = [p for p in parts if p is not None]
         return and_(*parts) if parts else None
+
+    @staticmethod
+    def _item_count(pred: dict) -> int:
+        """How many of the item the predicate wants at once: ``count`` as a number or ``{"min": n}``."""
+        count = pred.get("count")
+        if isinstance(count, dict):
+            count = count.get("min")
+        return count if isinstance(count, int) else 1
 
     def _contents_gate(self, pred: dict) -> Rule | None:
         """What a container item must be HOLDING. A shulker box full of specific items ('Sculker
