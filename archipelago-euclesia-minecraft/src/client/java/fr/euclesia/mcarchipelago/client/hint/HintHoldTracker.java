@@ -3,6 +3,7 @@ package fr.euclesia.mcarchipelago.client.hint;
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.client.mixin.ScreenAccessor;
 import fr.euclesia.mcarchipelago.client.net.HintClient;
+import fr.euclesia.mcarchipelago.client.report.LogicReportMode;
 import fr.euclesia.mcarchipelago.registry.APTrackerRegistry;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -72,6 +73,7 @@ public final class HintHoldTracker {
      * bosses, structures, category roots, the tab root) can never start a hold.
      */
     public static void reportHover(Identifier id) {
+        LogicReportMode.hover(id); // every tile, before the hintable filter
         if (id == null || !isHintable(id)) {
             return;
         }
@@ -148,6 +150,7 @@ public final class HintHoldTracker {
 
     /** Advances the hold state machine, sending the request when it completes. Once per frame. */
     public static void tick() {
+        LogicReportMode.endFrame();
         Identifier id = hoveredId;
         hoveredId = null; // consumed; next frame's widget pass repopulates it if still hovered
 

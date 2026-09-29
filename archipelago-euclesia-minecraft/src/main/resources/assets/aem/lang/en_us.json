@@ -88,6 +88,15 @@
   "gui.aem.biome_finder.empty": "No biomes available here.",
 
   "gui.aem.hint.hold": "Hold to hint",
+  "gui.aem.logic_report.open": "Report a logic error",
+  "gui.aem.logic_report.pick": "Click the advancement whose logic is wrong (right-click to cancel)",
+  "gui.aem.logic_report.title": "Logic report",
+  "gui.aem.logic_report.state": "Tracker shows: %s",
+  "gui.aem.logic_report.note": "What is wrong? (optional)",
+  "gui.aem.logic_report.wrong_logic": "Wrong logic",
+  "gui.aem.logic_report.should_not_be_accessible": "Should not be accessible yet",
+  "gui.aem.logic_report.saved": "Logic report on %s saved to %s",
+  "gui.aem.logic_report.failed": "Could not save the logic report: %s",
   "gui.aem.hint.spot": "%s @ %s in %s's world",
 
   "gui.aem.common.close": "Close",
