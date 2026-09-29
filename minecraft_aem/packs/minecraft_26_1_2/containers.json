@@ -134,6 +134,13 @@
     "block_entity": "ChiseledBookShelfBlockEntity"
   },
   {
+    "block": "minecraft:composter",
+    "kind": "station",
+    "knowledge_group": "minecraft:composter",
+    "menu": false,
+    "container": false
+  },
+  {
     "block": "minecraft:copper_chest",
     "kind": "container",
     "knowledge_group": "minecraft:copper_chest",
