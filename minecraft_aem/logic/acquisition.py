@@ -1,5 +1,6 @@
 import json
 import re
+from contextlib import contextmanager
 from importlib.resources import files
 
 # AST primitives must be imported directly: `from .. import *` cannot supply them because the
@@ -479,6 +480,15 @@ class RuleHelper:
         # a trade needs, emeralds must not be sourced from a trade, and that narrower result must not
         # be cached over the ordinary one.
         self._pricing_trade: bool = False
+        # True while pricing a STACK of something (bulk_mode). Part of the cache key for the same
+        # reason: 64 bone blocks and one bone block are different answers.
+        self._bulk: bool = False
+        # Bulk results that only a finite route could supply (cache keys, and the nodes they returned).
+        # A recipe built on one runs dry too: coal from coal blocks is as finite as the Trail Ruins
+        # those coal blocks sit in. ponytail: by node identity; nodes are interned, so an identical
+        # renewable route elsewhere would read dry too — it only matters if that item has no other.
+        self._dry_keys: set = set()
+        self._dry_nodes: set = set()
         # Thunks (deferred so cross-referencing mobs don't recurse at construction).
         self.structure_bound_mobs = {
             # Overworld — structure-locked
@@ -1691,12 +1701,32 @@ class RuleHelper:
             return self.material(tier) if tier is not None else None
         # Memoize on (base, stack): the result is pure for this helper, so the same item is computed
         # once and shared. Datapack compilation calls acquire ~9M times for far fewer distinct keys.
-        key = (base, _stack, self._finding_stack, self._pricing_trade)
+        key = (base, _stack, self._finding_stack, self._pricing_trade, self._bulk)
         cache = self._acquire_cache
         if key in cache:
             return cache[key]
         cache[key] = result = self._acquire_compute(base, _stack)
+        if key in self._dry_keys and result is not None:
+            self._dry_nodes.add(id(result))
         return result
+
+    @contextmanager
+    def bulk_mode(self, on: bool = True):
+        """Price a STACK rather than one item, for everything acquired inside the block.
+
+        A chest, a brushed block or a block a structure placed hands out a few items, then it is
+        empty: 'Master Coal Miner' (576 coal) and 'Paleontologist' (64 bone blocks) read as done
+        on a few chests. In bulk mode _acquire_from_sources drops those finite routes whenever a
+        renewable one exists (a recipe, a mob, mining, a trade, fishing) — and keeps them when none
+        does, since a check with no renewable route is still done by visiting many structures.
+        Recipes stay in bulk (a stack of blocks is a stack of ingredients); the station and the
+        tool do not, you need one of each (see _recipe_node, _mining_node)."""
+        outer = self._bulk
+        self._bulk = on
+        try:
+            yield
+        finally:
+            self._bulk = outer
 
     def _acquire_compute(self, base: str, _stack: frozenset):
         # Wood is free once its dimension is reached; collapse it instead of fanning out variants.
@@ -1976,8 +2006,9 @@ class RuleHelper:
         # or one closer to home than anything dependable, is kept whatever its odds).
         options: list = []
         loose: list = []
+        finite: set = set()   # ids of routes that run dry — see bulk_mode
 
-        def add(node, glitchy: bool = False):
+        def add(node, glitchy: bool = False, runs_dry: bool = False):
             # Const(False) is not a source, it is the absence of one — an inactive structure, or a
             # route this graph doesn't carry (the Wandering Trader in strict mode). Dropping it here
             # rather than letting or_ swallow it later matters, because _demote counts the lists it
@@ -1988,6 +2019,8 @@ class RuleHelper:
             if node is None or (isinstance(node, Const) and not node.value):
                 return
             (loose if glitchy else options).append(node)
+            if runs_dry or id(node) in self._dry_nodes:
+                finite.add(id(node))
 
         def unreliable(kind: str, name: str) -> bool:
             return chances.get(f"{kind}/{name}", 1.0) < self._GLITCH_CHANCE
@@ -2054,14 +2087,16 @@ class RuleHelper:
                 for struct_name in _block_structures().get(base, ()):
                     if struct_name in self.active_structures:
                         add(self.structure(struct_name),
-                            struct_name not in self.progression_structures)
+                            struct_name not in self.progression_structures, runs_dry=True)
                 continue
             node = self._mining_node(block, base, stack=inner)
             if node is not None:
                 origin = self._block_origin_node(block, inner, outer=_stack)
                 if origin is None:
                     continue          # the block cannot exist for this seed — not a source at all
-                add(self.all_of(node, origin), unreliable("mining", block))
+                # A block only a structure placed (a monument's wet sponge) runs dry like its chest.
+                add(self.all_of(node, origin), unreliable("mining", block),
+                    runs_dry=_BLOCK_ONLY_FROM.get(block, ("",))[0] == "structures")
         for block in record.get("silk_mining", ()):
             # The block yields itself only to a Silk-Touch tool (bee_nest, ice, coral, …): same
             # region/tier as a normal mine PLUS the capability to silk-touch (enchant). Always behind
@@ -2089,7 +2124,7 @@ class RuleHelper:
                 # safe direction for logic. Folds away entirely when the gate is off.
                 add(self.all_of(self.structure(structure_name), self._loot_container_node()),
                     unreliable("structures", structure_name)
-                    or structure_name not in self.progression_structures)
+                    or structure_name not in self.progression_structures, runs_dry=True)
         for structure_name in record.get("archaeology", ()):
             if structure_name in STRUCTURES:
                 # Archaeology loot is not chest loot: a pottery sherd, a sniffer egg or a trail-ruins
@@ -2101,9 +2136,14 @@ class RuleHelper:
                 # branch has always asked for.
                 add(self.all_of(self.structure(structure_name), self.has_brush()),
                     unreliable("archaeology", structure_name)
-                    or structure_name not in self.progression_structures)
+                    or structure_name not in self.progression_structures, runs_dry=True)
         for table in record.get("gameplay", ()):
             add(self._gameplay_node(table, inner), unreliable("gameplay", table))
+        if self._bulk and any(id(node) not in finite for node in options + loose):
+            options = [node for node in options if id(node) not in finite]
+            loose = [node for node in loose if id(node) not in finite]
+        elif self._bulk and finite:
+            self._dry_keys.add((base, _stack, self._finding_stack, self._pricing_trade, True))
         options = self._demote(options, loose)
         return self._unique_or(options) if options else None
 
@@ -2178,7 +2218,8 @@ class RuleHelper:
         """A recipe is satisfied when every distinct ingredient is obtainable (AND), and the station it
         runs on is usable."""
         parts = []
-        station = self._station_node(recipe.get("station"), stack)
+        with self.bulk_mode(False):   # one station makes the whole stack
+            station = self._station_node(recipe.get("station"), stack)
         if station is not None:
             parts.append(station)
         for ingredient in recipe.get("ingredients", ()):
@@ -2186,7 +2227,12 @@ class RuleHelper:
             if node is None:
                 return None  # an unobtainable ingredient disqualifies the whole recipe
             parts.append(node)
-        return and_(*parts) if parts else None
+        if not parts:
+            return None
+        node = and_(*parts)
+        if self._bulk and any(id(part) in self._dry_nodes for part in parts):
+            self._dry_nodes.add(id(node))
+        return node
 
     def route_open(self, route: str) -> bool:
         """True when this graph should ignore ``route``'s gate: the seed turned the route off in
@@ -2252,7 +2298,12 @@ class RuleHelper:
         if "any_of" in ingredient:
             options = [self._ingredient_node(sub, stack) for sub in ingredient["any_of"]]
             options = [node for node in options if node is not None]
-            return or_(*options) if options else None
+            if not options:
+                return None
+            node = or_(*options)
+            if all(id(option) in self._dry_nodes for option in options):
+                self._dry_nodes.add(id(node))
+            return node
         if "item" in ingredient:
             return self.acquire(ingredient["item"], stack)
         return None
@@ -2280,7 +2331,8 @@ class RuleHelper:
                 if tier is not None:
                     parts.append(self.material(tier))
             if not silk:
-                tool_gate = self._drop_tool_node(block, info, item, stack)
+                with self.bulk_mode(False):   # one pair of shears mines the whole stack
+                    tool_gate = self._drop_tool_node(block, info, item, stack)
                 if tool_gate is None:
                     return None      # the only tool that works is itself unreachable here
                 parts.append(tool_gate)
