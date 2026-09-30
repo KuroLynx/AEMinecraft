@@ -180,6 +180,19 @@ def _brewing() -> dict:
         _BREWING = _pack_json("brewing.json")
     return _BREWING
 
+
+def _reagent_routes(potion_type: str) -> list[list[str]] | None:
+    """A potion type's brewing routes from brewing.json, each the reagents one chain needs. An entry
+    is one route (a flat list, the hand-written tables) or several equally short ones
+    (``{"any_of": [[...], ...]}``, from a table dumped off 26.3+'s brewing recipes, where e.g.
+    slowness comes off swiftness OR leaping). ``None`` for a type the table doesn't know."""
+    entry = _brewing().get(potion_type)
+    if entry is None:
+        return None
+    if isinstance(entry, dict):
+        return [list(route) for route in entry.get("any_of", [])]
+    return [list(entry)]
+
 # Minecraft dimension id -> our region name.
 # Keyed by the bare dimension path; lookups go through _path so minecraft:the_end / the_end /
 # (any namespace):the_end all resolve. BACAP writes these ids bare.
@@ -1816,17 +1829,18 @@ class TriggerCompiler:
             return None
         routes: list[Rule] = []
         for potion_type in self._potion_types(pred):
-            reagents = _brewing().get(potion_type)
-            if reagents is None:
+            reagent_routes = _reagent_routes(potion_type)
+            if reagent_routes is None:
                 # An alternative we can't price (a water bottle is free, and `mundane`/unknown types
                 # have no chain) makes the whole OR unpriceable — fall through to the item's own
                 # sources rather than invent a gate the player can dodge.
                 return None
-            parts = [self._can_brew()]
-            parts += [self.h.acquire(f"minecraft:{reagent}") for reagent in reagents]
-            parts = [node for node in parts if node is not None]
-            if parts:
-                routes.append(and_(*parts))
+            for reagents in reagent_routes:
+                parts = [self._can_brew()]
+                parts += [self.h.acquire(f"minecraft:{reagent}") for reagent in reagents]
+                parts = [node for node in parts if node is not None]
+                if parts:
+                    routes.append(and_(*parts))
         return or_(*routes) if routes else None
 
     @staticmethod
@@ -1860,10 +1874,12 @@ class TriggerCompiler:
         name = potion_id.split(":")[-1]
         for prefix in ("long_", "strong_"):
             name = name.removeprefix(prefix)
-        reagents = _brewing().get(name)
-        if not reagents:
-            return None
-        return self._all_req(*[self.h.acquire(f"minecraft:{item}") for item in reagents])
+        reagent_routes = _reagent_routes(name)
+        if not reagent_routes or any(not route for route in reagent_routes):
+            return None   # unknown, or a route that needs nothing: no gate to add
+        gates = [self._all_req(*[self.h.acquire(f"minecraft:{item}") for item in route])
+                 for route in reagent_routes]
+        return None if any(gate is None for gate in gates) else or_(*gates)
 
     def _can_brew(self) -> Rule | None:
         """Capability to brew a potion: a brewing stand, its FUEL, Knowledge: Brewing, and a water

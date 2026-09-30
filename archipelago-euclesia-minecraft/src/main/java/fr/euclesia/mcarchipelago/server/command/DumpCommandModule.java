@@ -28,8 +28,8 @@ import java.util.function.Supplier;
  * GUI/storage block registry behind the station and container Knowledge gates, {@link ContainersDump}).
  * Those two are NOT part of {@link PackDump} because they read runtime entity/block-entity behaviour and
  * so need a loaded world — this command reads the world it runs in; the title-menu UI dumps entities too,
- * off a disposable world ({@code HeadlessEntitiesDump}). {@code brewing.json} stays curated (MC brewing is
- * hard-coded), like {@code items.csv}.
+ * off a disposable world ({@code HeadlessEntitiesDump}). {@code brewing.json} is dumped from 26.3's brewing
+ * recipes; before 26.3 brewing is hard-coded and the file stays curated, like {@code items.csv}.
  */
 public final class DumpCommandModule implements AEMCommandModule {
 

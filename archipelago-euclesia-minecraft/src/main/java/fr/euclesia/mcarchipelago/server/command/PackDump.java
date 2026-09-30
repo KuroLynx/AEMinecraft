@@ -62,7 +62,7 @@ public final class PackDump {
 
     /** Dumpable file ids (UI checkboxes); {@code meta} + {@code acquisition} etc. map to one file each. */
     public static final List<String> FILES = List.of(
-            "advancements", "structures", "acquisition", "block_mining", "block_biomes", "tags", "meta");
+            "advancements", "structures", "acquisition", "block_mining", "block_biomes", "brewing", "tags", "meta");
 
     /** Opt-in heavy target: copy the loaded datapacks VERBATIM into {@code <outDir>/datapack/} as a
      *  real, loadable datapack tree (not the derived content-pack JSON). Not part of the default
@@ -125,6 +125,12 @@ public final class PackDump {
         }
         if (selected.contains("block_biomes")) {
             done.add("block_biomes " + writeCount(packDir, "block_biomes.json", blockBiomes(rm)));
+        }
+        if (selected.contains("brewing")) {
+            JsonObject brewing = brewing(rm);
+            if (brewing != null) {   // no brewing recipes (before 26.3): the curated table stands
+                done.add("brewing " + writeCount(packDir, "brewing.json", brewing));
+            }
         }
         if (selected.contains("tags")) {
             write(packDir, "tags.json", tags(rm));
@@ -378,6 +384,97 @@ public final class PackDump {
             out.add(block, record);
         }
         return out;
+    }
+
+    // -- brewing (data/<ns>/recipe/brewing/*.json, 26.3+) ----------------------
+
+    /**
+     * {@code brewing.json} from the brewing recipes 26.3 introduced: potion type -> the reagents that
+     * brew it from a water bottle, the same table that was hand-written while brewing was hard-coded.
+     * Only drinkable-potion recipes count (splash/lingering add a trivial gunpowder/dragon's breath
+     * step), and long_/strong_ variants are left to their base type, as before. Where several routes
+     * need equally few reagents (slowness off swiftness or leaping; mundane off any of a dozen
+     * items), the entry is {@code {"any_of": [[...], ...]}} instead of one list. Null when the pack
+     * has no brewing recipes.
+     */
+    private static JsonObject brewing(ResourceManager rm) {
+        List<String[]> edges = new ArrayList<>();   // {input type, output type, reagent}
+        for (Map.Entry<Identifier, JsonObject> entry : jsonResources(rm, "recipe/brewing")) {
+            JsonObject recipe = entry.getValue();
+            JsonObject input = obj(recipe.get("input"));
+            JsonObject output = obj(recipe.get("output"));
+            if (!stripNs(string(input.get("item"), "")).equals("potion")
+                    || !stripNs(string(output.get("id"), "")).equals("potion")) {
+                continue;
+            }
+            String from = stripNs(string(obj(input.get("potion_contents")).get("potions"), ""));
+            String to = stripNs(string(obj(obj(output.get("components")).get("minecraft:potion_contents")).get("potion"), ""));
+            String reagent = stripNs(string(obj(recipe.get("reagent")).get("item"), ""));
+            if (!from.isEmpty() && !to.isEmpty() && !reagent.isEmpty()) {
+                edges.add(new String[]{from, to, reagent});
+            }
+        }
+        if (edges.isEmpty()) {
+            return null;
+        }
+        // Every minimal reagent set per potion type, relaxed to a fixed point (the graph is ~50 nodes).
+        Map<String, Set<Set<String>>> routes = new TreeMap<>();
+        routes.put("water", Set.of(Set.of()));
+        boolean changed = true;
+        while (changed) {
+            changed = false;
+            for (String[] edge : edges) {
+                Set<Set<String>> sources = routes.get(edge[0]);
+                if (sources == null) {
+                    continue;
+                }
+                for (Set<String> source : List.copyOf(sources)) {
+                    Set<String> route = new TreeSet<>(source);
+                    route.add(edge[2]);
+                    changed |= addMinimal(routes.computeIfAbsent(edge[1], key -> new HashSet<>()), route);
+                }
+            }
+        }
+        JsonObject out = new JsonObject();
+        out.addProperty("_comment", "Dumped from the game's brewing recipes: potion type -> the reagents "
+                + "that brew it from a water bottle (any_of: equally short alternatives). long_/strong_ "
+                + "variants share their base type's reagents.");
+        routes.forEach((type, sets) -> {
+            if (type.equals("water") || type.startsWith("long_") || type.startsWith("strong_")) {
+                return;
+            }
+            List<JsonArray> lists = new ArrayList<>();
+            for (Set<String> set : sets) {
+                JsonArray list = new JsonArray();
+                new TreeSet<>(set).forEach(list::add);
+                lists.add(list);
+            }
+            lists.sort(Comparator.comparing(JsonArray::toString));
+            if (lists.size() == 1) {
+                out.add(type, lists.get(0));
+            } else {
+                JsonArray any = new JsonArray();
+                lists.forEach(any::add);
+                JsonObject alternatives = new JsonObject();
+                alternatives.add("any_of", any);
+                out.add(type, alternatives);
+            }
+        });
+        return out;
+    }
+
+    /** Keeps only the smallest routes: adds {@code route} if no kept one is smaller, dropping larger
+     *  ones. True if the set changed. */
+    private static boolean addMinimal(Set<Set<String>> kept, Set<String> route) {
+        int best = kept.stream().mapToInt(Set::size).min().orElse(Integer.MAX_VALUE);
+        if (route.size() > best || kept.contains(route)) {
+            return false;
+        }
+        if (route.size() < best) {
+            kept.clear();
+        }
+        kept.add(Set.copyOf(route));
+        return true;
     }
 
     // -- block_biomes (data/<ns>/worldgen/{biome,placed_feature,configured_feature,noise_settings}) ---
