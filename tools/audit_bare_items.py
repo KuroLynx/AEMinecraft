@@ -38,6 +38,14 @@ os.chdir(AP_ROOT)
 from test.general import setup_multiworld  # noqa: E402
 from worlds.AutoWorld import AutoWorldRegister  # noqa: E402
 from worlds.minecraft_aem.logic.acquisition import RuleHelper, _acquisition_table  # noqa: E402
+from worlds.minecraft_aem.logic.constants import DEFAULT_MINECRAFT_VERSION  # noqa: E402
+
+
+def _minecraft_version() -> str:
+    """``--minecraft-version <v>``: the Minecraft version to audit (default: the apworld's default)."""
+    if "--minecraft-version" in sys.argv:
+        return sys.argv[sys.argv.index("--minecraft-version") + 1]
+    return DEFAULT_MINECRAFT_VERSION
 
 WORLD = AutoWorldRegister.world_types["AEMinecraft"]
 
@@ -62,9 +70,9 @@ SOURCE_KEYS = ("recipes", "mining", "silk_mining", "drops", "structures", "archa
                "trades", "gameplay")
 
 
-def _sources(base: str) -> str:
+def _sources(content, base: str) -> str:
     """One line naming what the item's record offers, so a free item can be judged on the spot."""
-    record = _acquisition_table().get(base, {})
+    record = _acquisition_table(content).get(base, {})
     parts = []
     for key in SOURCE_KEYS:
         values = record.get(key)
@@ -81,7 +89,7 @@ def audit(world) -> tuple[list[tuple[str, list[str]]], list[str]]:
     """(free items with the regions they ask for, items with no source at all) for this world."""
     helper = RuleHelper(world, glitch=False)
     free, missing = [], []
-    for base in sorted(_acquisition_table()):
+    for base in sorted(_acquisition_table(world.content)):
         node = helper.acquire(f"minecraft:{base}")
         if node is None:
             missing.append(base)          # unobtainable: the opposite failure, and worth seeing
@@ -99,14 +107,14 @@ def main() -> int:
     cases = CASES if "--all" in argv else {"everything on + BACAP": CASES["everything on + BACAP"]}
 
     for label, options in cases.items():
-        world = setup_multiworld(WORLD, options=options).worlds[1]
+        world = setup_multiworld(WORLD, options={**options, "minecraft_version": _minecraft_version()}).worlds[1]
         free, missing = audit(world)
-        total = len(_acquisition_table())
+        total = len(_acquisition_table(world.content))
         print(f"[{label}] {len(free)} of {total} items ask for nothing; "
               f"{len(missing)} have no source at all")
         for base, regions, node in free:
             print(f"  {base:36s} {', '.join(regions)}")
-            print(f"      {_sources(base)}")
+            print(f"      {_sources(world.content, base)}")
             if verbose:
                 print(f"      rule: {json.dumps(node.to_dict())}")
         if missing:

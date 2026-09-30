@@ -19,7 +19,6 @@ os.chdir(AP_ROOT)
 
 from test.general import setup_multiworld  # noqa: E402
 from worlds.AutoWorld import AutoWorldRegister  # noqa: E402
-from worlds.minecraft_aem.data import LOCATIONS_ADVANCEMENT  # noqa: E402
 from worlds.minecraft_aem.logic.acquisition import RuleHelper  # noqa: E402
 from worlds.minecraft_aem.logic.engine import collect_advancement_rules  # noqa: E402
 from worlds.minecraft_aem.logic.triggers import TriggerCompiler  # noqa: E402
@@ -40,7 +39,7 @@ def main() -> int:
 
     # game_id -> display name (curated rules are keyed by display name; manifest by game_id).
     name_by_gid = {data.game_id: loc.removeprefix("Advancement: ")
-                   for loc, data in LOCATIONS_ADVANCEMENT.items()}
+                   for loc, data in world.content.LOCATIONS_ADVANCEMENT.items()}
     curated = collect_advancement_rules(helper)
 
     compiled, fallback = [], []

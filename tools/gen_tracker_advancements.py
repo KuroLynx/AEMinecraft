@@ -9,6 +9,11 @@ Ids come from ``minecraft.trackers.tracker_id`` so they match the slot_data expo
 Icons are validated against the real item set: mob tiles use ``<slug>_spawn_egg`` (verified in
 the MC client jar's en_us.json), structures use a hand-picked representative item.
 
+The mod ships ONE datapack for every Minecraft version it builds for, so the tiles cover every
+version's mobs and structures (the union), and icons are checked against the OLDEST supported
+version's jar: an icon item that game lacks would make the tile fail to load there, so a mob newer
+than it (26.2's sulfur cube on 26.1.2) falls back to a generic icon that exists everywhere.
+
 Run from anywhere (puts the ArchipelagoClone checkout on sys.path, like tools/logic_selfcheck.py):
     python tools/gen_tracker_advancements.py
 Override the client jar with env MC_CLIENT_JAR if the loom cache path differs.
@@ -29,6 +34,7 @@ OUT_DIR = os.path.join(
 )
 
 AP_ROOT = r"C:\Users\benja\PycharmProjects\ArchipelagoClone"
+# The OLDEST supported version's client jar (see the module docstring).
 DEFAULT_JAR = os.path.expanduser(
     r"~/.gradle/caches/fabric-loom/26.1.2/minecraft-client.jar"
 )
@@ -37,11 +43,12 @@ sys.path.insert(0, AP_ROOT)
 os.chdir(AP_ROOT)
 
 from worlds.minecraft_aem.data import (  # noqa: E402
-    BLOCK_KNOWLEDGE,
+    ALL_VERSIONS_MOBS as MOBS_ALL,
+    ALL_VERSIONS_STRUCTURES as STRUCTURES,
     KNOWLEDGE_PREFIX,
+    MINECRAFT_VERSIONS,
     MCEntityCategory,
-    MOBS_ALL,
-    STRUCTURES,
+    content_for,
 )
 from worlds.minecraft_aem.trackers import (  # noqa: E402
     CATEGORY_ENTITY_UNLOCKS,
@@ -193,8 +200,10 @@ def derive_gate_icons(item_slugs: set[str]) -> dict[str, str]:
     shared id segments, and ``minecraft:shelf`` is not a real item.
     """
     blocks_by_name: dict[str, list[str]] = {}
-    for block_id, name in BLOCK_KNOWLEDGE.items():
-        blocks_by_name.setdefault(name, []).append(block_id)
+    for version in MINECRAFT_VERSIONS:
+        for block_id, name in content_for(version).BLOCK_KNOWLEDGE.items():
+            if block_id not in blocks_by_name.setdefault(name, []):
+                blocks_by_name[name].append(block_id)
 
     icons: dict[str, str] = {}
     for name, blocks in sorted(blocks_by_name.items()):
@@ -268,6 +277,8 @@ def mob_icon(game_id: str, spawn_eggs: set[str]) -> str:
 
 def structure_icon(game_id: str) -> str:
     slug = _slug(game_id)
+    if slug.startswith("abandoned_camp_"):   # 26.3: one structure per biome variant
+        return "minecraft:campfire"
     if slug not in STRUCTURE_ICONS:
         print(f"  WARN: no icon mapping for structure '{slug}', using {STRUCTURE_ICON_FALLBACK}")
     return STRUCTURE_ICONS.get(slug, STRUCTURE_ICON_FALLBACK)
