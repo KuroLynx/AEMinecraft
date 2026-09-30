@@ -38,6 +38,10 @@ loom {
 	// to be relative ("../../run"): an absolute path gets glued on after versions/<version>/.
 	runConfigs.configureEach {
 		runDir = project.relativePath(rootProject.file("run"))
+		// Mojang's 26.3 launcher profile passes this and Loom doesn't copy it: without it, about half of
+		// 26.3 launches die at startup with a bare 0xC0000005 and no crash report (SDL's native code
+		// running out of stack on a Java thread). Harmless on the versions that don't ask for it.
+		vmArg "-XX:StackShadowPages=32"
 	}
 }
 
