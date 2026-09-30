@@ -1,5 +1,6 @@
 package fr.euclesia.mcarchipelago.client.report;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import fr.euclesia.mcarchipelago.client.gui.LogicReportScreen;
 import fr.euclesia.mcarchipelago.client.logic.LogicProviders;
 import fr.euclesia.mcarchipelago.client.utils.MCClient;
@@ -52,7 +53,7 @@ public final class LogicReportMode {
         if (!armed) {
             return true;
         }
-        if (event.button() != 0) {
+        if (event.button() != InputConstants.MOUSE_BUTTON_LEFT) {
             armed = false; // any other button backs out
             return false;
         }

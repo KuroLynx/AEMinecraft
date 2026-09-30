@@ -1,5 +1,6 @@
 package fr.euclesia.mcarchipelago.client.gui;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.client.dump.DumpDataSource;
 import fr.euclesia.mcarchipelago.client.dump.DumpDataSource.DatapackInfo;
@@ -193,7 +194,7 @@ public final class DumpScreen extends Screen {
 
     @Override
     public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
-        if (event.button() == 0 && inList(event.x(), event.y()) && !packs.isEmpty()) {
+        if (event.button() == InputConstants.MOUSE_BUTTON_LEFT && inList(event.x(), event.y()) && !packs.isEmpty()) {
             int index = packScroll + (int) ((event.y() - listTop) / PACK_ROW_H);
             if (index >= 0 && index < packs.size()) {
                 togglePack(packs.get(index).id());
