@@ -95,19 +95,15 @@ class MCWorld(World):
     web = MCWebWorld()
     selected_bosses: list[str] = []
 
-    item_name_to_id = {
-        **{name: data.id for (name, data) in ITEMS.items()},
-        **{f"{ENTITY_UNLOCK_PREFIX}{name}": BASE_ID_ENTITY_UNLOCK + mob.id for (name, mob) in MOBS_ALL.items()},
-        **{f"{STRUCT_UNLOCK_PREFIX}{structure.label}": BASE_ID_STRUCT_UNLOCK + structure.id
-           for structure in STRUCTURES.values()}
-    }
+    # Every Minecraft version's items and locations: AP's data package is static and shared by all
+    # players, so it is the union, with version-independent ids (see data._canonical_ids).
+    item_name_to_id = ITEM_NAME_TO_ID
+    location_name_to_id = LOCATION_NAME_TO_ID
 
-    location_name_to_id = {
-        **{name: data.id for (name, data) in ALL_LOCATIONS.items()},
-        # BACAP's blazeandcave locations are always in the (static) data package; created only when
-        # the blazeandcave option is on. Its minecraft rewrites reuse the vanilla locations above.
-        **{name: data.id for (name, data) in LOCATIONS_BACAP.items()},
-    }
+    @property
+    def content(self) -> MinecraftContent:
+        """This player's Minecraft version's content (the minecraft_version option)."""
+        return content_for(self.options.minecraft_version.current_key)
 
     # -----------------------------------------------------------------------
     # Génération
@@ -130,7 +126,7 @@ class MCWorld(World):
         # (full progression when goal-gating, else skip_balancing) — the per-seed structure-unlock rule.
         if name.startswith(ENTITY_UNLOCK_PREFIX):
             mob_name = name.removeprefix(ENTITY_UNLOCK_PREFIX)
-            mob_data = MOBS_ALL[mob_name]
+            mob_data = self.content.MOBS_ALL[mob_name]
             classification = self._mob_classification(mob_name)
             return MCItem(name, classification, BASE_ID_ENTITY_UNLOCK + mob_data.id, self.player)
 
@@ -139,8 +135,8 @@ class MCWorld(World):
         # it rises to full progression is a per-seed call, computed from the goal (see
         # _structure_classification), not stored in the data.
         if name.startswith(STRUCT_UNLOCK_PREFIX):
-            struct_gid = STRUCTURE_BY_LABEL[name.removeprefix(STRUCT_UNLOCK_PREFIX)]
-            struct_data = STRUCTURES[struct_gid]
+            struct_gid = self.content.STRUCTURE_BY_LABEL[name.removeprefix(STRUCT_UNLOCK_PREFIX)]
+            struct_data = self.content.STRUCTURES[struct_gid]
             classification = self._structure_classification(struct_gid)
             return MCItem(name, classification, BASE_ID_STRUCT_UNLOCK + struct_data.id, self.player)
 
@@ -173,9 +169,9 @@ class MCWorld(World):
         STRUCTURE_PACK_OPTION holds an overlay structure's gating option; base structures are absent
         from it and so are always active."""
         return {
-            name for name in STRUCTURES
-            if name not in STRUCTURE_PACK_OPTION
-            or getattr(self.options, STRUCTURE_PACK_OPTION[name])
+            name for name in self.content.STRUCTURES
+            if name not in self.content.STRUCTURE_PACK_OPTION
+            or getattr(self.options, self.content.STRUCTURE_PACK_OPTION[name])
         }
 
     def _get_locked_structures(self) -> set[str]:
@@ -194,9 +190,9 @@ class MCWorld(World):
         locked: set[str] = set()
         for entry in selected:
             if entry in ("Overworld", "Nether", "The End"):
-                locked |= {gid for gid in active if STRUCTURES[gid].region == entry}
+                locked |= {gid for gid in active if self.content.STRUCTURES[gid].region == entry}
             else:
-                gid = STRUCTURE_BY_LABEL.get(entry)  # the option lists display labels
+                gid = self.content.STRUCTURE_BY_LABEL.get(entry)  # the option lists display labels
                 if gid in active:
                     locked.add(gid)
         return locked
@@ -210,14 +206,14 @@ class MCWorld(World):
         """
         selected = self.options.mob_spawn_lock.value
         if "All" in selected:
-            return set(MOBS_ALL)
+            return set(self.content.MOBS_ALL)
 
         categories = {"passive", "neutral", "hostile", "boss"}
         locked: set[str] = set()
         for entry in selected:
             if entry in categories:
-                locked |= {name for name, data in MOBS_ALL.items() if data.category == entry}
-            elif entry in MOBS_ALL:  # the option also lists individual mob names
+                locked |= {name for name, data in self.content.MOBS_ALL.items() if data.category == entry}
+            elif entry in self.content.MOBS_ALL:  # the option also lists individual mob names
                 locked.add(entry)
         return locked
 
@@ -261,30 +257,30 @@ class MCWorld(World):
     def _get_active_locations(self) -> dict[str, MCLocationData]:
         """Retourne les locations actives selon les options du joueur."""
         locations: dict[str, MCLocationData] = {
-            **LOCATIONS_ADVANCEMENT,
-            **LOCATIONS_BOSS_KILL
+            **self.content.LOCATIONS_ADVANCEMENT,
+            **self.content.LOCATIONS_BOSS_KILL
         }
 
         if self.options.kill_sanity:
-            locations.update(LOCATIONS_MOB_KILL)
+            locations.update(self.content.LOCATIONS_MOB_KILL)
 
         # BACAP adds its new advancements; the vanilla advancement locations stay (BACAP rewrites
         # them, so set_rules compiles their logic from BACAP's criteria instead — see set_rules).
         if self.options.blazeandcave:
-            locations.update(LOCATIONS_BACAP)
+            locations.update(self.content.LOCATIONS_BACAP)
             # ...minus the vanilla ones BACAP deletes rather than rewrites. Its
             # husbandry/obtain_netherite_hoe is a display-less `minecraft:impossible` stub, so the
             # check could never be sent — and read as free, since an impossible criterion defers to a
             # parent chain the stub does not have. BACAP ships its own "Serious Dedication" instead.
-            if BACAP_REMOVED:
+            if self.content.BACAP_REMOVED:
                 locations = {name: loc_data for name, loc_data in locations.items()
-                             if loc_data.game_id not in BACAP_REMOVED}
+                             if loc_data.game_id not in self.content.BACAP_REMOVED}
 
         if self.options.challenge_sanity == ChallengeSanity.option_none:
             # A reused vanilla location's challenge-ness follows the active manifest: BACAP's frame
             # when blazeandcave is on (it can promote/demote a vanilla advancement), else the
             # vanilla flag baked into the location.
-            rewrites = BACAP_REWRITE_CHALLENGE if self.options.blazeandcave else {}
+            rewrites = self.content.BACAP_REWRITE_CHALLENGE if self.options.blazeandcave else {}
             locations = {
                 name: loc_data for name, loc_data in locations.items()
                 if not rewrites.get(loc_data.game_id, loc_data.challenge)
@@ -476,7 +472,7 @@ class MCWorld(World):
         # Structure unlocks: only the structures locked by the structure_unlock option are added.
         # Unlocked structures are gated by their dimension instead (see RuleHelper.structure).
         for struct_gid in self._get_locked_structures():
-            pool.append(self.create_item(f"{STRUCT_UNLOCK_PREFIX}{STRUCTURES[struct_gid].label}"))
+            pool.append(self.create_item(f"{STRUCT_UNLOCK_PREFIX}{self.content.STRUCTURES[struct_gid].label}"))
 
         active_location_count = len(self._get_active_locations())
 
@@ -519,8 +515,8 @@ class MCWorld(World):
         """Bosses required by the goal: every boss in boss_list ("All" = every boss)."""
         selected = self.options.boss_list.value
         if "All" in selected:
-            return list(MOBS_BOSS.keys())
-        return [name for name in MOBS_BOSS.keys() if name in selected]
+            return list(self.content.MOBS_BOSS.keys())
+        return [name for name in self.content.MOBS_BOSS.keys() if name in selected]
 
     # A Knowledge gating fewer than this share of the seed's checks is real logic, but not worth
     # front-loading. Deliberately a share rather than a count, so it means the same thing on a 104-check
@@ -710,7 +706,11 @@ class MCWorld(World):
             "slot_data_version"    : SLOT_DATA_VERSION,
 
             # --- Options ---
-            "boss_list"            : [MOBS_BOSS[name].game_id for name in self.selected_bosses],
+            # The Minecraft version the seed was generated for (minecraft_version). Its items, mobs and
+            # advancements only exist on that game, so the mod refuses to enter the world on another.
+            # Additive: a mod that doesn't know the field ignores it, so no SLOT_DATA_VERSION bump.
+            "minecraft_version"    : self.content.version,
+            "boss_list"            : [self.content.MOBS_BOSS[name].game_id for name in self.selected_bosses],
             "start_dimension"      : self.options.start_dimension.current_key,  # "overworld" | "nether"
             "death_link"           : bool(self.options.death_link.value),
             "villager_trust"       : bool(self.options.villager_trust.value),
@@ -756,7 +756,7 @@ class MCWorld(World):
             # the overlays enabled this seed are listed (e.g. BACAP when blazeandcave is on).
             "required_content"     : [
                 requirement
-                for option, requirement in OVERLAY_REQUIREMENTS
+                for option, requirement in self.content.OVERLAY_REQUIREMENTS
                 if getattr(self.options, option).value
             ],
 
@@ -783,20 +783,20 @@ class MCWorld(World):
                 mob_data.game_id: loc_data.id
                 for loc_name, loc_data in self._get_active_locations().items()
                 if loc_data.category in (MCLocationCategory.MOB_KILL, MCLocationCategory.BOSS_KILL)
-                for mob_name, mob_data in {**MOBS_ALL}.items()
+                for mob_name, mob_data in {**self.content.MOBS_ALL}.items()
                 if f"{ENTITY_KILL_PREFIX}{mob_name}" == loc_name or f"{BOSS_KILL_PREFIX}{mob_name}" == loc_name
             },
 
             # --- Mob spawn lock : game_id des mobs à bloquer au spawn ---
             "mob_spawn_lock_mobs"  : {
-                MOBS_ALL[mob_name].game_id: BASE_ID_ENTITY_UNLOCK + MOBS_ALL[mob_name].id
+                self.content.MOBS_ALL[mob_name].game_id: BASE_ID_ENTITY_UNLOCK + self.content.MOBS_ALL[mob_name].id
                 for mob_name in self._get_locked_mobs()
             },
 
             # --- Structure lock : game_id de la structure → item ID de son unlock ---
             # Uniquement les structures verrouillées par l'option structure_unlock.
             "structure_locks"      : {
-                STRUCTURES[name].game_id: BASE_ID_STRUCT_UNLOCK + STRUCTURES[name].id
+                self.content.STRUCTURES[name].game_id: BASE_ID_STRUCT_UNLOCK + self.content.STRUCTURES[name].id
                 for name in self._get_locked_structures()
             },
 
@@ -821,7 +821,7 @@ class MCWorld(World):
                 # stand) have a hand-set tier that a blanket 0 would throw away.
                 **{
                     block: {"knowledge": f"{KNOWLEDGE_PREFIX}{knowledge}", "material": 0}
-                    for block, knowledge in BLOCK_KNOWLEDGE.items()
+                    for block, knowledge in self.content.BLOCK_KNOWLEDGE.items()
                     if knowledge in self._active_knowledges()
                 },
                 **{
@@ -836,7 +836,7 @@ class MCWorld(World):
             # Knowledge n'est pas reçue (même ceux trouvés dans les structures).
             "station_knowledge_locks": {
                 block: f"{KNOWLEDGE_PREFIX}{knowledge}"
-                for block, knowledge in STATION_KNOWLEDGE_LOCKS.items()
+                for block, knowledge in self.content.STATION_KNOWLEDGE_LOCKS.items()
                 if knowledge in self._active_knowledges()
             },
 

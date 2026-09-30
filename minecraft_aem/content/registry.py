@@ -23,7 +23,6 @@ from BaseClasses import ItemClassification
 from ..logic.constants import (
     ADVANCEMENT_PREFIX,
     BOSS_KILL_PREFIX,
-    CONTENT_VERSION,
     ENTITY_KILL_PREFIX,
     KNOWLEDGE_PREFIX,
 )
@@ -156,44 +155,52 @@ def _pack_dir(name: str):
     return files(_MC_ROOT).joinpath("packs", name)
 
 
-# Packs are discovered, never named by a constant: scan packs/ once and keep every pack whose
-# meta.json `mc_version` equals CONTENT_VERSION. The vanilla pack (source == "vanilla") is the base;
-# the rest (datapacks/mods like BACAP) are overlays, keyed by their namespace. A new MC version is
-# adopted by dumping the packs (their meta.mc_version is the running game version), dropping them in
-# packs/, and bumping CONTENT_VERSION — folder names don't matter.
-_DISCOVERED: dict | None = None
+# Packs are discovered, never named by a constant: scan packs/ once and group every pack by its meta.json
+# `mc_version`. A version's vanilla pack (source == "vanilla") is its base; the rest (datapacks/mods like
+# BACAP) are its overlays, keyed by namespace. Folder names don't matter.
+_DISCOVERED: dict[str, dict[str, tuple[str, str]]] | None = None
 
 
-def _discover() -> dict:
-    """{namespace: (dir_name, source)} for every packs/<dir> whose meta.mc_version == CONTENT_VERSION."""
+def _discover() -> dict[str, dict[str, tuple[str, str]]]:
+    """{mc_version: {namespace: (dir_name, source)}} for every packs/<dir> with a meta.json."""
     global _DISCOVERED
     if _DISCOVERED is None:
-        found: dict[str, tuple[str, str]] = {}
+        found: dict[str, dict[str, tuple[str, str]]] = {}
         for entry in sorted(files(_MC_ROOT).joinpath("packs").iterdir(), key=lambda p: p.name):
             meta = entry.joinpath("meta.json")
             if not (entry.is_dir() and meta.is_file()):
                 continue
             with meta.open(encoding="utf-8") as f:
                 data = json.load(f)
-            if str(data.get("mc_version")) == str(CONTENT_VERSION):
-                found[data.get("namespace")] = (entry.name, data.get("source"))
+            found.setdefault(str(data.get("mc_version")), {})[data.get("namespace")] = (entry.name, data.get("source"))
         _DISCOVERED = found
     return _DISCOVERED
 
 
-def base_pack() -> str:
-    """The vanilla base pack's directory name for CONTENT_VERSION (the one with source == "vanilla")."""
-    for name, source in _discover().values():
+def version_key(version: str) -> tuple:
+    """Sort key putting Minecraft versions in release order ("26.1.2" < "26.2" < "26.10")."""
+    return tuple(int(part) if part.isdigit() else part for part in version.split("."))
+
+
+def minecraft_versions() -> list[str]:
+    """Every Minecraft version the apworld can generate for (it has a vanilla pack), oldest first."""
+    return sorted((version for version, packs in _discover().items()
+                   if any(source == "vanilla" for _, source in packs.values())), key=version_key)
+
+
+def base_pack(version: str) -> str:
+    """The vanilla base pack's directory name for ``version`` (the one with source == "vanilla")."""
+    for name, source in _discover().get(version, {}).values():
         if source == "vanilla":
             return name
     raise FileNotFoundError(
-        f"No vanilla content pack with meta.mc_version == {CONTENT_VERSION!r} found in packs/ "
-        f"(dump one in-game and drop it in, or fix CONTENT_VERSION).")
+        f"No vanilla content pack with meta.mc_version == {version!r} found in packs/ "
+        f"(dump one in-game and drop it in).")
 
 
-def overlay_packs() -> dict[str, str]:
-    """Non-vanilla packs (datapacks/mods, e.g. BACAP) for CONTENT_VERSION, as namespace -> dir name."""
-    return {ns: name for ns, (name, source) in _discover().items() if source != "vanilla"}
+def overlay_packs(version: str) -> dict[str, str]:
+    """Non-vanilla packs (datapacks/mods, e.g. BACAP) for ``version``, as namespace -> dir name."""
+    return {ns: name for ns, (name, source) in _discover().get(version, {}).items() if source != "vanilla"}
 
 
 def pack_meta(dir_name: str) -> dict:

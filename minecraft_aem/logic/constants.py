@@ -359,10 +359,12 @@ MAT_NETHERITE = 6
 # -----------------------------------------------------------------------
 # Content packs (packs/<name>/)
 # -----------------------------------------------------------------------
-# The ONLY pack-related constant: the MC version the apworld targets. Packs are not referenced by
-# folder name anywhere — content.registry DISCOVERS them by scanning packs/ and keeping every pack
-# whose meta.json `mc_version` equals this string (the vanilla one is the base; the rest, e.g. BACAP,
-# are overlays). So supporting a new MC version is: dump the packs in-game (their meta.mc_version is
-# the running game version), drop the folders in packs/, and bump this one line — folder names are
-# irrelevant. Must match exactly the `mc_version` the dump writes (SharedConstants version name).
-CONTENT_VERSION = "26.1.2"
+# Packs are not referenced by folder name anywhere: content.registry DISCOVERS them by scanning packs/
+# and grouping them by their meta.json `mc_version` (the vanilla pack is a version's base; the rest,
+# e.g. BACAP, are its overlays). Every version with a vanilla pack is playable, chosen per player by
+# the `minecraft_version` YAML option; supporting a new one is: dump the packs in-game (their
+# meta.mc_version is the running game version) and drop the folders in packs/.
+#
+# The version a YAML gets when it doesn't say. Kept at the version the current release shipped, so an
+# existing YAML keeps generating the same game.
+DEFAULT_MINECRAFT_VERSION = "26.1.2"

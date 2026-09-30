@@ -28,6 +28,21 @@ AEMinecraft:
     items: 0
 
   # -------------------------------------------------------------------------
+  # Minecraft Version
+  # -------------------------------------------------------------------------
+
+  minecraft_version:
+    # The Minecraft version you play on.
+    #
+    # Must match the game you run with the mod: items, mobs, structures and advancements differ
+    # between versions, and the mod refuses to enter a world generated for another one. With
+    # blazeandcave on, install the BlazeandCave's Advancements Pack release made for that version
+    # (26.1.2: 1.20.3, 26.2: 1.21, 26.3: 1.21.1). Each player picks their own.
+    '26.1.2': 50
+    '26.2': 0
+    '26.3': 0
+
+  # -------------------------------------------------------------------------
   # Boss Goal
   # -------------------------------------------------------------------------
 

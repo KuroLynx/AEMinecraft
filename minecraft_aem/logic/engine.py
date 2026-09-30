@@ -13,7 +13,6 @@ hand-written per-advancement rule files; this module only supplies:
 """
 from __future__ import annotations
 
-from ..data import MOBS_ALL
 from .acquisition import RuleHelper
 from .constants import A_ADVENTURE, A_HUSBANDRY
 
@@ -24,7 +23,7 @@ def collect_advancement_rules(helper: RuleHelper) -> dict:
     carry an explicit rule here."""
     return {
         A_HUSBANDRY: helper.can_get_food(),
-        A_ADVENTURE: helper.has_any_entities(*MOBS_ALL.keys()),
+        A_ADVENTURE: helper.has_any_entities(*helper.content.MOBS_ALL.keys()),
     }
 
 
@@ -32,4 +31,4 @@ def collect_entity_rules(helper: RuleHelper) -> dict:
     """Kill-location logic for every mob. Delegated to ``RuleHelper.can_defeat`` — plain reachability
     for ordinary mobs, bespoke gates for the four bosses — so the boss kill logic has a single home
     shared with boss-drop resolution in acquire() (e.g. the Wither's nether star)."""
-    return {name: helper.can_defeat(name) for name in MOBS_ALL}
+    return {name: helper.can_defeat(name) for name in helper.content.MOBS_ALL}

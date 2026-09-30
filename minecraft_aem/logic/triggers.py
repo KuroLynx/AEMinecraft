@@ -19,16 +19,9 @@ from __future__ import annotations
 
 import json
 import re
+from functools import cache
 from importlib.resources import files
 
-from ..data import (
-    ADVANCEMENT_LOCATIONS,
-    MOBS_ALL,
-    MOBS_BREEDABLE,
-    MOBS_LEASHABLE,
-    MOBS_TAMEABLE,
-    STRUCTURES,
-)
 from .acquisition import RuleHelper, _acquisition_table
 from .ast import Const, Rule, and_, or_
 from .constants import (
@@ -57,7 +50,7 @@ from .constants import (
     S_MANSION,
     S_STRONGHOLD,
 )
-from ..content.registry import base_pack, overlay_packs
+from ..content.registry import overlay_packs
 
 # An exploding entity that is not a mob, mapped to the item a player must hold to set it off. Only
 # the ones a criterion's `cause` can name need an entry; a mob cause resolves through _entity_gid.
@@ -141,52 +134,44 @@ _DAMAGE_TAG_GATE = {
     "minecraft:is_player_attack": lambda c: c.h.can_kill(),
 }
 
-_TAGS: dict | None = None
-_BREWING: dict | None = None
-
-
-def _pack_json(filename: str, pack: str | None = None) -> dict:
-    pack = pack or base_pack()  # default to the discovered vanilla base pack
+def _pack_json(filename: str, pack: str) -> dict:
     root = __package__.rsplit(".", 1)[0]  # e.g. "worlds.minecraft_aem"
     with files(root).joinpath("packs", pack, filename).open(encoding="utf-8") as f:
         return json.load(f)
 
 
-def _tags() -> dict:
-    """Lazily-loaded item + entity-type tag table (tools/build_tags.py), keyed by tag id.
+@cache
+def _tags(content) -> dict:
+    """Lazily-loaded item + entity-type tag table (tools/build_tags.py), keyed by tag id, per
+    Minecraft version.
 
     Vanilla plus any optional pack (BACAP) merged in, so BACAP criteria that reference
     ``#blazeandcave:*`` tags (e.g. ``time_to_mine`` → ``#blazeandcave:pickaxes``) resolve instead of
     falling back to the parent chain. Tag namespaces don't collide (``minecraft:`` vs
     ``blazeandcave:``), so a per-registry dict merge is safe; absent pack tags are ignored."""
-    global _TAGS
-    if _TAGS is None:
-        merged = _pack_json("tags.json")
-        bacap = overlay_packs().get("blazeandcave")
-        try:
-            extra = _pack_json("tags.json", pack=bacap) if bacap else {}
-        except (FileNotFoundError, OSError):
-            extra = {}
-        for registry, tags in extra.items():
-            merged.setdefault(registry, {}).update(tags)
-        _TAGS = merged
-    return _TAGS
+    merged = _pack_json("tags.json", content.BASE_PACK)
+    bacap = overlay_packs(content.version).get("blazeandcave")
+    try:
+        extra = _pack_json("tags.json", pack=bacap) if bacap else {}
+    except (FileNotFoundError, OSError):
+        extra = {}
+    for registry, tags in extra.items():
+        merged.setdefault(registry, {}).update(tags)
+    return merged
 
 
-def _brewing() -> dict:
-    """Lazily-loaded potion-type -> reagent items table (packs/.../brewing.json)."""
-    global _BREWING
-    if _BREWING is None:
-        _BREWING = _pack_json("brewing.json")
-    return _BREWING
+@cache
+def _brewing(content) -> dict:
+    """Lazily-loaded potion-type -> reagent items table (packs/.../brewing.json), per Minecraft version."""
+    return _pack_json("brewing.json", content.BASE_PACK)
 
 
-def _reagent_routes(potion_type: str) -> list[list[str]] | None:
+def _reagent_routes(content, potion_type: str) -> list[list[str]] | None:
     """A potion type's brewing routes from brewing.json, each the reagents one chain needs. An entry
     is one route (a flat list, the hand-written tables) or several equally short ones
     (``{"any_of": [[...], ...]}``, from a table dumped off 26.3+'s brewing recipes, where e.g.
     slowness comes off swiftness OR leaping). ``None`` for a type the table doesn't know."""
-    entry = _brewing().get(potion_type)
+    entry = _brewing(content).get(potion_type)
     if entry is None:
         return None
     if isinstance(entry, dict):
@@ -392,6 +377,8 @@ class TriggerCompiler:
     def __init__(self, helper: RuleHelper, active_locations: frozenset | None = None,
                  records: dict | None = None):
         self.h = helper
+        # This player's Minecraft version's mobs, structures, advancements (minecraft_version).
+        self.content = helper.content
         # The whole manifest, keyed by advancement game_id. Needed to follow a `type_specific`
         # advancement prerequisite that is NOT an AP location (BACAP's `technical` tab) down to its
         # own criteria. None = no such resolution available; the prerequisite falls back to None.
@@ -403,14 +390,14 @@ class TriggerCompiler:
         # Reverse lookups from Minecraft id -> our display-name key. The *_by_path variants are keyed
         # by the bare path so any namespace resolves (BACAP writes ids bare like "end_city" / "cow",
         # vanilla uses "minecraft:"): see _entity_name / _struct_name.
-        self._entity_by_gid = {data.game_id: name for name, data in MOBS_ALL.items()}
-        self._struct_by_gid = {data.game_id: name for name, data in STRUCTURES.items()}
-        self._adv_loc_by_gid = {data.game_id: name for name, data in ADVANCEMENT_LOCATIONS.items()}
+        self._entity_by_gid = {data.game_id: name for name, data in self.content.MOBS_ALL.items()}
+        self._struct_by_gid = {data.game_id: name for name, data in self.content.STRUCTURES.items()}
+        self._adv_loc_by_gid = {data.game_id: name for name, data in self.content.ADVANCEMENT_LOCATIONS.items()}
         self._entity_by_path = {self._path(gid): name for gid, name in self._entity_by_gid.items()}
         self._struct_by_path = {self._path(gid): name for gid, name in self._struct_by_gid.items()}
-        self._item_tags = _tags().get("item", {})
-        self._entity_tags = _tags().get("entity_type", {})
-        self._block_tags = _tags().get("block", {})
+        self._item_tags = _tags(self.content).get("item", {})
+        self._entity_tags = _tags(self.content).get("entity_type", {})
+        self._block_tags = _tags(self.content).get("block", {})
         # Location names created this seed; a parent-chain rule must not reference a parent that was
         # filtered out (e.g. a challenge advancement when challenge_sanity is off) — that would make
         # AP's reachability sweep raise on an unknown location. None = don't restrict.
@@ -585,8 +572,8 @@ class TriggerCompiler:
             entity = self._entity_node(cond)
             if entity is None and cond.get("entity"):
                 excluded = set(self._excluded_entity_names(cond))
-                candidates = [n for n in MOBS_LEASHABLE if n not in excluded] \
-                    or [n for n in MOBS_ALL if n not in excluded]
+                candidates = [n for n in self.content.MOBS_LEASHABLE if n not in excluded] \
+                    or [n for n in self.content.MOBS_ALL if n not in excluded]
                 entity = self._any_mob(candidates, self.h.entity)
             parts = [n for n in (item, entity) if n is not None]
             return and_(*parts) if parts else None
@@ -597,13 +584,13 @@ class TriggerCompiler:
             if not names:
                 species = self._species_from_components(cond)
                 names = [species] if species else []
-            options = [self.h.can_tame(n) for n in names if n in MOBS_TAMEABLE]
+            options = [self.h.can_tame(n) for n in names if n in self.content.MOBS_TAMEABLE]
             if options:
                 # A pinned variant is the whole point of 'A Complete Catalogue' / 'The Whole Pack' /
                 # 'Birdkeeper': taming any cat is easy, taming EVERY variant means finding each one's
                 # biome. Without it they asked only for a cat.
                 return self._all_opt(or_(*options), self._entity_variant_node(cond))
-            return self._any_mob(MOBS_TAMEABLE, self.h.can_tame) if not cond else None
+            return self._any_mob(self.content.MOBS_TAMEABLE, self.h.can_tame) if not cond else None
         if trigger == "minecraft:bred_animals":
             # The bred species is pinned on `child` (vanilla bred_all_animals) or directly on
             # `parent` / `partner` (BACAP's "breed two cows"); empty conditions mean "breed any".
@@ -627,7 +614,7 @@ class TriggerCompiler:
                 if other and set(other) != set(names):
                     bred = and_(bred, or_(*[self.h.can_breed(n) for n in other]))
                 return bred
-            return self._any_mob(MOBS_BREEDABLE, self.h.can_breed) if not cond else None
+            return self._any_mob(self.content.MOBS_BREEDABLE, self.h.can_breed) if not cond else None
         if trigger == "minecraft:changed_dimension":
             region = _DIMENSION_REGION.get(self._path(cond.get("to")))
             # enter_dimension, not access_region: entering the dimension you START in means leaving
@@ -1317,7 +1304,7 @@ class TriggerCompiler:
         # duplication recipe takes the item itself — 'Mold Maker' copies a template with a template,
         # which read as a cycle and dropped the whole check to its parent chain.
         obtain = self.h.acquire(recipe_id)
-        recipes = _acquisition_table().get(base, {}).get("recipes")
+        recipes = _acquisition_table(self.content).get(base, {}).get("recipes")
         if obtain is None or not recipes:
             return obtain
         made = self._any_opt(*[self.h._recipe_node(recipe, frozenset()) for recipe in recipes])
@@ -1573,7 +1560,7 @@ class TriggerCompiler:
                 # Kill N of a mob (Ring of the End: 20 Ender Dragons; Iceologer: 100 Glow Squids) →
                 # the count isn't a gate, but defeating that mob is (can_defeat carries boss logic).
                 name = self._entity_name(stat_id)
-                node = self.h.can_defeat(name) if name in MOBS_ALL else None
+                node = self.h.can_defeat(name) if name in self.content.MOBS_ALL else None
             elif stat_type == "custom" and stat_id in _CUSTOM_STAT_ITEM:
                 # A custom counter we can map to an item: eating N cake slices (Must be your birthday)
                 # just needs access to cake.
@@ -1829,7 +1816,7 @@ class TriggerCompiler:
             return None
         routes: list[Rule] = []
         for potion_type in self._potion_types(pred):
-            reagent_routes = _reagent_routes(potion_type)
+            reagent_routes = _reagent_routes(self.content, potion_type)
             if reagent_routes is None:
                 # An alternative we can't price (a water bottle is free, and `mundane`/unknown types
                 # have no chain) makes the whole OR unpriceable — fall through to the item's own
@@ -1874,7 +1861,7 @@ class TriggerCompiler:
         name = potion_id.split(":")[-1]
         for prefix in ("long_", "strong_"):
             name = name.removeprefix(prefix)
-        reagent_routes = _reagent_routes(name)
+        reagent_routes = _reagent_routes(self.content, name)
         if not reagent_routes or any(not route for route in reagent_routes):
             return None   # unknown, or a route that needs nothing: no gate to add
         gates = [self._all_req(*[self.h.acquire(f"minecraft:{item}") for item in route])
@@ -1949,7 +1936,7 @@ class TriggerCompiler:
         looking = specific.get("looking_at") if isinstance(specific, dict) else None
         gid = looking.get("type") if isinstance(looking, dict) else None
         target = self._entity_name(gid) if gid else None
-        return and_(item, self.h.entity(target)) if target in MOBS_ALL else item
+        return and_(item, self.h.entity(target)) if target in self.content.MOBS_ALL else item
 
     # A placed crop block isn't itself an item — placing it means using its seed. Map the crops whose
     # block id differs from the planting item; every other block places from a same-named item.
@@ -2280,12 +2267,12 @@ class TriggerCompiler:
     def _entity_gid(self, gid: str) -> Rule | None:
         """Reach the entity with this id (any namespace), or ``None`` when the active packs lack it."""
         name = self._entity_name(gid)
-        return self.h.entity(name) if name in MOBS_ALL else None
+        return self.h.entity(name) if name in self.content.MOBS_ALL else None
 
     def _struct_gid(self, gid: str) -> Rule | None:
         """Reach the structure with this id (any namespace), or ``None`` when the packs lack it."""
         name = self._struct_name(gid)
-        return self.h.structure(name) if name in STRUCTURES else None
+        return self.h.structure(name) if name in self.content.STRUCTURES else None
 
     def _cure_zombie_node(self) -> Rule:
         """Cure a Zombie Villager: reach one, plus a golden apple and a Potion of Weakness
@@ -2434,7 +2421,7 @@ class TriggerCompiler:
             return None
         content = item.split(":")[-1].replace("_bucket", "")
         mob = self._entity_name(content)
-        return and_(bucket, self.h.entity(mob)) if mob in MOBS_ALL else bucket
+        return and_(bucket, self.h.entity(mob)) if mob in self.content.MOBS_ALL else bucket
 
     # Loot tables whose name isn't a structure id: a chest that belongs to a feature the registry
     # names differently (a dungeon's monster_room, an underwater ruin's ocean_ruin).
