@@ -14,6 +14,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackRepository;
 import net.minecraft.server.packs.repository.ServerPacksSource;
 import net.minecraft.world.Difficulty;
@@ -144,12 +145,22 @@ public final class HeadlessWorldDump {
 
         // Folder datapacks default to disabled, so explicitly enable everything the temp world can see
         // (vanilla + bundled mod packs + the copies above). Open a throwaway access just to read the
-        // ids, then release its lock before createFreshLevel reacquires it.
-        List<String> enabled;
+        // ids, then release its lock before createFreshLevel reacquires it. Only packs made for THIS game
+        // version: aem-datapacks/ holds one BACAP per Minecraft version, and a newer one references
+        // content this game lacks (BACAP 1.21.1's loot-table tag names 26.3's abandoned-camp chests),
+        // which fails the whole world load with "Unbound values in registry".
+        List<String> enabled = new ArrayList<>();
         try (LevelStorageSource.LevelStorageAccess access = source.createAccess(SAVE_NAME)) {
             PackRepository repository = ServerPacksSource.createPackRepository(access);
             repository.reload();
-            enabled = new ArrayList<>(repository.getAvailableIds());
+            for (Pack pack : repository.getAvailablePacks()) {
+                if (pack.getCompatibility().isCompatible()) {
+                    enabled.add(pack.getId());
+                } else {
+                    AEM.LOGGER.info("Headless dump: skipping pack '{}' ({} for this game version)",
+                            pack.getId(), pack.getCompatibility());
+                }
+            }
         }
 
         WorldDataConfiguration dataConfig = new WorldDataConfiguration(
