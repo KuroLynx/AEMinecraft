@@ -17,14 +17,25 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  */
 @Mixin(AdvancementTab.class)
 public abstract class AdvancementTabMixin {
+    // 26.3 hands the root out as its holder rather than its node.
+    //? if >=26.3 {
+    /*@Shadow
+    public abstract net.minecraft.advancements.AdvancementHolder getRootAdvancement();
+    *///?} else {
     @Shadow
     public abstract AdvancementNode getRootNode();
+    //?}
 
     @Inject(method = "extractIcon(Lnet/minecraft/client/gui/GuiGraphicsExtractor;II)V", at = @At("HEAD"))
     private void archipelago_euclesia$markIconStart(GuiGraphicsExtractor graphics, int x, int y, CallbackInfo ci) {
+        //? if >=26.3 {
+        /*net.minecraft.advancements.AdvancementHolder root = getRootAdvancement();
+        ArchipelagoTabIcon.rendering = AdvancementRenderHooks.isTabRoot(root == null ? null : root.id());
+        *///?} else {
         AdvancementNode root = getRootNode();
         ArchipelagoTabIcon.rendering =
                 AdvancementRenderHooks.isTabRoot(root == null ? null : root.holder().id());
+        //?}
     }
 
     @Inject(method = "extractIcon(Lnet/minecraft/client/gui/GuiGraphicsExtractor;II)V", at = @At("RETURN"))

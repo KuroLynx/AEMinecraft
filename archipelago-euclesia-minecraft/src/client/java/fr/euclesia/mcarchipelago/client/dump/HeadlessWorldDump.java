@@ -5,12 +5,14 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.client.gui.DumpScreen;
+import fr.euclesia.mcarchipelago.client.utils.MCClient;
 import fr.euclesia.mcarchipelago.server.command.ContainersDump;
 import fr.euclesia.mcarchipelago.server.command.EntitiesDump;
 import fr.euclesia.mcarchipelago.server.command.PackDump;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.packs.repository.PackRepository;
 import net.minecraft.server.packs.repository.ServerPacksSource;
@@ -164,7 +166,10 @@ public final class HeadlessWorldDump {
         WorldOptions options = new WorldOptions(0L, false, false);
 
         mc.createWorldOpenFlows().createFreshLevel(
-                SAVE_NAME, settings, options, WorldPresets::createFlatWorldDimensions,
+                SAVE_NAME, settings, options,
+                // What WorldPresets.createFlatWorldDimensions did; 26.2 removed the helper, not the preset.
+                registries -> registries.lookupOrThrow(Registries.WORLD_PRESET)
+                        .getOrThrow(WorldPresets.FLAT).value().createWorldDimensions(),
                 new DumpScreen(returnParent)); // shown if creation itself fails before the server starts
     }
 
@@ -253,8 +258,8 @@ public final class HeadlessWorldDump {
     private static void finishWith(String message) {
         DumpScreen.pendingStatus = message;
         Minecraft mc = Minecraft.getInstance();
-        if (mc.screen instanceof DumpScreen) {
-            mc.setScreen(new DumpScreen(returnParent)); // re-init to pick up pendingStatus
+        if (MCClient.screen() instanceof DumpScreen) {
+            MCClient.setScreen(new DumpScreen(returnParent)); // re-init to pick up pendingStatus
         }
         reset();
     }

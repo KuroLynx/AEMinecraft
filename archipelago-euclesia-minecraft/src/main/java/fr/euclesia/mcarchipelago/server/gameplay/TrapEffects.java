@@ -11,6 +11,10 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.EntityType;
+// 26.2 moved the per-type constants (ZOMBIE, CREEPER, …) off EntityType onto EntityTypes.
+//? if >=26.2 {
+/*import net.minecraft.world.entity.EntityTypes;
+*///?}
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.item.PrimedTnt;
 import net.minecraft.world.entity.monster.Creeper;
@@ -39,7 +43,11 @@ public final class TrapEffects {
     private static final int EFFECT_TICKS = 15 * 20;
     /** Mobs the {@code paris_games_week} crowd is drawn from (drop-less, advancement-less trap mobs). */
     private static final List<EntityType<? extends Mob>> CROWD_POOL =
+            //? if >=26.2 {
+            /*List.of(EntityTypes.ZOMBIE, EntityTypes.SKELETON, EntityTypes.SPIDER);
+            *///?} else {
             List.of(EntityType.ZOMBIE, EntityType.SKELETON, EntityType.SPIDER);
+            //?}
 
     private TrapEffects() {}
 
@@ -73,7 +81,11 @@ public final class TrapEffects {
     /** Conjures a primed creeper right next to the player (it bypasses the spawn lock and drops nothing). */
     private static void awwMan(ServerPlayer player, ServerLevel level) {
         BlockPos pos = player.blockPosition().east();
+        //? if >=26.2 {
+        /*TrapMobService.spawn(EntityTypes.CREEPER, level, pos, Creeper::ignite);
+        *///?} else {
         TrapMobService.spawn(EntityType.CREEPER, level, pos, Creeper::ignite);
+        //?}
         level.playSound(null, player.blockPosition(), SoundEvents.VILLAGER_NO,
                 SoundSource.PLAYERS, 1.0f, 1.0f);
     }

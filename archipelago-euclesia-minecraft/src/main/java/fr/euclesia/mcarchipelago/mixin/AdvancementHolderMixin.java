@@ -14,6 +14,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class AdvancementHolderMixin {
     @Inject(method = "<init>", at = @At("TAIL"))
     private void archipelago_euclesia$stampDisplay(Identifier id, Advancement value, CallbackInfo ci) {
-        value.display().ifPresent(display -> ((AdvancementIdHolder) display).aem$setAdvancementId(id));
+        // Through Object: DisplayInfo is a final record from 26.3, and javac refuses a direct cast from a
+        // final class to an interface it does not declare (the mixin adds it at runtime).
+        value.display().ifPresent(display -> ((AdvancementIdHolder) (Object) display).aem$setAdvancementId(id));
     }
 }

@@ -4,6 +4,7 @@ import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.client.dump.DumpDataSource;
 import fr.euclesia.mcarchipelago.client.dump.DumpDataSource.DatapackInfo;
 import fr.euclesia.mcarchipelago.client.dump.HeadlessWorldDump;
+import fr.euclesia.mcarchipelago.client.utils.MCClient;
 import fr.euclesia.mcarchipelago.server.command.PackDump;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
@@ -215,7 +216,11 @@ public final class DumpScreen extends Screen {
     private void openFolder(Path dir) {
         try {
             Files.createDirectories(dir);
+            //? if >=26.3 {
+            /*com.mojang.blaze3d.Blaze3D.openPath(dir);
+            *///?} else {
             Util.getPlatform().openPath(dir);
+            //?}
         } catch (Exception exception) {
             AEM.LOGGER.warn("Could not open folder {}", dir, exception);
             status = Component.translatable("gui.aem.dump.open_failed").getString();
@@ -349,6 +354,6 @@ public final class DumpScreen extends Screen {
 
     @Override
     public void onClose() {
-        this.minecraft.setScreen(parent);
+        MCClient.setScreen(parent);
     }
 }

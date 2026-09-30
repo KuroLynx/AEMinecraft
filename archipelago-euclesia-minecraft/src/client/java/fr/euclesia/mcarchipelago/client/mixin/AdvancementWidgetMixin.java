@@ -1,8 +1,13 @@
 package fr.euclesia.mcarchipelago.client.mixin;
 
+//? if >=26.3 {
+/*import com.mojang.renderpearl.api.pipeline.RenderPipeline;
+*///?} else {
 import com.mojang.blaze3d.pipeline.RenderPipeline;
+//?}
 import fr.euclesia.mcarchipelago.client.hint.HintHoldTracker;
 import fr.euclesia.mcarchipelago.client.render.AdvancementRenderHooks;
+import fr.euclesia.mcarchipelago.client.utils.MixinTargets;
 import net.minecraft.advancements.AdvancementNode;
 import net.minecraft.advancements.AdvancementProgress;
 import net.minecraft.advancements.DisplayInfo;
@@ -58,7 +63,7 @@ public abstract class AdvancementWidgetMixin {
             method = "extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;II)V",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;blitSprite(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIII)V"))
+                    target = MixinTargets.BLIT_SPRITE_BOX))
     private void archipelago_euclesia$colorFrame(GuiGraphicsExtractor graphics, RenderPipeline pipeline,
                                                  Identifier sprite, int x, int y, int width, int height) {
         AdvancementRenderHooks.drawFrame(graphics, pipeline, sprite, x, y, width, height, frameColor(),
@@ -104,10 +109,10 @@ public abstract class AdvancementWidgetMixin {
      * goes on straight after, so the frame and title still draw on top of it.
      */
     @Redirect(
-            method = "extractHover(Lnet/minecraft/client/gui/GuiGraphicsExtractor;IIFII)V",
+            method = MixinTargets.EXTRACT_HOVER,
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;blitSprite(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIIIIIII)V"))
+                    target = MixinTargets.BLIT_SPRITE_SLICE))
     private void archipelago_euclesia$box(GuiGraphicsExtractor graphics, RenderPipeline pipeline, Identifier sprite,
                                           int textureWidth, int textureHeight, int u, int v,
                                           int boxX, int boxY, int boxWidth, int boxHeight) {
@@ -138,10 +143,10 @@ public abstract class AdvancementWidgetMixin {
      * both widget types use rather than assuming which blit is which.
      */
     @Redirect(
-            method = "extractHover(Lnet/minecraft/client/gui/GuiGraphicsExtractor;IIFII)V",
+            method = MixinTargets.EXTRACT_HOVER,
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;blitSprite(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIII)V"))
+                    target = MixinTargets.BLIT_SPRITE_BOX))
     private void archipelago_euclesia$hoverBox(GuiGraphicsExtractor graphics, RenderPipeline pipeline,
                                                Identifier sprite, int boxX, int boxY, int boxWidth, int boxHeight) {
         graphics.blitSprite(pipeline, sprite, boxX, boxY, boxWidth, boxHeight);
@@ -161,9 +166,8 @@ public abstract class AdvancementWidgetMixin {
     }
 
     /** Starts each frame's collection clean, so a box that moves never leaves a stale edge behind. */
-    @Inject(method = "extractHover(Lnet/minecraft/client/gui/GuiGraphicsExtractor;IIFII)V", at = @At("HEAD"))
-    private void archipelago_euclesia$resetBox(GuiGraphicsExtractor graphics, int originX, int originY,
-                                               float alpha, int tabWidth, int tabHeight, CallbackInfo ci) {
+    @Inject(method = MixinTargets.EXTRACT_HOVER, at = @At("HEAD"))
+    private void archipelago_euclesia$resetBox(CallbackInfo ci) {   // no arguments: 26.3 added one
         archipelago_euclesia$boxRight = 0;
     }
 
@@ -179,7 +183,7 @@ public abstract class AdvancementWidgetMixin {
                     "extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;II)V",
                     "isMouseOver(IIII)Z"
             },
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/advancements/DisplayInfo;isHidden()Z"))
+            at = @At(value = "INVOKE", target = MixinTargets.DISPLAY_IS_HIDDEN))
     private boolean archipelago_euclesia$alwaysShowHidden(DisplayInfo display) {
         return !AdvancementRenderHooks.forceVisible();
     }

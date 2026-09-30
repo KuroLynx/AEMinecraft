@@ -4,8 +4,27 @@ pluginManagement {
 			name = 'Fabric'
 			url = 'https://maven.fabricmc.net/'
 		}
+		maven {
+			name = 'KikuGie Releases'
+			url = 'https://maven.kikugie.dev/releases'
+		}
 		mavenCentral()
 		gradlePluginPortal()
+	}
+}
+
+plugins {
+	id 'dev.kikugie.stonecutter' version '0.9.8'
+}
+
+// One source tree, one jar per Minecraft version. Stonecutter makes a Gradle project per version
+// under versions/<version>/ (its gradle.properties holds what differs), runs build.gradle in each,
+// and switches version-specific code in src/ through //? comments. vcsVersion is the state src/ is
+// committed in; `stonecutter.active` in stonecutter.gradle is the one your IDE currently sees.
+stonecutter {
+	create(rootProject) {
+		versions '26.1.2', '26.2', '26.3'
+		vcsVersion = '26.1.2'
 	}
 }
 

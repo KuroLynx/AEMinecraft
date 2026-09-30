@@ -127,7 +127,12 @@ public final class LogicReportNet {
         if (holder == null) {
             return id.toString();
         }
+        // 26.3 made DisplayInfo a record: getTitle() became title().
+        //? if >=26.3 {
+        /*return holder.value().display().map(display -> display.title().getString()).orElse(id.toString());
+        *///?} else {
         return holder.value().display().map(display -> display.getTitle().getString()).orElse(id.toString());
+        //?}
     }
 
     private static String modVersion() {

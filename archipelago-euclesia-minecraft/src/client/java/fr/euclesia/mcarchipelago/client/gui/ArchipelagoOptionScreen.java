@@ -6,6 +6,7 @@ import fr.euclesia.mcarchipelago.archipelago.ChatFilterPreference;
 import fr.euclesia.mcarchipelago.archipelago.DeathLinkPreference;
 import fr.euclesia.mcarchipelago.client.connect.APConnectConfig;
 import fr.euclesia.mcarchipelago.client.net.ChatFilterClient;
+import fr.euclesia.mcarchipelago.client.utils.MCClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
@@ -55,7 +56,7 @@ public final class ArchipelagoOptionScreen extends Screen {
 
         // Dump the data-driven content-pack files (works with no session — even from the title menu).
         addRenderableWidget(Button.builder(Component.translatable("gui.aem.dump.open"),
-                        button -> minecraft.setScreen(new DumpScreen(this)))
+                        button -> MCClient.setScreen(new DumpScreen(this)))
                 .bounds(left, buttonsTop + ROW * 3, PANEL_WIDTH, BUTTON_HEIGHT)
                 .build());
 
@@ -141,6 +142,6 @@ public final class ArchipelagoOptionScreen extends Screen {
 
     @Override
     public void onClose() {
-        this.minecraft.setScreen(parent);
+        MCClient.setScreen(parent);
     }
 }

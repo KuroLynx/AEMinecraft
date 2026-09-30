@@ -11,10 +11,17 @@ import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.advancements.AdvancementProgress;
 import net.minecraft.advancements.AdvancementRequirements;
 import net.minecraft.advancements.AdvancementTree;
+import net.minecraft.advancements.CriterionProgress;
+// 26.2 moved the triggers (and Criterion / CriteriaTriggers with them) into advancements.triggers.
+//? if >=26.2 {
+/*import net.minecraft.advancements.triggers.CriteriaTriggers;
+import net.minecraft.advancements.triggers.Criterion;
+import net.minecraft.advancements.triggers.ImpossibleTrigger;
+*///?} else {
 import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.advancements.Criterion;
-import net.minecraft.advancements.CriterionProgress;
 import net.minecraft.advancements.criterion.ImpossibleTrigger;
+//?}
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.ServerAdvancementManager;

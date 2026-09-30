@@ -41,7 +41,9 @@ jobs:
 
           # world_version is authoritative; jq -e fails the step if it is missing or null.
           version="$(jq -er '.world_version' minecraft_aem/archipelago.json)"
-          mc="$(grep -E '^minecraft_version=' archipelago-euclesia-minecraft/gradle.properties | cut -d= -f2 | tr -d '[:space:]')"
+          # One mod jar per Minecraft version: the Stonecutter version list in settings.gradle.
+          mc="$(sed -nE "s/^[[:space:]]*versions[[:space:]]+(.*)$/\1/p" archipelago-euclesia-minecraft/settings.gradle | tr -d "'\"," | xargs)"
+          [ -n "${mc}" ] || { echo "no Minecraft versions found in settings.gradle" >&2; exit 1; }
 
           {
             echo "version=${version}"
@@ -112,7 +114,10 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p dist
-          cp "archipelago-euclesia-minecraft/build/libs/aem-${VERSION}+${MC}.jar" "dist/aem-${VERSION}+${MC}.jar"
+          # `build` ran in every Stonecutter version project; each left its jar in versions/<mc>/build/libs.
+          for mc in ${MC}; do
+            cp "archipelago-euclesia-minecraft/versions/${mc}/build/libs/aem-${VERSION}+${mc}.jar" "dist/aem-${VERSION}+${mc}.jar"
+          done
           # NOT versioned in the filename. Archipelago derives the Python module name from the
           # apworld's filename stem (worlds/__init__.py: world_name = Path(path).stem, then
           # zipimporter.find_spec(f"worlds.{world_name}")), so the stem MUST equal the package

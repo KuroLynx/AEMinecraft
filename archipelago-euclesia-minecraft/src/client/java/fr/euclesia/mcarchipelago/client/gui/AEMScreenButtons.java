@@ -4,6 +4,7 @@ import fr.euclesia.mcarchipelago.client.mixin.InventoryScreenAccessor;
 import fr.euclesia.mcarchipelago.client.net.BiomeFinderClient;
 import fr.euclesia.mcarchipelago.client.render.ConnectionStatusIndicator;
 import fr.euclesia.mcarchipelago.client.report.LogicReportMode;
+import fr.euclesia.mcarchipelago.client.utils.MCClient;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
@@ -67,7 +68,7 @@ public final class AEMScreenButtons {
             // options for; connecting happens from the world-creation screen instead.
             if (screen instanceof OptionsScreen) {
                 SpriteIconButton button = SpriteIconButton.builder(CONNECT_LABEL,
-                                ignored -> client.setScreen(new ArchipelagoOptionScreen(screen)), true)
+                                ignored -> MCClient.setScreen(new ArchipelagoOptionScreen(screen)), true)
                         .sprite(CONNECT_ICON, 16, 16)
                         .size(SIZE, SIZE)
                         .build();
@@ -102,7 +103,7 @@ public final class AEMScreenButtons {
                 ItemIconButton button = new ItemIconButton(
                         recipeButton.x() + RECIPE_BUTTON_WIDTH + BIOME_FINDER_GAP, recipeButton.y(),
                         BIOME_FINDER_WIDTH, BIOME_FINDER_HEIGHT, BIOME_FINDER_LABEL, Items.COMPASS,
-                        ignored -> client.setScreen(new BiomeFinderScreen()));
+                        ignored -> MCClient.setScreen(new BiomeFinderScreen()));
                 button.setTooltip(Tooltip.create(BIOME_FINDER_LABEL));
                 Screens.getWidgets(screen).add(button);
             }

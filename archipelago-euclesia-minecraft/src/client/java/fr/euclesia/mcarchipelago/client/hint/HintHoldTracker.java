@@ -1,16 +1,22 @@
 package fr.euclesia.mcarchipelago.client.hint;
 
 import fr.euclesia.mcarchipelago.AEM;
+import fr.euclesia.mcarchipelago.client.logic.LogicColors;
 import fr.euclesia.mcarchipelago.client.mixin.ScreenAccessor;
 import fr.euclesia.mcarchipelago.client.net.HintClient;
 import fr.euclesia.mcarchipelago.client.report.LogicReportMode;
+import fr.euclesia.mcarchipelago.client.utils.MCClient;
 import fr.euclesia.mcarchipelago.registry.APTrackerRegistry;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.resources.Identifier;
+//? if >=26.3 {
+/*import org.lwjgl.sdl.SDLMouse;
+*///?} else {
 import org.lwjgl.glfw.GLFW;
+//?}
 
 import java.util.HashMap;
 import java.util.Map;
@@ -50,10 +56,10 @@ public final class HintHoldTracker {
     // another colour rather than as something painted over one. WASH_ARGB is for a screen that can
     // only lay the indicator over a finished tile.
     private static final int BOX_BEVEL_ARGB = 0xFFDB00DB;
-    private static final int BOX_INTERIOR_ARGB = 0xFF000000 | ChatFormatting.DARK_PURPLE.getColor();
+    private static final int BOX_INTERIOR_ARGB = 0xFF000000 | LogicColors.rgb(ChatFormatting.DARK_PURPLE);
     private static final int BOX_SHADE_ARGB = 0xFF490049;
     private static final int BOX_OUTLINE_ARGB = 0xFF000000;
-    private static final int WASH_ARGB = 0x99000000 | ChatFormatting.DARK_PURPLE.getColor();
+    private static final int WASH_ARGB = 0x99000000 | LogicColors.rgb(ChatFormatting.DARK_PURPLE);
 
     private HintHoldTracker() {}
 
@@ -178,10 +184,10 @@ public final class HintHoldTracker {
             // hinted location only shows on a fresh open. Kept, to be reopened once the hint is in
             // (see clientTick). Deferred, because this runs mid-render.
             Minecraft minecraft = Minecraft.getInstance();
-            closedForHint = minecraft.screen;
+            closedForHint = MCClient.screen();
             closedAtMillis = System.currentTimeMillis();
             hintArrived = false;
-            minecraft.execute(() -> minecraft.setScreen(null));
+            minecraft.execute(() -> MCClient.setScreen(null));
         }
     }
 
@@ -226,22 +232,26 @@ public final class HintHoldTracker {
         Screen screen = closedForHint;
         closedForHint = null;
         Minecraft minecraft = Minecraft.getInstance();
-        if (screen != null && minecraft.screen == null && minecraft.player != null) {
-            minecraft.setScreen(screen);
+        if (screen != null && MCClient.screen() == null && minecraft.player != null) {
+            MCClient.setScreen(screen);
             ((ScreenAccessor) screen).archipelago_euclesia$rebuildWidgets();
         }
     }
 
     /**
-     * Asks GLFW directly. Neither obvious alternative works from inside a screen:
+     * Asks the windowing layer directly — GLFW, and SDL from 26.3, which replaced it. Neither obvious alternative works from inside a screen:
      * {@code InputConstants.isKeyDown} is {@code glfwGetKey}, i.e. the KEYBOARD, and
      * {@code GLFW_MOUSE_BUTTON_LEFT} is 0, which is not a key; and {@code MouseHandler}'s own
      * {@code isLeftPressed} is only assigned while no screen and no overlay is open, so in the
      * advancement screen — the only place this class runs — it is permanently false.
      */
     private static boolean isLeftMouseDown() {
+        //? if >=26.3 {
+        /*return (SDLMouse.SDL_GetMouseState(null, null) & SDLMouse.SDL_BUTTON_LMASK) != 0;
+        *///?} else {
         long window = Minecraft.getInstance().getWindow().handle();
         return GLFW.glfwGetMouseButton(window, GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
+        //?}
     }
 
 }

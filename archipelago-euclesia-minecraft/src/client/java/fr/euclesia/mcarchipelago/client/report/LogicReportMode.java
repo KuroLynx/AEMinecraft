@@ -2,6 +2,7 @@ package fr.euclesia.mcarchipelago.client.report;
 
 import fr.euclesia.mcarchipelago.client.gui.LogicReportScreen;
 import fr.euclesia.mcarchipelago.client.logic.LogicProviders;
+import fr.euclesia.mcarchipelago.client.utils.MCClient;
 import fr.euclesia.mcarchipelago.net.LogicReportPayload;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.Minecraft;
@@ -59,7 +60,7 @@ public final class LogicReportMode {
             return true; // not on a tile: let the report button (or a tab) take the click
         }
         armed = false;
-        Minecraft.getInstance().setScreen(new LogicReportScreen(screen, hoveredLastFrame));
+        MCClient.setScreen(new LogicReportScreen(screen, hoveredLastFrame));
         return false;
     }
 

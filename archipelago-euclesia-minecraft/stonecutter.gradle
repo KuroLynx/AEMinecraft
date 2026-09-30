@@ -1,0 +1,7 @@
+plugins {
+	id 'dev.kikugie.stonecutter'
+}
+
+// The version src/ is switched to right now. Change it with the "Set active project to ..." tasks,
+// never by hand, and switch back to the vcsVersion (26.1.2) before committing.
+stonecutter.active "26.1.2"

@@ -3,11 +3,17 @@ plugins {
 	id 'maven-publish'
 }
 
-// Fabric convention: pair the mod's feature version with the target Minecraft version, so a
-// Minecraft-only bump produces a distinct build (e.g. 1.0.0+26.1.2 -> 1.0.0+26.1.3) without
-// touching mod_version. gradle.properties is the source of truth; the release tag mirrors this.
-version = "${project.mod_version}+${project.minecraft_version}"
+// This script runs once per Minecraft version: Stonecutter makes a project per entry in
+// settings.gradle (versions/<version>/), and stonecutter.current.version is that project's version.
+def minecraftVersion = stonecutter.current.version
+
+// Fabric convention: pair the mod's feature version with the target Minecraft version, so each
+// version's jar is distinct (1.0.0+26.1.2, 1.0.0+26.2, …) without touching mod_version.
+// gradle.properties is the source of truth; the release tag mirrors this.
+version = "${project.mod_version}+${minecraftVersion}"
 group = project.maven_group
+// Every version project is named after its Minecraft version; the jar is still aem-<version>.jar.
+base.archivesName = rootProject.name
 
 repositories {
 	// Add repositories to retrieve artifacts from in here.
@@ -27,11 +33,16 @@ loom {
 		}
 	}
 
+	// One run/ for every version, where it has always been (saves, logs, the dump output), rather
+	// than one per versions/<version>/.
+	runConfigs.configureEach {
+		runDir = rootProject.file("run").absolutePath
+	}
 }
 
 dependencies {
 	// To change the versions see the gradle.properties file
-	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	minecraft "com.mojang:minecraft:${minecraftVersion}"
 	
 	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
@@ -48,10 +59,12 @@ dependencies {
 
 processResources {
 	def version = project.version
+	def mcCompat = project.mc_compat
 	inputs.property "version", version
+	inputs.property "mcCompat", mcCompat
 
 	filesMatching("fabric.mod.json") {
-		expand "version": version
+		expand "version": version, "mc_compat": mcCompat
 	}
 }
 
@@ -74,10 +87,10 @@ java {
 }
 
 jar {
-	def projectName = project.name
+	def projectName = base.archivesName.get()
 	inputs.property "projectName", projectName
 
-	from("LICENSE") {
+	from(rootProject.file("LICENSE")) {
 		rename { "${it}_$projectName"}
 	}
 }

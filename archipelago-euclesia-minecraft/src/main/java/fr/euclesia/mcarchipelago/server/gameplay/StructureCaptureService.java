@@ -208,7 +208,13 @@ public final class StructureCaptureService {
      * again under whichever member is still locked, the mob would be lost for the rest of the run.
      */
     private static void spawnEntity(ServerLevel level, CompoundTag entityNbt) {
+        // 26.2 wraps the reason in a request; ignoreChecks=false is what its own reason-only overload passes.
+        //? if >=26.2 {
+        /*Entity entity = EntityType.loadEntityRecursive(entityNbt, level,
+                new net.minecraft.world.entity.EntitySpawnRequest(EntitySpawnReason.STRUCTURE, false), EntityProcessor.NOP);
+        *///?} else {
         Entity entity = EntityType.loadEntityRecursive(entityNbt, level, EntitySpawnReason.STRUCTURE, EntityProcessor.NOP);
+        //?}
         if (entity == null) {
             return;
         }
