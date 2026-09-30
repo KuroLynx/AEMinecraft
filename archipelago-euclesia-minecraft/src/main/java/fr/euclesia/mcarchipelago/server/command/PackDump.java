@@ -502,7 +502,11 @@ public final class PackDump {
     /** Feature types that place blocks in code, with no block state in their config. */
     private static final Map<String, List<String>> FEATURE_TYPE_BLOCKS = Map.of(
             "minecraft:bamboo", List.of("bamboo", "podzol"),
-            "minecraft:sculk_patch", List.of("sculk", "sculk_vein", "sculk_catalyst", "sculk_shrieker"));
+            "minecraft:sculk_patch", List.of("sculk", "sculk_vein", "sculk_catalyst", "sculk_shrieker"),
+            // Freezes water and lays snow wherever it's cold. It sits in nearly every biome, so this
+            // over-reaches into warm ones, which only ever makes ice/snow look commoner than they
+            // are, never rarer. 26.3 dropped the ocean-ice surface rule, leaving this as ice's source.
+            "minecraft:freeze_top_layer", List.of("ice", "snow"));
 
     /**
      * Which biomes each block generates in: {@code {"<block>": ["<biome>", ...]}}, the same file
