@@ -28,12 +28,22 @@ public abstract class CreateWorldScreenMixin {
     @Unique
     private ArchipelagoCreateTab archipelago_euclesia$tab;
 
+    // 26.2 builds the tabs with MenuTabBar; TabNavigationBar still exists but init no longer calls it.
+    //? if >=26.2 {
+    /*@ModifyArg(
+            method = "init",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/client/gui/components/tabs/MenuTabBar$Builder;"
+                            + "addTabs([Lnet/minecraft/client/gui/components/tabs/Tab;)"
+                            + "Lnet/minecraft/client/gui/components/tabs/MenuTabBar$Builder;"))
+    *///?} else {
     @ModifyArg(
             method = "init",
             at = @At(value = "INVOKE",
                     target = "Lnet/minecraft/client/gui/components/tabs/TabNavigationBar$Builder;"
                             + "addTabs([Lnet/minecraft/client/gui/components/tabs/Tab;)"
                             + "Lnet/minecraft/client/gui/components/tabs/TabNavigationBar$Builder;"))
+    //?}
     private Tab[] archipelago_euclesia$addArchipelagoTab(Tab[] tabs) {
         archipelago_euclesia$tab = new ArchipelagoCreateTab(Minecraft.getInstance().font);
         Tab[] extended = Arrays.copyOf(tabs, tabs.length + 1);

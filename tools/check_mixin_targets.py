@@ -48,7 +48,9 @@ class ClassInfo:
                 pool.append(("class", struct.unpack(">H", data[pos + 1:pos + 3])[0])); pos += 3
             elif tag in (8, 16, 19, 20):
                 pool.append(None); pos += 3
-            elif tag in (9, 10, 11, 12, 17, 18):
+            elif tag in (9, 10, 11, 12):   # field/method/interface-method ref, name-and-type
+                pool.append((tag,) + struct.unpack(">HH", data[pos + 1:pos + 5])); pos += 5
+            elif tag in (17, 18):
                 pool.append(None); pos += 5
             elif tag == 15:
                 pool.append(None); pos += 4
@@ -68,6 +70,14 @@ class ClassInfo:
         pos += 2 * n
         self.fields, pos = self._members(data, pos, pool)
         self.methods, pos = self._members(data, pos, pool)
+        # Every (owner, name, desc) this class's code touches: an @At target must be one of them, or
+        # Mixin scans 0 targets and dies (26.2 kept TabNavigationBar but stopped calling it).
+        self.refs = set()
+        for entry in pool:
+            if isinstance(entry, tuple) and entry[0] in (9, 10, 11):
+                _tag, cls, nat = entry
+                _nt, name, desc = pool[nat]
+                self.refs.add((class_name(cls), pool[name], pool[desc]))
 
     @staticmethod
     def _members(data, pos, pool):
@@ -211,6 +221,8 @@ def parse_mixin(path: str, constants: dict) -> dict | None:
     targets += [t.replace(".", "/") for t in re.findall(r'targets\s*=\s*\{?\s*' + STRING, args)]
 
     code = inline_constants(code, constants)
+    # "a" + "b" -> "ab": a descriptor split over lines otherwise reads as its first piece alone.
+    code = re.sub(r'"\s*\+\s*"', "", code)
     checks = []   # (kind, spec, line)
     for ann in re.finditer(r"@(Inject|Redirect|ModifyArg|ModifyArgs|ModifyVariable|ModifyConstant|ModifyReturnValue|ModifyExpressionValue|ModifyReceiver|WrapOperation|WrapWithCondition|WrapMethod|Overwrite)\s*\(", code):
         body, _ = annotation_args(code, ann.end() - 1)
@@ -255,9 +267,13 @@ def check(jar: Jar, target: str, kind: str, spec: str):
             return jar.get(owner) is not None
         if ":" in member:   # field: name:desc
             name, desc = member.split(":", 1)
-            return any((name, desc) in c.fields for c in jar.hierarchy(owner))
-        name, _, desc = member.partition("(")
-        return any((name, "(" + desc) in c.methods for c in jar.hierarchy(owner))
+            exists = any((name, desc) in c.fields for c in jar.hierarchy(owner))
+        else:
+            name, _, desc = member.partition("(")
+            desc = "(" + desc
+            exists = any((name, desc) in c.methods for c in jar.hierarchy(owner))
+        # ponytail: class-wide, not per-method — a call that moved to a sibling method still passes.
+        return exists and (owner, name, desc) in info.refs
     if kind == "accessor":
         return any(spec == n for c in jar.hierarchy(target) for n, _ in c.fields)
     if kind in ("invoker", "shadow"):
