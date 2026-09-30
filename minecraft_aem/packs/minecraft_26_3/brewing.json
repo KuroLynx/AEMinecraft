@@ -1,0 +1,145 @@
+{
+  "_comment": "Dumped from the game's brewing recipes: potion type -> the reagents that brew it from a water bottle (any_of: equally short alternatives). long_/strong_ variants share their base type's reagents.",
+  "awkward": [
+    "nether_wart"
+  ],
+  "fire_resistance": [
+    "magma_cream",
+    "nether_wart"
+  ],
+  "harming": {
+    "any_of": [
+      [
+        "fermented_spider_eye",
+        "glistering_melon_slice",
+        "nether_wart"
+      ],
+      [
+        "fermented_spider_eye",
+        "nether_wart",
+        "spider_eye"
+      ]
+    ]
+  },
+  "healing": [
+    "glistering_melon_slice",
+    "nether_wart"
+  ],
+  "infested": [
+    "nether_wart",
+    "stone"
+  ],
+  "invisibility": [
+    "fermented_spider_eye",
+    "golden_carrot",
+    "nether_wart"
+  ],
+  "leaping": [
+    "nether_wart",
+    "rabbit_foot"
+  ],
+  "mundane": {
+    "any_of": [
+      [
+        "blaze_powder"
+      ],
+      [
+        "breeze_rod"
+      ],
+      [
+        "cobweb"
+      ],
+      [
+        "ghast_tear"
+      ],
+      [
+        "glistering_melon_slice"
+      ],
+      [
+        "magma_cream"
+      ],
+      [
+        "rabbit_foot"
+      ],
+      [
+        "redstone"
+      ],
+      [
+        "slime_block"
+      ],
+      [
+        "spider_eye"
+      ],
+      [
+        "stone"
+      ],
+      [
+        "sugar"
+      ]
+    ]
+  },
+  "night_vision": [
+    "golden_carrot",
+    "nether_wart"
+  ],
+  "oozing": [
+    "nether_wart",
+    "slime_block"
+  ],
+  "poison": [
+    "nether_wart",
+    "spider_eye"
+  ],
+  "regeneration": [
+    "ghast_tear",
+    "nether_wart"
+  ],
+  "slow_falling": [
+    "nether_wart",
+    "phantom_membrane"
+  ],
+  "slowness": {
+    "any_of": [
+      [
+        "fermented_spider_eye",
+        "nether_wart",
+        "rabbit_foot"
+      ],
+      [
+        "fermented_spider_eye",
+        "nether_wart",
+        "sugar"
+      ]
+    ]
+  },
+  "strength": [
+    "blaze_powder",
+    "nether_wart"
+  ],
+  "swiftness": [
+    "nether_wart",
+    "sugar"
+  ],
+  "thick": [
+    "glowstone_dust"
+  ],
+  "turtle_master": [
+    "nether_wart",
+    "turtle_helmet"
+  ],
+  "water_breathing": [
+    "nether_wart",
+    "pufferfish"
+  ],
+  "weakness": [
+    "fermented_spider_eye"
+  ],
+  "weaving": [
+    "cobweb",
+    "nether_wart"
+  ],
+  "wind_charged": [
+    "breeze_rod",
+    "nether_wart"
+  ]
+}
