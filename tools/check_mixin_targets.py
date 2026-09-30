@@ -202,6 +202,41 @@ def inline_constants(code: str, constants: dict) -> str:
     return re.sub(r"\b(\w+\.)?([A-Z][A-Z0-9_]+)\b", sub, code)
 
 
+def handler_arg_count(code: str, pos: int) -> int:
+    """How many parameters the handler declared after ``pos`` takes before its CallbackInfo."""
+    m = re.compile(r"\s([\w$]+)\s*\(").search(code, pos)   # handler names carry a $
+    depth, params, cur = 0, [], ""
+    for ch in code[m.end():]:
+        if ch in "<(":
+            depth += 1
+        elif ch in ">)":
+            if depth == 0:
+                break
+            depth -= 1
+        if ch == "," and depth == 0:
+            params.append(cur)
+            cur = ""
+        else:
+            cur += ch
+    params.append(cur)
+    n = 0
+    for param in (p.strip() for p in params):
+        if not param or re.search(r"\bCallbackInfo(Returnable)?\b", param):
+            break
+        n += 1
+    return n
+
+
+def descriptor_arg_count(desc: str) -> int:
+    n, i = 0, 1
+    while desc[i] != ")":
+        while desc[i] == "[":
+            i += 1
+        i = desc.index(";", i) + 1 if desc[i] == "L" else i + 1
+        n += 1
+    return n
+
+
 def parse_mixin(path: str, constants: dict) -> dict | None:
     code = strip_comments(open(path, encoding="utf-8").read())
     m = re.search(r"@Mixin\s*\(", code)
@@ -225,12 +260,17 @@ def parse_mixin(path: str, constants: dict) -> dict | None:
     code = re.sub(r'"\s*\+\s*"', "", code)
     checks = []   # (kind, spec, line)
     for ann in re.finditer(r"@(Inject|Redirect|ModifyArg|ModifyArgs|ModifyVariable|ModifyConstant|ModifyReturnValue|ModifyExpressionValue|ModifyReceiver|WrapOperation|WrapWithCondition|WrapMethod|Overwrite)\s*\(", code):
-        body, _ = annotation_args(code, ann.end() - 1)
+        body, end = annotation_args(code, ann.end() - 1)
         line = code.count("\n", 0, ann.start()) + 1
         mm = re.search(r"method\s*=\s*(\{[^}]*\}|" + STRING + ")", body)
         if mm:
             for spec in strings_of(mm.group(1)):
                 checks.append(("method", spec, line))
+                if ann.group(1) == "Inject":
+                    # Mixin wants all of the target's arguments before the CallbackInfo, or none: a
+                    # target that gains or loses one (26.3's mobsAt lost its Holder<Biome>) still
+                    # resolves by name and only fails when the game applies it.
+                    checks.append(("inject_args", f"{spec}|{handler_arg_count(code, end)}", line))
         for tm in re.finditer(r"target\s*=\s*" + STRING, body):
             checks.append(("at", tm.group(1), line))
         # Still a name after inlining: a constant the checker could not evaluate. Counted as missing,
@@ -259,6 +299,12 @@ def check(jar: Jar, target: str, kind: str, spec: str):
         desc = "(" + desc if desc else None
         pool = info.methods
         return any(n == name and (desc is None or d == desc) for n, d in pool)
+    if kind == "inject_args":
+        spec, _, declared = spec.rpartition("|")
+        name, _, desc = spec.partition("(")
+        counts = {descriptor_arg_count(d) for n, d in info.methods if n == name and (not desc or d == "(" + desc)}
+        # no such method: the "method" check already reports it
+        return not counts or int(declared) == 0 or int(declared) in counts
     if kind == "at":
         if not spec.startswith("L") or ";" not in spec:
             return True   # a bare name / constant target — nothing to resolve
