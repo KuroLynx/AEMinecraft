@@ -105,7 +105,7 @@ public final class EntitiesDump {
             // Keep only true mobs. Filtering on Mob (not MobCategory.MISC) is deliberate: MISC holds
             // both non-mobs (items, projectiles, boats, armor stands — NOT Mobs, so skipped here) AND
             // real built/structure mobs (villagers, golems — Mobs, so KEPT). Bosses are Mobs too.
-            Entity sample = type.create(level, EntitySpawnReason.COMMAND);
+            Entity sample = sample(type, level, EntitySpawnReason.COMMAND);
             if (!(sample instanceof Mob mob)) {
                 if (sample != null) {
                     sample.discard();
@@ -137,6 +137,19 @@ public final class EntitiesDump {
         JsonArray out = new JsonArray();
         records.values().forEach(out::add);
         return out;
+    }
+
+    /**
+     * A throwaway instance to inspect. From 26.2 on, a plain {@code create} first asks whether the type
+     * may spawn in this level and returns null if not; the dump's world is Peaceful, so that dropped
+     * every hostile mob. Skipping the checks gives the instance regardless.
+     */
+    private static Entity sample(EntityType<?> type, ServerLevel level, EntitySpawnReason reason) {
+        //? if >=26.2 {
+        /*return type.create(level, new net.minecraft.world.entity.EntitySpawnRequest(reason, true));
+        *///?} else {
+        return type.create(level, reason);
+        //?}
     }
 
     /** boss (known set) > neutral (NeutralMob) > hostile (MONSTER category) > passive. */
@@ -191,7 +204,7 @@ public final class EntitiesDump {
         if (!(mob instanceof Animal a) || !a.canFallInLove() || !hasBreedingFood(a) || !hasBreedingAi(mob)) {
             return false;
         }
-        Entity partner = type.create(level, EntitySpawnReason.BREEDING);
+        Entity partner = sample(type, level, EntitySpawnReason.BREEDING);
         if (!(partner instanceof Animal b)) {
             if (partner != null) {
                 partner.discard();
