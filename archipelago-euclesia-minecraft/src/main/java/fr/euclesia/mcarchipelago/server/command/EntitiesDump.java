@@ -343,11 +343,11 @@ public final class EntitiesDump {
         for (Map.Entry<Identifier, Resource> entry : biomes.entrySet()) {
             String biome = bareBiomeName(entry.getKey());
             String dim = end.contains(biome) ? "end" : nether.contains(biome) ? "nether" : "overworld";
-            JsonObject json = readJson(entry.getValue());
-            if (json == null || !json.has("spawners") || !json.get("spawners").isJsonObject()) {
+            JsonObject spawners = spawnersOf(readJson(entry.getValue()));
+            if (spawners == null) {
                 continue;
             }
-            for (Map.Entry<String, JsonElement> cat : json.getAsJsonObject("spawners").entrySet()) {
+            for (Map.Entry<String, JsonElement> cat : spawners.entrySet()) {
                 if (!cat.getValue().isJsonArray()) {
                     continue;
                 }
@@ -375,6 +375,32 @@ public final class EntitiesDump {
             out.put(e.getKey(), f[0] ? "Overworld" : f[1] ? "Nether" : f[2] ? "The End" : "Overworld");
         }
         return new SpawnData(out, spawnBiomes);
+    }
+
+    /**
+     * A biome's per-category spawn lists: {@code spawners} up to 26.2; from 26.3 the environment
+     * attribute {@code minecraft:gameplay/natural_mob_spawns}, whose argument holds
+     * {@code spawns_by_category} in the same shape. Null when the biome has neither.
+     */
+    private static JsonObject spawnersOf(JsonObject biome) {
+        if (biome == null) {
+            return null;
+        }
+        if (biome.has("spawners") && biome.get("spawners").isJsonObject()) {
+            return biome.getAsJsonObject("spawners");
+        }
+        JsonElement attributes = biome.get("attributes");
+        if (attributes == null || !attributes.isJsonObject()) {
+            return null;
+        }
+        JsonElement spawns = attributes.getAsJsonObject().get("minecraft:gameplay/natural_mob_spawns");
+        if (spawns == null || !spawns.isJsonObject()) {
+            return null;
+        }
+        JsonElement argument = spawns.getAsJsonObject().get("argument");
+        JsonElement byCategory = argument != null && argument.isJsonObject()
+                ? argument.getAsJsonObject().get("spawns_by_category") : null;
+        return byCategory != null && byCategory.isJsonObject() ? byCategory.getAsJsonObject() : null;
     }
 
     /** A sorted json array of strings; an absent/empty set becomes an empty array, not null. */
