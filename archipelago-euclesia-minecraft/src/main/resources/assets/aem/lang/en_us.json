@@ -64,7 +64,6 @@
   "gui.aem.dump.open_failed": "Could not open folder.",
   "gui.aem.dump.no_packs": "No datapacks in aem-datapacks/ (use Open Source Folder)",
   "gui.aem.dump.running": "Dumping…",
-  "gui.aem.dump.none": "Select at least one file to dump.",
 
   "gui.aem.toggle.on": "ON",
   "gui.aem.toggle.off": "OFF",

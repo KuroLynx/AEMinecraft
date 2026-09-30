@@ -11,7 +11,6 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.Checkbox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.resources.CloseableResourceManager;
@@ -20,37 +19,32 @@ import net.minecraft.util.Util;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
- * Content-pack dump panel — pick which source datapacks to fold in, tick which files to export, and
- * dump them to {@code <gameDir>/aem/} with no world or connection. Reads the datapacks via a
- * standalone {@link DumpDataSource} resource manager, so it works straight from the title menu; the
- * dump itself runs on a background thread.
+ * Content-pack dump panel — pick which source datapacks to fold in and dump every content-pack file
+ * for them to {@code <gameDir>/aem/}, from the title menu with no connection. There is no per-file
+ * choice: a content pack is only usable whole. The world-free files are read through a standalone
+ * {@link DumpDataSource} resource manager on a background thread; entities/containers need a live
+ * world, so a throwaway one is created for them ({@link HeadlessWorldDump}).
  *
  * <p>Layout, top to bottom: a bordered, scrollable datapack list styled like the vanilla pack-select
  * screen (icon + title + description, click a row to toggle inclusion, selected rows highlighted);
- * the file-type checkboxes in a two-column grid; a primary Dump button; then a row of secondary
- * actions (Open Dump Folder / Open Source Folder / Back).
+ * a primary Dump button; then a row of secondary actions (Open Dump Folder / Open Source Folder / Back).
  */
 public final class DumpScreen extends Screen {
 
     private static final int PANEL_WIDTH = 248;
     private static final int BUTTON_HEIGHT = 20;
     private static final int GAP = 5;
-    private static final int ROW_GRID = 20;
     private static final int PACK_ROW_H = 30;
-    private static final int VISIBLE_PACK_ROWS = 2;
-    private static final int GRID_COLS = 2;
+    private static final int VISIBLE_PACK_ROWS = 4;
     private static final int TITLE_SPACE = 16;
 
     /** The registries that are not {@link PackDump} files: they need a live world, so they are dumped
-     *  via a throwaway one ({@link HeadlessWorldDump}). Ticking both only creates that world once. */
+     *  via a throwaway one ({@link HeadlessWorldDump}), created once for both. */
     private static final List<String> WORLD_FILES =
             List.of(HeadlessWorldDump.ENTITIES, HeadlessWorldDump.CONTAINERS);
 
@@ -79,7 +73,6 @@ public final class DumpScreen extends Screen {
     private int packScroll;
     private int listLeft, listTop, listInnerW, listInnerH;
 
-    private final Map<String, Checkbox> checkboxes = new LinkedHashMap<>();
     private Button dumpButton;
     private volatile String status = "";
     private volatile boolean running;
@@ -110,34 +103,16 @@ public final class DumpScreen extends Screen {
 
         int left = this.width / 2 - PANEL_WIDTH / 2;
 
-        List<String> files = new ArrayList<>(PackDump.FILES);
-        files.addAll(WORLD_FILES);
-        files.add(PackDump.RAW_DATAPACK);
-        int gridRows = (files.size() + GRID_COLS - 1) / GRID_COLS;
-
         // measure the whole block, then centre it vertically so it always fits the window
         listInnerW = PANEL_WIDTH - 2;
         listInnerH = VISIBLE_PACK_ROWS * PACK_ROW_H;
-        int total = TITLE_SPACE + listInnerH + 2 + GAP + gridRows * ROW_GRID + GAP
-                + BUTTON_HEIGHT + GAP + BUTTON_HEIGHT;
+        int total = TITLE_SPACE + listInnerH + 2 + GAP + BUTTON_HEIGHT + GAP + BUTTON_HEIGHT;
         int top = Math.max(TITLE_SPACE + 4, (this.height - total) / 2);
 
         int y = top + TITLE_SPACE;          // leave room for the title above the list
         listLeft = left + 1;
         listTop = y + 1;
         y += listInnerH + 2 + GAP;
-
-        // file-type checkboxes in a grid. The heavy/opt-in targets default off: the raw datapack copy,
-        // and the world-dependent registries (they spin up a throwaway world).
-        checkboxes.clear();
-        int colW = PANEL_WIDTH / GRID_COLS;
-        for (int i = 0; i < files.size(); i++) {
-            int rowY = y + (i / GRID_COLS) * ROW_GRID;
-            String file = files.get(i);
-            boolean defaultOn = !file.equals(PackDump.RAW_DATAPACK) && !WORLD_FILES.contains(file);
-            addCheckbox(file, left + (i % GRID_COLS) * colW, rowY, defaultOn);
-        }
-        y += gridRows * ROW_GRID + GAP;
 
         // primary action
         dumpButton = addRenderableWidget(Button.builder(Component.translatable("gui.aem.dump.run"), b -> dump())
@@ -164,12 +139,6 @@ public final class DumpScreen extends Screen {
     }
 
     private int statusY;
-
-    private void addCheckbox(String file, int x, int y, boolean selected) {
-        Checkbox box = Checkbox.builder(Component.literal(file), this.font).pos(x, y).selected(selected).build();
-        addRenderableWidget(box);
-        checkboxes.put(file, box);
-    }
 
     // -- datapack list ------------------------------------------------------
 
@@ -235,28 +204,13 @@ public final class DumpScreen extends Screen {
         if (running) {
             return;
         }
-        Set<String> selected = checkboxes.entrySet().stream()
-                .filter(e -> e.getValue().selected())
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toSet());
-        if (selected.isEmpty()) {
-            status = Component.translatable("gui.aem.dump.none").getString();
-            return;
-        }
-
-        // entities/containers need a live world: hand them to the headless dump, which leaves this
-        // screen for a throwaway world (one for both) and returns once done. The other (world-free)
-        // files dump here in parallel.
-        Set<String> worldFiles = new LinkedHashSet<>(WORLD_FILES);
-        worldFiles.retainAll(selected);
-        selected.removeAll(worldFiles);
-
-        if (!selected.isEmpty()) {
-            runPackDump(selected);
-        }
-        if (!worldFiles.isEmpty() && !HeadlessWorldDump.isRunning()) {
+        // The world-free files dump here on a background thread; entities/containers go to the headless
+        // dump, which leaves this screen for a throwaway world and returns once done. (The raw datapack
+        // copy stays a /aem dump command only: nothing reads it, and it is the whole data tree.)
+        runPackDump(Set.copyOf(PackDump.FILES));
+        if (!HeadlessWorldDump.isRunning()) {
             status = Component.translatable("gui.aem.dump.running").getString();
-            HeadlessWorldDump.request(parent, sourceDir, worldFiles, Set.copyOf(selectedPackIds));
+            HeadlessWorldDump.request(parent, sourceDir, Set.copyOf(WORLD_FILES), Set.copyOf(selectedPackIds));
         }
     }
 
