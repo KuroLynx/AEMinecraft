@@ -40,6 +40,8 @@ public final class ArchipelagoGameplayListener implements APEventListener {
                     compat.message().getString(), slotData.slotDataVersion(),
                     CompatibilityService.MIN_SUPPORTED, CompatibilityService.MAX_SUPPORTED);
         }
+        CompatibilityService.minecraftVersionMismatch(slotData.minecraftVersion()).ifPresent(message ->
+                AEM.LOGGER.error("[AEM] Wrong Minecraft version: {}", message.getString()));
 
         // The tag is what makes the room send us other worlds' deaths, so it follows the live setting
         // rather than the slot's option directly: with no override the two are the same thing, and

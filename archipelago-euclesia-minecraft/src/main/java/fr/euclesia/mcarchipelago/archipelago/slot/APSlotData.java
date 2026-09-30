@@ -41,7 +41,10 @@ public record APSlotData(
         List<ContentRequirement> requiredContent,
         ItemGateBehavior itemGateBehavior,
         InventoryLock inventoryLock,
-        int slotDataVersion
+        int slotDataVersion,
+        // The Minecraft version the seed was generated for; empty from an apworld that predates the
+        // minecraft_version option (then there is nothing to check).
+        String minecraftVersion
 ) {
     /** A tool/armor pickup gate: the player needs {@code knowledge} AND {@code material} tiers. */
     public record ToolLock(String knowledge, int material) {}
@@ -146,7 +149,8 @@ public record APSlotData(
                 List.of(),
                 ItemGateBehavior.DEFAULT,
                 InventoryLock.DISABLED,
-                0
+                0,
+                ""
         );
     }
 
@@ -189,7 +193,8 @@ public record APSlotData(
                 parseInventoryLock(json),
                 // Absent (0) in pre-versioning slot data -> treated as legacy/unversioned by
                 // CompatibilityService (allowed with a warning, not blocked).
-                APJson.getInt(json, "slot_data_version", 0)
+                APJson.getInt(json, "slot_data_version", 0),
+                APJson.getString(json, "minecraft_version", "")
         );
     }
 

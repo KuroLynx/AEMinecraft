@@ -1,6 +1,8 @@
 package fr.euclesia.mcarchipelago.archipelago.slot;
 
 import net.minecraft.network.chat.Component;
+import net.minecraft.SharedConstants;
+import java.util.Optional;
 
 /**
  * Checks that a connected slot's apworld and this mod speak the same slot-data schema. The apworld
@@ -53,6 +55,20 @@ public final class CompatibilityService {
                 default -> Component.empty();
             };
         }
+    }
+
+    /**
+     * Why this game can't enter a world generated for {@code required} (the slot's
+     * {@code minecraft_version}): the seed's items, mobs, structures and advancements are that
+     * version's, so on any other one they are missing or wrong. Empty when it matches, or when the
+     * apworld predates the option and sent none.
+     */
+    public static Optional<Component> minecraftVersionMismatch(String required) {
+        String running = SharedConstants.getCurrentVersion().name();
+        if (required == null || required.isEmpty() || required.equals(running)) {
+            return Optional.empty();
+        }
+        return Optional.of(Component.translatable("message.aem.compat.minecraft_version", required, running));
     }
 
     /** Classifies a slot's advertised {@code slot_data_version} against this mod's supported range. */
