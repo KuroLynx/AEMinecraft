@@ -532,6 +532,9 @@
   "cherry_log": [
     "cherry_grove"
   ],
+  "cinnabar": [
+    "sulfur_caves"
+  ],
   "clay": [
     "badlands",
     "bamboo_jungle",
@@ -651,7 +654,9 @@
   ],
   "coarse_dirt": [
     "old_growth_pine_taiga",
-    "old_growth_spruce_taiga"
+    "old_growth_spruce_taiga",
+    "windswept_savanna",
+    "wooded_badlands"
   ],
   "cocoa": [
     "jungle",
@@ -1864,7 +1869,8 @@
   ],
   "ice": [
     "deep_frozen_ocean",
-    "frozen_ocean"
+    "frozen_ocean",
+    "frozen_peaks"
   ],
   "infested_deepslate": [
     "cherry_grove",
@@ -2260,11 +2266,17 @@
     "old_growth_pine_taiga",
     "old_growth_spruce_taiga"
   ],
+  "mud": [
+    "mangrove_swamp"
+  ],
   "muddy_mangrove_roots": [
     "mangrove_swamp"
   ],
   "mushroom_stem": [
     "dark_forest",
+    "mushroom_fields"
+  ],
+  "mycelium": [
     "mushroom_fields"
   ],
   "nether_gold_ore": [
@@ -2443,6 +2455,7 @@
   "packed_ice": [
     "deep_frozen_ocean",
     "frozen_ocean",
+    "frozen_peaks",
     "ice_spikes"
   ],
   "pale_hanging_moss": [
@@ -2530,6 +2543,10 @@
   ],
   "potent_sulfur": [
     "sulfur_caves"
+  ],
+  "powder_snow": [
+    "grove",
+    "snowy_slopes"
   ],
   "pumpkin": [
     "badlands",
@@ -3016,6 +3033,13 @@
     "windswept_savanna",
     "wooded_badlands"
   ],
+  "snow_block": [
+    "frozen_peaks",
+    "grove",
+    "ice_spikes",
+    "jagged_peaks",
+    "snowy_slopes"
+  ],
   "soul_fire": [
     "basalt_deltas",
     "nether_wastes",
@@ -3023,6 +3047,10 @@
     "warped_forest"
   ],
   "soul_sand": [
+    "nether_wastes",
+    "soul_sand_valley"
+  ],
+  "soul_soil": [
     "soul_sand_valley"
   ],
   "spore_blossom": [
