@@ -62,6 +62,11 @@ dependencies {
 	include "org.java-websocket:Java-WebSocket:${project.java_websocket_version}"
 }
 
+// The tracker-tab advancements (tools/gen_tracker_advancements.py) are generated per Minecraft version:
+// each jar packages only its own version's tiles, so it never carries one for a mob or structure its
+// game doesn't have.
+sourceSets.main.resources.srcDir(rootProject.file("trackers/${minecraftVersion}"))
+
 processResources {
 	def version = project.version
 	def mcCompat = project.mc_compat

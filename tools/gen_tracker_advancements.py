@@ -1,22 +1,19 @@
-"""Generates the Archipelago tracker-tab datapack shipped inside the Fabric mod.
+"""Generates the Archipelago tracker-tab datapack shipped inside the Fabric mod, one per Minecraft version.
 
 Emits one advancement per *possible* tracker (every mob kill / boss kill / mob-spawn-unlock /
-structure-unlock) plus the ``aem:archipelago`` tab root, into the mod resources at
-``archipelago-euclesia-minecraft/src/main/resources/data/aem/advancement/``. The seed-specific
-subset is shown/hidden at runtime by the mod's visibility gate (slot_data["trackers"]).
+structure-unlock) plus the ``aem:archipelago`` tab root, for each version the apworld has packs for,
+into ``archipelago-euclesia-minecraft/trackers/<version>/data/aem/advancement/``. The mod is built once
+per Minecraft version and each build packages only its own version's folder (see build.gradle), so a
+jar carries exactly the tiles its game can have. The seed-specific subset is shown/hidden at runtime by
+the mod's visibility gate (slot_data["trackers"]).
 
 Ids come from ``minecraft.trackers.tracker_id`` so they match the slot_data export exactly.
 Icons are validated against the real item set: mob tiles use ``<slug>_spawn_egg`` (verified in
 the MC client jar's en_us.json), structures use a hand-picked representative item.
 
-The mod ships ONE datapack for every Minecraft version it builds for, so the tiles cover every
-version's mobs and structures (the union), and icons are checked against the OLDEST supported
-version's jar: an icon item that game lacks would make the tile fail to load there, so a mob newer
-than it (26.2's sulfur cube on 26.1.2) falls back to a generic icon that exists everywhere.
-
-Run from anywhere (puts the ArchipelagoClone checkout on sys.path, like tools/logic_selfcheck.py):
-    python tools/gen_tracker_advancements.py
-Override the client jar with env MC_CLIENT_JAR if the loom cache path differs.
+Each version's tiles come from that version's content and have their icons checked against that
+version's client jar (from the Loom cache, which builds every version), so a mob only a newer game has
+gets its real spawn egg there and no tile at all on an older one.
 """
 from __future__ import annotations
 
@@ -26,25 +23,19 @@ import re
 import sys
 import zipfile
 
-# Mod resources output dir — resolved before any chdir.
+# Per-version output root — resolved before any chdir. <root>/<version>/data/aem/advancement/
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUT_DIR = os.path.join(
-    REPO_ROOT, "archipelago-euclesia-minecraft", "src", "main", "resources",
-    "data", "aem", "advancement",
-)
+OUT_ROOT = os.path.join(REPO_ROOT, "archipelago-euclesia-minecraft", "trackers")
+OUT_DIR = ""  # the version being generated (set by generate)
 
 AP_ROOT = r"C:\Users\benja\PycharmProjects\ArchipelagoClone"
-# The OLDEST supported version's client jar (see the module docstring).
-DEFAULT_JAR = os.path.expanduser(
-    r"~/.gradle/caches/fabric-loom/26.1.2/minecraft-client.jar"
-)
+# A version's client jar in the Loom cache (every Stonecutter version is built, so each is there).
+LOOM_JAR = os.path.expanduser(r"~/.gradle/caches/fabric-loom/{version}/minecraft-client.jar")
 
 sys.path.insert(0, AP_ROOT)
 os.chdir(AP_ROOT)
 
 from worlds.minecraft_aem.data import (  # noqa: E402
-    ALL_VERSIONS_MOBS as MOBS_ALL,
-    ALL_VERSIONS_STRUCTURES as STRUCTURES,
     KNOWLEDGE_PREFIX,
     MINECRAFT_VERSIONS,
     MCEntityCategory,
@@ -187,7 +178,7 @@ MATERIAL_HANDLING_TIERS = {
 }
 
 
-def derive_gate_icons(item_slugs: set[str]) -> dict[str, str]:
+def derive_gate_icons(content, item_slugs: set[str]) -> dict[str, str]:
     """Icons for the station/container Knowledge gates, taken from the blocks those gates cover.
 
     These gates come from the in-game block dump (``data.BLOCK_KNOWLEDGE``), so hand-listing them in
@@ -200,10 +191,8 @@ def derive_gate_icons(item_slugs: set[str]) -> dict[str, str]:
     shared id segments, and ``minecraft:shelf`` is not a real item.
     """
     blocks_by_name: dict[str, list[str]] = {}
-    for version in MINECRAFT_VERSIONS:
-        for block_id, name in content_for(version).BLOCK_KNOWLEDGE.items():
-            if block_id not in blocks_by_name.setdefault(name, []):
-                blocks_by_name[name].append(block_id)
+    for block_id, name in content.BLOCK_KNOWLEDGE.items():
+        blocks_by_name.setdefault(name, []).append(block_id)
 
     icons: dict[str, str] = {}
     for name, blocks in sorted(blocks_by_name.items()):
@@ -365,13 +354,27 @@ def write(advancement_id: str, data: dict) -> None:
 
 
 def main() -> int:
-    jar = os.environ.get("MC_CLIENT_JAR", DEFAULT_JAR)
+    for version in MINECRAFT_VERSIONS:
+        if generate(version):
+            return 1
+    return 0
+
+
+def generate(version: str) -> int:
+    """Write one version's tiles; non-zero on failure."""
+    global OUT_DIR
+    OUT_DIR = os.path.join(OUT_ROOT, version, "data", "aem", "advancement")
+    content = content_for(version)
+    MOBS_ALL, STRUCTURES = content.MOBS_ALL, content.STRUCTURES
+    jar = LOOM_JAR.format(version=version)
     if not os.path.isfile(jar):
-        print(f"ERROR: MC client jar not found: {jar}\nSet MC_CLIENT_JAR to override.")
+        print(f"ERROR: {version} client jar not found: {jar}\nBuild that version once (gradlew :{version}:build).")
         return 1
+    print(f"== {version}")
     spawn_eggs = load_spawn_egg_slugs(jar)
     print(f"loaded {len(spawn_eggs)} spawn eggs from {jar}")
-    GATE_ICONS.update(derive_gate_icons(load_item_slugs(jar)))
+    GATE_ICONS.clear()
+    GATE_ICONS.update(derive_gate_icons(content, load_item_slugs(jar)))
     print(f"derived {len(GATE_ICONS)} station/container gate icons from the block dump")
 
     # Fresh output (drop stale tiles) but keep the dir.

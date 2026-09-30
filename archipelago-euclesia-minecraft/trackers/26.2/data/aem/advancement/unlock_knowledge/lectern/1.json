@@ -1,0 +1,24 @@
+{
+  "parent": "aem:unlock_knowledge/hopper/1",
+  "criteria": {
+    "never": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "never"
+    ]
+  ],
+  "display": {
+    "icon": {
+      "id": "minecraft:lectern"
+    },
+    "title": "Knowledge: Lectern",
+    "description": "Unlock Knowledge: Lectern",
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": false
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "parent": "aem:goal/bosses",
+  "criteria": {
+    "never": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "never"
+    ]
+  ],
+  "display": {
+    "icon": {
+      "id": "minecraft:elder_guardian_spawn_egg"
+    },
+    "title": "Elder Guardian",
+    "description": "Defeat the Elder Guardian",
+    "frame": "goal",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": false
+  }
+}

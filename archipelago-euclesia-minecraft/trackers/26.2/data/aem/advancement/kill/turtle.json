@@ -1,0 +1,24 @@
+{
+  "parent": "aem:kill/tropical_fish",
+  "criteria": {
+    "never": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "never"
+    ]
+  ],
+  "display": {
+    "icon": {
+      "id": "minecraft:turtle_spawn_egg"
+    },
+    "title": "Turtle",
+    "description": "Kill a Turtle",
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": false
+  }
+}

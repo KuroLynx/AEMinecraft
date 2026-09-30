@@ -1,0 +1,24 @@
+{
+  "parent": "aem:unlock_knowledge/grindstone/1",
+  "criteria": {
+    "never": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "never"
+    ]
+  ],
+  "display": {
+    "icon": {
+      "id": "minecraft:loom"
+    },
+    "title": "Knowledge: Loom",
+    "description": "Unlock Knowledge: Loom",
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": false
+  }
+}
