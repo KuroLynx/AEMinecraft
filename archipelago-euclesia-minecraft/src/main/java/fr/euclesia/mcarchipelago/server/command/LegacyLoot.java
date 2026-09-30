@@ -13,6 +13,7 @@ import java.io.Reader;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Rewrites a loot table into the pre-26.3 shape the dump's readers were written against, so they
@@ -76,8 +77,68 @@ final class LegacyLoot {
             singular(fields, "blocks", "block", false);
             unhashTagIds(fields);
             unwrapPotions(fields);
+            legacyEntityPredicates(fields);
         }
         return out;
+    }
+
+    /** Entity sub-predicates 26.2 moved under a {@code minecraft:} key (26.1.2 wrote them bare). */
+    private static final Set<String> ENTITY_SUBPREDICATES = Set.of("location", "flags", "components",
+            "equipment", "distance", "vehicle", "passenger", "stepping_on", "targeted_entity", "effects",
+            "nbt", "movement", "movement_affected_by", "periodic_tick", "slots", "team");
+
+    /**
+     * Entity predicates back into the 26.1.2 shape. 26.2 renamed an entity predicate's {@code type} to
+     * {@code minecraft:entity_type} ({@code entity_type} in BACAP), prefixed its sub-predicates
+     * ({@code minecraft:location}, {@code minecraft:flags}…), and split {@code type_specific} by kind
+     * ({@code "minecraft:type_specific/player": {...}} for {@code type_specific: {type: player, ...}}).
+     * The compiler reads the entity type from {@code type}, so on 26.2+ every "this mob" gate (breed,
+     * kill, tame a specific animal) compiled to nothing.
+     */
+    private static void legacyEntityPredicates(JsonElement element) {
+        if (element.isJsonArray()) {
+            element.getAsJsonArray().forEach(LegacyLoot::legacyEntityPredicates);
+            return;
+        }
+        if (!element.isJsonObject()) {
+            return;
+        }
+        JsonObject node = element.getAsJsonObject();
+        List<Map.Entry<String, JsonElement>> entries = List.copyOf(node.entrySet());
+        entries.forEach(entry -> legacyEntityPredicates(entry.getValue()));
+        boolean reshaped = entries.stream().anyMatch(entry -> legacyKey(entry.getKey(), node) != null
+                || entry.getKey().startsWith("minecraft:type_specific/"));
+        if (!reshaped) {
+            return;
+        }
+        for (Map.Entry<String, JsonElement> entry : entries) {
+            node.remove(entry.getKey());
+        }
+        for (Map.Entry<String, JsonElement> entry : entries) {
+            String key = entry.getKey();
+            if (key.startsWith("minecraft:type_specific/")) {
+                JsonObject typeSpecific = new JsonObject();
+                typeSpecific.addProperty("type", "minecraft:" + key.substring("minecraft:type_specific/".length()));
+                if (entry.getValue().isJsonObject()) {
+                    entry.getValue().getAsJsonObject().entrySet().forEach(e -> typeSpecific.add(e.getKey(), e.getValue()));
+                }
+                node.add("type_specific", typeSpecific);
+            } else {
+                String legacy = legacyKey(key, node);
+                node.add(legacy != null ? legacy : key, entry.getValue());
+            }
+        }
+    }
+
+    /** The 26.1.2 name for an entity predicate key, or null if it has none (or never changed). */
+    private static String legacyKey(String key, JsonObject node) {
+        if ((key.equals("minecraft:entity_type") || key.equals("entity_type")) && !node.has("type")) {
+            return "type";
+        }
+        if (key.startsWith("minecraft:") && ENTITY_SUBPREDICATES.contains(key.substring("minecraft:".length()))) {
+            return key.substring("minecraft:".length());
+        }
+        return null;
     }
 
     /** 26.3 wraps a potion test's id(s) as {@code {"potions": ...}} under {@code potion_contents} (an
