@@ -148,8 +148,11 @@ public final class HeadlessWorldDump {
         // ids, then release its lock before createFreshLevel reacquires it. Only packs made for THIS game
         // version: aem-datapacks/ holds one BACAP per Minecraft version, and a newer one references
         // content this game lacks (BACAP 1.21.1's loot-table tag names 26.3's abandoned-camp chests),
-        // which fails the whole world load with "Unbound values in registry".
+        // which fails the whole world load with "Unbound values in registry". They have to be listed as
+        // disabled: the server switches on any pack found in neither list, which is how a newly dropped-in
+        // datapack gets picked up.
         List<String> enabled = new ArrayList<>();
+        List<String> disabled = new ArrayList<>();
         try (LevelStorageSource.LevelStorageAccess access = source.createAccess(SAVE_NAME)) {
             PackRepository repository = ServerPacksSource.createPackRepository(access);
             repository.reload();
@@ -157,6 +160,7 @@ public final class HeadlessWorldDump {
                 if (pack.getCompatibility().isCompatible()) {
                     enabled.add(pack.getId());
                 } else {
+                    disabled.add(pack.getId());
                     AEM.LOGGER.info("Headless dump: skipping pack '{}' ({} for this game version)",
                             pack.getId(), pack.getCompatibility());
                 }
@@ -164,7 +168,7 @@ public final class HeadlessWorldDump {
         }
 
         WorldDataConfiguration dataConfig = new WorldDataConfiguration(
-                new DataPackConfig(enabled, List.of()),
+                new DataPackConfig(enabled, disabled),
                 WorldDataConfiguration.DEFAULT.enabledFeatures());
         LevelSettings settings = new LevelSettings(
                 "AEM Entities Dump",
