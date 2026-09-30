@@ -108,8 +108,9 @@ public final class HeadlessWorldDump {
      * @param datapackDir {@code aem-datapacks/}: dropped world-datapacks folded into the temp world
      * @param what        which files to write ({@link #ENTITIES} / {@link #CONTAINERS}); both share the
      *                    one temp world
+     * @param packIds     the packs ticked on the dump screen; the temp world loads exactly those
      */
-    public static synchronized void request(Screen returnTo, Path datapackDir, Set<String> what) {
+    public static synchronized void request(Screen returnTo, Path datapackDir, Set<String> what, Set<String> packIds) {
         if (armed || what.isEmpty()) {
             return;
         }
@@ -122,7 +123,7 @@ public final class HeadlessWorldDump {
         result = "";
         AEM.LOGGER.info("Headless dump: requested {}, creating temp world '{}'", targets, SAVE_NAME);
         try {
-            createTempWorld(datapackDir);
+            createTempWorld(datapackDir, packIds);
             AEM.LOGGER.info("Headless dump: temp world creation kicked off, awaiting server start");
         } catch (Exception exception) {
             AEM.LOGGER.warn("Headless dump: could not start temp world", exception);
@@ -132,7 +133,7 @@ public final class HeadlessWorldDump {
         }
     }
 
-    private static void createTempWorld(Path datapackDir) throws Exception {
+    private static void createTempWorld(Path datapackDir, Set<String> packIds) throws Exception {
         Minecraft mc = Minecraft.getInstance();
         LevelStorageSource source = mc.getLevelSource();
         saveDir = source.getBaseDir().resolve(SAVE_NAME);
@@ -141,28 +142,30 @@ public final class HeadlessWorldDump {
         deleteSaveQuietly();
         Path datapacks = saveDir.resolve("datapacks");
         Files.createDirectories(datapacks);
-        copyDatapacks(datapackDir, datapacks);
+        copyDatapacks(datapackDir, datapacks, packIds);
 
-        // Folder datapacks default to disabled, so explicitly enable everything the temp world can see
-        // (vanilla + bundled mod packs + the copies above). Open a throwaway access just to read the
-        // ids, then release its lock before createFreshLevel reacquires it. Only packs made for THIS game
-        // version: aem-datapacks/ holds one BACAP per Minecraft version, and a newer one references
-        // content this game lacks (BACAP 1.21.1's loot-table tag names 26.3's abandoned-camp chests),
-        // which fails the whole world load with "Unbound values in registry". They have to be listed as
-        // disabled: the server switches on any pack found in neither list, which is how a newly dropped-in
-        // datapack gets picked up.
+        // Enable exactly the ticked packs, and list every other one as disabled: the server switches on
+        // any pack found in neither list, which is how a newly dropped-in datapack gets picked up. Open a
+        // throwaway access just to read the ids, then release its lock before createFreshLevel
+        // reacquires it. Vanilla is kept whatever the ticks say (no world loads without it). A ticked
+        // pack made for another game version is skipped too: it references content this game lacks
+        // (BACAP 1.21.1's loot-table tag names 26.3's abandoned-camp chests) and fails the whole world
+        // load with "Unbound values in registry".
         List<String> enabled = new ArrayList<>();
         List<String> disabled = new ArrayList<>();
         try (LevelStorageSource.LevelStorageAccess access = source.createAccess(SAVE_NAME)) {
             PackRepository repository = ServerPacksSource.createPackRepository(access);
             repository.reload();
             for (Pack pack : repository.getAvailablePacks()) {
-                if (pack.getCompatibility().isCompatible()) {
-                    enabled.add(pack.getId());
-                } else {
-                    disabled.add(pack.getId());
+                String id = pack.getId();
+                if (!id.equals("vanilla") && !packIds.contains(id)) {
+                    disabled.add(id);
+                } else if (!pack.getCompatibility().isCompatible()) {
+                    disabled.add(id);
                     AEM.LOGGER.info("Headless dump: skipping pack '{}' ({} for this game version)",
-                            pack.getId(), pack.getCompatibility());
+                            id, pack.getCompatibility());
+                } else {
+                    enabled.add(id);
                 }
             }
         }
@@ -291,12 +294,16 @@ public final class HeadlessWorldDump {
     // -- datapacks ----------------------------------------------------------
 
     /** Copy every dropped world-datapack (file or folder) into the temp world's {@code datapacks/}. */
-    private static void copyDatapacks(Path from, Path into) throws Exception {
+    /** Copies the ticked packs of {@code from}; a folder pack's repository id is "file/" + its name. */
+    private static void copyDatapacks(Path from, Path into, Set<String> packIds) throws Exception {
         if (from == null || !Files.isDirectory(from)) {
             return;
         }
         try (Stream<Path> entries = Files.list(from)) {
             for (Path entry : (Iterable<Path>) entries::iterator) {
+                if (!packIds.contains("file/" + entry.getFileName())) {
+                    continue;
+                }
                 copyRecursively(entry, into.resolve(entry.getFileName().toString()));
             }
         }

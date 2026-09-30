@@ -5,6 +5,7 @@ import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.repository.FolderRepositorySource;
 import net.minecraft.server.packs.repository.Pack;
+import net.minecraft.server.packs.repository.PackCompatibility;
 import net.minecraft.server.packs.repository.PackRepository;
 import net.minecraft.server.packs.repository.PackSource;
 import net.minecraft.server.packs.repository.ServerPacksSource;
@@ -33,8 +34,8 @@ import java.util.Set;
 public final class DumpDataSource {
     private DumpDataSource() {}
 
-    /** A selectable datapack found in the source folder: repository id, display title and description. */
-    public record DatapackInfo(String id, Component title, Component description) {}
+    /** A selectable datapack: repository id, display title, description, and whether it is made for this game. */
+    public record DatapackInfo(String id, Component title, Component description, PackCompatibility compatibility) {}
 
     /** PathMatcher (p -> true) trusts the folder's symlinks, same as the vanilla trusted repo. */
     private static DirectoryValidator trustAll() {
@@ -49,7 +50,7 @@ public final class DumpDataSource {
     }
 
     private static DatapackInfo info(Pack pack) {
-        return new DatapackInfo(pack.getId(), pack.getTitle(), pack.getDescription());
+        return new DatapackInfo(pack.getId(), pack.getTitle(), pack.getDescription(), pack.getCompatibility());
     }
 
     /**

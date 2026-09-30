@@ -100,7 +100,10 @@ public final class DumpScreen extends Screen {
                 // best-effort: an unreadable folder just yields an empty pack list
             }
             packs.addAll(DumpDataSource.availableDatapacks(sourceDir));
-            packs.forEach(p -> selectedPackIds.add(p.id()));
+            // Packs made for another game version start unticked: aem-datapacks/ usually holds one BACAP
+            // per Minecraft version, and only this game's one dumps meaningfully (the others break the
+            // world dump outright).
+            packs.stream().filter(p -> p.compatibility().isCompatible()).forEach(p -> selectedPackIds.add(p.id()));
             packsInitialised = true;
         }
 
@@ -252,7 +255,7 @@ public final class DumpScreen extends Screen {
         }
         if (!worldFiles.isEmpty() && !HeadlessWorldDump.isRunning()) {
             status = Component.translatable("gui.aem.dump.running").getString();
-            HeadlessWorldDump.request(parent, sourceDir, worldFiles);
+            HeadlessWorldDump.request(parent, sourceDir, worldFiles, Set.copyOf(selectedPackIds));
         }
     }
 
@@ -338,8 +341,11 @@ public final class DumpScreen extends Screen {
 
             int textX = iconX + iconS + 5;
             int textW = left + contentW - textX - 3;  // scissor clips any overflow of the title
-            graphics.text(this.font, pack.title(), textX, rowY + 5, 0xFFFFFFFF);
-            graphics.textWithWordWrap(this.font, pack.description(), textX, rowY + 16, textW, 0xFF9A9A9A);
+            // Like the vanilla pack screen: a pack for another game version gets a red title and says so.
+            boolean compatible = pack.compatibility().isCompatible();
+            graphics.text(this.font, pack.title(), textX, rowY + 5, compatible ? 0xFFFFFFFF : 0xFFFF5555);
+            graphics.textWithWordWrap(this.font, compatible ? pack.description() : pack.compatibility().getDescription(),
+                    textX, rowY + 16, textW, compatible ? 0xFF9A9A9A : 0xFFFF5555);
         }
         graphics.disableScissor();
 
