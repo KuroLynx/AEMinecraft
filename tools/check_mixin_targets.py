@@ -203,13 +203,16 @@ def parse_mixin(path: str, constants: dict) -> dict | None:
     targets = []
     for simple in re.findall(r"([\w.]+)\.class", args):
         head, _, rest = simple.partition(".")
-        fqn = imports.get(head, f"{package}.{head}") + (f".{rest}" if rest else "")
+        if head[:1].islower():   # already fully qualified: @Mixin(net.minecraft....Foo.class)
+            fqn = simple
+        else:
+            fqn = imports.get(head, f"{package}.{head}") + (f".{rest}" if rest else "")
         targets.append(to_internal(fqn))
     targets += [t.replace(".", "/") for t in re.findall(r'targets\s*=\s*\{?\s*' + STRING, args)]
 
     code = inline_constants(code, constants)
     checks = []   # (kind, spec, line)
-    for ann in re.finditer(r"@(Inject|Redirect|ModifyArg|ModifyArgs|ModifyVariable|ModifyConstant|ModifyReturnValue|WrapOperation|WrapWithCondition|Overwrite)\s*\(", code):
+    for ann in re.finditer(r"@(Inject|Redirect|ModifyArg|ModifyArgs|ModifyVariable|ModifyConstant|ModifyReturnValue|ModifyExpressionValue|ModifyReceiver|WrapOperation|WrapWithCondition|WrapMethod|Overwrite)\s*\(", code):
         body, _ = annotation_args(code, ann.end() - 1)
         line = code.count("\n", 0, ann.start()) + 1
         mm = re.search(r"method\s*=\s*(\{[^}]*\}|" + STRING + ")", body)

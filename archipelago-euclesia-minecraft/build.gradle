@@ -34,9 +34,10 @@ loom {
 	}
 
 	// One run/ for every version, where it has always been (saves, logs, the dump output), rather
-	// than one per versions/<version>/.
+	// than one per versions/<version>/. Loom resolves runDir against the version project, so it has
+	// to be relative ("../../run"): an absolute path gets glued on after versions/<version>/.
 	runConfigs.configureEach {
-		runDir = rootProject.file("run").absolutePath
+		runDir = project.relativePath(rootProject.file("run"))
 	}
 }
 
