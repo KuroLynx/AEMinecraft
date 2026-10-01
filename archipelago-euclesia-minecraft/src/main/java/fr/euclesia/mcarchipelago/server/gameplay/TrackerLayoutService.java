@@ -5,7 +5,9 @@ import fr.euclesia.mcarchipelago.mixin.ServerAdvancementManagerAccessor;
 import fr.euclesia.mcarchipelago.registry.APTrackerRegistry;
 import net.minecraft.advancements.Advancement;
 import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.advancements.AdvancementNode;
 import net.minecraft.advancements.AdvancementTree;
+import net.minecraft.advancements.TreeNodePosition;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.ServerAdvancementManager;
@@ -69,15 +71,29 @@ public final class TrackerLayoutService {
             return;
         }
 
-        Map<Identifier, AdvancementHolder> updated =
-                new HashMap<>(((ServerAdvancementManagerAccessor) manager).archipelago_euclesia$getAdvancements());
+        install(manager, changed);
+        AEM.LOGGER.info("Compacted {} tracker tiles onto visible parents", changed.size());
+    }
+
+    /**
+     * Swaps {@code changed} into the manager's (immutable) advancement map, rebuilds the tree in place
+     * and lays it out again. The layout matters from 26.3 on: tile positions live on the tree nodes
+     * there, so freshly added nodes would all sit at 0,0 without it.
+     */
+    static void install(ServerAdvancementManager manager, Map<Identifier, AdvancementHolder> changed) {
+        ServerAdvancementManagerAccessor accessor = (ServerAdvancementManagerAccessor) manager;
+        Map<Identifier, AdvancementHolder> updated = new HashMap<>(accessor.archipelago_euclesia$getAdvancements());
         updated.putAll(changed);
-        ((ServerAdvancementManagerAccessor) manager).archipelago_euclesia$setAdvancements(Map.copyOf(updated));
+        accessor.archipelago_euclesia$setAdvancements(Map.copyOf(updated));
 
         AdvancementTree tree = manager.tree();
         tree.clear();
-        tree.addAll(((ServerAdvancementManagerAccessor) manager).archipelago_euclesia$getAdvancements().values());
-        AEM.LOGGER.info("Compacted {} tracker tiles onto visible parents", changed.size());
+        tree.addAll(accessor.archipelago_euclesia$getAdvancements().values());
+        for (AdvancementNode root : tree.roots()) {
+            if (root.holder().value().display().isPresent()) {
+                TreeNodePosition.run(root);
+            }
+        }
     }
 
     /**
