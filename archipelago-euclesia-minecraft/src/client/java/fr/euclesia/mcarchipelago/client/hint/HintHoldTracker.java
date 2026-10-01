@@ -1,8 +1,8 @@
 package fr.euclesia.mcarchipelago.client.hint;
 
 import fr.euclesia.mcarchipelago.AEM;
+import fr.euclesia.mcarchipelago.client.gui.AEMScreenButtons;
 import fr.euclesia.mcarchipelago.client.logic.LogicColors;
-import fr.euclesia.mcarchipelago.client.mixin.ScreenAccessor;
 import fr.euclesia.mcarchipelago.client.net.HintClient;
 import fr.euclesia.mcarchipelago.client.report.LogicReportMode;
 import fr.euclesia.mcarchipelago.client.utils.MCClient;
@@ -233,8 +233,7 @@ public final class HintHoldTracker {
         closedForHint = null;
         Minecraft minecraft = Minecraft.getInstance();
         if (screen != null && MCClient.screen() == null && minecraft.player != null) {
-            MCClient.setScreen(screen);
-            ((ScreenAccessor) screen).archipelago_euclesia$rebuildWidgets();
+            AEMScreenButtons.reopen(screen);
         }
     }
 

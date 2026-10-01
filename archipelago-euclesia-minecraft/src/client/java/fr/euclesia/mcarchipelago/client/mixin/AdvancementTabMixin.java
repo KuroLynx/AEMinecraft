@@ -26,6 +26,23 @@ public abstract class AdvancementTabMixin {
     public abstract AdvancementNode getRootNode();
     //?}
 
+    // From 26.2 the tab works out the hovered tile once per game tick (tick() -> isMouseOver), not per frame, so
+    // the widget's isMouseOver hook only sees a hover on one frame in several: tile picks for the
+    // logic report landed on the third click and hint holds kept resetting. Report the tab's stored
+    // hover every frame instead.
+    //? if >=26.2 {
+    /*@Shadow
+    private net.minecraft.client.gui.screens.advancements.AdvancementWidget hovered;
+
+    @Inject(method = "extractContents(Lnet/minecraft/client/gui/GuiGraphicsExtractor;II)V", at = @At("HEAD"))
+    private void archipelago_euclesia$reportHovered(GuiGraphicsExtractor graphics, int x, int y, CallbackInfo ci) {
+        if (hovered != null) {
+            fr.euclesia.mcarchipelago.client.hint.HintHoldTracker.reportHover(
+                    ((AdvancementWidgetAccessor) hovered).archipelago_euclesia$getAdvancementNode().holder().id());
+        }
+    }
+    *///?}
+
     @Inject(method = "extractIcon(Lnet/minecraft/client/gui/GuiGraphicsExtractor;II)V", at = @At("HEAD"))
     private void archipelago_euclesia$markIconStart(GuiGraphicsExtractor graphics, int x, int y, CallbackInfo ci) {
         //? if >=26.3 {
