@@ -2174,7 +2174,10 @@ class RuleHelper:
             # A profession villager stays strict: which offers it rolls is luck, but you can keep
             # rerolling a villager you built a village around, and can_trade_villager already carries
             # that cost. Revisit on measured offer weights rather than a guess.
-            add(self.can_trade_villager())
+            # The entry's "<level>/<offer>" says which trade level unlocks it; the cheapest wins.
+            level = min(int(entry[1].split("/", 1)[0]) if len(entry) > 1 and entry[1][:1].isdigit() else 1
+                        for entry in trades if entry and entry[0] != "wandering_trader")
+            add(self.can_trade_villager(level))
         if "wandering_trader" in professions:
             # The Wandering Trader is glitch: it has to spawn near you AND roll the offer you want,
             # and you can't make either happen — the definition of a route AP shouldn't plan around.
