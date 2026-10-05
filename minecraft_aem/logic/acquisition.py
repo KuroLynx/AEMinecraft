@@ -2632,9 +2632,12 @@ class RuleHelper:
             if gunpowder is None or not dyes:
                 return None
             return self.all_of(self._station_node("crafting_special", stack), gunpowder, self.any_of(*dyes))
+        # Every tiered material is mined with a pickaxe, so the floor carries it — the same floor as the
+        # depth cap in acquire(). Sources also come back None when the stack cuts them all (raw iron's
+        # block recipe cycles back to raw iron), and the bare tier made 64 raw iron free of a pickaxe.
         tier = _MATERIAL_TIER_BY_ITEM.get(base)
         if tier is not None:
-            return self.material(tier)
+            return self.all_of(self.knowledge(K_PICKAXE), self.material(tier))
         # (A filled bucket used to be caught here, by suffix, and priced as the empty bucket alone.
         # _acquire_compute now models every one of them — bucket AND what fills it — before the
         # fallback is ever consulted.)
