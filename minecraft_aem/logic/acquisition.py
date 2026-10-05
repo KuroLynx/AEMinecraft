@@ -409,6 +409,23 @@ _PALE_GARDEN_BLOCKS = frozenset({
 })
 
 
+class _HomeOnly:
+    """A stand-in CollectionState for RuleHelper._stays_home: every item and location held, but only
+    the start region reachable."""
+
+    def __init__(self, region: str):
+        self.region = region
+
+    def has(self, *_args) -> bool:
+        return True
+
+    def can_reach_location(self, *_args) -> bool:
+        return True
+
+    def can_reach_region(self, region, _player) -> bool:
+        return region == self.region
+
+
 class RuleHelper:
     """Builds logic rules as serializable AST nodes (see ``ast.py``).
 
@@ -512,6 +529,14 @@ class RuleHelper:
         # renewable route elsewhere would read dry too — it only matters if that item has no other.
         self._dry_keys: set = set()
         self._dry_nodes: set = set()
+        # Results _demote kept only because nothing dependable was left (cache keys, and the nodes they
+        # returned). A recipe built on one is just as flimsy, so the parent demotes it like any other
+        # loose route. Without this the recursion stack laundered luck into strict logic: pricing a
+        # diamond cuts the diamond block's own recipe as a cycle, the block's 0.3% vault reward became
+        # its "sole source", and crafting that block back into diamonds read as a dependable recipe.
+        # Same identity caveat as _dry_nodes.
+        self._loose_keys: set = set()
+        self._loose_nodes: set = set()
         # Thunks (deferred so cross-referencing mobs don't recurse at construction).
         self.structure_bound_mobs = {
             # Overworld — structure-locked
@@ -1720,8 +1745,15 @@ class RuleHelper:
             # shallow acquire still uses the real sources, e.g. diamond via bastion loot); it only
             # stops the runaway recursion of a deep crafting chain (waxed_copper_lantern → … →
             # copper_ingot). A non-material this deep gives up.
+            #
+            # The floor is MINING the ore, so it carries the pickaxe too. The bare tier alone sat in an OR
+            # beside the item's real routes and was always the cheapest one, so Pickaxe Handling fell out
+            # of every rule that reached a material through a deep chain: cobblestone (Stone Age), iron
+            # (Acquire Hardware, a bucket) and diamonds were all reachable with no pickaxe at all.
             tier = _MATERIAL_TIER_BY_ITEM.get(base)
-            return self.material(tier) if tier is not None else None
+            if tier is None:
+                return None
+            return self.all_of(self.knowledge(K_PICKAXE), self.material(tier))
         # Memoize on (base, stack): the result is pure for this helper, so the same item is computed
         # once and shared. Datapack compilation calls acquire ~9M times for far fewer distinct keys.
         key = (base, _stack, self._finding_stack, self._pricing_trade, self._bulk)
@@ -1731,6 +1763,8 @@ class RuleHelper:
         cache[key] = result = self._acquire_compute(base, _stack)
         if key in self._dry_keys and result is not None:
             self._dry_nodes.add(id(result))
+        if key in self._loose_keys and result is not None:
+            self._loose_nodes.add(id(result))
         return result
 
     @contextmanager
@@ -2041,7 +2075,7 @@ class RuleHelper:
             # instead of falling through to _acquire_fallback.
             if node is None or (isinstance(node, Const) and not node.value):
                 return
-            (loose if glitchy else options).append(node)
+            (loose if glitchy or id(node) in self._loose_nodes else options).append(node)
             if runs_dry or id(node) in self._dry_nodes:
                 finite.add(id(node))
 
@@ -2107,9 +2141,16 @@ class RuleHelper:
                 # comparator in an Ancient City, an Overworld path its quartz recipe otherwise hides
                 # behind the Nether). Redundant ones (a block whose recipe is already reachable in the
                 # structure's dimension) collapse in _unique_or / _coarsen.
+                #
+                # Mining it there still takes the tool: a stone block in a ruin needs a pickaxe, and
+                # Silk Touch to drop itself. Pricing the route as the structure alone made cobblestone
+                # (stonecut from that stone) free of Pickaxe Handling, and Stone Age with it.
+                mine = self._mining_node(block, base, stack=inner)
+                if mine is None:
+                    continue
                 for struct_name in _block_structures().get(base, ()):
                     if struct_name in self.active_structures:
-                        add(self.structure(struct_name),
+                        add(self.all_of(self.structure(struct_name), mine),
                             struct_name not in self.progression_structures, runs_dry=True)
                 continue
             node = self._mining_node(block, base, stack=inner)
@@ -2161,12 +2202,17 @@ class RuleHelper:
                     unreliable("archaeology", structure_name)
                     or structure_name not in self.progression_structures, runs_dry=True)
         for table in record.get("gameplay", ()):
-            add(self._gameplay_node(table, inner), unreliable("gameplay", table))
+            # A trial-chamber vault opens once per player and its spawners go quiet: finite, like a chest.
+            # Counted renewable, its 0.3% diamond block was 'Diamond Miner' (64 diamonds) without a pickaxe.
+            add(self._gameplay_node(table, inner), unreliable("gameplay", table),
+                runs_dry=table in ("corridor", "trial_chamber_melee", "trial_chamber_ranged"))
         if self._bulk and any(id(node) not in finite for node in options + loose):
             options = [node for node in options if id(node) not in finite]
             loose = [node for node in loose if id(node) not in finite]
         elif self._bulk and finite:
             self._dry_keys.add((base, _stack, self._finding_stack, self._pricing_trade, True))
+        if not self.glitch and not options and loose:
+            self._loose_keys.add((base, _stack, self._finding_stack, self._pricing_trade, self._bulk))
         options = self._demote(options, loose)
         return self._unique_or(options) if options else None
 
@@ -2195,10 +2241,12 @@ class RuleHelper:
         return strict + [node for node in loose if self._stays_home(node)]
 
     def _stays_home(self, node) -> bool:
-        """True when a source never leaves the dimension the player starts in — no region leaf at
-        all (free anywhere) or only the start region."""
-        _gated, regions = node.gate_summary()
-        return not regions or regions <= {self.start_region}
+        """True when some way through the source never leaves the dimension the player starts in.
+
+        Evaluated, not read off the region leaves: a diamond's tree names the Nether in its bastion
+        branch, and the union of leaves said "leaves home" even though Overworld mining is right there.
+        That kept a husk's rare iron and a vault's diamond block in strict logic."""
+        return node(_HomeOnly(self.start_region))
 
     def _coarsen(self, node):
         """Bound the serialized tree: a recipe-combinatorial item (dyes, beds, stews) past
@@ -2255,6 +2303,8 @@ class RuleHelper:
         node = and_(*parts)
         if self._bulk and any(id(part) in self._dry_nodes for part in parts):
             self._dry_nodes.add(id(node))
+        if any(id(part) in self._loose_nodes for part in parts):
+            self._loose_nodes.add(id(node))
         return node
 
     def route_open(self, route: str) -> bool:
@@ -2326,6 +2376,8 @@ class RuleHelper:
             node = or_(*options)
             if all(id(option) in self._dry_nodes for option in options):
                 self._dry_nodes.add(id(node))
+            if all(id(option) in self._loose_nodes for option in options):
+                self._loose_nodes.add(id(node))
             return node
         if "item" in ingredient:
             return self.acquire(ingredient["item"], stack)
