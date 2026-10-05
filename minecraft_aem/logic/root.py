@@ -1,4 +1,5 @@
 import json
+import os
 from importlib.resources import files
 
 from worlds.generic.Rules import set_rule
@@ -10,6 +11,7 @@ from .ast import Const
 from .constants import *
 from .engine import collect_advancement_rules, collect_entity_rules
 from .triggers import TriggerCompiler
+from .criteria import CriteriaCompiler
 
 
 def _manifest(pack_name: str) -> dict:
@@ -34,7 +36,9 @@ def build_location_rules(world, glitch: bool = False) -> dict:
     curated = collect_advancement_rules(helper)              # by display name
     _bacap = overlay_packs().get("blazeandcave")
     manifest = _manifest(_bacap if (world.options.blazeandcave and _bacap) else base_pack())
-    compiler = TriggerCompiler(helper, frozenset(existing), records=manifest)
+    # ponytail: dev A/B switch for the logic-overhaul compiler; becomes the default (or goes) once it lands.
+    compiler_cls = CriteriaCompiler if os.environ.get("AEM_COMPILER") == "criteria" else TriggerCompiler
+    compiler = compiler_cls(helper, frozenset(existing), records=manifest)
 
     rules: dict = {}
     for location_name, loc_data in ADVANCEMENT_LOCATIONS.items():

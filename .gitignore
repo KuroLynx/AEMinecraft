@@ -13,3 +13,7 @@ __pycache__/
 /tools/_slotdata_baseline/
 /dist/
 .mcp.json
+
+# Personal logic-overhaul reference (local only)
+/docs/logic_compilation.md
+/docs/compiler_comparison.md

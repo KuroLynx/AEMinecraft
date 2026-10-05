@@ -59,12 +59,12 @@ from .constants import (
 )
 from ..content.registry import base_pack, overlay_packs
 
+_SMITHING_STATION = "smithing_transform"
+
 # An exploding entity that is not a mob, mapped to the item a player must hold to set it off. Only
 # the ones a criterion's `cause` can name need an entry; a mob cause resolves through _entity_gid.
 # The station key the pack's container dump records for the smithing table. Trim recipes run on the
 # same block as transforms, so they share its Knowledge and its block requirement.
-_SMITHING_STATION = "smithing_transform"
-
 _EXPLOSION_ITEM = {
     "minecraft:primed_tnt": "minecraft:tnt",
     "minecraft:tnt_minecart": "minecraft:tnt_minecart",
