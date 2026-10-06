@@ -8,7 +8,10 @@
     }
   },
   "amethyst_block": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "amethyst_cluster": {
     "needs": null,
@@ -19,16 +22,38 @@
     }
   },
   "ancient_debris": {
-    "needs": "diamond"
+    "needs": "diamond",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "andesite": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "andesite_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "andesite_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "andesite_wall": {
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "anvil": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "azalea_leaves": {
     "drops": {
@@ -39,7 +64,10 @@
     }
   },
   "basalt": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "bee_nest": {
     "drops": {
@@ -60,16 +88,28 @@
     }
   },
   "black_concrete": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "black_concrete_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "black_concrete_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "black_glazed_terracotta": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "black_stained_glass": {
     "drops": {
@@ -86,31 +126,63 @@
     }
   },
   "black_terracotta": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "blackstone": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "blackstone_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "blackstone_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "blackstone_wall": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "blast_furnace": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "blue_concrete": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "blue_concrete_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "blue_concrete_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "blue_glazed_terracotta": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "blue_ice": {
     "needs": null,
@@ -135,10 +207,16 @@
     }
   },
   "blue_terracotta": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "bone_block": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "bookshelf": {
     "drops": {
@@ -156,6 +234,9 @@
   },
   "brain_coral_block": {
     "needs": null,
+    "tool": [
+      "pickaxe"
+    ],
     "drops": {
       "brain_coral_block": [
         "silk"
@@ -173,25 +254,51 @@
     "needs": null
   },
   "brick_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "brick_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "brick_wall": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "bricks": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "brown_concrete": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "brown_concrete_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "brown_concrete_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "brown_glazed_terracotta": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "brown_mushroom_block": {
     "drops": {
@@ -215,7 +322,10 @@
     }
   },
   "brown_terracotta": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "bubble_coral": {
     "drops": {
@@ -226,6 +336,9 @@
   },
   "bubble_coral_block": {
     "needs": null,
+    "tool": [
+      "pickaxe"
+    ],
     "drops": {
       "bubble_coral_block": [
         "silk"
@@ -240,7 +353,10 @@
     }
   },
   "budding_amethyst": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "bush": {
     "drops": {
@@ -251,7 +367,10 @@
     }
   },
   "calcite": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "calibrated_sculk_sensor": {
     "drops": {
@@ -267,6 +386,14 @@
       ]
     }
   },
+  "cauldron": {
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "chain_command_block": {
+    "tool": []
+  },
   "cherry_leaves": {
     "drops": {
       "cherry_leaves": [
@@ -274,6 +401,11 @@
         "silk"
       ]
     }
+  },
+  "chipped_anvil": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "chiseled_bookshelf": {
     "drops": {
@@ -283,67 +415,130 @@
     }
   },
   "chiseled_cinnabar": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "chiseled_copper": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "chiseled_deepslate": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "chiseled_nether_bricks": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "chiseled_polished_blackstone": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "chiseled_quartz_block": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "chiseled_red_sandstone": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "chiseled_resin_bricks": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "chiseled_sandstone": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "chiseled_stone_bricks": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "chiseled_sulfur": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "chiseled_tuff": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "chiseled_tuff_bricks": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "cinnabar": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "cinnabar_brick_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "cinnabar_brick_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "cinnabar_brick_wall": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "cinnabar_bricks": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "cinnabar_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "cinnabar_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "cinnabar_wall": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "clay": {
     "drops": {
@@ -353,10 +548,16 @@
     }
   },
   "coal_block": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "coal_ore": {
     "needs": null,
+    "tool": [
+      "pickaxe"
+    ],
     "drops": {
       "coal_ore": [
         "silk"
@@ -364,24 +565,56 @@
     }
   },
   "cobbled_deepslate": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "cobbled_deepslate_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "cobbled_deepslate_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "cobbled_deepslate_wall": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "cobblestone": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "cobblestone_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "cobblestone_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "cobblestone_wall": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "cobweb": {
+    "tool": [
+      "shears",
+      "sword"
+    ],
     "drops": {
       "cobweb": [
         "shears",
@@ -389,23 +622,53 @@
       ]
     }
   },
+  "command_block": {
+    "tool": []
+  },
   "conduit": {
     "needs": null
   },
+  "copper_bars": {
+    "tool": [
+      "pickaxe"
+    ]
+  },
   "copper_block": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "copper_bulb": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "copper_chain": {
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "copper_chest": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "copper_door": {
     "needs": null
   },
   "copper_grate": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "copper_ore": {
     "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ],
     "drops": {
       "copper_ore": [
         "silk"
@@ -413,22 +676,40 @@
     }
   },
   "copper_trapdoor": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "cracked_deepslate_bricks": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "cracked_deepslate_tiles": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "cracked_nether_bricks": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "cracked_polished_blackstone_bricks": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "cracked_stone_bricks": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "crafter": {
     "needs": "stone"
@@ -442,6 +723,9 @@
   },
   "crimson_nylium": {
     "needs": null,
+    "tool": [
+      "pickaxe"
+    ],
     "drops": {
       "crimson_nylium": [
         "silk"
@@ -449,40 +733,76 @@
     }
   },
   "crying_obsidian": {
-    "needs": "diamond"
+    "needs": "diamond",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "cut_copper": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "cut_copper_slab": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "cut_copper_stairs": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "cut_red_sandstone": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "cut_red_sandstone_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "cut_sandstone": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "cut_sandstone_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "cyan_concrete": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "cyan_concrete_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "cyan_concrete_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "cyan_glazed_terracotta": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "cyan_stained_glass": {
     "drops": {
@@ -499,7 +819,15 @@
     }
   },
   "cyan_terracotta": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "damaged_anvil": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "dark_oak_leaves": {
     "drops": {
@@ -510,16 +838,28 @@
     }
   },
   "dark_prismarine": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "dark_prismarine_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "dark_prismarine_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "dead_brain_coral": {
     "needs": null,
+    "tool": [
+      "pickaxe"
+    ],
     "drops": {
       "dead_brain_coral": [
         "silk"
@@ -527,10 +867,16 @@
     }
   },
   "dead_brain_coral_block": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "dead_brain_coral_fan": {
     "needs": null,
+    "tool": [
+      "pickaxe"
+    ],
     "drops": {
       "dead_brain_coral_fan": [
         "silk"
@@ -538,10 +884,16 @@
     }
   },
   "dead_brain_coral_wall_fan": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "dead_bubble_coral": {
     "needs": null,
+    "tool": [
+      "pickaxe"
+    ],
     "drops": {
       "dead_bubble_coral": [
         "silk"
@@ -549,10 +901,16 @@
     }
   },
   "dead_bubble_coral_block": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "dead_bubble_coral_fan": {
     "needs": null,
+    "tool": [
+      "pickaxe"
+    ],
     "drops": {
       "dead_bubble_coral_fan": [
         "silk"
@@ -560,7 +918,10 @@
     }
   },
   "dead_bubble_coral_wall_fan": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "dead_bush": {
     "drops": {
@@ -571,6 +932,9 @@
   },
   "dead_fire_coral": {
     "needs": null,
+    "tool": [
+      "pickaxe"
+    ],
     "drops": {
       "dead_fire_coral": [
         "silk"
@@ -578,10 +942,16 @@
     }
   },
   "dead_fire_coral_block": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "dead_fire_coral_fan": {
     "needs": null,
+    "tool": [
+      "pickaxe"
+    ],
     "drops": {
       "dead_fire_coral_fan": [
         "silk"
@@ -589,10 +959,16 @@
     }
   },
   "dead_fire_coral_wall_fan": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "dead_horn_coral": {
     "needs": null,
+    "tool": [
+      "pickaxe"
+    ],
     "drops": {
       "dead_horn_coral": [
         "silk"
@@ -600,10 +976,16 @@
     }
   },
   "dead_horn_coral_block": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "dead_horn_coral_fan": {
     "needs": null,
+    "tool": [
+      "pickaxe"
+    ],
     "drops": {
       "dead_horn_coral_fan": [
         "silk"
@@ -611,10 +993,16 @@
     }
   },
   "dead_horn_coral_wall_fan": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "dead_tube_coral": {
     "needs": null,
+    "tool": [
+      "pickaxe"
+    ],
     "drops": {
       "dead_tube_coral": [
         "silk"
@@ -622,10 +1010,16 @@
     }
   },
   "dead_tube_coral_block": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "dead_tube_coral_fan": {
     "needs": null,
+    "tool": [
+      "pickaxe"
+    ],
     "drops": {
       "dead_tube_coral_fan": [
         "silk"
@@ -633,10 +1027,16 @@
     }
   },
   "dead_tube_coral_wall_fan": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "deepslate": {
     "needs": null,
+    "tool": [
+      "pickaxe"
+    ],
     "drops": {
       "deepslate": [
         "silk"
@@ -644,16 +1044,33 @@
     }
   },
   "deepslate_brick_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "deepslate_brick_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "deepslate_brick_wall": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "deepslate_bricks": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "deepslate_coal_ore": {
     "needs": null,
+    "tool": [
+      "pickaxe"
+    ],
     "drops": {
       "deepslate_coal_ore": [
         "silk"
@@ -662,6 +1079,9 @@
   },
   "deepslate_copper_ore": {
     "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ],
     "drops": {
       "deepslate_copper_ore": [
         "silk"
@@ -670,6 +1090,9 @@
   },
   "deepslate_diamond_ore": {
     "needs": "iron",
+    "tool": [
+      "pickaxe"
+    ],
     "drops": {
       "deepslate_diamond_ore": [
         "silk"
@@ -678,6 +1101,9 @@
   },
   "deepslate_emerald_ore": {
     "needs": "iron",
+    "tool": [
+      "pickaxe"
+    ],
     "drops": {
       "deepslate_emerald_ore": [
         "silk"
@@ -686,6 +1112,9 @@
   },
   "deepslate_gold_ore": {
     "needs": "iron",
+    "tool": [
+      "pickaxe"
+    ],
     "drops": {
       "deepslate_gold_ore": [
         "silk"
@@ -694,6 +1123,9 @@
   },
   "deepslate_iron_ore": {
     "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ],
     "drops": {
       "deepslate_iron_ore": [
         "silk"
@@ -702,6 +1134,9 @@
   },
   "deepslate_lapis_ore": {
     "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ],
     "drops": {
       "deepslate_lapis_ore": [
         "silk"
@@ -710,6 +1145,9 @@
   },
   "deepslate_redstone_ore": {
     "needs": "iron",
+    "tool": [
+      "pickaxe"
+    ],
     "drops": {
       "deepslate_redstone_ore": [
         "silk"
@@ -717,19 +1155,39 @@
     }
   },
   "deepslate_tile_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "deepslate_tile_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "deepslate_tile_wall": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "deepslate_tiles": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "diamond_block": {
-    "needs": "iron"
+    "needs": "iron",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "diamond_ore": {
     "needs": "iron",
+    "tool": [
+      "pickaxe"
+    ],
     "drops": {
       "diamond_ore": [
         "silk"
@@ -737,28 +1195,57 @@
     }
   },
   "diorite": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "diorite_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "diorite_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "diorite_wall": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "dispenser": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "dripstone_block": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "dropper": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "emerald_block": {
-    "needs": "iron"
+    "needs": "iron",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "emerald_ore": {
     "needs": "iron",
+    "tool": [
+      "pickaxe"
+    ],
     "drops": {
       "emerald_ore": [
         "silk"
@@ -766,19 +1253,39 @@
     }
   },
   "enchanting_table": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "end_stone": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "end_stone_brick_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "end_stone_brick_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "end_stone_brick_wall": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "end_stone_bricks": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "ender_chest": {
     "needs": null,
@@ -789,31 +1296,75 @@
     }
   },
   "exposed_chiseled_copper": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "exposed_copper": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "exposed_copper_bars": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "exposed_copper_bulb": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "exposed_copper_chain": {
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "exposed_copper_chest": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "exposed_copper_door": {
     "needs": null
   },
   "exposed_copper_grate": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "exposed_copper_trapdoor": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "exposed_cut_copper": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "exposed_cut_copper_slab": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "exposed_cut_copper_stairs": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "exposed_lightning_rod": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "fern": {
     "drops": {
@@ -831,6 +1382,9 @@
   },
   "fire_coral_block": {
     "needs": null,
+    "tool": [
+      "pickaxe"
+    ],
     "drops": {
       "fire_coral_block": [
         "silk"
@@ -853,10 +1407,16 @@
     }
   },
   "furnace": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "gilded_blackstone": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "glass": {
     "drops": {
@@ -887,10 +1447,16 @@
     }
   },
   "gold_block": {
-    "needs": "iron"
+    "needs": "iron",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "gold_ore": {
     "needs": "iron",
+    "tool": [
+      "pickaxe"
+    ],
     "drops": {
       "gold_ore": [
         "silk"
@@ -898,13 +1464,27 @@
     }
   },
   "granite": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "granite_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "granite_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "granite_wall": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "grass_block": {
     "drops": {
@@ -914,16 +1494,28 @@
     }
   },
   "gray_concrete": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "gray_concrete_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "gray_concrete_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "gray_glazed_terracotta": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "gray_stained_glass": {
     "drops": {
@@ -940,19 +1532,34 @@
     }
   },
   "gray_terracotta": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "green_concrete": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "green_concrete_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "green_concrete_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "green_glazed_terracotta": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "green_stained_glass": {
     "drops": {
@@ -969,10 +1576,16 @@
     }
   },
   "green_terracotta": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "grindstone": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "hanging_roots": {
     "drops": {
@@ -988,7 +1601,10 @@
     "needs": null
   },
   "hopper": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "horn_coral": {
     "drops": {
@@ -999,6 +1615,9 @@
   },
   "horn_coral_block": {
     "needs": null,
+    "tool": [
+      "pickaxe"
+    ],
     "drops": {
       "horn_coral_block": [
         "silk"
@@ -1076,14 +1695,30 @@
       ]
     }
   },
+  "iron_bars": {
+    "tool": [
+      "pickaxe"
+    ]
+  },
   "iron_block": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "iron_chain": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "iron_door": {
     "needs": null
   },
   "iron_ore": {
     "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ],
     "drops": {
       "iron_ore": [
         "silk"
@@ -1091,7 +1726,13 @@
     }
   },
   "iron_trapdoor": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "jigsaw": {
+    "tool": []
   },
   "jungle_leaves": {
     "drops": {
@@ -1102,10 +1743,16 @@
     }
   },
   "lapis_block": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "lapis_ore": {
     "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ],
     "drops": {
       "lapis_ore": [
         "silk"
@@ -1127,17 +1774,34 @@
       ]
     }
   },
+  "lava_cauldron": {
+    "tool": [
+      "pickaxe"
+    ]
+  },
   "light_blue_concrete": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "light_blue_concrete_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "light_blue_concrete_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "light_blue_glazed_terracotta": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "light_blue_stained_glass": {
     "drops": {
@@ -1154,19 +1818,34 @@
     }
   },
   "light_blue_terracotta": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "light_gray_concrete": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "light_gray_concrete_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "light_gray_concrete_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "light_gray_glazed_terracotta": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "light_gray_stained_glass": {
     "drops": {
@@ -1183,22 +1862,42 @@
     }
   },
   "light_gray_terracotta": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "light_weighted_pressure_plate": {
     "needs": null
   },
+  "lightning_rod": {
+    "tool": [
+      "pickaxe"
+    ]
+  },
   "lime_concrete": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "lime_concrete_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "lime_concrete_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "lime_glazed_terracotta": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "lime_stained_glass": {
     "drops": {
@@ -1215,22 +1914,40 @@
     }
   },
   "lime_terracotta": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "lodestone": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "magenta_concrete": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "magenta_concrete_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "magenta_concrete_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "magenta_glazed_terracotta": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "magenta_stained_glass": {
     "drops": {
@@ -1247,10 +1964,16 @@
     }
   },
   "magenta_terracotta": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "magma_block": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "mangrove_leaves": {
     "drops": {
@@ -1276,31 +1999,73 @@
     }
   },
   "mossy_cobblestone": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "mossy_cobblestone_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "mossy_cobblestone_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "mossy_cobblestone_wall": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "mossy_stone_brick_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "mossy_stone_brick_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "mossy_stone_brick_wall": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "mossy_stone_bricks": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "mud_brick_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "mud_brick_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "mud_brick_wall": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "mud_bricks": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "mushroom_stem": {
     "drops": {
@@ -1317,19 +2082,39 @@
     }
   },
   "nether_brick_fence": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "nether_brick_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "nether_brick_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "nether_brick_wall": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "nether_bricks": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "nether_gold_ore": {
     "needs": null,
+    "tool": [
+      "pickaxe"
+    ],
     "drops": {
       "nether_gold_ore": [
         "silk"
@@ -1338,6 +2123,9 @@
   },
   "nether_quartz_ore": {
     "needs": null,
+    "tool": [
+      "pickaxe"
+    ],
     "drops": {
       "nether_quartz_ore": [
         "silk"
@@ -1352,10 +2140,16 @@
     }
   },
   "netherite_block": {
-    "needs": "diamond"
+    "needs": "diamond",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "netherrack": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "oak_leaves": {
     "drops": {
@@ -1366,22 +2160,40 @@
     }
   },
   "observer": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "obsidian": {
-    "needs": "diamond"
+    "needs": "diamond",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "orange_concrete": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "orange_concrete_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "orange_concrete_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "orange_glazed_terracotta": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "orange_poplar_leaves": {
     "drops": {
@@ -1406,34 +2218,81 @@
     }
   },
   "orange_terracotta": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "oxidized_chiseled_copper": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "oxidized_copper": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "oxidized_copper_bars": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "oxidized_copper_bulb": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "oxidized_copper_chain": {
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "oxidized_copper_chest": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "oxidized_copper_door": {
     "needs": null
   },
   "oxidized_copper_grate": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "oxidized_copper_trapdoor": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "oxidized_cut_copper": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "oxidized_cut_copper_slab": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "oxidized_cut_copper_stairs": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "oxidized_lightning_rod": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "packed_ice": {
     "needs": null,
@@ -1463,19 +2322,34 @@
     }
   },
   "petrified_oak_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "pink_concrete": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "pink_concrete_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "pink_concrete_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "pink_glazed_terracotta": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "pink_stained_glass": {
     "drops": {
@@ -1492,7 +2366,10 @@
     }
   },
   "pink_terracotta": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "piston": {
     "needs": null
@@ -1508,133 +2385,284 @@
     }
   },
   "polished_andesite": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "polished_andesite_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "polished_andesite_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "polished_basalt": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "polished_blackstone": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "polished_blackstone_brick_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "polished_blackstone_brick_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "polished_blackstone_brick_wall": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "polished_blackstone_bricks": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "polished_blackstone_pressure_plate": {
     "needs": null
   },
   "polished_blackstone_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "polished_blackstone_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "polished_blackstone_wall": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "polished_cinnabar": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "polished_cinnabar_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "polished_cinnabar_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "polished_cinnabar_wall": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "polished_deepslate": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "polished_deepslate_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "polished_deepslate_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "polished_deepslate_wall": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "polished_diorite": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "polished_diorite_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "polished_diorite_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "polished_granite": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "polished_granite_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "polished_granite_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "polished_sulfur": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "polished_sulfur_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "polished_sulfur_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "polished_sulfur_wall": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "polished_tuff": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "polished_tuff_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "polished_tuff_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "polished_tuff_wall": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "potent_sulfur": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "powder_snow_cauldron": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "prismarine": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "prismarine_brick_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "prismarine_brick_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "prismarine_bricks": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "prismarine_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "prismarine_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "prismarine_wall": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "purple_concrete": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "purple_concrete_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "purple_concrete_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "purple_glazed_terracotta": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "purple_stained_glass": {
     "drops": {
@@ -1651,55 +2679,106 @@
     }
   },
   "purple_terracotta": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "purpur_block": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "purpur_pillar": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "purpur_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "purpur_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "quartz_block": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "quartz_bricks": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "quartz_pillar": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "quartz_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "quartz_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "raw_copper_block": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "raw_gold_block": {
-    "needs": "iron"
+    "needs": "iron",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "raw_iron_block": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "red_concrete": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "red_concrete_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "red_concrete_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "red_glazed_terracotta": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "red_mushroom_block": {
     "drops": {
@@ -1709,13 +2788,27 @@
     }
   },
   "red_nether_brick_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "red_nether_brick_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "red_nether_brick_wall": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "red_nether_bricks": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "red_poplar_leaves": {
     "drops": {
@@ -1726,13 +2819,27 @@
     }
   },
   "red_sandstone": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "red_sandstone_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "red_sandstone_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "red_sandstone_wall": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "red_stained_glass": {
     "drops": {
@@ -1749,42 +2856,83 @@
     }
   },
   "red_terracotta": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "redstone_block": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "redstone_ore": {
     "needs": "iron",
+    "tool": [
+      "pickaxe"
+    ],
     "drops": {
       "redstone_ore": [
         "silk"
       ]
     }
   },
+  "repeating_command_block": {
+    "tool": []
+  },
   "resin_brick_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "resin_brick_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "resin_brick_wall": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "resin_bricks": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "respawn_anchor": {
-    "needs": "diamond"
+    "needs": "diamond",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "sandstone": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "sandstone_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "sandstone_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "sandstone_wall": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "sculk": {
     "drops": {
@@ -1866,45 +3014,92 @@
     }
   },
   "smoker": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "smooth_basalt": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "smooth_quartz": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "smooth_quartz_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "smooth_quartz_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "smooth_red_sandstone": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "smooth_red_sandstone_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "smooth_red_sandstone_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "smooth_sandstone": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "smooth_sandstone_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "smooth_sandstone_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "smooth_stone": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "smooth_stone_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "snow": {
+    "tool": [
+      "shovel"
+    ]
   },
   "snow_block": {
+    "tool": [
+      "shovel"
+    ],
     "drops": {
       "snow_block": [
         "silk"
@@ -1919,7 +3114,10 @@
     }
   },
   "spawner": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "spruce_leaves": {
     "drops": {
@@ -1934,6 +3132,9 @@
   },
   "stone": {
     "needs": null,
+    "tool": [
+      "pickaxe"
+    ],
     "drops": {
       "stone": [
         "silk"
@@ -1941,49 +3142,99 @@
     }
   },
   "stone_brick_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "stone_brick_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "stone_brick_wall": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "stone_bricks": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "stone_pressure_plate": {
     "needs": null
   },
   "stone_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "stone_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "stonecutter": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "structure_block": {
+    "tool": []
   },
   "sulfur": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "sulfur_brick_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "sulfur_brick_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "sulfur_brick_wall": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "sulfur_bricks": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "sulfur_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "sulfur_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "sulfur_wall": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "tall_dry_grass": {
     "drops": {
@@ -2008,7 +3259,10 @@
     }
   },
   "terracotta": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "tube_coral": {
     "drops": {
@@ -2019,6 +3273,9 @@
   },
   "tube_coral_block": {
     "needs": null,
+    "tool": [
+      "pickaxe"
+    ],
     "drops": {
       "tube_coral_block": [
         "silk"
@@ -2033,28 +3290,52 @@
     }
   },
   "tuff": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "tuff_brick_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "tuff_brick_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "tuff_brick_wall": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "tuff_bricks": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "tuff_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "tuff_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "tuff_wall": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "turtle_egg": {
     "drops": {
@@ -2072,158 +3353,398 @@
   },
   "warped_nylium": {
     "needs": null,
+    "tool": [
+      "pickaxe"
+    ],
     "drops": {
       "warped_nylium": [
         "silk"
       ]
     }
   },
+  "water_cauldron": {
+    "tool": [
+      "pickaxe"
+    ]
+  },
   "waxed_chiseled_copper": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "waxed_copper_bars": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "waxed_copper_block": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "waxed_copper_bulb": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "waxed_copper_chain": {
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "waxed_copper_chest": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "waxed_copper_door": {
     "needs": null
   },
   "waxed_copper_grate": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "waxed_copper_trapdoor": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "waxed_cut_copper": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "waxed_cut_copper_slab": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "waxed_cut_copper_stairs": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "waxed_exposed_chiseled_copper": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "waxed_exposed_copper": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "waxed_exposed_copper_bars": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "waxed_exposed_copper_bulb": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "waxed_exposed_copper_chain": {
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "waxed_exposed_copper_chest": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "waxed_exposed_copper_door": {
     "needs": null
   },
   "waxed_exposed_copper_grate": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "waxed_exposed_copper_trapdoor": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "waxed_exposed_cut_copper": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "waxed_exposed_cut_copper_slab": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "waxed_exposed_cut_copper_stairs": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "waxed_exposed_lightning_rod": {
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "waxed_lightning_rod": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "waxed_oxidized_chiseled_copper": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "waxed_oxidized_copper": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "waxed_oxidized_copper_bars": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "waxed_oxidized_copper_bulb": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "waxed_oxidized_copper_chain": {
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "waxed_oxidized_copper_chest": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "waxed_oxidized_copper_door": {
     "needs": null
   },
   "waxed_oxidized_copper_grate": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "waxed_oxidized_copper_trapdoor": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "waxed_oxidized_cut_copper": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "waxed_oxidized_cut_copper_slab": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "waxed_oxidized_cut_copper_stairs": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "waxed_oxidized_lightning_rod": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "waxed_weathered_chiseled_copper": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "waxed_weathered_copper": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "waxed_weathered_copper_bars": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "waxed_weathered_copper_bulb": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "waxed_weathered_copper_chain": {
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "waxed_weathered_copper_chest": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "waxed_weathered_copper_door": {
     "needs": null
   },
   "waxed_weathered_copper_grate": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "waxed_weathered_copper_trapdoor": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "waxed_weathered_cut_copper": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "waxed_weathered_cut_copper_slab": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "waxed_weathered_cut_copper_stairs": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "waxed_weathered_lightning_rod": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "weathered_chiseled_copper": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "weathered_copper": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "weathered_copper_bars": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "weathered_copper_bulb": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "weathered_copper_chain": {
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "weathered_copper_chest": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "weathered_copper_door": {
     "needs": null
   },
   "weathered_copper_grate": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "weathered_copper_trapdoor": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "weathered_cut_copper": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "weathered_cut_copper_slab": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
   },
   "weathered_cut_copper_stairs": {
-    "needs": "stone"
+    "needs": "stone",
+    "tool": [
+      "pickaxe"
+    ]
+  },
+  "weathered_lightning_rod": {
+    "tool": [
+      "pickaxe"
+    ]
   },
   "white_concrete": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "white_concrete_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "white_concrete_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "white_glazed_terracotta": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "white_stained_glass": {
     "drops": {
@@ -2240,19 +3761,34 @@
     }
   },
   "white_terracotta": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "yellow_concrete": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "yellow_concrete_slab": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "yellow_concrete_stairs": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "yellow_glazed_terracotta": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   },
   "yellow_poplar_leaves": {
     "drops": {
@@ -2277,6 +3813,9 @@
     }
   },
   "yellow_terracotta": {
-    "needs": null
+    "needs": null,
+    "tool": [
+      "pickaxe"
+    ]
   }
 }

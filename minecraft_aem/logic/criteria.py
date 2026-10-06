@@ -169,6 +169,17 @@ def _call(method, *args):
 _BOW_AND_ARROW = All((Any((_item("minecraft:bow"), _item("minecraft:crossbow"))),
                       _call("can_get_arrow")))
 
+# Mounts you can only ride once something is put on them (the item is yours to make and hold first).
+_MOUNT_NEED = {"happy_ghast": need("item_tag", "#minecraft:harnesses")}
+# The most a bare hand deals in one hit (1, or 1.5 as a critical); a "dealt" above it needs a weapon.
+_FIST_DAMAGE = 1.5
+
+# Something in hand (inventory_lock "carry"). For triggers that always involve an item even when the
+# criterion doesn't name one: eating, using, placing, throwing an item to a mob, interacting with one.
+# A named item already carries it through acquire(); this catches the unnamed ones, which otherwise
+# read as doable empty-handed — and with every slot locked, could hold the first slot.
+HOLD = need("slot", "carry")
+
 TRIGGERS: dict[str, dict] = {
     # The trigger is the whole requirement.
     "slept_in_bed": {"implied": [_item("minecraft:white_bed")]},
@@ -198,15 +209,15 @@ TRIGGERS: dict[str, dict] = {
 
     # Items.
     "inventory_changed": {"fields": {"items": "items"}, "player": True, "ignore": {"slots"}},
-    "consume_item": {"fields": {"item": "item"}, "empty": _call("can_get_food")},
-    "using_item": {"fields": {"item": "item"}},
-    "shot_crossbow": {"fields": {"item": "item"}},
+    "consume_item": {"implied": [HOLD], "fields": {"item": "item"}, "empty": _call("can_get_food")},
+    "using_item": {"implied": [HOLD], "fields": {"item": "item"}},
+    "shot_crossbow": {"implied": [HOLD], "fields": {"item": "item"}},
     "item_durability_changed": {"fields": {"item": "item"}, "empty": _item("minecraft:shears"),
                                 "unpinned": _item("minecraft:shears"), "ignore": {"delta", "durability"}},
     "player_sheared_equipment": {"implied": [_item("minecraft:shears")],   # shearing takes shears
                                  "fields": {"item": "item", "entity": "entity:entity"}},
-    "thrown_item_picked_up_by_player": {"fields": {"item": "item", "entity": "entity:entity"}},
-    "thrown_item_picked_up_by_entity": {"fields": {"item": "item", "entity": "entity:entity"}},
+    "thrown_item_picked_up_by_player": {"implied": [HOLD], "fields": {"item": "item", "entity": "entity:entity"}},
+    "thrown_item_picked_up_by_entity": {"implied": [HOLD], "fields": {"item": "item", "entity": "entity:entity"}},
     "filled_bucket": {"custom": "bucket", "ignore": {"item"}},
     "recipe_crafted": {"fields": {"ingredients": "items"}, "custom": "recipe", "ignore": {"recipe_id"}},
     "brewed_potion": {"implied": [need("brew")], "fields": {"potion": "potion_id"}},
@@ -232,7 +243,8 @@ TRIGGERS: dict[str, dict] = {
     "killed_by_arrow": {"fields": {"victims": "victims", "fired_from_weapon": "item"}, "custom": "arrow",
                         "ignore": {"unique_entity_types"}},
     "channeled_lightning": {"implied": [_item("minecraft:trident")], "fields": {"victims": "entity_list"}},
-    "player_interacted_with_entity": {"fields": {"item": "item", "entity": "entity:entity"}, "custom": "lead"},
+    "player_interacted_with_entity": {"implied": [HOLD], "fields": {"item": "item", "entity": "entity:entity"},
+                                      "custom": "lead"},
     "tame_animal": {"fields": {"entity": "entity:tame"}, "empty": need("any_mob", "tame")},
     "bred_animals": {"fields": {"child": "entity:breed", "parent": "entity:breed", "partner": "entity:breed"},
                      "empty": need("any_mob", "breed")},
@@ -247,8 +259,8 @@ TRIGGERS: dict[str, dict] = {
 
     # Places and blocks.
     "changed_dimension": {"fields": {"to": "dimension:enter", "from": "dimension:region"}},
-    "placed_block": {"fields": {"location": "block_location:place"}},
-    "item_used_on_block": {"fields": {"location": "block_location:use", "item": "item"}},
+    "placed_block": {"implied": [HOLD], "fields": {"location": "block_location:place"}},
+    "item_used_on_block": {"implied": [HOLD], "fields": {"location": "block_location:use", "item": "item"}},
     "slide_down_block": {"fields": {"block": "block", "blocks": "block"}, "ignore": {"state"}},
     "default_block_use": {"fields": {"location": "block_location:use"}, "custom": "transport"},
     "any_block_use": {"fields": {"location": "block_location:use"}, "custom": "transport"},
@@ -378,7 +390,7 @@ class CriteriaCompiler:
 
         player = self._conditions(cond.get("player"), lambda p: self._entity(p, "self", f"{name}.player"))
         fields = spec.get("fields", {})
-        parts = list(spec.get("implied", ()))
+        parts = []
         for key, value in cond.items():
             if key in fields:
                 parts.append(self._read(fields[key], value, f"{name}.{key}"))
@@ -396,6 +408,13 @@ class CriteriaCompiler:
         if rule is None and spec.get("player"):
             rule = player
             player = None
+        # What the trigger needs whatever its conditions say joins AFTER the empty/unpinned fallbacks:
+        # those stand in for a criterion that pins nothing, and an implied requirement (an item in
+        # hand, say) pinning "something" must not hide that. Husbandry ("eat anything") became just
+        # "hold something" when HOLD counted as the criterion's content.
+        implied = spec.get("implied", ())
+        if implied:
+            rule = all_(rule, *implied)
         if rule is None:
             return None
         if trigger in _NEEDS_A_MOB and not _pins_participant_type(cond):
@@ -552,7 +571,9 @@ class CriteriaCompiler:
                         for holder in ("components", "predicates") if isinstance(pred.get(holder), dict)
                         for k in pred[holder] if str(k).endswith("/variant")), None)
         gid = pred.get("type") or (f"minecraft:{species}" if species else None)
+        mount = _MOUNT_NEED.get(_path(gid)) if path.endswith(".vehicle") and isinstance(gid, str) else None
         return all_(
+            mount,
             self._entity_type(gid, role),
             self._location(pred.get("location"), f"{path}.location"),
             self._location(pred.get("stepping_on"), f"{path}.stepping_on"),
@@ -707,6 +728,10 @@ class CriteriaCompiler:
         # The damage tag names the PLAYER's weapon only when the player dealt the blow; on a hit taken
         # (entity_hurt_player) it describes what struck you, which costs you nothing.
         parts = [self._damage_source(dmg.get("type"), f"{path}.type", weapon=attacker_role == "self"), attacker]
+        dealt = dmg.get("dealt")
+        dealt = dealt.get("min") if isinstance(dealt, dict) else dealt
+        if attacker_role == "self" and isinstance(dealt, (int, float)) and dealt > _FIST_DAMAGE:
+            parts += [HOLD, _call("can_kill")]   # more than a fist deals: a weapon in hand
         if dmg.get("blocked"):
             parts.append(_item("minecraft:shield"))
             if attacker is None:
@@ -958,6 +983,11 @@ class CriteriaCompiler:
         return or_(*priced) if priced else None
 
     def _price_enchant(self, name, on_item):
+        # An enchantment is on something you hold: a book or the enchanted item.
+        rule = self._price_enchant_source(name, on_item)
+        return None if rule is None else and_(self.h.slot_group("carry"), rule)
+
+    def _price_enchant_source(self, name, on_item):
         anvil = self.h.acquire("minecraft:anvil")
         book = self.h.acquire("minecraft:enchanted_book")
         if name in _ENCHANT_LOOT_SOURCE:
