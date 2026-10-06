@@ -500,7 +500,7 @@ def load_manifest_removed(pack_name: str) -> frozenset[str]:
 
     The title is the signal, NOT the impossible trigger: 63 of BACAP's own advancements are
     all-impossible and perfectly earnable — the datapack grants those from its own scoreboard logic,
-    which is exactly why TriggerCompiler defers them to the parent chain instead of refusing them."""
+    which is exactly why the compiler defers them to the parent chain instead of refusing them."""
     with _pack_dir(pack_name).joinpath("manifest.json").open(encoding="utf-8") as handle:
         manifest = json.load(handle)
     return frozenset(gid for gid, entry in manifest.items() if not entry.get("title"))

@@ -1,5 +1,4 @@
 import json
-import os
 from importlib.resources import files
 
 from worlds.generic.Rules import set_rule
@@ -10,7 +9,6 @@ from .acquisition import RuleHelper
 from .ast import Const
 from .constants import *
 from .engine import collect_advancement_rules, collect_entity_rules
-from .triggers import TriggerCompiler
 from .criteria import CriteriaCompiler
 
 
@@ -23,7 +21,7 @@ def _manifest(pack_name: str) -> dict:
 
 def build_location_rules(world, glitch: bool = False) -> dict:
     """The final reachability rule for every active location this seed (advancements + mob/boss kills),
-    keyed by location name. Advancement logic is derived from the criteria (TriggerCompiler), with the
+    keyed by location name. Advancement logic is derived from the criteria (CriteriaCompiler), with the
     curated rule, then the parent chain, then ``Const(True)`` as fallbacks; mob kills come from
     ``collect_entity_rules``. Computed once and reused for both region placement (create_regions) and
     ``set_rule`` (set_rules), so the two never diverge.
@@ -36,9 +34,7 @@ def build_location_rules(world, glitch: bool = False) -> dict:
     curated = collect_advancement_rules(helper)              # by display name
     _bacap = overlay_packs().get("blazeandcave")
     manifest = _manifest(_bacap if (world.options.blazeandcave and _bacap) else base_pack())
-    # ponytail: dev A/B switch for the logic-overhaul compiler; becomes the default (or goes) once it lands.
-    compiler_cls = CriteriaCompiler if os.environ.get("AEM_COMPILER") == "criteria" else TriggerCompiler
-    compiler = compiler_cls(helper, frozenset(existing), records=manifest)
+    compiler = CriteriaCompiler(helper, frozenset(existing), records=manifest)
 
     rules: dict = {}
     for location_name, loc_data in ADVANCEMENT_LOCATIONS.items():

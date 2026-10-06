@@ -4,7 +4,7 @@ acquire() memoizes on (item, recursion stack, finding stack, pricing-trade guard
 diamond inside a jukebox and the diamond inside a diamond sword are priced separately. They should
 come out equivalent: the stack only exists to cut cycles, and a cycle-cut route is circular anyway.
 This compiles every location, then compares each cached variant with the item priced on its own
-(empty stacks, same bulk mode) using compare_compilers' exact equivalence check.
+(empty stacks, same bulk mode) using rule_equivalence's exact check.
 
     looser    the variant accepts a state the item on its own rejects: a LEAK (raw iron's 2026-10-06
               bug, where the cut stack fell through to a bare material tier)
@@ -18,13 +18,13 @@ import sys
 from collections import defaultdict
 
 from audit_bare_rules import ALL_LOCKS  # noqa: E402  (also sets up the AP import path)
-from compare_compilers import equivalence  # noqa: E402
+from rule_equivalence import equivalence  # noqa: E402
 
 from worlds.AutoWorld import AutoWorldRegister  # noqa: E402
 from test.general import setup_multiworld  # noqa: E402
 from worlds.minecraft_aem.logic import acquisition, root  # noqa: E402
 
-VERDICT = {"equivalent": "same", "old stricter": "looser", "new stricter": "stricter"}
+VERDICT = {"equivalent": "same", "a stricter": "looser", "b stricter": "stricter"}
 
 
 def audit(options):

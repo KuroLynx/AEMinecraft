@@ -21,7 +21,7 @@ by shape, so the report classifies by cause and leaves the judgement to a human.
 Flagged checks are bucketed by where the rule came from, worst first:
 
   UNCOMPILED — no handler read any criterion, no curated rule, no usable parent: the rule fell
-               through to ``Const(True)``. Fix by adding a handler to ``logic/triggers.py``.
+               through to ``Const(True)``. Fix by adding a handler to ``logic/criteria.py``.
   CURATED    — a hand-written rule in ``logic/acquisition.py`` that itself gates nothing.
   KILL       — mob/boss kill checks, built by ``collect_entity_rules`` rather than from criteria.
   UNGATED    — the criteria compiled, but every node they produced is free. Where the judgement is.
@@ -65,7 +65,7 @@ from worlds.minecraft_aem.logic.constants import (  # noqa: E402
     ADVANCEMENT_PREFIX, BOSS_KILL_PREFIX, ENTITY_KILL_PREFIX,
 )
 from worlds.minecraft_aem.logic.engine import collect_advancement_rules  # noqa: E402
-from worlds.minecraft_aem.logic.triggers import TriggerCompiler  # noqa: E402
+from worlds.minecraft_aem.logic.criteria import CriteriaCompiler  # noqa: E402
 from worlds.minecraft_aem.logic.root import (  # noqa: E402
     _manifest, build_location_rules, derive_location_regions,
 )
@@ -141,7 +141,7 @@ def _diagnose(compiler, record: dict | None) -> list[str]:
     If the whole rule gates nothing then no criterion produced a gating node, and there are exactly
     two ways for that to happen — worth separating, because they are fixed in different places:
 
-      unreadable    — ``_criterion`` returned None. The trigger has no handler at all, so the
+      unreadable    — ``criterion`` returned None. The trigger has no handler at all, so the
                       record failed to compile and the cascade fell through. Fix: add a handler.
       handler-free  — a handler exists but its node gates nothing. Sometimes right (``acquire`` of
                       a genuinely free item like kelp), sometimes a deliberate punt that has since
@@ -154,7 +154,7 @@ def _diagnose(compiler, record: dict | None) -> list[str]:
     out = []
     for crit in record.get("criteria", {}).values():
         trigger = (crit.get("trigger") or "?").removeprefix("minecraft:")
-        node = compiler._criterion(crit)
+        node = compiler.criterion(crit)
         why = "unreadable" if node is None else "handler-free"
         label = f"{trigger} ({why})"
         if label not in out:
@@ -183,7 +183,7 @@ def audit(world, *, glitch: bool) -> list[dict]:
     bacap = overlay_packs().get("blazeandcave")
     manifest = _manifest(bacap if (world.options.blazeandcave and bacap) else base_pack())
     # Same construction as build_location_rules, so compile() answers what it answered there.
-    compiler = TriggerCompiler(helper, frozenset(world._get_active_locations()))
+    compiler = CriteriaCompiler(helper, frozenset(world._get_active_locations()))
 
     findings = []
     for name, rule in sorted(rules.items()):
@@ -310,14 +310,14 @@ def main() -> int:
         _entry(f, i, verbose=verbose)
         print(f"       bucket: {f['bucket']}   | flagged in: {'; '.join(tags)}")
     print("\nEach entry is a check whose rule demands no item and no other check. Verify by hand, "
-          "then teach logic/triggers.py the trigger or curate it in logic/acquisition.py.")
+          "then teach logic/criteria.py the trigger or curate it in logic/acquisition.py.")
     return 0
 
 
 _BUCKET_BLURB = {
     "UNCOMPILED": "No handler read any criterion, and there was no curated rule and no usable "
                   "parent — the rule fell through to `Const(True)`. Fix by adding a trigger handler "
-                  "in `logic/triggers.py`.",
+                  "in `logic/criteria.py`.",
     "CURATED": "Hand-written rules in `logic/acquisition.py` that themselves gate nothing. Either "
                "the curation is incomplete or the check really is free.",
     "KILL": "Mob/boss kill checks (`collect_entity_rules`, not criteria). Ungated means nothing "

@@ -1,58 +1,11 @@
-"""Compile every advancement with both TriggerCompiler (logic/triggers.py) and CriteriaCompiler
-(logic/criteria.py), and report where they disagree.
+"""Exact equivalence of two logic rules: does one accept a state the other rejects, and which?
 
-For each advancement the two rules are compared by structure (Rule.key()). When they differ, the
-report lists the leaves (items, regions, other checks) that only one of them asks for. That says
-which compiler demands more, without proving which one is right, so read each difference against
-the game. Only compile() is compared; the curated / parent-chain fallbacks in build_location_rules
-are the same for both compilers.
+Used by tools/audit_route_consistency.py. Run directly for the self-test.
 
-    python tools/compare_compilers.py                 # default world
-    python tools/compare_compilers.py --all           # default, everything on, everything on + BACAP
-    python tools/compare_compilers.py --all --out docs/compiler_comparison.md
+    python tools/rule_equivalence.py
 """
-import os
-import sys
-from collections import Counter
 
-from audit_bare_rules import ALL_LOCKS, REPO_ROOT  # noqa: E402  (also sets up the AP import path)
-
-from worlds.AutoWorld import AutoWorldRegister  # noqa: E402
-from test.general import setup_multiworld  # noqa: E402
-from worlds.minecraft_aem.data import ADVANCEMENT_LOCATIONS  # noqa: E402
-from worlds.minecraft_aem.content.registry import base_pack, overlay_packs  # noqa: E402
-from worlds.minecraft_aem.logic.acquisition import RuleHelper  # noqa: E402
-from worlds.minecraft_aem.logic.criteria import CriteriaCompiler  # noqa: E402
-from worlds.minecraft_aem.logic.root import _manifest  # noqa: E402
-from worlds.minecraft_aem.logic.triggers import TriggerCompiler  # noqa: E402
-
-WORLD = AutoWorldRegister.world_types["AEMinecraft"]
-CASES = {
-    "default": {},
-    "everything on": dict(ALL_LOCKS),
-    "everything on + BACAP": {**ALL_LOCKS, "blazeandcave": 1},
-}
-
-
-def leaves(rule) -> set:
-    """Every has / region / loc leaf a rule mentions, as readable strings. Memoized on the shared
-    serialized dicts: the rule is a DAG, and walking it as a tree blows up."""
-    out, seen = set(), set()
-    stack = [rule.to_dict()]
-    while stack:
-        node = stack.pop()
-        if id(node) in seen:
-            continue
-        seen.add(id(node))
-        kind = node["k"]
-        if kind == "has":
-            out.add(f'{node["i"]}' + (f' x{node["n"]}' if node["n"] != 1 else ""))
-        elif kind == "region":
-            out.add(f'region {node["r"]}')
-        elif kind == "loc":
-            out.add(f'reach {node["l"]}')
-        stack.extend(node.get("c", ()))
-    return out
+from audit_bare_rules import REPO_ROOT  # noqa: E402,F401  (sets up the AP import path)
 
 
 # --- exact equivalence of two monotone rules ---------------------------------------------------------
@@ -324,7 +277,7 @@ def _abstract(rule, shared, memo):
 
 
 def _both_ways(f, g):
-    return implies(g, f), implies(f, g)   # (new accepts / old rejects, old accepts / new rejects)
+    return implies(g, f), implies(f, g)   # (b accepts / a rejects, a accepts / b rejects)
 
 
 def _leaf_atoms(node, out, seen):
@@ -377,7 +330,7 @@ def _direction(f, g):
 
 
 def equivalence(a, b) -> tuple[str, str]:
-    """('equivalent' | 'old stricter' | 'new stricter' | 'neither implies the other' | 'too big', detail)."""
+    """('equivalent' | 'a stricter' | 'b stricter' | 'neither implies the other' | 'too big', detail)."""
     shared = (_subtrees(a, set()) & _subtrees(b, set())) - {a.key(), b.key()}
     memo: dict = {}
     try:
@@ -386,30 +339,30 @@ def equivalence(a, b) -> tuple[str, str]:
     except TooBig:
         pass
     try:
-        new_only = _direction(b.to_dict(), a.to_dict())
+        b_only = _direction(b.to_dict(), a.to_dict())
     except TooBig:
-        new_only = TooBig
+        b_only = TooBig
     try:
-        old_only = _direction(a.to_dict(), b.to_dict())
+        a_only = _direction(a.to_dict(), b.to_dict())
     except TooBig:
-        old_only = TooBig
-    if new_only is TooBig or old_only is TooBig:
-        known = old_only if new_only is TooBig else new_only
+        a_only = TooBig
+    if b_only is TooBig or a_only is TooBig:
+        known = a_only if b_only is TooBig else b_only
         if known is TooBig:
             return "too big to decide", ""
         if known is None:
-            proven = "old implies new" if new_only is TooBig else "new implies old"
+            proven = "a implies b" if b_only is TooBig else "b implies a"
             return f"{proven}; reverse undecided", ""
-        side = "old accepts, new rejects" if new_only is TooBig else "new accepts, old rejects"
+        side = "a accepts, b rejects" if b_only is TooBig else "b accepts, a rejects"
         return "differ (other direction undecided)", f"{side} — {describe(known)}"
-    if new_only is None and old_only is None:
+    if b_only is None and a_only is None:
         return "equivalent", ""
-    if new_only is None:
-        return "new stricter", f"old accepts, new rejects — {describe(old_only)}"
-    if old_only is None:
-        return "old stricter", f"new accepts, old rejects — {describe(new_only)}"
-    return "neither implies the other", (f"new accepts, old rejects — {describe(new_only)}; "
-                                         f"old accepts, new rejects — {describe(old_only)}")
+    if b_only is None:
+        return "b stricter", f"a accepts, b rejects — {describe(a_only)}"
+    if a_only is None:
+        return "a stricter", f"b accepts, a rejects — {describe(b_only)}"
+    return "neither implies the other", (f"b accepts, a rejects — {describe(b_only)}; "
+                                         f"a accepts, b rejects — {describe(a_only)}")
 
 
 def _selftest():
@@ -444,100 +397,9 @@ def _selftest():
     shared = or_(z, w)
     assert equivalence(and_(x, or_(y, shared)), or_(and_(x, y), and_(x, shared)))[0] == "equivalent"
     # Equal outside a shared part, unequal inside it: the full check must still catch it.
-    assert equivalence(and_(x, or_(y, z)), and_(x, y))[0] == "new stricter"
+    assert equivalence(and_(x, or_(y, z)), and_(x, y))[0] == "b stricter"
     print("selftest ok")
 
 
-def compare(world):
-    helper = RuleHelper(world)
-    active = frozenset(world._get_active_locations())
-    bacap = overlay_packs().get("blazeandcave")
-    records = _manifest(bacap if (world.options.blazeandcave and bacap) else base_pack())
-    old = TriggerCompiler(helper, active, records=records)
-    new = CriteriaCompiler(helper, active, records=records)
-
-    rows = []
-    for name, loc in ADVANCEMENT_LOCATIONS.items():
-        record = records.get(loc.game_id)
-        if name not in active or record is None:
-            continue
-        a, b = old.compile(record, loc.game_id), new.compile(record, loc.game_id)
-        if a is None and b is None:
-            status = "both unreadable"
-        elif a is None:
-            status = "only new reads it"
-        elif b is None:
-            status = "only old reads it"
-        elif a.key() == b.key():
-            status = "identical"
-        else:
-            status = "different"
-        only_old = sorted(leaves(a) - leaves(b)) if a is not None and b is not None else []
-        only_new = sorted(leaves(b) - leaves(a)) if a is not None and b is not None else []
-        if status == "different" and not only_old and not only_new:
-            status = "same leaves, different shape"
-        checked = status in ("different", "same leaves, different shape")
-        verdict, detail = equivalence(a, b) if checked else ("", "")
-        rows.append({"name": name, "gid": loc.game_id, "status": status,
-                     "verdict": verdict, "detail": detail,
-                     "old_size": a.serialized_size() if a is not None else 0,
-                     "new_size": b.serialized_size() if b is not None else 0,
-                     "only_old": only_old, "only_new": only_new})
-    return rows, new.unread
-
-
-def render(label, rows, unread) -> list[str]:
-    counts = Counter(r["status"] for r in rows)
-    old_total = sum(r["old_size"] for r in rows)
-    new_total = sum(r["new_size"] for r in rows)
-    lines = [f"## {label}", "", f"{len(rows)} advancements compiled. Serialized size: "
-             f"old {old_total / 1024:.0f} KB, new {new_total / 1024:.0f} KB.", "",
-             "| Result | Count |", "|---|---|"]
-    lines += [f"| {status} | {n} |" for status, n in counts.most_common()]
-    checked = [r for r in rows if r["verdict"]]
-    if checked:
-        lines += ["", "Exact check of every rule that is not identical:", "",
-                  "| Compared as | Verdict | Count |", "|---|---|---|"]
-        verdicts = Counter((r["status"], r["verdict"]) for r in checked)
-        lines += [f"| {st} | {v} | {n} |" for (st, v), n in sorted(verdicts.items())]
-        not_equal = [r for r in checked if r["verdict"] != "equivalent"]
-        if not_equal:
-            lines += ["", f"### Not equivalent ({len(not_equal)})", ""]
-            lines += [f"- **{r['name']}** (`{r['gid']}`): {r['verdict']}<br>{r['detail']}" for r in not_equal]
-    for status in ("only old reads it", "only new reads it", "different"):
-        group = [r for r in rows if r["status"] == status]
-        if not group:
-            continue
-        lines += ["", f"### {status} ({len(group)})", ""]
-        for r in group:
-            line = f"- **{r['name']}** (`{r['gid']}`)"
-            if r["only_old"]:
-                line += f"<br>only old: {', '.join(r['only_old'])}"
-            if r["only_new"]:
-                line += f"<br>only new: {', '.join(r['only_new'])}"
-            lines.append(line)
-    lines += ["", "### Fields the new compiler did not read", "", "| Path | Times |", "|---|---|"]
-    lines += [f"| `{path}` | {n} |" for path, n in unread.most_common()]
-    return lines + [""]
-
-
-def main(argv):
-    sys.stdout.reconfigure(encoding="utf-8")
-    cases = CASES if "--all" in argv else {"default": CASES["default"]}
-    out_path = next((argv[i + 1] for i, a in enumerate(argv) if a == "--out" and i + 1 < len(argv)), None)
-    doc = ["# TriggerCompiler vs CriteriaCompiler", ""]
-    for label, options in cases.items():
-        rows, unread = compare(setup_multiworld(WORLD, options=options).worlds[1])
-        section = render(label, rows, unread)
-        doc += section
-        print("\n".join(line for line in section
-                        if line.startswith(("##", "| ")) and not line.startswith(("###", "| `"))))
-    if out_path:
-        path = out_path if os.path.isabs(out_path) else os.path.join(REPO_ROOT, out_path)
-        with open(path, "w", encoding="utf-8", newline="\n") as fh:
-            fh.write("\n".join(doc))
-        print(f"wrote {path}")
-
-
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    _selftest()

@@ -2543,7 +2543,7 @@ class RuleHelper:
 
     def can_silk_touch(self, stack: frozenset = frozenset()):
         """The capability to wield a Silk-Touch tool. Two routes, mirroring the enchant gate in
-        ``triggers.py``: enchant one yourself (``acquire(enchanting_table)`` gates Knowledge:
+        ``tables.py``: enchant one yourself (``acquire(enchanting_table)`` gates Knowledge:
         Enchanting + its tier), OR apply a Silk-Touch enchanted book with an anvil (a librarian's
         book is a no-Knowledge trade path).
 

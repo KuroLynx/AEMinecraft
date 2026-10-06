@@ -1,4 +1,4 @@
-"""Advancement criteria → logic rule, in three separate steps (a rewrite of triggers.py for comparison).
+"""Advancement criteria → logic rule, in three separate steps (the only advancement compiler).
 
     criterion ──walk──► requirements (plain data) ──price──► Rule
 
@@ -13,11 +13,9 @@
 3. **Price** (``_price``): each ``Need`` kind maps to one ``RuleHelper`` call. This is where the
    game knowledge and the AP locks live; the walker knows nothing about either.
 
-Same interface as ``TriggerCompiler`` (``compile`` / ``parent_rule``), so ``tools/compare_compilers.py``
-can run both on the same records. Lookup tables (block gates, damage tags, effect sources, enchantment
-loot…) are imported from triggers.py rather than copied.
+Lookup tables (block gates, damage tags, effect sources, enchantment loot…) live in tables.py.
 
-Uniform policy, where triggers.py mixes ``_all_req`` / ``_all_opt`` case by case:
+Uniform policy:
   * a requirement that can't be priced (unknown item, unmapped stat) voids its whole ``All`` group, so
     the criterion falls back to the parent chain instead of turning silently cheaper;
   * a facet that pins nothing is simply absent (``None`` from the walker).
@@ -42,8 +40,7 @@ from ..data import (
 from .acquisition import RuleHelper, _acquisition_table, _block_structures
 from .ast import Const, Rule, and_, or_
 from .constants import K_ARMOR, K_BREWING, K_HOE, K_PICKAXE, MAT_IRON, REGION_END, REGION_NETHER, REGION_OVERWORLD
-from .triggers import (
-    TriggerCompiler,
+from .tables import (
     _BLOCK_EXTRA_GATE,
     _BLOCK_GATE,
     _BLOCK_REGION,
@@ -65,8 +62,13 @@ from .triggers import (
     _PROJECTILE_SHOOTERS,
     _SMITHING_STATION,
     _SPIDER_SPAWN_EFFECTS,
+    _LOOT_TABLE_STRUCT,
+    _PLANT_ITEM,
     _TRIM_MATERIAL_ITEM,
     _brewing,
+    _pinned_dimensions,
+    _pins_participant_type,
+    _predicate_value,
     _tags,
 )
 
@@ -280,7 +282,7 @@ _PROJECTILE_ITEM = {"fishing_bobber": "fishing_rod",
                     "spectral_arrow": "spectral_arrow", "egg": "egg"}
 
 # Blocks with no item of their own, mapped to the item that places them (crop blocks are in
-# TriggerCompiler._PLANT_ITEM; these are the rest a criterion names).
+# _PLANT_ITEM; these are the rest a criterion names).
 _BLOCK_ITEM = {
     "cave_vines": "minecraft:glow_berries", "cave_vines_plant": "minecraft:glow_berries",
     "kelp_plant": "minecraft:kelp", "tall_seagrass": "minecraft:seagrass",
@@ -301,7 +303,7 @@ _SELF_EFFECTS = {"wandering_trader": {"minecraft:invisibility"}}
 # logic still prices the potion and the glitch graph waives it.
 _DIFFICULTY_EFFECTS = {"spider": _SPIDER_SPAWN_EFFECTS, "cave_spider": _SPIDER_SPAWN_EFFECTS}
 
-# Coordinate thresholds that stop being "walk there" (same values as TriggerCompiler).
+# Coordinate thresholds that stop being "walk there" .
 _DIMPEN_REGION = {"overworld": REGION_OVERWORLD, "nether": REGION_NETHER, "end": REGION_END}
 _SKY_LIMIT, _NETHER_ROOF, _NETHER_LAVA_SEA, _FAR = 320, 127, 31, 10000
 _NETHER_BIOMES = {"nether_wastes", "crimson_forest", "warped_forest", "soul_sand_valley", "basalt_deltas"}
@@ -309,10 +311,9 @@ _END_BIOMES = {"the_end", "end_highlands", "end_midlands", "end_barrens", "small
 
 
 class CriteriaCompiler:
-    """Drop-in for TriggerCompiler: ``compile(record, gid)`` / ``parent_rule(record, gid)``."""
+    """Advancement record → Rule: ``compile(record, gid)`` / ``parent_rule(record, gid)``."""
 
-    # Per-advancement rules that REPLACE the compiled one (triggers.py can only add, via
-    # _EXTRA_REQUIREMENT). Keyed by game_id; the value takes the RuleHelper.
+    # Per-advancement rules that REPLACE the compiled one (_EXTRA_REQUIREMENT can only add). Keyed by game_id; the value takes the RuleHelper.
     OVERRIDES: dict = {}
 
     def __init__(self, helper: RuleHelper, active_locations: frozenset | None = None,
@@ -399,7 +400,7 @@ class CriteriaCompiler:
             player = None
         if rule is None:
             return None
-        if trigger in _NEEDS_A_MOB and not TriggerCompiler._pins_participant_type(cond):
+        if trigger in _NEEDS_A_MOB and not _pins_participant_type(cond):
             rule = all_(rule, _call("can_kill_any_mob"))
         return all_(rule, player)
 
@@ -452,7 +453,7 @@ class CriteriaCompiler:
 
     def _custom_trade(self, cond):
         """A trade happens whatever the villager predicate pins; a Wandering Trader is its own route."""
-        trader = TriggerCompiler._predicate_value(cond.get("villager"), "type")
+        trader = _predicate_value(cond.get("villager"), "type")
         wandering = isinstance(trader, str) and _path(trader) == "wandering_trader"
         return _call("meet_wandering_trader" if wandering else "can_trade_villager")
 
@@ -469,7 +470,7 @@ class CriteriaCompiler:
     def _custom_killer(self, cond):
         """An armor stand only deals damage once you've built and kitted out an animated dummy
         (BACAP's Living Dummy): the stand, Armor Handling, an enchanting table and iron gear."""
-        if _path(TriggerCompiler._predicate_value(cond.get("entity"), "type")) != "armor_stand":
+        if _path(_predicate_value(cond.get("entity"), "type")) != "armor_stand":
             return None
         return All((_item("minecraft:armor_stand"), need("knowledge", K_ARMOR),
                     _item("minecraft:enchanting_table"), _call("material", MAT_IRON)))
@@ -485,7 +486,7 @@ class CriteriaCompiler:
     def _custom_lead(self, cond):
         """"Any entity except …" (an inverted predicate, no type): any leashable mob not excluded."""
         entity = cond.get("entity")
-        if not entity or TriggerCompiler._predicate_value(entity, "type") is not None:
+        if not entity or _predicate_value(entity, "type") is not None:
             return None
         excluded = set()
         for sub in entity if isinstance(entity, list) else [entity]:
@@ -496,14 +497,14 @@ class CriteriaCompiler:
         return any_(*[need("entity", n) for n in mobs])
 
     def _custom_explosion(self, cond):
-        cause = TriggerCompiler._predicate_value(cond.get("cause"), "type")
+        cause = _predicate_value(cond.get("cause"), "type")
         if isinstance(cause, str) and not cause.startswith("#"):
             return None   # the `cause` field already priced it
         return Any((_item("minecraft:wind_charge"), _item("minecraft:tnt")))
 
     def _custom_transport(self, cond):
         """A block somewhere it doesn't generate (powder snow in the Nether) has to be carried there."""
-        pinned = {_DIMENSION_REGION[d] for d in TriggerCompiler._pinned_dimensions(cond.get("player"))
+        pinned = {_DIMENSION_REGION[d] for d in _pinned_dimensions(cond.get("player"))
                   if d in _DIMENSION_REGION}
         if not pinned:
             return None
@@ -700,7 +701,7 @@ class CriteriaCompiler:
             return None
         self._check(dmg, {"type", "source_entity", "blocked", "dealt", "taken"}, path)
         attacker = self._conditions(dmg.get("source_entity"), lambda p: self._entity(p, attacker_role, path))
-        if attacker is not None and attacker_role != "self" and                 TriggerCompiler._predicate_value(dmg.get("source_entity"), "type") is None:
+        if attacker is not None and attacker_role != "self" and                 _predicate_value(dmg.get("source_entity"), "type") is None:
             attacker = all_(attacker, _call("can_kill_any_mob"))   # pinned by its effects alone: still a mob
         # The damage tag names the PLAYER's weapon only when the player dealt the blow; on a hit taken
         # (entity_hurt_player) it describes what struck you, which costs you nothing.
@@ -802,7 +803,7 @@ class CriteriaCompiler:
             contents = contents.get("potion")
         return [self._potion_name(p) for p in self._as_list(contents) if isinstance(p, str)]
 
-    # The lookup tables imported from triggers.py call back into the compiler with these names.
+    # The lookup tables imported from tables.py call back into the compiler with these names.
     def _entity_gid(self, gid):
         name = self._entity_by_path.get(_path(gid))
         return self.h.entity(name) if name in MOBS_ALL else None
@@ -922,7 +923,7 @@ class CriteriaCompiler:
     def _price_place(self, block):
         """Placing a block: the item that places it (a crop's seed, flint and steel for fire), and
         farmland — a hoe — for the crops that need it."""
-        item = TriggerCompiler._PLANT_ITEM.get(_ns(block)) or _BLOCK_ITEM.get(_path(block), _ns(block))
+        item = _PLANT_ITEM.get(_ns(block)) or _BLOCK_ITEM.get(_path(block), _ns(block))
         node = self._any_opt(*[self.h.acquire(i) for i in self._as_list(item)])
         if node is not None and _ns(block) in _FARMLAND_CROPS:
             node = and_(node, self.h.knowledge(K_HOE))
@@ -1003,7 +1004,7 @@ class CriteriaCompiler:
     def _price_loot_table(self, table):
         segments = _path(table).split("/")
         for seg in reversed(segments):
-            node = self._struct_gid(TriggerCompiler._LOOT_TABLE_STRUCT.get(seg, seg))
+            node = self._struct_gid(_LOOT_TABLE_STRUCT.get(seg, seg))
             if node is not None:
                 return node
         head = segments[-1].split("_")[0]
@@ -1011,8 +1012,14 @@ class CriteriaCompiler:
         return self._struct_gid(match) if match else None
 
     def _is_back_reference(self, gid: str) -> bool:
-        """Depending on ``gid`` would loop back onto an advancement being compiled (BACAP roots that
-        light up from their own children). See TriggerCompiler._is_back_reference."""
+        """Would depending on ``gid`` close a loop back onto an advancement being compiled?
+
+        BACAP lights a tab root up from its own tree: `challenges/root` is granted by any ONE of 47
+        criteria, 39 of them a `type_specific.advancements` predicate naming one of its own children.
+        Compiling those into reached() gives the access graph back-edges, and AP's can_reach_location
+        has no re-entry guard, so the first sweep recursed until the stack blew (RecursionError on
+        every `blazeandcave` + `challenge_sanity: all` seed). An ancestor of ``gid`` being compiled
+        means ``gid`` is inside that advancement's own subtree: the back-edge."""
         in_progress, seen, current = set(self._compiling), set(), gid
         while current is not None and current not in seen:
             if current in in_progress:
