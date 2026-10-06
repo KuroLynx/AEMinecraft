@@ -300,11 +300,11 @@ def _block_mining(content) -> dict:
 
 
 def _rare_biome_block(content, block: str) -> bool:
-    """Whether ``block`` generates only in RARE_BIOMES (tools/build_block_biomes.py, read off the jar's
-    worldgen), so mining it where it grows means finding one of those biomes. A block the table does
-    not list is not biome worldgen at all and gets no gate. Same rarity judgement as BIOME_BOUND_MOBS."""
-    biomes = _pack_json(content, "block_biomes.json", missing_ok=True).get(block)
-    return bool(biomes) and all(biome in RARE_BIOMES for biome in biomes)
+    """Whether ``block`` generates in no common biome (data.biome_bound; biomes from
+    tools/build_block_biomes.py, read off the jar's worldgen), so mining it where it grows means
+    finding its biome. A block the table does not list is not biome worldgen at all and gets no gate.
+    Same judgement as BIOME_BOUND_MOBS."""
+    return biome_bound(_pack_json(content, "block_biomes.json", missing_ok=True).get(block))
 
 
 def _item_tag(content, tag: str) -> frozenset:
@@ -679,8 +679,8 @@ class RuleHelper:
         # Mobs whose only natural spawn is a specific, searchable biome — gated on the Biome Finder
         # (when enabled), since that's how you locate the biome.
         #
-        # DERIVED, not curated: data.BIOME_BOUND_MOBS is every mob whose spawn biomes all sit in
-        # RARE_BIOMES, read off the dump's `biomes` field. The judgement lives in that biome list,
+        # DERIVED, not curated: data.BIOME_BOUND_MOBS is every mob that spawns in no common biome
+        # (data.COMMON_BIOMES), read off the dump's `biomes` field. The judgement lives in that list,
         # where it belongs — this used to be five hand-written lambdas, and the mooshroom was simply
         # missing from them, so 'Super Mooshroom' asked for no Mushroom Fields while its own parent
         # advancement did.
@@ -688,15 +688,21 @@ class RuleHelper:
         # mob's Entity Unlock, which entity() asks for separately.
         self.biome_bound_mobs = {name: (lambda: self.strict_only(self.needs_biome_finder()))
                                  for name in self.content.BIOME_BOUND_MOBS}
-        # …plus the three the spawn lists cannot speak for, because what they cost is not a search:
+        # …plus the ones the spawn lists cannot speak for, because what they cost is not a search:
         self.biome_bound_mobs.update({
-            # Frogs spawn in ordinary swamps, so the derivation rightly leaves them alone — but a frog
-            # is only interesting for its three CLIMATE variants (the three froglights), and those
-            # really are three journeys.
+            # Frogs spawn in swamps, which the derivation already gates — but a frog is only
+            # interesting for its three CLIMATE variants (the three froglights), and those really are
+            # three journeys, so it stays here even if swamps ever turn common.
             E_FROG       : lambda: self.strict_only(self.needs_biome_finder()),
             # No spawner entry at all: a creaking hatches from a creaking heart, which generates only
             # in the Pale Garden.
             E_CREAKING   : lambda: self.strict_only(self.needs_biome_finder()),
+            # Cave spiders come from mineshaft spawners; 26.3 adds a natural spawn in sulfur caves, which
+            # the derivation alone would make Finder-only. Either way in.
+            E_CAVE_SPIDER: lambda: self.any_of(
+                self.structure(S_MINESHAFT),
+                self.strict_only(self.needs_biome_finder()),
+            ),
             # Likewise none: a happy ghast comes from a dried ghast, which is Soul Sand Valley — or
             # Piglin bartering, so the finder is only needed without that path.
             E_HAPPY_GHAST: lambda: self.any_of(

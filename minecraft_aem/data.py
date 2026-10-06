@@ -3,7 +3,7 @@
 Parsing of the content packs lives in :mod:`content.registry`. This module splits what it loads in two:
 
 * **Version-independent** data stays module-level and is re-exported by ``from .data import *``:
-  ITEMS / KNOWLEDGES (the apworld's own CSVs), TOOL_LOCKS, MATERIAL_HANDLING_ITEMS, RARE_BIOMES, the
+  ITEMS / KNOWLEDGES (the apworld's own CSVs), TOOL_LOCKS, MATERIAL_HANDLING_ITEMS, COMMON_BIOMES, the
   BASE_ID_* / dataclasses, and — via ``from .logic.constants import *`` — the rule constants.
 * **Per-Minecraft-version** data (mobs, structures, locations, the BACAP tables, the container gates)
   lives on a :class:`MinecraftContent`, one per version with packs, fetched with
@@ -160,22 +160,28 @@ TOOL_LOCKS.update({
     "brewing_stand"   : (K_BREWING, MAT_STONE),    # blaze rod + 3 cobblestone
 })
 
-# Biomes you cannot expect to walk into — the ones the Biome Finder exists to point at. This is the
-# ONE judgement call in the mob-biome gating, and it is deliberately about BIOMES rather than mobs:
-# how hard a place is to find is a property of the place, and a mob bound to it inherits that cost.
+# The Overworld biomes you can count on walking into. Anything that can't be found in one of them is
+# biome-bound: obtaining it means finding its biome, which is what the Biome Finder is for. That holds
+# for a block that only generates there (cactus: desert and badlands) and a mob that only spawns there
+# (husk, camel, fox, goat, mooshroom…). It used to be the other way round, a short hand list of RARE
+# biomes, and everything else counted as "you'll trip over it": a desert was free, so cactus was.
 #
-# It replaced a hand-written table of per-mob lambdas, which is how the mooshroom came to be missing
-# from it for so long. Note that "few biomes" is NOT the test and never was: a turtle (beach), a husk
-# and a camel (desert) and a stray (snowy plains) each spawn in one or two biomes you trip over
-# constantly, and gating those on a Finder would be worse than the bug. Only rarity counts.
-RARE_BIOMES: frozenset[str] = frozenset({
-    "mushroom_fields",                                   # the mooshroom's whole world
-    "lush_caves",                                        # axolotl
-    "pale_garden",                                       # (the creaking has no spawner entry, below)
-    "deep_dark",                                         # no biome-spawned mob; the warden comes from a shrieker
-    "jagged_peaks", "frozen_peaks", "snowy_slopes",      # goat
-    "jungle", "bamboo_jungle", "sparse_jungle",          # panda, parrot, ocelot
+# Overworld only. A Nether or End block is gated by reaching that dimension, and a thing that also
+# occurs outside the Overworld is not bound to an Overworld biome.
+COMMON_BIOMES: frozenset[str] = frozenset({
+    "plains", "forest", "birch_forest", "river", "ocean", "beach",
 })
+_OUTSIDE_OVERWORLD: frozenset[str] = frozenset({
+    "nether_wastes", "crimson_forest", "warped_forest", "soul_sand_valley", "basalt_deltas",
+    "the_end", "end_barrens", "end_highlands", "end_midlands", "small_end_islands", "the_void",
+})
+
+
+def biome_bound(biomes) -> bool:
+    """Whether something found only in ``biomes`` needs the Biome Finder (see COMMON_BIOMES). An empty
+    list means "not biome worldgen at all" and is never bound."""
+    biomes = frozenset(biomes or ())
+    return bool(biomes) and not biomes & (COMMON_BIOMES | _OUTSIDE_OVERWORLD)
 
 
 # -----------------------------------------------------------------------------------------------
@@ -323,14 +329,14 @@ class MinecraftContent:
         # fill_slot_data.
         self.STATION_KNOWLEDGE_LOCKS: dict[str, str] = dict(self.BLOCK_KNOWLEDGE)
 
-        # Mobs whose EVERY natural spawn biome is a rare one, so obtaining one IS finding that biome.
+        # Mobs that spawn in no common biome (biome_bound), so obtaining one IS finding its biome.
         # Derived from EntitiesDump's `biomes`; a mob with no biomes at all (a boss, a creaking, a
         # sniffer) is not claimed either way here — acquisition.py adds those few explicitly, since what
         # they cost is not a biome search. Empty on a pack dumped before the field existed, which is why
         # the explicit entries there are a fallback rather than an override.
         self.BIOME_BOUND_MOBS: frozenset[str] = frozenset(
             name for name, mob in mobs.items()
-            if mob.biomes and all(biome in RARE_BIOMES for biome in mob.biomes)
+            if biome_bound(mob.biomes)
         )
 
         self.MOBS_PASSIVE = {k: v for k, v in mobs.items() if v.category == MCEntityCategory.PASSIVE}
