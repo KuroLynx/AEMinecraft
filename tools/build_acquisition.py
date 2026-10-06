@@ -134,7 +134,7 @@ class AcquisitionBuilder:
                     items.append(leaf)
                     # No vanilla table names `enchanted_book`; it's a `book` carrying an enchant
                     # loot-function. Record enchanted_book too, so its loot/fishing/barter sources
-                    # are captured (the enchant gate's no-Knowledge route — see logic/triggers.py).
+                    # are captured (the enchant gate's no-Knowledge route — see logic/criteria.py).
                     if leaf == "book" and self._is_enchanted(entry):
                         items.append("enchanted_book")
                     break

@@ -348,7 +348,7 @@ def and_(*rules: Rule) -> Rule:
             children.append(rule)
     # Idempotence: X AND X == X. Free correctness-wise, and it means a requirement can be AND-ed on
     # from more than one place without bloating the tree — the player predicate is now applied
-    # centrally in TriggerCompiler._criterion while several handlers still fold it in themselves.
+    # centrally in CriteriaCompiler.criterion.
     # Dedup AFTER flattening so a repeat nested inside an And is caught too. Order is preserved
     # (first occurrence wins) to keep serialized output stable across runs.
     if len(children) > 1:

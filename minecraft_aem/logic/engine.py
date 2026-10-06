@@ -1,7 +1,7 @@
 """Rule collectors for the two location families that aren't compiled from advancement criteria.
 
 Advancement logic is derived from each advancement's Minecraft criteria by the trigger compiler
-(logic/triggers.py, driven by the pack manifest) — see logic/root.py. So there are no longer any
+(logic/criteria.py, driven by the pack manifest) — see logic/root.py. So there are no longer any
 hand-written per-advancement rule files; this module only supplies:
 
 * **entity rules** — the "Kill Entity:" / "Kill Boss:" locations, which are custom AP locations with
