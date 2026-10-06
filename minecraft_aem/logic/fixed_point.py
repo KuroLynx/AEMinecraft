@@ -172,6 +172,11 @@ def _solve(h, st: _State) -> None:
                 rule = h._acquire_compute(base)
             finally:
                 st.current = None
+            if rule is not None:
+                # Having an item means holding it somewhere: with every inventory slot locked
+                # (inventory_lock 'slots' at 36) nothing can be picked up until the first one opens.
+                # Part of the price itself, so the loose/dry marks (by node identity) still find it.
+                rule = h.all_of(h.slot_group("carry"), rule)
             new = None if rule is None else canonical(h.player, rule)
             if isinstance(new, Const) and not new.value:
                 new = None

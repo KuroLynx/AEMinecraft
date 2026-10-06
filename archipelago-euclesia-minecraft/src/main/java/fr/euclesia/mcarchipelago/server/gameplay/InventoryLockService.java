@@ -52,7 +52,6 @@ public final class InventoryLockService {
         InventoryLock lock = current();
         return switch (lock.mode()) {
             case DISABLED -> false;
-            case FIXED -> isLockedFixed(lock, containerSlotIndex);
             case PROGRESSIVE -> isLockedProgressive(lock, containerSlotIndex);
         };
     }
@@ -65,7 +64,6 @@ public final class InventoryLockService {
         InventoryLock lock = current();
         return switch (lock.mode()) {
             case DISABLED -> Integer.MAX_VALUE;
-            case FIXED -> lock.slots() + (lock.offhand() ? 1 : 0) + (lock.armor() ? 4 : 0);
             case PROGRESSIVE -> progressiveUnlockedCount(lock);
         };
     }
@@ -75,23 +73,6 @@ public final class InventoryLockService {
             return InventoryLock.DISABLED;
         }
         return AEM.ARCHIPELAGO.client().state().parsedSlotData().inventoryLock();
-    }
-
-    /**
-     * Fixed mode: offhand/armor are simple exemptions (true = always usable, false = locked for
-     * the whole game — there is no item to unlock them here), independent of {@code slots}. The
-     * 36-slot hotbar+main pool opens its first {@code slots} in priority order (hotbar, then the
-     * row closest to the hotbar, then the two remaining rows).
-     */
-    private static boolean isLockedFixed(InventoryLock lock, int index) {
-        if (index == OFFHAND) {
-            return !lock.offhand();
-        }
-        if (index >= ARMOR_START && index < ARMOR_END) {
-            return !lock.armor();
-        }
-        int rank = poolRank(index);
-        return rank < 0 || rank >= lock.slots();
     }
 
     /**
@@ -108,24 +89,6 @@ public final class InventoryLockService {
     private static int progressiveUnlockedCount(InventoryLock lock) {
         int received = AEM.ARCHIPELAGO.client().registries().apItems().receivedCount(AP_ITEM);
         return Math.min(lock.totalLocked(), received * lock.slotsPerItem());
-    }
-
-    /**
-     * This container index's 0-based rank within the 36-slot hotbar+main pool, in priority order:
-     * hotbar (0-8), the row closest to the hotbar (9-17), the two remaining rows (18-35). -1 if
-     * {@code index} is not part of that pool (offhand/armor).
-     */
-    private static int poolRank(int index) {
-        if (index >= HOTBAR_START && index < HOTBAR_END) {
-            return index - HOTBAR_START;
-        }
-        if (index >= NEAREST_ROW_START && index < NEAREST_ROW_END) {
-            return 9 + (index - NEAREST_ROW_START);
-        }
-        if (index >= REST_START && index < REST_END) {
-            return 18 + (index - REST_START);
-        }
-        return -1;
     }
 
     /**

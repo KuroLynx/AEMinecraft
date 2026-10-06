@@ -74,13 +74,12 @@ public record APSlotData(
 
     /**
      * How much of the player's own inventory is usable (see the Python {@code InventoryLock}
-     * option). {@code slots} is out of the 36 hotbar+main slots: the always-usable count in
-     * {@link Mode#FIXED}, or the base locked count in {@link Mode#PROGRESSIVE}. {@code offhand}/
-     * {@code armor} mean different things per mode — see {@code InventoryLockService}, which is
-     * the only place this record's fields are interpreted.
+     * option). {@code slots} is how many of the 36 hotbar+main slots start locked in
+     * {@link Mode#PROGRESSIVE}; {@code offhand}/{@code armor} add that group to the lock. See
+     * {@code InventoryLockService}, the only place this record's fields are interpreted.
      */
     public record InventoryLock(Mode mode, int slots, int slotsPerItem, boolean offhand, boolean armor) {
-        public enum Mode { DISABLED, FIXED, PROGRESSIVE }
+        public enum Mode { DISABLED, PROGRESSIVE }
 
         public static final InventoryLock DISABLED = new InventoryLock(Mode.DISABLED, 36, 1, false, false);
 
@@ -283,9 +282,9 @@ public record APSlotData(
 
     /**
      * Parses {@code inventory_lock}: {@code {mode, slots, slots_per_item, offhand, armor}} (see the
-     * Python {@code InventoryLock} option). A missing object, or an unrecognised {@code mode}, falls
-     * back to {@link InventoryLock#DISABLED} — purely additive, so slot data written before this
-     * field exists behaves exactly as it did.
+     * Python {@code InventoryLock} option). A missing object, or an unrecognised {@code mode} (including
+     * the removed {@code fixed}), falls back to {@link InventoryLock#DISABLED} — so slot data written
+     * before this field existed behaves exactly as it did.
      */
     private static InventoryLock parseInventoryLock(JsonObject json) {
         JsonElement element = json.get("inventory_lock");
@@ -294,7 +293,6 @@ public record APSlotData(
         }
         JsonObject lock = element.getAsJsonObject();
         InventoryLock.Mode mode = switch (APJson.getString(lock, "mode", "disabled")) {
-            case "fixed" -> InventoryLock.Mode.FIXED;
             case "progressive" -> InventoryLock.Mode.PROGRESSIVE;
             default -> InventoryLock.Mode.DISABLED;
         };

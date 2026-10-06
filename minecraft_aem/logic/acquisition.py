@@ -449,10 +449,11 @@ class RuleHelper:
         # off there is no such item, so the requirement vanishes rather than blocking everything.
         self.structure_finder_enabled = (world.options.structure_finder.value
                                          != world.options.structure_finder.option_disabled)
-        # inventory_lock: copies of 'Progressive Inventory Slot' needed before an armor slot exists
-        # to wear anything in (see InventoryLock.armor_unlock_items / self.inventory_slots). 0 when
-        # armor isn't part of the lock this seed, same "no requirement" shape as self.knowledge.
-        self.armor_unlock_items = world.options.inventory_lock.armor_unlock_items
+        # inventory_lock: copies of 'Progressive Inventory Slot' needed before each slot group can be
+        # used (see InventoryLock.unlock_items / self.slot_group). 0 when the group isn't locked this
+        # seed, same "no requirement" shape as self.knowledge.
+        self.slot_unlock_items = {group: world.options.inventory_lock.unlock_items(group)
+                                  for group in ("carry", "offhand", "armor")}
         # BACAP advancement rewards: base item -> the active location names that grant it (empty
         # unless bacap_rewards is on). Consumed by _with_reward, glitch graph only.
         self.reward_sources = reward_sources(world)
@@ -1497,7 +1498,8 @@ class RuleHelper:
                 self.reached(f"{ADVANCEMENT_PREFIX}{A_SPOOKY_SCARY_SKELETON}"),  # wither skulls
                 self.entity(E_WITHER),
                 self.can_kill(),
-                self.knowledge(K_ARMOR),  # survive the blast / wither effect
+                self.knowledge(K_ARMOR),  # survive the blast / wither effect…
+                self.slot_group("armor"),  # …by wearing it
                 self.material(MAT_IRON),  # at least iron-tier gear
             )
         if entity_name == E_WARDEN:
@@ -1668,9 +1670,13 @@ class RuleHelper:
             return Const(True)
         return Has(self.player, f"{KNOWLEDGE_PREFIX}{item}")
 
-    def inventory_slots(self, count: int):
-        # Same "no requirement" shape as self.knowledge: 0 means either the lock isn't in a mode
-        # that generates this item, or the slot group in question isn't part of it this seed.
+    def slot_group(self, group: str):
+        """Being able to use a slot group under inventory_lock: "carry" (holding any item at all),
+        "offhand", or "armor" (wearing). A locked slot only stops you PUTTING something there — you
+        can still obtain an armor piece with the armor slots locked, you just can't wear it — so this
+        belongs on wearing / holding, never on obtaining. Same "no requirement" shape as
+        self.knowledge when the group isn't locked this seed."""
+        count = self.slot_unlock_items[group]
         if count <= 0:
             return Const(True)
         return self.has(ITEM_INVENTORY_SLOT, count)
@@ -1915,12 +1921,10 @@ class RuleHelper:
             # only shipped while its Knowledge gate is on, so the tier is only asked for then.
             if tier > 0 and knowledge_name in self.active_knowledges and not self.route_open("pickup"):
                 gates.append(self.has(ITEM_MATERIAL_HANDLING, tier))
-            # Armor pieces additionally need an armor slot to wear them in (inventory_lock): having
-            # the Knowledge and the material is not enough if there is nowhere to put the thing on.
-            if knowledge_name == K_ARMOR:
-                gates.append(self.inventory_slots(self.armor_unlock_items))
-            # A tool granted as a reward still needs its Knowledge (and, for armor, a slot) to be
-            # used, so the reward joins `obtain` (inside the gates), not the whole node.
+            # (No armor-slot gate here: a locked armor slot stops you wearing armor, not obtaining it.
+            # Wearing is gated where a criterion checks your equipment — see slot_group.)
+            # A tool granted as a reward still needs its Knowledge to be used, so the reward joins
+            # `obtain` (inside the gates), not the whole node.
             return self.all_of(*gates, self._with_reward(base, obtain))
 
         # A gated station/container block is the same shape as a tool: its Knowledge blocks crafting and

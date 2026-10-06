@@ -296,6 +296,9 @@ _SELF_EFFECTS = {"wandering_trader": {"minecraft:invisibility"}}
 # logic still prices the potion and the glitch graph waives it.
 _DIFFICULTY_EFFECTS = {"spider": _SPIDER_SPAWN_EFFECTS, "cave_spider": _SPIDER_SPAWN_EFFECTS}
 
+# Player equipment slots -> the inventory_lock slot group that has to be open to use them.
+_SLOT_GROUP = {"head": "armor", "chest": "armor", "legs": "armor", "feet": "armor", "offhand": "offhand"}
+
 # Coordinate thresholds that stop being "walk there" .
 _DIMPEN_REGION = {"overworld": REGION_OVERWORLD, "nether": REGION_NETHER, "end": REGION_END}
 _SKY_LIMIT, _NETHER_ROOF, _NETHER_LAVA_SEA, _FAR = 320, 127, 31, 10000
@@ -554,6 +557,9 @@ class CriteriaCompiler:
             self._location(pred.get("location"), f"{path}.location"),
             self._location(pred.get("stepping_on"), f"{path}.stepping_on"),
             *[self._item(v, f"{path}.equipment") or UNKNOWN for k, v in equipment.items() if k in _EQUIPMENT_SLOTS],
+            # Wearing / holding it is what needs the slot (inventory_lock) — only on YOU: a raid
+            # captain's banner or a zombie's armor is on someone else's.
+            *[need("slot", _SLOT_GROUP[k]) for k in equipment if role == "self" and k in _SLOT_GROUP],
             *[self._effect_on(e, gid) for e in (pred.get("effects") or {})],
             self._entity(pred.get("vehicle"), "entity", f"{path}.vehicle"),
             self._entity(pred.get("passenger"), "entity", f"{path}.passenger"),
@@ -848,6 +854,9 @@ class CriteriaCompiler:
 
     def _price_item_tag(self, tag):
         return self._any_opt(*[self.h.acquire(i) for i in self._expand_items(tag)])
+
+    def _price_slot(self, group):
+        return self.h.slot_group(group)
 
     def _price_knowledge(self, name):
         return self.h.knowledge(name)

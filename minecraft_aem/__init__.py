@@ -456,8 +456,7 @@ class MCWorld(World):
 
         # Inventory Lock, progressive mode: enough copies to unlock everything that starts locked
         # (slots + offhand/armor if included), 'slots_per_item' slots each, rounded up so the last
-        # copy still fully opens the inventory even if the split isn't even. disabled/fixed add
-        # nothing — fixed's restriction is permanent and needs no item.
+        # copy still fully opens the inventory even if the split isn't even. disabled adds nothing.
         if self.options.inventory_lock.mode == "progressive":
             total_locked = self.options.inventory_lock.total_locked
             per_item = self.options.inventory_lock.slots_per_item
