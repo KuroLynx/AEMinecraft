@@ -3,6 +3,7 @@ package fr.euclesia.mcarchipelago.server.gameplay;
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.archipelago.slot.APSlotData.InventoryLock;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
 
@@ -53,6 +54,21 @@ public final class InventoryLockService {
         return switch (lock.mode()) {
             case DISABLED -> false;
             case PROGRESSIVE -> isLockedProgressive(lock, containerSlotIndex);
+        };
+    }
+
+    /**
+     * The player-Inventory index an equipment slot lives at (armor 36-39, offhand 40), or -1 for one
+     * that isn't part of the player's inventory (main hand, a horse's body, a saddle).
+     */
+    public static int indexOf(EquipmentSlot slot) {
+        return switch (slot) {
+            case FEET -> ARMOR_START;
+            case LEGS -> ARMOR_START + 1;
+            case CHEST -> ARMOR_START + 2;
+            case HEAD -> ARMOR_START + 3;
+            case OFFHAND -> OFFHAND;
+            default -> -1;
         };
     }
 
