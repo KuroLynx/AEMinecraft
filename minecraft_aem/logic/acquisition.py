@@ -1,5 +1,4 @@
 import json
-import os
 import re
 from contextlib import contextmanager
 from importlib.resources import files
@@ -12,10 +11,6 @@ from .ast import And, Const, Has, ReachRegion, ReachLocation, and_, or_, at_leas
 from . import fixed_point
 from ..content.registry import base_pack, overlay_packs  # registry only imports constants → cycle-safe
 from .. import *
-
-# ponytail: dev A/B switch for the fixed-point acquire() prototype (logic/fixed_point.py); becomes the
-# default (or goes) once it is compared.
-_FIXED_POINT = os.environ.get("AEM_ACQUIRE") == "fixed"
 
 # Wood-family items (planks / logs / wood / stems / hyphae, stripped or not) have no knowledge or
 # material gate — they are free once their dimension is reached. Collapsing them to a bare region
@@ -511,37 +506,20 @@ class RuleHelper:
         # Locations this seed actually created. reached() consults it: a rule may only name a
         # location AP knows about, or state.can_reach_location raises KeyError mid-fill.
         self.active_locations = set(world._get_active_locations())
-        # Memo for acquire(): the acquisition table + options are fixed for this helper, so
-        # acquire(base, stack) is pure. Datapack-scale compilation calls it millions of times for the
-        # same (base, stack) pairs (planks/sticks/ingots recur in every recipe); caching collapses
-        # that. Returned nodes are shared read-only across rules, which is safe (eval + to_dict only).
-        self._acquire_cache: dict[tuple[str, frozenset, frozenset, bool], object] = {}
-        # Structures whose "how do you find one" gate is being computed right now (see structure()).
-        # It is part of the acquire() cache key because it changes the answer: while resolving the
-        # stronghold's gate, ender pearls must not be sourced from a stronghold chest, and that
-        # narrower result must not be cached over the ordinary one.
-        self._finding_stack: frozenset = frozenset()
-        # True while working out what a trade COSTS (see _trade_currency). Like _finding_stack it is
-        # part of the acquire() cache key, because it changes the answer: while pricing the emeralds
-        # a trade needs, emeralds must not be sourced from a trade, and that narrower result must not
-        # be cached over the ordinary one.
-        self._pricing_trade: bool = False
-        # True while pricing a STACK of something (bulk_mode). Part of the cache key for the same
-        # reason: 64 bone blocks and one bone block are different answers.
+        # True while pricing a STACK of something (bulk_mode): 64 bone blocks and one bone block are
+        # different answers, so fixed_point keeps a price per (item, bulk).
         self._bulk: bool = False
-        # Bulk results that only a finite route could supply (cache keys, and the nodes they returned).
-        # A recipe built on one runs dry too: coal from coal blocks is as finite as the Trail Ruins
-        # those coal blocks sit in. ponytail: by node identity; nodes are interned, so an identical
-        # renewable route elsewhere would read dry too — it only matters if that item has no other.
-        self._dry_keys: set = set()
+        # What _acquire_from_sources found about the item being priced: its only sources were finite
+        # (bulk) or flimsy (kept by _demote because nothing dependable was left). fixed_point reads
+        # them after each computation and files them under the item.
+        self._sourced_dry: bool = False
+        self._sourced_loose: bool = False
+        # Nodes read during the current computation that came from a dry / loose item. A recipe built
+        # on one is just as finite / flimsy, so the parent demotes it like any other loose route.
+        # Reset per computation by fixed_point: nodes are interned, so a mark left on a node would
+        # land on every identical route (a flimsy item priced "Overworld & Structure Finder x3"
+        # marked every village chest flimsy).
         self._dry_nodes: set = set()
-        # Results _demote kept only because nothing dependable was left (cache keys, and the nodes they
-        # returned). A recipe built on one is just as flimsy, so the parent demotes it like any other
-        # loose route. Without this the recursion stack laundered luck into strict logic: pricing a
-        # diamond cuts the diamond block's own recipe as a cycle, the block's 0.3% vault reward became
-        # its "sole source", and crafting that block back into diamonds read as a dependable recipe.
-        # Same identity caveat as _dry_nodes.
-        self._loose_keys: set = set()
         self._loose_nodes: set = set()
         # Thunks (deferred so cross-referencing mobs don't recurse at construction).
         self.structure_bound_mobs = {
@@ -781,24 +759,12 @@ class RuleHelper:
         # unlock item — but the dimension gate still applies, so e.g. the Nether ruined portal is
         # not reachable from the Overworld just because its unlock item was received.
         region = self.access_region(STRUCTURES[struct_gid].region)
-        # A prerequisite and/or a structure-specific locate route can both recurse through acquire(),
-        # so they run under the finding guard; everything else needs no guard and must not pay the
-        # acquire-cache cost of one.
+        # A stronghold chest holds Ender Pearls and the stronghold is found with Ender Eyes: that
+        # loop resolves in fixed_point (a route that needs the stronghold found can't be how you
+        # first find it), so nothing here guards against it.
         prereq_thunk = self.structure_prerequisites.get(struct_gid)
-        guarded = prereq_thunk is not None or struct_gid in self.structure_locate_routes
-        if guarded and struct_gid in self._finding_stack:
-            # Reached while working out how to FIND this very structure: its own loot cannot be what
-            # leads you to it. A stronghold chest holds Ender Pearls, so acquire("ender_eye") walks
-            # straight back here — cut the path (the Enderman drop is the route that survives).
-            return Const(False)
-        outer = self._finding_stack
-        if guarded:
-            self._finding_stack = outer | {struct_gid}
-        try:
-            prereq = prereq_thunk() if prereq_thunk is not None else Const(True)
-            located = self.structure_located(struct_gid)
-        finally:
-            self._finding_stack = outer
+        prereq = prereq_thunk() if prereq_thunk is not None else Const(True)
+        located = self.structure_located(struct_gid)
         if struct_gid in self.locked_structures:
             return self.all_of(self.has(f"{STRUCT_UNLOCK_PREFIX}{STRUCTURES[struct_gid].label}"),
                                region, prereq, located)
@@ -1584,17 +1550,10 @@ class RuleHelper:
         drop OR trader offer, so a seed locking hostiles lost its Slime gate to the free trader).
 
         Emeralds are themselves traded, so acquire("emerald") walks back here. In strict logic it
-        no longer can: emeralds resolve to can_sell_to_villager, which asks for no currency. The
-        ``_pricing_trade`` guard is what holds the glitch graph together, where the emerald branch
-        does read the record's own trade routes — inside the guard this returns free rather than
-        recursing, because a trade route cannot be what pays for itself."""
-        if self._pricing_trade:
-            return Const(True)
-        self._pricing_trade = True
-        try:
-            emeralds = self.acquire("minecraft:emerald")
-        finally:
-            self._pricing_trade = False
+        no longer can: emeralds resolve to can_sell_to_villager, which asks for no currency. In the
+        glitch graph the emerald branch also reads the record's own trade routes, and fixed_point
+        settles that loop: a trade route can't be what first pays for itself."""
+        emeralds = self.acquire("minecraft:emerald")
         return emeralds if emeralds is not None else Const(True)
 
     def can_sell_to_villager(self, tier: int = 1):
@@ -1731,49 +1690,16 @@ class RuleHelper:
     # Item acquisition (used by the trigger compiler to resolve item criteria)
     #
     # ``acquire`` reads the acquisition table (tools/build_acquisition.py) and turns an item's data
-    # sources into AST: recipes recurse into their ingredients, mob drops into ``entity``, mining
+    # sources into AST: recipes read their ingredients' prices, mob drops into ``entity``, mining
     # into a pickaxe + material tier, trades into ``can_trade_villager``, chest loot into
-    # ``structure``. A recursion stack breaks the ingot⟷block recipe cycles; items with no usable
-    # source fall back to the tool/material gates (``_acquire_fallback``), else ``None``.
+    # ``structure``. Cycles (ingot ⟷ block) are settled by logic/fixed_point.py, which gives every
+    # (item, bulk) one price; items with no usable source fall back to the tool/material gates
+    # (``_acquire_fallback``), else ``None``.
     # -----------------------------------------------------------------------
-    _MAX_DEPTH = 4
     _SIZE_CAP = 1500  # serialized bytes; larger trees collapse to their region floor (see _coarsen)
 
-    def acquire(self, item_id: str, _stack: frozenset = frozenset()):
-        if _FIXED_POINT:
-            return fixed_point.acquire(self, item_id)
-        base = item_id.split(":", 1)[-1] if ":" in item_id else item_id
-        if base.startswith("#"):
-            return None  # a raw tag (recipe tags are pre-expanded; a bare tag can't be resolved)
-        if base in _stack:
-            return None  # recipe cycle — this path can't justify itself
-        if len(_stack) >= self._MAX_DEPTH:
-            # Too deep to keep expanding. A base material bottoms out at an ore/region regardless, so
-            # its tier floor is a sound TERMINAL here — this is not the lossy top-level bypass (a
-            # shallow acquire still uses the real sources, e.g. diamond via bastion loot); it only
-            # stops the runaway recursion of a deep crafting chain (waxed_copper_lantern → … →
-            # copper_ingot). A non-material this deep gives up.
-            #
-            # The floor is MINING the ore, so it carries the pickaxe too. The bare tier alone sat in an OR
-            # beside the item's real routes and was always the cheapest one, so Pickaxe Handling fell out
-            # of every rule that reached a material through a deep chain: cobblestone (Stone Age), iron
-            # (Acquire Hardware, a bucket) and diamonds were all reachable with no pickaxe at all.
-            tier = _MATERIAL_TIER_BY_ITEM.get(base)
-            if tier is None:
-                return None
-            return self.all_of(self.knowledge(K_PICKAXE), self.material(tier))
-        # Memoize on (base, stack): the result is pure for this helper, so the same item is computed
-        # once and shared. Datapack compilation calls acquire ~9M times for far fewer distinct keys.
-        key = (base, _stack, self._finding_stack, self._pricing_trade, self._bulk)
-        cache = self._acquire_cache
-        if key in cache:
-            return cache[key]
-        cache[key] = result = self._acquire_compute(base, _stack)
-        if key in self._dry_keys and result is not None:
-            self._dry_nodes.add(id(result))
-        if key in self._loose_keys and result is not None:
-            self._loose_nodes.add(id(result))
-        return result
+    def acquire(self, item_id: str):
+        return fixed_point.acquire(self, item_id)
 
     @contextmanager
     def bulk_mode(self, on: bool = True):
@@ -1793,7 +1719,7 @@ class RuleHelper:
         finally:
             self._bulk = outer
 
-    def _acquire_compute(self, base: str, _stack: frozenset):
+    def _acquire_compute(self, base: str):
         # Wood is free once its dimension is reached; collapse it instead of fanning out variants.
         wood_region = _wood_region(base)
         if wood_region is not None:
@@ -1836,7 +1762,7 @@ class RuleHelper:
         # not something strict logic should lean on, so it stays in the glitch graph.
         if base == "grass_block":
             return self.any_of(
-                self.all_of(self.knowledge(K_SHOVEL), self.can_silk_touch(_stack | {base})),
+                self.all_of(self.knowledge(K_SHOVEL), self.can_silk_touch()),
                 self.glitch_only(self.entity(E_ENDERMAN)),
             )
 
@@ -1859,7 +1785,7 @@ class RuleHelper:
             # Finder and nothing else while ordinary oak leaves correctly asked for Knowledge: Shear
             # Handling. The creaking heart carries the mob on top: it is only a creaking heart while
             # the creaking it spawns is alive.
-            sources = self._acquire_from_sources(base, _stack | {base})
+            sources = self._acquire_from_sources(base)
             parts = [found] if sources is None else [found, sources]
             if base == "creaking_heart":
                 parts.append(self.entity(E_CREAKING))
@@ -1912,7 +1838,7 @@ class RuleHelper:
             sell = self.can_sell_to_villager()
             if not self.glitch:
                 return self._with_reward(base, sell)
-            sources = self._acquire_from_sources(base, _stack | {base})
+            sources = self._acquire_from_sources(base)
             found = sell if sources is None else self._unique_or([sell, sources])
             return self._with_reward(base, self._coarsen(found))
 
@@ -1941,7 +1867,7 @@ class RuleHelper:
         if base in _item_tag("minecraft:creeper_drop_music_discs"):
             routes = [self.all_of(self.has_any_entities(E_SKELETON, E_STRAY, E_BOGGED, E_PARCHED),
                                   self.entity(E_CREEPER))]
-            sources = self._acquire_from_sources(base, _stack)
+            sources = self._acquire_from_sources(base)
             if sources is not None:
                 routes.append(sources)
             return self._with_reward(base, self._coarsen(self._unique_or(routes)))
@@ -1953,14 +1879,14 @@ class RuleHelper:
                 # A desert well is a biome feature, not a structure: any desert has one.
                 places.append(self.all_of(self.access_region(REGION_OVERWORLD),
                                           self.strict_only(self.needs_biome_finder())))
-            cobweb = self.acquire("minecraft:cobweb", _stack | {base})
+            cobweb = self.acquire("minecraft:cobweb")
             if cobweb is None:
                 return None
             return self.all_of(self.any_of(*places), cobweb)
 
         structure_pot = _STRUCTURE_POT_SHERDS.get(base)
         if structure_pot is not None:
-            breakers = [self.acquire(f"minecraft:{tool}", _stack | {base})
+            breakers = [self.acquire(f"minecraft:{tool}")
                         for tool in sorted(_item_tag("minecraft:breaks_decorated_pots"))]
             breakers = [node for node in breakers if node is not None]
             if structure_pot not in self.active_structures or not breakers:
@@ -1969,12 +1895,12 @@ class RuleHelper:
 
         if base.endswith("_bucket"):
             routes = []
-            bucket = self.acquire("minecraft:bucket", _stack | {base})
+            bucket = self.acquire("minecraft:bucket")
             if bucket is not None:
                 mobs = _BUCKET_CONTENT_MOBS.get(base, ())
                 content = self.any_of(*[self.entity(name) for name in mobs]) if mobs else Const(True)
                 routes.append(self.all_of(bucket, content))
-            sources = self._acquire_from_sources(base, _stack)
+            sources = self._acquire_from_sources(base)
             if sources is not None:
                 routes.append(sources)
             if not routes:
@@ -1990,7 +1916,7 @@ class RuleHelper:
         # of bloating every tool rule.
         if base in TOOL_LOCKS:
             knowledge_name, tier = TOOL_LOCKS[base]
-            sources = self._acquire_from_sources(base, _stack)
+            sources = self._acquire_from_sources(base)
             obtain = self._coarsen(sources) if sources is not None else self.material(tier)
             gates = [self.knowledge(knowledge_name)]
             # The mod's tool lock asks for the tier too, on every route the item arrives by
@@ -2014,12 +1940,12 @@ class RuleHelper:
         # _recipe_node already applies.
         block_knowledge = BLOCK_KNOWLEDGE.get(f"minecraft:{base}")
         if block_knowledge is not None:
-            sources = self._acquire_from_sources(base, _stack)
+            sources = self._acquire_from_sources(base)
             if sources is not None:
                 return self.all_of(self.knowledge(block_knowledge),
                                    self._with_reward(base, self._coarsen(sources)))
 
-        sources = self._acquire_from_sources(base, _stack)
+        sources = self._acquire_from_sources(base)
         result = self._coarsen(sources if sources is not None else self._acquire_fallback(base))
         # Universal Material Handling pickup lock: obtaining a tier-gated raw material by ANY in-world
         # route — mining, chest loot, mob drop, villager trade, crafting — is blocked until enough
@@ -2056,7 +1982,7 @@ class RuleHelper:
         reward = self.any_of(*[self.reached(name) for name in self.reward_sources[base]])
         return reward if node is None else self.any_of(node, reward)
 
-    def _acquire_from_sources(self, base: str, _stack: frozenset):
+    def _acquire_from_sources(self, base: str):
         """OR over every modeled way to obtain ``base`` (recipe, drop, mining, silk-mining, trade,
         structure loot, archaeology, gameplay), each carrying its region/tier gate; ``None`` when the
         item has no acquisition record or no usable source. Shared by ordinary items and tool/armor
@@ -2064,7 +1990,6 @@ class RuleHelper:
         record = _acquisition_table().get(base)
         if record is None:
             return None
-        inner = _stack | {base}
         chances = record.get("chances", {})
         # Sources split in two: dependable ones, and alternates that lean on luck or on non-progression
         # content. _demote decides which of the second list actually goes (see there — a sole source,
@@ -2092,7 +2017,7 @@ class RuleHelper:
 
         for recipe in record.get("recipes", ()):
             # A recipe is deterministic; whether its INGREDIENTS are is decided in their own acquire.
-            add(self._recipe_node(recipe, inner))
+            add(self._recipe_node(recipe))
         for mob_file in record.get("drops", ()):
             name = _entity_by_gid().get(f"minecraft:{mob_file}")
             if name in MOBS_ALL:
@@ -2153,7 +2078,7 @@ class RuleHelper:
                 # Mining it there still takes the tool: a stone block in a ruin needs a pickaxe, and
                 # Silk Touch to drop itself. Pricing the route as the structure alone made cobblestone
                 # (stonecut from that stone) free of Pickaxe Handling, and Stone Age with it.
-                mine = self._mining_node(block, base, stack=inner)
+                mine = self._mining_node(block, base)
                 if mine is None:
                     continue
                 for struct_name in _block_structures().get(base, ()):
@@ -2161,9 +2086,9 @@ class RuleHelper:
                         add(self.all_of(self.structure(struct_name), mine),
                             struct_name not in self.progression_structures, runs_dry=True)
                 continue
-            node = self._mining_node(block, base, stack=inner)
+            node = self._mining_node(block, base)
             if node is not None:
-                origin = self._block_origin_node(block, inner, outer=_stack)
+                origin = self._block_origin_node(block)
                 if origin is None:
                     continue          # the block cannot exist for this seed — not a source at all
                 # A block only a structure placed (a monument's wet sponge) runs dry like its chest.
@@ -2173,7 +2098,7 @@ class RuleHelper:
             # The block yields itself only to a Silk-Touch tool (bee_nest, ice, coral, …): same
             # region/tier as a normal mine PLUS the capability to silk-touch (enchant). Always behind
             # the silk gate, so it is never a free path even when the block is placed-only.
-            node = self._mining_node(block, base, silk=True, stack=inner)
+            node = self._mining_node(block, base, silk=True)
             if node is not None:
                 add(node, unreliable("silk_mining", block))
         trades = record.get("trades", ())
@@ -2215,15 +2140,15 @@ class RuleHelper:
         for table in record.get("gameplay", ()):
             # A trial-chamber vault opens once per player and its spawners go quiet: finite, like a chest.
             # Counted renewable, its 0.3% diamond block was 'Diamond Miner' (64 diamonds) without a pickaxe.
-            add(self._gameplay_node(table, inner), unreliable("gameplay", table),
+            add(self._gameplay_node(table), unreliable("gameplay", table),
                 runs_dry=table in ("corridor", "trial_chamber_melee", "trial_chamber_ranged"))
         if self._bulk and any(id(node) not in finite for node in options + loose):
             options = [node for node in options if id(node) not in finite]
             loose = [node for node in loose if id(node) not in finite]
         elif self._bulk and finite:
-            self._dry_keys.add((base, _stack, self._finding_stack, self._pricing_trade, True))
+            self._sourced_dry = True
         if not self.glitch and not options and loose:
-            self._loose_keys.add((base, _stack, self._finding_stack, self._pricing_trade, self._bulk))
+            self._sourced_loose = True
         options = self._demote(options, loose)
         return self._unique_or(options) if options else None
 
@@ -2296,16 +2221,16 @@ class RuleHelper:
             keep.append(node)
         return or_(*keep)
 
-    def _recipe_node(self, recipe: dict, stack: frozenset):
+    def _recipe_node(self, recipe: dict):
         """A recipe is satisfied when every distinct ingredient is obtainable (AND), and the station it
         runs on is usable."""
         parts = []
         with self.bulk_mode(False):   # one station makes the whole stack
-            station = self._station_node(recipe.get("station"), stack)
+            station = self._station_node(recipe.get("station"))
         if station is not None:
             parts.append(station)
         for ingredient in recipe.get("ingredients", ()):
-            node = self._ingredient_node(ingredient, stack)
+            node = self._ingredient_node(ingredient)
             if node is None:
                 return None  # an unobtainable ingredient disqualifies the whole recipe
             parts.append(node)
@@ -2333,7 +2258,7 @@ class RuleHelper:
             return Const(True)
         return self.knowledge(BLOCK_KNOWLEDGE.get("minecraft:chest", ""))
 
-    def _station_node(self, station: str | None, stack: frozenset = frozenset()):
+    def _station_node(self, station: str | None):
         """What a recipe's station costs: permission to use one, AND one to use.
 
         ``station`` is the recipe type the pack dumped (``smelting``, ``stonecutting``,
@@ -2369,18 +2294,17 @@ class RuleHelper:
                 table = self.knowledge("Crafting Table") if key == "crafting" else self.all_of()
                 parts.append(self.any_of(*(self.all_of(self.knowledge(name), table) for name in names)))
         if key != "crafting":
-            # Obtaining the station, threading the recipe's own stack so a station that somehow
-            # depends on its own output drops out (None) instead of recursing. If every candidate
-            # drops out, the Knowledge alone carries the recipe rather than making it unobtainable.
-            blocks = [self.acquire(block, stack) for block in RECIPE_STATION_BLOCKS.get(key, ())]
+            # Obtaining the station. A station made only from its own output never gets a price
+            # (fixed_point); if no candidate resolves at all, the Knowledge alone carries the recipe.
+            blocks = [self.acquire(block) for block in RECIPE_STATION_BLOCKS.get(key, ())]
             blocks = [node for node in blocks if node is not None]
             if blocks:
                 parts.append(self.any_of(*blocks))
         return self.all_of(*parts) if parts else None
 
-    def _ingredient_node(self, ingredient: dict, stack: frozenset):
+    def _ingredient_node(self, ingredient: dict):
         if "any_of" in ingredient:
-            options = [self._ingredient_node(sub, stack) for sub in ingredient["any_of"]]
+            options = [self._ingredient_node(sub) for sub in ingredient["any_of"]]
             options = [node for node in options if node is not None]
             if not options:
                 return None
@@ -2391,11 +2315,10 @@ class RuleHelper:
                 self._loose_nodes.add(id(node))
             return node
         if "item" in ingredient:
-            return self.acquire(ingredient["item"], stack)
+            return self.acquire(ingredient["item"])
         return None
 
-    def _mining_node(self, block: str, item: str, silk: bool = False,
-                     stack: frozenset = frozenset()):
+    def _mining_node(self, block: str, item: str, silk: bool = False):
         """Break ``block`` (to obtain ``item``): be in the block's dimension, and — only for
         pickaxe-mineable blocks (soul sand, glowstone, crops drop bare-handed) — hold a pickaxe of
         the required material tier. ``silk`` adds the Silk-Touch capability when the block yields
@@ -2418,7 +2341,7 @@ class RuleHelper:
                     parts.append(self.material(tier))
             if not silk:
                 with self.bulk_mode(False):   # one pair of shears mines the whole stack
-                    tool_gate = self._drop_tool_node(block, info, item, stack)
+                    tool_gate = self._drop_tool_node(block, info, item)
                 if tool_gate is None:
                     return None      # the only tool that works is itself unreachable here
                 parts.append(tool_gate)
@@ -2428,44 +2351,33 @@ class RuleHelper:
         if knowledge is not None:
             parts.append(self.knowledge(knowledge))
         if silk:
-            silk_gate = self.can_silk_touch(stack)
+            silk_gate = self.can_silk_touch()
             if silk_gate is None:
                 return None      # silk is unreachable from here (circular) — drop the route
             parts.append(silk_gate)
         return self.all_of(*parts)
 
-    def _block_origin_node(self, block: str, stack: frozenset = frozenset(),
-                           outer: frozenset | None = None):
+    def _block_origin_node(self, block: str):
         """What a block needs to EXIST before it can be mined (see ``_BLOCK_ONLY_FROM``), or an
         empty AND for the ordinary block that simply generates in the world. ``None`` when the only
         thing that would place it is inactive this seed, so the caller drops the route.
 
-        ``stack`` is the acquisition recursion stack, needed by the crop route: a crop block exists
-        only because its seed was planted (see ``_PLANTED_CROPS``), and for potato/carrot that seed
-        is the item being acquired — the stack is what turns that into the cycle it is instead of
-        infinite recursion.
-
-        ``outer`` is that stack without the item being acquired, and only the aging route uses it:
-        weathering is the SAME item a while later, not another crafting step, so it must not spend a
-        depth level of its own — with one it spends, the four-deep waxed-lantern chain (waxed ->
-        exposed -> plain -> copper torch -> copper nugget) runs out of ``_MAX_DEPTH`` and the waxed
-        lanterns lose their last source. Cycles still terminate: the plain item is on the stack for
-        everything below it, so a route back into the aged block dead-ends one level down."""
+        A crop block exists only because its seed was planted (see ``_PLANTED_CROPS``), and for
+        potato/carrot that seed is the item being acquired: a cycle, which fixed_point settles."""
         seed = _PLANTED_CROPS.get(block) or _PLACED_FROM.get(block)
         if seed is not None:
-            return self.acquire(seed, stack)
+            return self.acquire(seed)
         aged = _aged_source(block)
         if aged is not None:
             # The plain item, weathered — plus mining one that generated already aged, which only the
             # structure palettes know about (and which _unique_or collapses when it is redundant).
-            aged_stack = stack if outer is None else outer
-            routes = [route for route in (self.acquire(aged, aged_stack),) if route is not None]
+            routes = [route for route in (self.acquire(aged),) if route is not None]
             routes += [self.structure(name) for name in _block_structures().get(block, ())
                        if name in self.active_structures]
             return self.any_of(*routes) if routes else None
         entry = _BLOCK_ONLY_FROM.get(block)
         if entry is None:
-            return self._placed_block_origin(block, stack)
+            return self._placed_block_origin(block)
         kind, value = entry
         if kind == "boss":
             return self.can_defeat(value)
@@ -2492,7 +2404,7 @@ class RuleHelper:
         return self.any_of(self.strict_only(self.needs_biome_finder()),
                            *[self.structure(name) for name in _block_structures().get(block, ())])
 
-    def _placed_block_origin(self, block: str, stack: frozenset):
+    def _placed_block_origin(self, block: str):
         """Origin of a block nobody finds lying around, derived rather than curated: one whose record
         has a recipe and nothing that generates it — no gameplay or silk-mining source, and nothing
         mined but itself (a chest, a drop or a trade gives you the item, not a placed block). Such a block is where it is because a player crafted it or a
@@ -2502,8 +2414,8 @@ class RuleHelper:
         breaking one drops its 8 obsidian. Nothing asked you to HAVE an ender chest, so obsidian —
         and through the Nether portal edge, ``We Need to Go Deeper`` — was priced at a pickaxe and a
         dimension. An ender chest is crafted from 8 obsidian and an eye of ender, and the only place
-        one generates is an End City: the craft route closes as the cycle it is (obsidian is already
-        on the stack), leaving the structure, which is where that route honestly belongs.
+        one generates is an End City: the craft route is the cycle it is (it needs the obsidian
+        it would supply), leaving the structure, which is where that route honestly belongs.
 
         Blocks that really do generate keep costing nothing: stone, clay, glowstone, deepslate and
         the rest carry their own mining/loot sources in the record, so they never reach the test.
@@ -2523,13 +2435,13 @@ class RuleHelper:
             return self._natural_origin(block)
         routes = [self.structure(name) for name in _block_structures().get(block, ())
                   if name in self.active_structures]
-        crafted = self.acquire(f"minecraft:{block}", stack)
+        crafted = self.acquire(f"minecraft:{block}")
         if crafted is not None:
             routes.append(crafted)
         return self.any_of(*routes) if routes else None
 
     # Loot-table tool name -> the capability that satisfies it.
-    def _drop_tool_node(self, block: str, info: dict, item: str, stack: frozenset):
+    def _drop_tool_node(self, block: str, info: dict, item: str):
         """Gate for the tool ``item`` needs off this block, or an empty AND when it needs none.
 
         ``None`` means the requirement exists but no listed tool is reachable — the caller drops the
@@ -2540,41 +2452,39 @@ class RuleHelper:
         routes = []
         for tool in tools:
             if tool == "shears":
-                shears = self.acquire("minecraft:shears", stack)
-                if shears is not None:   # None on a cycle (shears off a shears-gated block)
+                shears = self.acquire("minecraft:shears")
+                if shears is not None:   # None when shears have no price yet (shears off a shears-gated block)
                     routes.append(shears)
             elif tool == "silk":
-                silk_gate = self.can_silk_touch(stack)
+                silk_gate = self.can_silk_touch()
                 if silk_gate is not None:
                     routes.append(silk_gate)
         return self.any_of(*routes) if routes else None
 
-    def can_silk_touch(self, stack: frozenset = frozenset()):
+    def can_silk_touch(self):
         """The capability to wield a Silk-Touch tool. Two routes, mirroring the enchant gate in
         ``tables.py``: enchant one yourself (``acquire(enchanting_table)`` gates Knowledge:
         Enchanting + its tier), OR apply a Silk-Touch enchanted book with an anvil (a librarian's
         book is a no-Knowledge trade path).
 
-        ``stack`` is the acquisition recursion stack. It must be threaded through: a silk-only block
-        drop asks for silk, silk asks for an enchanting table, and its ingredients can lead back to a
-        silk-only block (deepslate gold ore -> silk -> obsidian -> ... -> deepslate gold ore). Without
-        the stack that loop never breaks. ``None`` when every route is itself circular."""
+        A silk-only block drop asks for silk, silk asks for an enchanting table, and its ingredients
+        can lead back to a silk-only block (deepslate gold ore -> silk -> obsidian -> ... -> deepslate
+        gold ore); fixed_point settles that loop. ``None`` when no route resolves."""
         routes = []
-        table = self.acquire("minecraft:enchanting_table", stack)
+        table = self.acquire("minecraft:enchanting_table")
         if table is not None:
             routes.append(table)
-        book = self.acquire("minecraft:enchanted_book", stack)
-        anvil = self.acquire("minecraft:anvil", stack) if book is not None else None
+        book = self.acquire("minecraft:enchanted_book")
+        anvil = self.acquire("minecraft:anvil") if book is not None else None
         if book is not None and anvil is not None:
             routes.append(self.all_of(book, anvil))
         return self.any_of(*routes) if routes else None
 
-    def _gameplay_node(self, table: str, stack: frozenset = frozenset()):
+    def _gameplay_node(self, table: str):
         """The gate for a 'gameplay' loot source — a real, repeatable acquisition path, grounded in
-        the 26.1.2 jar loot-table types. ``stack`` is the acquisition recursion stack, threaded into
-        the items a source implies (a fishing rod for fishing, gold for bartering, shears for harvest)
-        so a circular source — fishing up the very fishing rod being resolved — breaks instead of
-        recursing forever:
+        the 26.1.2 jar loot-table types, plus the items a source implies (a fishing rod for fishing,
+        gold for bartering, shears for harvest). A circular source — fishing up the very fishing rod
+        being priced — is a cycle fixed_point settles:
           * fishing tables → a fishing rod;
           * piglin_bartering → the Nether, a piglin and gold;
           * a mob's gift / interaction / growth table → reach that mob (gift tables ARE reliable
@@ -2585,9 +2495,9 @@ class RuleHelper:
           * a block-harvest table → the block's dimension, plus shears for a shear interaction;
           * trial-chamber spawner equipment / chest loot → the Trial Chambers structure."""
         if table in ("fishing", "fish", "junk", "treasure"):
-            return self.acquire("minecraft:fishing_rod", stack)  # None on a cycle → caller drops it
+            return self.acquire("minecraft:fishing_rod")  # None when unpriced → caller drops it
         if table == "piglin_bartering":
-            gold = self.acquire("minecraft:gold_ingot", stack)
+            gold = self.acquire("minecraft:gold_ingot")
             if gold is None:
                 return None  # circular (bartering FOR gold) — not a usable source here
             return self.all_of(self.access_region(REGION_NETHER), self.entity(E_PIGLIN), gold)
@@ -2608,7 +2518,7 @@ class RuleHelper:
             region, needs_shears = harvest
             grows = self.all_of(self.access_region(region), self._natural_origin(_HARVEST_BLOCK.get(table, table)))
             if needs_shears:
-                shears = self.acquire("minecraft:shears", stack)
+                shears = self.acquire("minecraft:shears")
                 if shears is None:
                     return None  # can't shear-harvest without shears (circular here)
                 return self.all_of(grows, shears)
@@ -2633,16 +2543,14 @@ class RuleHelper:
             # A special recipe type (data/minecraft/recipe/firework_star.json), which the dump does not
             # record: gunpowder and a dye are required, the shape and effect slots optional. With no
             # record the star was unpriceable, and 'All the Items!' fell back to its parent chain.
-            stack = frozenset({base})
-            dyes = [node for node in (self.acquire(f"minecraft:{dye}", stack)
+            dyes = [node for node in (self.acquire(f"minecraft:{dye}")
                                       for dye in sorted(_item_tag("minecraft:dyes"))) if node is not None]
-            gunpowder = self.acquire("minecraft:gunpowder", stack)
+            gunpowder = self.acquire("minecraft:gunpowder")
             if gunpowder is None or not dyes:
                 return None
-            return self.all_of(self._station_node("crafting_special", stack), gunpowder, self.any_of(*dyes))
-        # Every tiered material is mined with a pickaxe, so the floor carries it — the same floor as the
-        # depth cap in acquire(). Sources also come back None when the stack cuts them all (raw iron's
-        # block recipe cycles back to raw iron), and the bare tier made 64 raw iron free of a pickaxe.
+            return self.all_of(self._station_node("crafting_special"), gunpowder, self.any_of(*dyes))
+        # Every tiered material is mined with a pickaxe, so the floor carries it: the bare tier made
+        # 64 raw iron free of a pickaxe.
         tier = _MATERIAL_TIER_BY_ITEM.get(base)
         if tier is not None:
             return self.all_of(self.knowledge(K_PICKAXE), self.material(tier))

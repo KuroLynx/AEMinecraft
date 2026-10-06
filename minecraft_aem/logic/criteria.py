@@ -998,7 +998,7 @@ class CriteriaCompiler:
         recipes = _acquisition_table().get(_path(rid), {}).get("recipes")
         if obtain is None or not recipes:
             return obtain
-        made = self._any_opt(*[self.h._recipe_node(r, frozenset()) for r in recipes])
+        made = self._any_opt(*[self.h._recipe_node(r) for r in recipes])
         return self._all_req(made, obtain)
 
     def _price_loot_table(self, table):

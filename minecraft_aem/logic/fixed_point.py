@@ -1,8 +1,8 @@
-"""acquire() as a fixed point over the recipe graph instead of a depth-first recursion.
+"""acquire() as a fixed point over the recipe graph: every (item, bulk) has ONE price.
 
-The recursive acquire() prices an item per (item, recursion stack): the stack cuts cycles and
-_MAX_DEPTH stops the blowup, so the same item costs different things in different chains and a deep
-chain dies on an item it never priced (a stick at depth 4). Here every (item, bulk) has ONE price:
+It replaced a depth-first recursion that priced an item per (item, recursion stack), with a depth cap
+against the blowup: the same item cost different things in different chains, and a deep chain died on
+an item it never priced (a stick at depth 4). Here:
 
 * every item starts unobtainable (None);
 * computing an item runs the ordinary _acquire_compute, but each acquire() inside it returns the
@@ -13,9 +13,6 @@ A cycle just reads the other item's current price: iron ingot from iron block fr
 an alternative the ingot already has, and the canonical form below absorbs it. That form is a minimal
 DNF (an antichain of alternatives, each a set of leaves with a count per item), rebuilt as an interned
 Rule, so an unchanged price is the same object and "did it change?" is an identity test.
-
-Switched on by AEM_ACQUIRE=fixed (see RuleHelper.acquire). Prototype: compare it with the recursive
-version before switching.
 """
 from __future__ import annotations
 
@@ -117,7 +114,7 @@ class _State:
 
 
 def acquire(h, item_id: str):
-    """RuleHelper.acquire under AEM_ACQUIRE=fixed."""
+    """RuleHelper.acquire: the item's price, solving whatever is not priced yet."""
     base = item_id.split(":", 1)[-1]
     if base.startswith("#"):
         return None   # a raw tag (recipe tags are pre-expanded; a bare tag can't be resolved)
@@ -158,7 +155,7 @@ def _queue(st: _State, key) -> None:
 
 
 def _solve(h, st: _State) -> None:
-    saved = h._bulk, h._finding_stack, h._pricing_trade
+    saved = h._bulk
     try:
         while st.work:
             key = st.work.popleft()
@@ -167,22 +164,18 @@ def _solve(h, st: _State) -> None:
             if st.recomputes[key] > _MAX_RECOMPUTES:
                 raise RuntimeError(f"fixed-point acquire: {key} still changing after {_MAX_RECOMPUTES} recomputes")
             base, bulk = key
-            # The recursion guards belong to the recursive design; every price here is computed from
-            # the top. (The loose/dry keys below are the ones _acquire_from_sources writes for that.)
-            h._bulk, h._finding_stack, h._pricing_trade = bulk, frozenset(), False
-            mark = (base, frozenset(), frozenset(), False, bulk)
-            h._loose_keys.discard(mark)
-            h._dry_keys.discard(mark)
+            h._bulk = bulk
+            h._sourced_loose = h._sourced_dry = False
             h._loose_nodes, h._dry_nodes = set(), set()
             st.current = key
             try:
-                rule = h._acquire_compute(base, frozenset())
+                rule = h._acquire_compute(base)
             finally:
                 st.current = None
             new = None if rule is None else canonical(h.player, rule)
             if isinstance(new, Const) and not new.value:
                 new = None
-            flags = (mark in h._loose_keys, mark in h._dry_keys)
+            flags = (h._sourced_loose, h._sourced_dry)
             old = st.price[key]
             if new is old and flags == st.flags.get(key, (False, False)):
                 continue
@@ -190,4 +183,4 @@ def _solve(h, st: _State) -> None:
             for reader in st.readers[key]:
                 _queue(st, reader)
     finally:
-        h._bulk, h._finding_stack, h._pricing_trade = saved
+        h._bulk = saved

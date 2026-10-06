@@ -1,6 +1,6 @@
 """Exact equivalence of two logic rules: does one accept a state the other rejects, and which?
 
-Used by tools/audit_route_consistency.py. Run directly for the self-test.
+Compare two versions of a rule (e.g. before/after a logic change). Run directly for the self-test.
 
     python tools/rule_equivalence.py
 """
