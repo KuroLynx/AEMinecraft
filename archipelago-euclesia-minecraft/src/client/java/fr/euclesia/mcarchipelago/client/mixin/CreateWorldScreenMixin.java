@@ -2,6 +2,7 @@ package fr.euclesia.mcarchipelago.client.mixin;
 
 import fr.euclesia.mcarchipelago.client.connect.APConnectConfig;
 import fr.euclesia.mcarchipelago.client.gui.ArchipelagoCreateTab;
+import fr.euclesia.mcarchipelago.client.utils.MCClient;
 import fr.euclesia.mcarchipelago.server.connect.APWorldConnection;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.tabs.Tab;
@@ -27,12 +28,22 @@ public abstract class CreateWorldScreenMixin {
     @Unique
     private ArchipelagoCreateTab archipelago_euclesia$tab;
 
+    // 26.2 builds the tabs with MenuTabBar; TabNavigationBar still exists but init no longer calls it.
+    //? if >=26.2 {
+    /*@ModifyArg(
+            method = "init",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/client/gui/components/tabs/MenuTabBar$Builder;"
+                            + "addTabs([Lnet/minecraft/client/gui/components/tabs/Tab;)"
+                            + "Lnet/minecraft/client/gui/components/tabs/MenuTabBar$Builder;"))
+    *///?} else {
     @ModifyArg(
             method = "init",
             at = @At(value = "INVOKE",
                     target = "Lnet/minecraft/client/gui/components/tabs/TabNavigationBar$Builder;"
                             + "addTabs([Lnet/minecraft/client/gui/components/tabs/Tab;)"
                             + "Lnet/minecraft/client/gui/components/tabs/TabNavigationBar$Builder;"))
+    //?}
     private Tab[] archipelago_euclesia$addArchipelagoTab(Tab[] tabs) {
         archipelago_euclesia$tab = new ArchipelagoCreateTab(Minecraft.getInstance().font);
         Tab[] extended = Arrays.copyOf(tabs, tabs.length + 1);
@@ -49,7 +60,7 @@ public abstract class CreateWorldScreenMixin {
             // Every world in this pack must be bound to an Archipelago slot; refuse to create one
             // without a slot name and point the player at the Archipelago tab to fix it.
             Minecraft minecraft = Minecraft.getInstance();
-            SystemToast.addOrUpdate(minecraft.getToastManager(), SystemToast.SystemToastId.WORLD_ACCESS_FAILURE,
+            SystemToast.addOrUpdate(MCClient.toastManager(), SystemToast.SystemToastId.WORLD_ACCESS_FAILURE,
                     Component.translatable("gui.aem.connect.status.slot_required"),
                     Component.translatable("gui.aem.create.slot_required"));
             ci.cancel();

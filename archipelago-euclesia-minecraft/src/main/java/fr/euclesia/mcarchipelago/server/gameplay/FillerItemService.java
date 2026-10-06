@@ -37,7 +37,12 @@ public final class FillerItemService {
             int amount = Math.min(remaining, max);
             ItemStack stack = new ItemStack(item, amount);
             if (!player.getInventory().add(stack)) {
+                // 26.3 asks who predicted the drop; the server alone did, as for vanilla's own advancement rewards.
+                //? if >=26.3 {
+                /*player.drop(stack, false, net.minecraft.util.Prediction.SERVER_ONLY);
+                *///?} else {
                 player.drop(stack, false);
+                //?}
             }
             remaining -= amount;
         }

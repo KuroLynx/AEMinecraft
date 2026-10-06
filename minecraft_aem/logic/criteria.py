@@ -29,14 +29,6 @@ import re
 from collections import Counter
 from dataclasses import dataclass
 
-from ..data import (
-    ADVANCEMENT_LOCATIONS,
-    MOBS_ALL,
-    MOBS_BREEDABLE,
-    MOBS_LEASHABLE,
-    MOBS_TAMEABLE,
-    STRUCTURES,
-)
 from .acquisition import RuleHelper, _acquisition_table, _block_structures
 from .ast import Const, Rule, and_, or_
 from .constants import K_ARMOR, K_BREWING, K_HOE, K_PICKAXE, MAT_IRON, REGION_END, REGION_NETHER, REGION_OVERWORLD
@@ -69,6 +61,7 @@ from .tables import (
     _pinned_dimensions,
     _pins_participant_type,
     _predicate_value,
+    _reagent_routes,
     _tags,
 )
 
@@ -319,13 +312,15 @@ class CriteriaCompiler:
     def __init__(self, helper: RuleHelper, active_locations: frozenset | None = None,
                  records: dict | None = None):
         self.h = helper
+        # This player's Minecraft version's mobs, structures, advancements (minecraft_version).
+        self.content = helper.content
         self._records = records or {}
         self._active = active_locations
         self._compiling: list[str] = []
-        self._entity_by_path = {_path(d.game_id): n for n, d in MOBS_ALL.items()}
-        self._struct_by_path = {_path(d.game_id): n for n, d in STRUCTURES.items()}
-        self._adv_loc_by_gid = {d.game_id: n for n, d in ADVANCEMENT_LOCATIONS.items()}
-        tags = _tags()
+        self._entity_by_path = {_path(d.game_id): n for n, d in self.content.MOBS_ALL.items()}
+        self._struct_by_path = {_path(d.game_id): n for n, d in self.content.STRUCTURES.items()}
+        self._adv_loc_by_gid = {d.game_id: n for n, d in self.content.ADVANCEMENT_LOCATIONS.items()}
+        tags = _tags(self.content)
         self._item_tags = tags.get("item", {})
         self._entity_tags = tags.get("entity_type", {})
         self._block_tags = tags.get("block", {})
@@ -493,7 +488,7 @@ class CriteriaCompiler:
             term = sub.get("term") if isinstance(sub, dict) and _path(sub.get("condition", "")) == "inverted" else None
             if isinstance(term, dict):
                 excluded.update(self._entity_names((term.get("predicate") or term).get("type")))
-        mobs = [n for n in MOBS_LEASHABLE if n not in excluded] or [n for n in MOBS_ALL if n not in excluded]
+        mobs = [n for n in self.content.MOBS_LEASHABLE if n not in excluded] or [n for n in self.content.MOBS_ALL if n not in excluded]
         return any_(*[need("entity", n) for n in mobs])
 
     def _custom_explosion(self, cond):
@@ -595,7 +590,7 @@ class CriteriaCompiler:
             return any_(*[need("projectile", _path(g)) for g in ids])
         names = self._entity_names(ids)
         if role == "tame":
-            names = [n for n in names if n in MOBS_TAMEABLE]
+            names = [n for n in names if n in self.content.MOBS_TAMEABLE]
         options = [need(role if role != "explosion" else "entity", n) for n in names]
         if not options:
             # A type that is no mob: something you place or throw (glow item frame, boat, tnt). A tag
@@ -665,7 +660,7 @@ class CriteriaCompiler:
 
         ids = [i for raw in _ids(pred.get("items")) for i in self._expand_items(raw)]
         potions = self._potion_types(components.get("potion_contents"))
-        if potions and any(i in _POTION_ITEMS for i in ids) and all(p in _brewing() for p in potions):
+        if potions and any(i in _POTION_ITEMS for i in ids) and all(p in _brewing(self.content) for p in potions):
             base = any_(*[need("potion", p) for p in potions])
         else:
             # No brewing recipe for the type (water, mundane): the item's own sources.
@@ -806,11 +801,11 @@ class CriteriaCompiler:
     # The lookup tables imported from tables.py call back into the compiler with these names.
     def _entity_gid(self, gid):
         name = self._entity_by_path.get(_path(gid))
-        return self.h.entity(name) if name in MOBS_ALL else None
+        return self.h.entity(name) if name in self.content.MOBS_ALL else None
 
     def _struct_gid(self, gid):
         name = self._struct_by_path.get(_path(gid))
-        return self.h.structure(name) if name in STRUCTURES else None
+        return self.h.structure(name) if name in self.content.STRUCTURES else None
 
     @staticmethod
     def _any_opt(*nodes):
@@ -882,7 +877,7 @@ class CriteriaCompiler:
         return self.h.summon(name)
 
     def _price_any_mob(self, how):
-        mobs, build = (MOBS_TAMEABLE, self.h.can_tame) if how == "tame" else (MOBS_BREEDABLE, self.h.can_breed)
+        mobs, build = (self.content.MOBS_TAMEABLE, self.h.can_tame) if how == "tame" else (self.content.MOBS_BREEDABLE, self.h.can_breed)
         return self._any_opt(*[build(n) for n in mobs])
 
     def _price_structure_id(self, gid):
@@ -916,7 +911,7 @@ class CriteriaCompiler:
             node = self._all_req(self.h.acquire("minecraft:flower_pot"), plant_node)
         if node is None:
             # Only ever placed by worldgen (a vault): reach a structure whose template has one.
-            node = self._any_opt(*[self.h.structure(s) for s in _block_structures().get(key, ())
+            node = self._any_opt(*[self.h.structure(s) for s in _block_structures(self.content).get(key, ())
                                    if s in self.h.active_structures])
         return node
 
@@ -944,10 +939,14 @@ class CriteriaCompiler:
     def _price_potion(self, name):
         if name == "water":   # a glass bottle dipped in water: no brewing at all
             return self._all_req(self.h.acquire("minecraft:glass_bottle"), self.h.access_region(REGION_OVERWORLD))
-        reagents = _brewing().get(name)
-        if not reagents:
+        routes = _reagent_routes(self.content, name)
+        if not routes or not all(routes):
             return self._price_brew()   # mundane / thick / an unknown type: at least a brew
-        return self._all_req(self._price_brew(), *[self.h.acquire(f"minecraft:{r}") for r in reagents])
+        # 26.3+ tables can list several equally short chains (slowness off swiftness OR leaping).
+        priced = [self._all_req(self._price_brew(), *[self.h.acquire(f"minecraft:{r}") for r in route])
+                  for route in routes]
+        priced = [node for node in priced if node is not None]
+        return or_(*priced) if priced else None
 
     def _price_enchant(self, name, on_item):
         anvil = self.h.acquire("minecraft:anvil")
@@ -970,7 +969,7 @@ class CriteriaCompiler:
         if "area_effect_cloud" in proj or proj.endswith("lingering_potion"):
             return self.h.acquire("minecraft:lingering_potion")
         item = _PROJECTILE_ITEM.get(proj, proj)
-        if item not in _acquisition_table():
+        if item not in _acquisition_table(self.content):
             return Const(True)   # not an item (the player's own blow, a ghast's fireball): the mob gates it
         return self.h.acquire(_ns(item))
 
@@ -995,7 +994,7 @@ class CriteriaCompiler:
 
     def _price_recipe(self, rid):
         obtain = self.h.acquire(rid)
-        recipes = _acquisition_table().get(_path(rid), {}).get("recipes")
+        recipes = _acquisition_table(self.content).get(_path(rid), {}).get("recipes")
         if obtain is None or not recipes:
             return obtain
         made = self._any_opt(*[self.h._recipe_node(r) for r in recipes])

@@ -5,13 +5,16 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.client.gui.DumpScreen;
+import fr.euclesia.mcarchipelago.client.utils.MCClient;
 import fr.euclesia.mcarchipelago.server.command.ContainersDump;
 import fr.euclesia.mcarchipelago.server.command.EntitiesDump;
 import fr.euclesia.mcarchipelago.server.command.PackDump;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackRepository;
 import net.minecraft.server.packs.repository.ServerPacksSource;
 import net.minecraft.world.Difficulty;
@@ -105,8 +108,9 @@ public final class HeadlessWorldDump {
      * @param datapackDir {@code aem-datapacks/}: dropped world-datapacks folded into the temp world
      * @param what        which files to write ({@link #ENTITIES} / {@link #CONTAINERS}); both share the
      *                    one temp world
+     * @param packIds     the packs ticked on the dump screen; the temp world loads exactly those
      */
-    public static synchronized void request(Screen returnTo, Path datapackDir, Set<String> what) {
+    public static synchronized void request(Screen returnTo, Path datapackDir, Set<String> what, Set<String> packIds) {
         if (armed || what.isEmpty()) {
             return;
         }
@@ -119,7 +123,7 @@ public final class HeadlessWorldDump {
         result = "";
         AEM.LOGGER.info("Headless dump: requested {}, creating temp world '{}'", targets, SAVE_NAME);
         try {
-            createTempWorld(datapackDir);
+            createTempWorld(datapackDir, packIds);
             AEM.LOGGER.info("Headless dump: temp world creation kicked off, awaiting server start");
         } catch (Exception exception) {
             AEM.LOGGER.warn("Headless dump: could not start temp world", exception);
@@ -129,7 +133,7 @@ public final class HeadlessWorldDump {
         }
     }
 
-    private static void createTempWorld(Path datapackDir) throws Exception {
+    private static void createTempWorld(Path datapackDir, Set<String> packIds) throws Exception {
         Minecraft mc = Minecraft.getInstance();
         LevelStorageSource source = mc.getLevelSource();
         saveDir = source.getBaseDir().resolve(SAVE_NAME);
@@ -138,20 +142,36 @@ public final class HeadlessWorldDump {
         deleteSaveQuietly();
         Path datapacks = saveDir.resolve("datapacks");
         Files.createDirectories(datapacks);
-        copyDatapacks(datapackDir, datapacks);
+        copyDatapacks(datapackDir, datapacks, packIds);
 
-        // Folder datapacks default to disabled, so explicitly enable everything the temp world can see
-        // (vanilla + bundled mod packs + the copies above). Open a throwaway access just to read the
-        // ids, then release its lock before createFreshLevel reacquires it.
-        List<String> enabled;
+        // Enable exactly the ticked packs, and list every other one as disabled: the server switches on
+        // any pack found in neither list, which is how a newly dropped-in datapack gets picked up. Open a
+        // throwaway access just to read the ids, then release its lock before createFreshLevel
+        // reacquires it. Vanilla is kept whatever the ticks say (no world loads without it). A ticked
+        // pack made for another game version is skipped too: it references content this game lacks
+        // (BACAP 1.21.1's loot-table tag names 26.3's abandoned-camp chests) and fails the whole world
+        // load with "Unbound values in registry".
+        List<String> enabled = new ArrayList<>();
+        List<String> disabled = new ArrayList<>();
         try (LevelStorageSource.LevelStorageAccess access = source.createAccess(SAVE_NAME)) {
             PackRepository repository = ServerPacksSource.createPackRepository(access);
             repository.reload();
-            enabled = new ArrayList<>(repository.getAvailableIds());
+            for (Pack pack : repository.getAvailablePacks()) {
+                String id = pack.getId();
+                if (!id.equals("vanilla") && !packIds.contains(id)) {
+                    disabled.add(id);
+                } else if (!pack.getCompatibility().isCompatible()) {
+                    disabled.add(id);
+                    AEM.LOGGER.info("Headless dump: skipping pack '{}' ({} for this game version)",
+                            id, pack.getCompatibility());
+                } else {
+                    enabled.add(id);
+                }
+            }
         }
 
         WorldDataConfiguration dataConfig = new WorldDataConfiguration(
-                new DataPackConfig(enabled, List.of()),
+                new DataPackConfig(enabled, disabled),
                 WorldDataConfiguration.DEFAULT.enabledFeatures());
         LevelSettings settings = new LevelSettings(
                 "AEM Entities Dump",
@@ -164,7 +184,10 @@ public final class HeadlessWorldDump {
         WorldOptions options = new WorldOptions(0L, false, false);
 
         mc.createWorldOpenFlows().createFreshLevel(
-                SAVE_NAME, settings, options, WorldPresets::createFlatWorldDimensions,
+                SAVE_NAME, settings, options,
+                // What WorldPresets.createFlatWorldDimensions did; 26.2 removed the helper, not the preset.
+                registries -> registries.lookupOrThrow(Registries.WORLD_PRESET)
+                        .getOrThrow(WorldPresets.FLAT).value().createWorldDimensions(),
                 new DumpScreen(returnParent)); // shown if creation itself fails before the server starts
     }
 
@@ -253,8 +276,8 @@ public final class HeadlessWorldDump {
     private static void finishWith(String message) {
         DumpScreen.pendingStatus = message;
         Minecraft mc = Minecraft.getInstance();
-        if (mc.screen instanceof DumpScreen) {
-            mc.setScreen(new DumpScreen(returnParent)); // re-init to pick up pendingStatus
+        if (MCClient.screen() instanceof DumpScreen) {
+            MCClient.setScreen(new DumpScreen(returnParent)); // re-init to pick up pendingStatus
         }
         reset();
     }
@@ -271,12 +294,16 @@ public final class HeadlessWorldDump {
     // -- datapacks ----------------------------------------------------------
 
     /** Copy every dropped world-datapack (file or folder) into the temp world's {@code datapacks/}. */
-    private static void copyDatapacks(Path from, Path into) throws Exception {
+    /** Copies the ticked packs of {@code from}; a folder pack's repository id is "file/" + its name. */
+    private static void copyDatapacks(Path from, Path into, Set<String> packIds) throws Exception {
         if (from == null || !Files.isDirectory(from)) {
             return;
         }
         try (Stream<Path> entries = Files.list(from)) {
             for (Path entry : (Iterable<Path>) entries::iterator) {
+                if (!packIds.contains("file/" + entry.getFileName())) {
+                    continue;
+                }
                 copyRecursively(entry, into.resolve(entry.getFileName().toString()));
             }
         }

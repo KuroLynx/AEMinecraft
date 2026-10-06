@@ -16,6 +16,7 @@ import fr.euclesia.mcarchipelago.client.net.BiomeFinderClient;
 import fr.euclesia.mcarchipelago.client.net.ChatFilterClient;
 import fr.euclesia.mcarchipelago.client.logic.LogicProviders;
 import fr.euclesia.mcarchipelago.client.render.ConnectionStatusHud;
+import fr.euclesia.mcarchipelago.client.utils.MCClient;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -36,13 +37,20 @@ public class AEMClient implements ClientModInitializer {
 	private static final KeyMapping.Category CATEGORY =
 			KeyMapping.Category.register(Identifier.fromNamespaceAndPath(AEM.MOD_ID, "keys"));
 
+	// A keyboard key. 26.3 moved input to SDL and renamed KEYSYM to KEYBOARD.
+	//? if >=26.3 {
+	/*private static final InputConstants.Type KEY_TYPE = InputConstants.Type.KEYBOARD;
+	*///?} else {
+	private static final InputConstants.Type KEY_TYPE = InputConstants.Type.KEYSYM;
+	//?}
+
 	/** Toggles the chat filter (hide multiworld noise not connected to this slot); default H. */
 	private static final KeyMapping TOGGLE_CHAT_FILTER = new KeyMapping(
-			"key.aem.chat_filter", InputConstants.Type.KEYSYM, InputConstants.KEY_H, CATEGORY);
+			"key.aem.chat_filter", KEY_TYPE, InputConstants.KEY_H, CATEGORY);
 
 	/** Opens the Biome Finder search screen; default key B, rebindable in Controls. */
 	private static final KeyMapping OPEN_BIOME_FINDER = new KeyMapping(
-			"key.aem.biome_finder", InputConstants.Type.KEYSYM, InputConstants.KEY_B, CATEGORY);
+			"key.aem.biome_finder", KEY_TYPE, InputConstants.KEY_B, CATEGORY);
 
 	@Override
 	public void onInitializeClient() {
@@ -74,8 +82,8 @@ public class AEMClient implements ClientModInitializer {
 				ChatFilterClient.requestToggle();
 			}
 			while (OPEN_BIOME_FINDER.consumeClick()) {
-				if (client.screen == null && BiomeFinderClient.owns()) {
-					client.setScreen(new BiomeFinderScreen());
+				if (MCClient.screen() == null && BiomeFinderClient.owns()) {
+					MCClient.setScreen(new BiomeFinderScreen());
 				}
 			}
 		});

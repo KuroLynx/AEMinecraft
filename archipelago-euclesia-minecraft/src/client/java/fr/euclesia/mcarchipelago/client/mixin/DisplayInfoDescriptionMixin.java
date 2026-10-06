@@ -1,6 +1,7 @@
 package fr.euclesia.mcarchipelago.client.mixin;
 
 import fr.euclesia.mcarchipelago.AEM;
+import fr.euclesia.mcarchipelago.client.utils.MixinTargets;
 import fr.euclesia.mcarchipelago.registry.AEMRegistries;
 import fr.euclesia.mcarchipelago.registry.APTrackerRegistry;
 import fr.euclesia.mcarchipelago.server.ap.ArchipelagoChatListener;
@@ -31,7 +32,7 @@ import java.util.List;
  */
 @Mixin(DisplayInfo.class)
 public abstract class DisplayInfoDescriptionMixin {
-    @Inject(method = "getDescription", at = @At("RETURN"), cancellable = true)
+    @Inject(method = MixinTargets.DISPLAY_DESCRIPTION, at = @At("RETURN"), cancellable = true)
     private void archipelago_euclesia$hintLines(CallbackInfoReturnable<Component> cir) {
         Identifier id = ((AdvancementIdHolder) this).aem$advancementId();
         if (id == null) {

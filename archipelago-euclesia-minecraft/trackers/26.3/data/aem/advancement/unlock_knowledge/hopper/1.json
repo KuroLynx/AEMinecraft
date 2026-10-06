@@ -1,0 +1,24 @@
+{
+  "parent": "aem:unlock_knowledge/ender_chest/1",
+  "criteria": {
+    "never": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "never"
+    ]
+  ],
+  "display": {
+    "icon": {
+      "id": "minecraft:hopper"
+    },
+    "title": "Knowledge: Hopper",
+    "description": "Unlock Knowledge: Hopper",
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": false
+  }
+}

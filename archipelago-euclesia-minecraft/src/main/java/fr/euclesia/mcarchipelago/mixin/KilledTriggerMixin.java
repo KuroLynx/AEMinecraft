@@ -1,7 +1,11 @@
 package fr.euclesia.mcarchipelago.mixin;
 
 import fr.euclesia.mcarchipelago.server.gameplay.TrapMobService;
+//? if >=26.2 {
+/*import net.minecraft.advancements.triggers.KilledTrigger;
+*///?} else {
 import net.minecraft.advancements.criterion.KilledTrigger;
+//?}
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;

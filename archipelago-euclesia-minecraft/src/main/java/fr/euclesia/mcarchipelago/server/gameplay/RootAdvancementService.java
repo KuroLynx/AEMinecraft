@@ -2,7 +2,6 @@ package fr.euclesia.mcarchipelago.server.gameplay;
 
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.archipelago.slot.APSlotData;
-import fr.euclesia.mcarchipelago.mixin.ServerAdvancementManagerAccessor;
 import fr.euclesia.mcarchipelago.registry.APLocationRegistry;
 import fr.euclesia.mcarchipelago.registry.APTrackerRegistry;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
@@ -10,11 +9,17 @@ import net.minecraft.advancements.Advancement;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.advancements.AdvancementProgress;
 import net.minecraft.advancements.AdvancementRequirements;
-import net.minecraft.advancements.AdvancementTree;
+import net.minecraft.advancements.CriterionProgress;
+// 26.2 moved the triggers (and Criterion / CriteriaTriggers with them) into advancements.triggers.
+//? if >=26.2 {
+/*import net.minecraft.advancements.triggers.CriteriaTriggers;
+import net.minecraft.advancements.triggers.Criterion;
+import net.minecraft.advancements.triggers.ImpossibleTrigger;
+*///?} else {
 import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.advancements.Criterion;
-import net.minecraft.advancements.CriterionProgress;
 import net.minecraft.advancements.criterion.ImpossibleTrigger;
+//?}
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.ServerAdvancementManager;
@@ -62,7 +67,6 @@ public final class RootAdvancementService {
      */
     public static void rebuild(MinecraftServer server, APSlotData slotData) {
         ServerAdvancementManager manager = server.getAdvancements();
-        ServerAdvancementManagerAccessor accessor = (ServerAdvancementManagerAccessor) manager;
         Map<Identifier, AdvancementHolder> changed = new HashMap<>();
 
         // Advancements tile: Y anonymous criteria (c0..c{Y-1}). Cap Y at the number of advancements
@@ -82,15 +86,8 @@ public final class RootAdvancementService {
             return;
         }
 
-        // Swap the changed holders into the (immutable) advancement map and rebuild the tree in
-        // place so the tabs keep their identical structure — only these tiles' criteria change.
-        Map<Identifier, AdvancementHolder> updated = new HashMap<>(accessor.archipelago_euclesia$getAdvancements());
-        updated.putAll(changed);
-        accessor.archipelago_euclesia$setAdvancements(Map.copyOf(updated));
-
-        AdvancementTree tree = manager.tree();
-        tree.clear();
-        tree.addAll(accessor.archipelago_euclesia$getAdvancements().values());
+        // Same tab structure — only these tiles' criteria change.
+        TrackerLayoutService.install(manager, changed);
         AEM.LOGGER.info("Rebuilt Archipelago goal tiles: {} advancement criteria, {} boss criteria",
                 advCriteria.size(), bossesHolder == null ? 0 : bossesHolder.value().criteria().size());
     }

@@ -42,9 +42,11 @@ os.chdir(AP_ROOT)
 
 from worlds.AutoWorld import AutoWorldRegister  # noqa: E402
 from test.general import setup_multiworld  # noqa: E402
-from worlds.minecraft_aem.content.registry import base_pack, overlay_packs  # noqa: E402
+from worlds.minecraft_aem.content.registry import overlay_packs  # noqa: E402
+from worlds.minecraft_aem.logic.constants import DEFAULT_MINECRAFT_VERSION  # noqa: E402
 from worlds.minecraft_aem.logic.acquisition import RuleHelper  # noqa: E402
 from worlds.minecraft_aem.logic.root import _manifest  # noqa: E402
+from worlds.minecraft_aem.data import content_for  # noqa: E402
 from worlds.minecraft_aem.logic.criteria import CriteriaCompiler  # noqa: E402
 
 WORLD = AutoWorldRegister.world_types["AEMinecraft"]
@@ -195,7 +197,7 @@ def _leaves(value, path=()):
 
 
 def audit(pack: str):
-    world = setup_multiworld(WORLD, options=ALL_LOCKS).worlds[1]
+    world = setup_multiworld(WORLD, options={**ALL_LOCKS, "minecraft_version": _minecraft_version()}).worlds[1]
     helper = RuleHelper(world)
     compiler = CriteriaCompiler(helper, frozenset(world._get_active_locations()))
     manifest = _manifest(pack)
@@ -293,9 +295,17 @@ def report(stats, compiled, dropped, *, pack, all_rows, examples, markdown):
         print(f"\n({len(read_only)} fully-read paths hidden — pass --all-rows)")
 
 
+def _minecraft_version() -> str:
+    """``--minecraft-version <v>``: the Minecraft version to audit (default: the apworld's default)."""
+    if "--minecraft-version" in sys.argv:
+        return sys.argv[sys.argv.index("--minecraft-version") + 1]
+    return DEFAULT_MINECRAFT_VERSION
+
+
 def main() -> int:
-    pack = base_pack() if "--vanilla" in sys.argv else \
-        (overlay_packs().get("blazeandcave") or base_pack())
+    version = _minecraft_version()
+    base = content_for(version).BASE_PACK
+    pack = base if "--vanilla" in sys.argv else (overlay_packs(version).get("blazeandcave") or base)
     examples = 3
     if "--examples" in sys.argv:
         examples = int(sys.argv[sys.argv.index("--examples") + 1])

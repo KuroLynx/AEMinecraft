@@ -1,0 +1,22 @@
+{
+  "criteria": {
+    "never": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "never"
+    ]
+  ],
+  "display": {
+    "icon": {
+      "id": "minecraft:book"
+    },
+    "title": "Knowledge & Utilities",
+    "description": "Knowledge & utility items to unlock",
+    "background": "minecraft:gui/advancements/backgrounds/adventure",
+    "show_toast": false,
+    "announce_to_chat": false
+  }
+}

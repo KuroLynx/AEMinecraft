@@ -7,17 +7,9 @@ from __future__ import annotations
 
 import json
 import re
+from functools import cache
 from importlib.resources import files
 
-from ..data import (
-    ADVANCEMENT_LOCATIONS,
-    MOBS_ALL,
-    MOBS_BREEDABLE,
-    MOBS_LEASHABLE,
-    MOBS_TAMEABLE,
-    STRUCTURES,
-)
-from .acquisition import RuleHelper, _acquisition_table
 from .ast import Const, Rule, and_, or_
 from .constants import (
     E_ARMADILLO,
@@ -45,7 +37,7 @@ from .constants import (
     S_MANSION,
     S_STRONGHOLD,
 )
-from ..content.registry import base_pack, overlay_packs
+from ..content.registry import overlay_packs
 
 _SMITHING_STATION = "smithing_transform"
 
@@ -129,44 +121,49 @@ _DAMAGE_TAG_GATE = {
     "minecraft:is_player_attack": lambda c: c.h.can_kill(),
 }
 
-_TAGS: dict | None = None
-_BREWING: dict | None = None
-
-
-def _pack_json(filename: str, pack: str | None = None) -> dict:
-    pack = pack or base_pack()  # default to the discovered vanilla base pack
+def _pack_json(filename: str, pack: str) -> dict:
     root = __package__.rsplit(".", 1)[0]  # e.g. "worlds.minecraft_aem"
     with files(root).joinpath("packs", pack, filename).open(encoding="utf-8") as f:
         return json.load(f)
 
 
-def _tags() -> dict:
-    """Lazily-loaded item + entity-type tag table (tools/build_tags.py), keyed by tag id.
+@cache
+def _tags(content) -> dict:
+    """Lazily-loaded item + entity-type tag table (tools/build_tags.py), keyed by tag id, per
+    Minecraft version.
 
     Vanilla plus any optional pack (BACAP) merged in, so BACAP criteria that reference
     ``#blazeandcave:*`` tags (e.g. ``time_to_mine`` → ``#blazeandcave:pickaxes``) resolve instead of
     falling back to the parent chain. Tag namespaces don't collide (``minecraft:`` vs
     ``blazeandcave:``), so a per-registry dict merge is safe; absent pack tags are ignored."""
-    global _TAGS
-    if _TAGS is None:
-        merged = _pack_json("tags.json")
-        bacap = overlay_packs().get("blazeandcave")
-        try:
-            extra = _pack_json("tags.json", pack=bacap) if bacap else {}
-        except (FileNotFoundError, OSError):
-            extra = {}
-        for registry, tags in extra.items():
-            merged.setdefault(registry, {}).update(tags)
-        _TAGS = merged
-    return _TAGS
+    merged = _pack_json("tags.json", content.BASE_PACK)
+    bacap = overlay_packs(content.version).get("blazeandcave")
+    try:
+        extra = _pack_json("tags.json", pack=bacap) if bacap else {}
+    except (FileNotFoundError, OSError):
+        extra = {}
+    for registry, tags in extra.items():
+        merged.setdefault(registry, {}).update(tags)
+    return merged
 
 
-def _brewing() -> dict:
-    """Lazily-loaded potion-type -> reagent items table (packs/.../brewing.json)."""
-    global _BREWING
-    if _BREWING is None:
-        _BREWING = _pack_json("brewing.json")
-    return _BREWING
+@cache
+def _brewing(content) -> dict:
+    """Lazily-loaded potion-type -> reagent items table (packs/.../brewing.json), per Minecraft version."""
+    return _pack_json("brewing.json", content.BASE_PACK)
+
+
+def _reagent_routes(content, potion_type: str) -> list[list[str]] | None:
+    """A potion type's brewing routes from brewing.json, each the reagents one chain needs. An entry
+    is one route (a flat list, the hand-written tables) or several equally short ones
+    (``{"any_of": [[...], ...]}``, from a table dumped off 26.3+'s brewing recipes, where e.g.
+    slowness comes off swiftness OR leaping). ``None`` for a type the table doesn't know."""
+    entry = _brewing(content).get(potion_type)
+    if entry is None:
+        return None
+    if isinstance(entry, dict):
+        return [list(route) for route in entry.get("any_of", [])]
+    return [list(entry)]
 
 # Minecraft dimension id -> our region name.
 # Keyed by the bare dimension path; lookups go through _path so minecraft:the_end / the_end /

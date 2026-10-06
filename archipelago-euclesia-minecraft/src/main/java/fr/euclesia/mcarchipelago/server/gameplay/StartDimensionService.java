@@ -234,14 +234,19 @@ public final class StartDimensionService {
 
     private static boolean isStandableFloor(ServerLevel level, BlockPos pos) {
         BlockState state = level.getBlockState(pos);
-        return state.blocksMotion()
+        return blocksMotion(state)
                 && state.getFluidState().isEmpty()
                 && !state.is(Blocks.MAGMA_BLOCK);
     }
 
+    /** BlockState.blocksMotion(), which 26.3 removed — its body, unchanged, on what every version has. */
+    private static boolean blocksMotion(BlockState state) {
+        return !state.is(Blocks.COBWEB) && !state.is(Blocks.BAMBOO_SAPLING) && state.isSolid();
+    }
+
     private static boolean isClear(ServerLevel level, BlockPos pos) {
         BlockState state = level.getBlockState(pos);
-        return !state.blocksMotion()
+        return !blocksMotion(state)
                 && state.getFluidState().isEmpty()
                 && !state.is(Blocks.FIRE)
                 && !state.is(Blocks.SOUL_FIRE);

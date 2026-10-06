@@ -7,9 +7,11 @@ from importlib.resources import files
 # package __init__ imports this module (via set_rules) before it defines Const/Has/and_/… .
 from BaseClasses import ItemClassification
 
+from functools import cache
+
 from .ast import And, Const, Has, ReachRegion, ReachLocation, and_, or_, at_least
 from . import fixed_point
-from ..content.registry import base_pack, overlay_packs  # registry only imports constants → cycle-safe
+from ..content.registry import overlay_packs  # registry only imports constants → cycle-safe
 from .. import *
 
 # Wood-family items (planks / logs / wood / stems / hyphae, stripped or not) have no knowledge or
@@ -65,32 +67,29 @@ _GAMEPLAY_HARVEST: dict[str, tuple] = {
 _HARVEST_BLOCK = {"cave_vine": "cave_vines"}
 
 # Lazily-loaded acquisition table (tools/build_acquisition.py) + reverse id lookups. Cached because
-# they are read once per generation but queried thousands of times by the trigger compiler.
+# they are read once per generation but queried thousands of times by the trigger compiler; cached per
+# Minecraft version (per content object), since each player may be on a different one.
 _MC_ROOT = __package__.rsplit(".", 1)[0]  # e.g. "worlds.minecraft_aem"
-_ACQUISITION: dict | None = None
-_ENTITY_BY_GID: dict | None = None
 
 
-def _acquisition_table() -> dict:
-    global _ACQUISITION
-    if _ACQUISITION is None:
-        table = _load_pack_acquisition(base_pack())
-        # Overlay packs (BACAP) contribute ONLY their `advancements` reward source onto the base
-        # table (item -> advancement game_ids that grant it). Other overlay sources are intentionally
-        # not merged yet (see registry.overlay_packs / the items-merge TODO). The advancements source
-        # is gated per seed by the bacap_rewards option in reward_sources, so merging it into
-        # the once-cached, option-independent table is safe — an unused source for seeds with the
-        # rewards (or the pack) off.
-        for pack_dir in overlay_packs().values():
-            for item, record in _load_pack_acquisition(pack_dir).items():
-                advancements = record.get("advancements")
-                if not advancements:
-                    continue
-                base_record = table.setdefault(item, {})
-                base_record["advancements"] = sorted(
-                    set(base_record.get("advancements", ())) | set(advancements))
-        _ACQUISITION = table
-    return _ACQUISITION
+@cache
+def _acquisition_table(content) -> dict:
+    table = _load_pack_acquisition(content.BASE_PACK)
+    # Overlay packs (BACAP) contribute ONLY their `advancements` reward source onto the base
+    # table (item -> advancement game_ids that grant it). Other overlay sources are intentionally
+    # not merged yet (see registry.overlay_packs / the items-merge TODO). The advancements source
+    # is gated per seed by the bacap_rewards option in reward_sources, so merging it into
+    # the once-cached, option-independent table is safe — an unused source for seeds with the
+    # rewards (or the pack) off.
+    for pack_dir in overlay_packs(content.version).values():
+        for item, record in _load_pack_acquisition(pack_dir).items():
+            advancements = record.get("advancements")
+            if not advancements:
+                continue
+            base_record = table.setdefault(item, {})
+            base_record["advancements"] = sorted(
+                set(base_record.get("advancements", ())) | set(advancements))
+    return table
 
 
 def _load_pack_acquisition(pack_dir_name: str) -> dict:
@@ -116,7 +115,7 @@ def reward_sources(world) -> dict[str, list[str]]:
         data.game_id: name for name, data in world._get_active_locations().items() if data.game_id
     }
     events: dict[str, list[str]] = {}
-    for base, record in _acquisition_table().items():
+    for base, record in _acquisition_table(world.content).items():
         names = sorted({location_by_gid[gid] for gid in record.get("advancements", ())
                         if gid in location_by_gid})
         if names:
@@ -124,11 +123,9 @@ def reward_sources(world) -> dict[str, list[str]]:
     return events
 
 
-def _entity_by_gid() -> dict:
-    global _ENTITY_BY_GID
-    if _ENTITY_BY_GID is None:
-        _ENTITY_BY_GID = {data.game_id: name for name, data in MOBS_ALL.items()}
-    return _ENTITY_BY_GID
+@cache
+def _entity_by_gid(content) -> dict:
+    return {data.game_id: name for name, data in content.MOBS_ALL.items()}
 
 
 def _wood_region(base: str) -> str | None:
@@ -260,8 +257,9 @@ _AGING_PREFIXES = ("exposed_", "weathered_", "oxidized_")
 _EXTRA_DROP_KNOWLEDGE = {
     ("cobweb", "string"): K_SWORD,
     # A composter only holds bone meal after you fill it, and filling is a right-click the station
-    # gate refuses — so even a village composter costs the Knowledge. Derived name: containers.json.
-    ("composter", "bone_meal"): BLOCK_KNOWLEDGE.get("minecraft:composter", ""),
+    # gate refuses — so even a village composter costs the Knowledge. Named by BLOCK: the knowledge is
+    # that version's containers.json gate for it, looked up where this table is read.
+    ("composter", "bone_meal"): "minecraft:composter",
 }
 # Blocks the jar places in CODE rather than in a structure's template palette, so build_structures
 # cannot see them: a dried ghast generates in the Nether fossils of a soul sand valley, but the only
@@ -287,46 +285,31 @@ _BUCKET_CONTENT_MOBS: dict[str, tuple[str, ...]] = {
 }
 # needs_<tier>_tool tag -> the material tier the mining pickaxe (and the player) must have reached.
 _NEEDS_TIER = {"stone": MAT_STONE, "iron": MAT_IRON, "diamond": MAT_DIAMOND}
-_BLOCK_MINING: dict | None = None
+@cache
+def _pack_json(content, filename: str, missing_ok: bool = False) -> dict:
+    """One of this version's base-pack files, parsed once."""
+    path = files(_MC_ROOT).joinpath("packs", content.BASE_PACK, filename)
+    if missing_ok and not path.is_file():
+        return {}
+    with path.open(encoding="utf-8") as handle:
+        return json.load(handle)
 
 
-def _block_mining() -> dict:
-    global _BLOCK_MINING
-    if _BLOCK_MINING is None:
-        path = files(_MC_ROOT).joinpath("packs", base_pack(), "block_mining.json")
-        with path.open(encoding="utf-8") as handle:
-            _BLOCK_MINING = json.load(handle)
-    return _BLOCK_MINING
+def _block_mining(content) -> dict:
+    return _pack_json(content, "block_mining.json")
 
 
-_BLOCK_STRUCTURES: dict | None = None
-_ITEM_TAGS: dict | None = None
-_BLOCK_BIOMES: dict | None = None
-
-
-def _rare_biome_block(block: str) -> bool:
+def _rare_biome_block(content, block: str) -> bool:
     """Whether ``block`` generates only in RARE_BIOMES (tools/build_block_biomes.py, read off the jar's
     worldgen), so mining it where it grows means finding one of those biomes. A block the table does
     not list is not biome worldgen at all and gets no gate. Same rarity judgement as BIOME_BOUND_MOBS."""
-    global _BLOCK_BIOMES
-    if _BLOCK_BIOMES is None:
-        path = files(_MC_ROOT).joinpath("packs", base_pack(), "block_biomes.json")
-        try:
-            with path.open(encoding="utf-8") as handle:
-                _BLOCK_BIOMES = json.load(handle)
-        except FileNotFoundError:
-            _BLOCK_BIOMES = {}
-    biomes = _BLOCK_BIOMES.get(block)
+    biomes = _pack_json(content, "block_biomes.json", missing_ok=True).get(block)
     return bool(biomes) and all(biome in RARE_BIOMES for biome in biomes)
 
 
-def _item_tag(tag: str) -> frozenset:
+def _item_tag(content, tag: str) -> frozenset:
     """Members of a vanilla item tag (tags.json, already expanded), as bare paths."""
-    global _ITEM_TAGS
-    if _ITEM_TAGS is None:
-        with files(_MC_ROOT).joinpath("packs", base_pack(), "tags.json").open(encoding="utf-8") as handle:
-            _ITEM_TAGS = json.load(handle).get("item", {})
-    return frozenset(member.split(":", 1)[-1] for member in _ITEM_TAGS.get(tag, ()))
+    return frozenset(member.split(":", 1)[-1] for member in _pack_json(content, "tags.json").get("item", {}).get(tag, ()))
 
 
 # Sherds that come out of a structure's own decorated pots and no loot table at all — the 26.1.2 jar
@@ -350,34 +333,32 @@ _STRUCTURE_POT_SHERDS: dict[str, str] = {
 }
 
 
-def _aged_source(block: str) -> str | None:
+def _aged_source(content, block: str) -> str | None:
     """The plain item an aged copper block weathered FROM (``exposed_copper_bars`` ->
     ``minecraft:copper_bars``), or ``None`` when the block is not an aged form of something the
     acquisition table knows. See ``_AGING_PREFIXES``."""
     for prefix in _AGING_PREFIXES:
         if block.startswith(prefix):
             plain = block[len(prefix):]
-            if plain in _acquisition_table():
+            if plain in _acquisition_table(content):
                 return f"minecraft:{plain}"
     return None
 
 
-def _block_structures() -> dict:
+@cache
+def _block_structures(content) -> dict:
     """Reverse of each structure's natural-generation palette (structures.json -> STRUCTURES): block
     id -> the structures it generates in. Lets acquire() treat 'mine this block where it spawns in a
     structure' as a source for a placed-only block (e.g. a comparator in an Ancient City) that
     recipes/loot tables miss."""
-    global _BLOCK_STRUCTURES
-    if _BLOCK_STRUCTURES is None:
-        mapping: dict[str, list] = {}
-        for struct_name, data in STRUCTURES.items():
-            for block in data.blocks:
-                mapping.setdefault(block, []).append(struct_name)
-        for block, extra in _EXTRA_BLOCK_STRUCTURES.items():
-            known = mapping.setdefault(block, [])
-            known += [name for name in extra if name in STRUCTURES and name not in known]
-        _BLOCK_STRUCTURES = mapping
-    return _BLOCK_STRUCTURES
+    mapping: dict[str, list] = {}
+    for struct_name, data in content.STRUCTURES.items():
+        for block in data.blocks:
+            mapping.setdefault(block, []).append(struct_name)
+    for block, extra in _EXTRA_BLOCK_STRUCTURES.items():
+        known = mapping.setdefault(block, [])
+        known += [name for name in extra if name in content.STRUCTURES and name not in known]
+    return mapping
 
 
 def _block_region(block: str) -> str:
@@ -445,6 +426,8 @@ class RuleHelper:
     def __init__(self, world: World, glitch: bool = False):
         self.world = world
         self.player = world.player
+        # This player's Minecraft version's mobs, structures, container gates… (minecraft_version)
+        self.content = world.content
         # Structures locked behind a 'Structure Unlock' item (structure_unlock option). Others are
         # gated by their dimension being reachable instead (see self.structure).
         self.locked_structures = world._get_locked_structures()
@@ -494,7 +477,7 @@ class RuleHelper:
             if world._structure_classification(name) == ItemClassification.progression
         }
         self.progression_mobs = {
-            name for name in MOBS_ALL
+            name for name in self.content.MOBS_ALL
             if world._mob_classification(name) == ItemClassification.progression
         }
         # item_gate_behavior, route -> is it gated. Strict logic ignores this and assumes every route
@@ -704,7 +687,7 @@ class RuleHelper:
         # strict_only, like a criterion that names a biome: the glitch graph waives the Finder, never the
         # mob's Entity Unlock, which entity() asks for separately.
         self.biome_bound_mobs = {name: (lambda: self.strict_only(self.needs_biome_finder()))
-                                 for name in BIOME_BOUND_MOBS}
+                                 for name in self.content.BIOME_BOUND_MOBS}
         # …plus the three the spawn lists cannot speak for, because what they cost is not a search:
         self.biome_bound_mobs.update({
             # Frogs spawn in ordinary swamps, so the derivation rightly leaves them alone — but a frog
@@ -721,7 +704,7 @@ class RuleHelper:
                 self.strict_only(self.needs_biome_finder()),
             ),
         })
-        if not BIOME_BOUND_MOBS:
+        if not self.content.BIOME_BOUND_MOBS:
             # A content pack dumped before `biomes` existed says nothing about spawn biomes, and
             # silence must not read as "gate nothing" — that would quietly loosen every one of these.
             for name in (E_AXOLOTL, E_GOAT, E_MOOSHROOM):
@@ -749,7 +732,7 @@ class RuleHelper:
     # Structures
     # -----------------------------------------------------------------------
     def structure(self, struct_gid: str):
-        if struct_gid not in STRUCTURES:
+        if struct_gid not in self.content.STRUCTURES:
             print(f"Warning: {struct_gid} not found !")
             return Const(False)
         if struct_gid not in self.active_structures:
@@ -758,7 +741,7 @@ class RuleHelper:
         # reachable, Nether/End need their access). Locked structures additionally require their
         # unlock item — but the dimension gate still applies, so e.g. the Nether ruined portal is
         # not reachable from the Overworld just because its unlock item was received.
-        region = self.access_region(STRUCTURES[struct_gid].region)
+        region = self.access_region(self.content.STRUCTURES[struct_gid].region)
         # A stronghold chest holds Ender Pearls and the stronghold is found with Ender Eyes: that
         # loop resolves in fixed_point (a route that needs the stronghold found can't be how you
         # first find it), so nothing here guards against it.
@@ -766,7 +749,7 @@ class RuleHelper:
         prereq = prereq_thunk() if prereq_thunk is not None else Const(True)
         located = self.structure_located(struct_gid)
         if struct_gid in self.locked_structures:
-            return self.all_of(self.has(f"{STRUCT_UNLOCK_PREFIX}{STRUCTURES[struct_gid].label}"),
+            return self.all_of(self.has(f"{STRUCT_UNLOCK_PREFIX}{self.content.STRUCTURES[struct_gid].label}"),
                                region, prereq, located)
         return self.all_of(region, prereq, located)
 
@@ -1237,7 +1220,7 @@ class RuleHelper:
         # At least one non-boss mob is reachable (every non-boss mob is beatable bare-handed). Used
         # where the action is just "kill something", e.g. spreading sculk.
         return self.any_of(*[
-            self.entity(name) for name, data in MOBS_ALL.items()
+            self.entity(name) for name, data in self.content.MOBS_ALL.items()
             if data.category != MCEntityCategory.BOSS
         ])
 
@@ -1449,10 +1432,10 @@ class RuleHelper:
         return at_least(n, [self.entity(name) for name in entity_names])
 
     def entity(self, entity_name: str):
-        if entity_name not in MOBS_ALL:
+        if entity_name not in self.content.MOBS_ALL:
             print(f"Warning: {entity_name} not found !")
 
-        entity_data = MOBS_ALL[entity_name]
+        entity_data = self.content.MOBS_ALL[entity_name]
         structure_thunk = self.structure_bound_mobs.get(entity_name)
         structure_node = structure_thunk() if structure_thunk is not None else Const(True)
         build_thunk = self.constructed_mobs.get(entity_name)
@@ -1482,7 +1465,7 @@ class RuleHelper:
         recipe = self.summon_recipes.get(entity_name)
         if recipe is None:
             return self.entity(entity_name)
-        entity_data = MOBS_ALL[entity_name]
+        entity_data = self.content.MOBS_ALL[entity_name]
         mob_locked = (entity_name in self.locked_mobs)
         unlock_node = self.has(f"{ENTITY_UNLOCK_PREFIX}{entity_name}") if mob_locked else Const(True)
         return self.all_of(
@@ -1614,7 +1597,7 @@ class RuleHelper:
         tier = _MATERIAL_TIER_BY_ITEM.get(base)
         if tier:
             parts.append(self.has(ITEM_MATERIAL_HANDLING, tier))
-        knowledge_name, tool_tier = TOOL_LOCKS.get(base, (BLOCK_KNOWLEDGE.get(f"minecraft:{base}"), 0))
+        knowledge_name, tool_tier = TOOL_LOCKS.get(base, (self.content.BLOCK_KNOWLEDGE.get(f"minecraft:{base}"), 0))
         if knowledge_name is not None and knowledge_name in self.active_knowledges:
             parts.append(self.knowledge(knowledge_name))
             if tool_tier > 0:
@@ -1864,7 +1847,7 @@ class RuleHelper:
         # table's `attacker` condition). The dump records no such source, so ward, chirp, far, mall,
         # mellohi, stal, strad, wait, 11 and blocks had none at all, and every check wanting one fell
         # back to its parent chain — 'All the Items!' came out as reaching 'All the Blocks!'.
-        if base in _item_tag("minecraft:creeper_drop_music_discs"):
+        if base in _item_tag(self.content, "minecraft:creeper_drop_music_discs"):
             routes = [self.all_of(self.has_any_entities(E_SKELETON, E_STRAY, E_BOGGED, E_PARCHED),
                                   self.entity(E_CREEPER))]
             sources = self._acquire_from_sources(base)
@@ -1887,7 +1870,7 @@ class RuleHelper:
         structure_pot = _STRUCTURE_POT_SHERDS.get(base)
         if structure_pot is not None:
             breakers = [self.acquire(f"minecraft:{tool}")
-                        for tool in sorted(_item_tag("minecraft:breaks_decorated_pots"))]
+                        for tool in sorted(_item_tag(self.content, "minecraft:breaks_decorated_pots"))]
             breakers = [node for node in breakers if node is not None]
             if structure_pot not in self.active_structures or not breakers:
                 return None
@@ -1938,7 +1921,7 @@ class RuleHelper:
         # picking it up (tool_locks), so obtaining the BLOCK ITEM needs the Knowledge on top of its
         # ordinary sources. Its own recipe is additionally gated on the station that makes it, which
         # _recipe_node already applies.
-        block_knowledge = BLOCK_KNOWLEDGE.get(f"minecraft:{base}")
+        block_knowledge = self.content.BLOCK_KNOWLEDGE.get(f"minecraft:{base}")
         if block_knowledge is not None:
             sources = self._acquire_from_sources(base)
             if sources is not None:
@@ -1987,7 +1970,7 @@ class RuleHelper:
         structure loot, archaeology, gameplay), each carrying its region/tier gate; ``None`` when the
         item has no acquisition record or no usable source. Shared by ordinary items and tool/armor
         gates."""
-        record = _acquisition_table().get(base)
+        record = _acquisition_table(self.content).get(base)
         if record is None:
             return None
         chances = record.get("chances", {})
@@ -2019,8 +2002,8 @@ class RuleHelper:
             # A recipe is deterministic; whether its INGREDIENTS are is decided in their own acquire.
             add(self._recipe_node(recipe))
         for mob_file in record.get("drops", ()):
-            name = _entity_by_gid().get(f"minecraft:{mob_file}")
-            if name in MOBS_ALL:
+            name = _entity_by_gid(self.content).get(f"minecraft:{mob_file}")
+            if name in self.content.MOBS_ALL:
                 # A drop needs the mob *defeated*, not merely reached: harmless for ordinary mobs
                 # (can_defeat == reachability) but correct for boss drops like the Wither's nether
                 # star, which must gate on the whole boss fight rather than just entering its arena.
@@ -2030,9 +2013,9 @@ class RuleHelper:
         # Data-driven: when the item has a tier-gated ORE source, a same-item block carrying no tier
         # info is a circular placed form (e.g. ``redstone_wire`` beside ``redstone_ore`` [iron]) whose
         # bare region path would undercut the ore's tier gate — the tiered ore is the real source.
-        has_tiered_ore = any(_block_mining().get(b, {}).get("needs") for b in mining_blocks)
+        has_tiered_ore = any(_block_mining(self.content).get(b, {}).get("needs") for b in mining_blocks)
         for block in mining_blocks:
-            if has_tiered_ore and _block_mining().get(block) is None:
+            if has_tiered_ore and _block_mining(self.content).get(block) is None:
                 continue
             # A potted plant is the flower pot plus the plant, placed by hand or by a village
             # decorator. Mining one back is circular, and reading it as a natural source made the
@@ -2064,8 +2047,8 @@ class RuleHelper:
             # chest; lapis lazuli and raw iron kept theirs purely because their names are not
             # substrings of `lapis_ore` / `iron_ore`. Stricter than the game rather than looser, so it
             # leaked nothing — but it priced the ores the pickaxe and material tiers exist for.
-            natural_block = (_block_mining().get(block) is not None
-                             and not _acquisition_table().get(block, {}).get("recipes"))
+            natural_block = (_block_mining(self.content).get(block) is not None
+                             and not _acquisition_table(self.content).get(block, {}).get("recipes"))
             is_variant = block != base and base in block and not natural_block
             if (block == base or (is_variant and placed_only))                     and placed_only and base not in _NATURAL_SELF_MINED:
                 # The self-mine is circular (placed-only), but the block may still generate naturally
@@ -2081,7 +2064,7 @@ class RuleHelper:
                 mine = self._mining_node(block, base)
                 if mine is None:
                     continue
-                for struct_name in _block_structures().get(base, ()):
+                for struct_name in _block_structures(self.content).get(base, ()):
                     if struct_name in self.active_structures:
                         add(self.all_of(self.structure(struct_name), mine),
                             struct_name not in self.progression_structures, runs_dry=True)
@@ -2116,7 +2099,7 @@ class RuleHelper:
             # and you can't make either happen — the definition of a route AP shouldn't plan around.
             add(self.can_trade_wandering_trader(), True)
         for structure_name in record.get("structures", ()):
-            if structure_name in STRUCTURES:
+            if structure_name in self.content.STRUCTURES:
                 # Structure loot lives in containers, so reaching the structure isn't enough when the
                 # Chest gate is on — you also have to be able to open one. Chest stands in for the whole
                 # family here: a few tables put their loot in barrels or pots instead, and demanding the
@@ -2126,7 +2109,7 @@ class RuleHelper:
                     unreliable("structures", structure_name)
                     or structure_name not in self.progression_structures, runs_dry=True)
         for structure_name in record.get("archaeology", ()):
-            if structure_name in STRUCTURES:
+            if structure_name in self.content.STRUCTURES:
                 # Archaeology loot is not chest loot: a pottery sherd, a sniffer egg or a trail-ruins
                 # trim template is BRUSHED out of suspicious sand or gravel, and breaking the block
                 # instead destroys what was inside. Both dumps used to fold these tables in with the
@@ -2256,7 +2239,7 @@ class RuleHelper:
         the player and a structure chest at all."""
         if self.route_open("container"):
             return Const(True)
-        return self.knowledge(BLOCK_KNOWLEDGE.get("minecraft:chest", ""))
+        return self.knowledge(self.content.BLOCK_KNOWLEDGE.get("minecraft:chest", ""))
 
     def _station_node(self, station: str | None):
         """What a recipe's station costs: permission to use one, AND one to use.
@@ -2287,7 +2270,7 @@ class RuleHelper:
         # that runs on a placed block (smelting, stonecutting, smithing …) is `station`. With the
         # seed's route open the permissive graph asks for no Knowledge — but still for the block.
         if not self.route_open("crafting" if key == "crafting" else "station"):
-            names = RECIPE_STATION_KNOWLEDGE.get(key)
+            names = self.content.RECIPE_STATION_KNOWLEDGE.get(key)
             if names:
                 # A crafter is itself crafted on a crafting table, so Knowledge: Crafter alone crafts
                 # nothing — it read as "can craft" and put composters in logic with no way to make one.
@@ -2296,7 +2279,7 @@ class RuleHelper:
         if key != "crafting":
             # Obtaining the station. A station made only from its own output never gets a price
             # (fixed_point); if no candidate resolves at all, the Knowledge alone carries the recipe.
-            blocks = [self.acquire(block) for block in RECIPE_STATION_BLOCKS.get(key, ())]
+            blocks = [self.acquire(block) for block in self.content.RECIPE_STATION_BLOCKS.get(key, ())]
             blocks = [node for node in blocks if node is not None]
             if blocks:
                 parts.append(self.any_of(*blocks))
@@ -2330,7 +2313,7 @@ class RuleHelper:
         Touch. block_mining's ``drops`` records that per item, so the gate lands on glow lichen and
         dead bush without touching the wheat seeds off the same grass."""
         parts = [self.access_region(_block_region(block))]
-        info = _block_mining().get(block)
+        info = _block_mining(self.content).get(block)
         if info is not None:
             # A block is listed for either reason now — a pickaxe tier, or a per-item tool. Only the
             # first means "you need a pickaxe"; glow lichen is in the table and mines bare-handed.
@@ -2348,6 +2331,8 @@ class RuleHelper:
         # Applied whether or not the block is in block_mining: this requirement comes from the
         # block's hardness, not from its loot table (see _EXTRA_DROP_KNOWLEDGE).
         knowledge = _EXTRA_DROP_KNOWLEDGE.get((block, item))
+        if knowledge is not None and knowledge.startswith("minecraft:"):   # a block: its container gate
+            knowledge = self.content.BLOCK_KNOWLEDGE.get(knowledge, "")
         if knowledge is not None:
             parts.append(self.knowledge(knowledge))
         if silk:
@@ -2367,12 +2352,12 @@ class RuleHelper:
         seed = _PLANTED_CROPS.get(block) or _PLACED_FROM.get(block)
         if seed is not None:
             return self.acquire(seed)
-        aged = _aged_source(block)
+        aged = _aged_source(self.content, block)
         if aged is not None:
             # The plain item, weathered — plus mining one that generated already aged, which only the
             # structure palettes know about (and which _unique_or collapses when it is redundant).
             routes = [route for route in (self.acquire(aged),) if route is not None]
-            routes += [self.structure(name) for name in _block_structures().get(block, ())
+            routes += [self.structure(name) for name in _block_structures(self.content).get(block, ())
                        if name in self.active_structures]
             return self.any_of(*routes) if routes else None
         entry = _BLOCK_ONLY_FROM.get(block)
@@ -2399,10 +2384,10 @@ class RuleHelper:
         jungle logs, sculk and mycelium were all priced as "be in the Overworld". The Finder is how
         strict logic finds a biome (strict_only, as for a criterion that names one); a structure whose
         palette places the block is the other way to stand next to one."""
-        if not _rare_biome_block(block):
+        if not _rare_biome_block(self.content, block):
             return self.all_of()
         return self.any_of(self.strict_only(self.needs_biome_finder()),
-                           *[self.structure(name) for name in _block_structures().get(block, ())])
+                           *[self.structure(name) for name in _block_structures(self.content).get(block, ())])
 
     def _placed_block_origin(self, block: str):
         """Origin of a block nobody finds lying around, derived rather than curated: one whose record
@@ -2422,7 +2407,7 @@ class RuleHelper:
         ``None`` when neither origin exists this seed — the caller then drops the route."""
         if block in _NATURAL_SELF_MINED:
             return self._natural_origin(block)  # curated: it really is lying around out there
-        record = _acquisition_table().get(block)
+        record = _acquisition_table(self.content).get(block)
         if not record or not record.get("recipes"):
             return self._natural_origin(block)
         # Only a source that PUTS the block somewhere says it can be found standing. Loot, drops,
@@ -2433,7 +2418,7 @@ class RuleHelper:
             return self._natural_origin(block)
         if any(mined != block for mined in record.get("mining", ())):
             return self._natural_origin(block)
-        routes = [self.structure(name) for name in _block_structures().get(block, ())
+        routes = [self.structure(name) for name in _block_structures(self.content).get(block, ())
                   if name in self.active_structures]
         crafted = self.acquire(f"minecraft:{block}")
         if crafted is not None:
@@ -2544,7 +2529,7 @@ class RuleHelper:
             # record: gunpowder and a dye are required, the shape and effect slots optional. With no
             # record the star was unpriceable, and 'All the Items!' fell back to its parent chain.
             dyes = [node for node in (self.acquire(f"minecraft:{dye}")
-                                      for dye in sorted(_item_tag("minecraft:dyes"))) if node is not None]
+                                      for dye in sorted(_item_tag(self.content, "minecraft:dyes"))) if node is not None]
             gunpowder = self.acquire("minecraft:gunpowder")
             if gunpowder is None or not dyes:
                 return None

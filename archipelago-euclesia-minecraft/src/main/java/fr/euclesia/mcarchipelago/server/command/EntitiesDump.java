@@ -105,7 +105,7 @@ public final class EntitiesDump {
             // Keep only true mobs. Filtering on Mob (not MobCategory.MISC) is deliberate: MISC holds
             // both non-mobs (items, projectiles, boats, armor stands — NOT Mobs, so skipped here) AND
             // real built/structure mobs (villagers, golems — Mobs, so KEPT). Bosses are Mobs too.
-            Entity sample = type.create(level, EntitySpawnReason.COMMAND);
+            Entity sample = sample(type, level, EntitySpawnReason.COMMAND);
             if (!(sample instanceof Mob mob)) {
                 if (sample != null) {
                     sample.discard();
@@ -137,6 +137,19 @@ public final class EntitiesDump {
         JsonArray out = new JsonArray();
         records.values().forEach(out::add);
         return out;
+    }
+
+    /**
+     * A throwaway instance to inspect. From 26.2 on, a plain {@code create} first asks whether the type
+     * may spawn in this level and returns null if not; the dump's world is Peaceful, so that dropped
+     * every hostile mob. Skipping the checks gives the instance regardless.
+     */
+    private static Entity sample(EntityType<?> type, ServerLevel level, EntitySpawnReason reason) {
+        //? if >=26.2 {
+        /*return type.create(level, new net.minecraft.world.entity.EntitySpawnRequest(reason, true));
+        *///?} else {
+        return type.create(level, reason);
+        //?}
     }
 
     /** boss (known set) > neutral (NeutralMob) > hostile (MONSTER category) > passive. */
@@ -191,7 +204,7 @@ public final class EntitiesDump {
         if (!(mob instanceof Animal a) || !a.canFallInLove() || !hasBreedingFood(a) || !hasBreedingAi(mob)) {
             return false;
         }
-        Entity partner = type.create(level, EntitySpawnReason.BREEDING);
+        Entity partner = sample(type, level, EntitySpawnReason.BREEDING);
         if (!(partner instanceof Animal b)) {
             if (partner != null) {
                 partner.discard();
@@ -330,11 +343,11 @@ public final class EntitiesDump {
         for (Map.Entry<Identifier, Resource> entry : biomes.entrySet()) {
             String biome = bareBiomeName(entry.getKey());
             String dim = end.contains(biome) ? "end" : nether.contains(biome) ? "nether" : "overworld";
-            JsonObject json = readJson(entry.getValue());
-            if (json == null || !json.has("spawners") || !json.get("spawners").isJsonObject()) {
+            JsonObject spawners = spawnersOf(readJson(entry.getValue()));
+            if (spawners == null) {
                 continue;
             }
-            for (Map.Entry<String, JsonElement> cat : json.getAsJsonObject("spawners").entrySet()) {
+            for (Map.Entry<String, JsonElement> cat : spawners.entrySet()) {
                 if (!cat.getValue().isJsonArray()) {
                     continue;
                 }
@@ -362,6 +375,32 @@ public final class EntitiesDump {
             out.put(e.getKey(), f[0] ? "Overworld" : f[1] ? "Nether" : f[2] ? "The End" : "Overworld");
         }
         return new SpawnData(out, spawnBiomes);
+    }
+
+    /**
+     * A biome's per-category spawn lists: {@code spawners} up to 26.2; from 26.3 the environment
+     * attribute {@code minecraft:gameplay/natural_mob_spawns}, whose argument holds
+     * {@code spawns_by_category} in the same shape. Null when the biome has neither.
+     */
+    private static JsonObject spawnersOf(JsonObject biome) {
+        if (biome == null) {
+            return null;
+        }
+        if (biome.has("spawners") && biome.get("spawners").isJsonObject()) {
+            return biome.getAsJsonObject("spawners");
+        }
+        JsonElement attributes = biome.get("attributes");
+        if (attributes == null || !attributes.isJsonObject()) {
+            return null;
+        }
+        JsonElement spawns = attributes.getAsJsonObject().get("minecraft:gameplay/natural_mob_spawns");
+        if (spawns == null || !spawns.isJsonObject()) {
+            return null;
+        }
+        JsonElement argument = spawns.getAsJsonObject().get("argument");
+        JsonElement byCategory = argument != null && argument.isJsonObject()
+                ? argument.getAsJsonObject().get("spawns_by_category") : null;
+        return byCategory != null && byCategory.isJsonObject() ? byCategory.getAsJsonObject() : null;
     }
 
     /** A sorted json array of strings; an absent/empty set becomes an empty array, not null. */

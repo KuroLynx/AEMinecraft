@@ -22,8 +22,6 @@ from .data import (
     ITEM_BIOME_FINDER,
     ITEMS,
     MCLocationCategory,
-    MOBS_ALL,
-    STRUCTURES,
 )
 
 TRACKER_NAMESPACE = "aem"
@@ -156,7 +154,7 @@ def build_trackers_export(world) -> dict:
     # static datapack has an unlock_mob tile per possible mob (grouped by category); activating just
     # the locked ones lights up exactly those tiles in their category blocks, like structure unlocks.
     for mob_name in world._get_locked_mobs():
-        mob_data = MOBS_ALL[mob_name]
+        mob_data = world.content.MOBS_ALL[mob_name]
         trackers[tracker_id(KIND_UNLOCK_MOB, mob_data.game_id)] = {
             "kind": "unlock",
             "item_id": BASE_ID_ENTITY_UNLOCK + mob_data.id,
@@ -164,7 +162,7 @@ def build_trackers_export(world) -> dict:
 
     # Structure unlocks (items) — only structures locked by the structure_unlock option.
     for struct_name in world._get_locked_structures():
-        struct_data = STRUCTURES[struct_name]
+        struct_data = world.content.STRUCTURES[struct_name]
         trackers[tracker_id(KIND_UNLOCK_STRUCTURE, struct_data.game_id)] = {
             "kind": "unlock",
             "item_id": BASE_ID_STRUCT_UNLOCK + struct_data.id,

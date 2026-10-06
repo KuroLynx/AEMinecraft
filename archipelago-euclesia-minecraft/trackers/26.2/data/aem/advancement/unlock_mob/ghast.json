@@ -1,0 +1,24 @@
+{
+  "parent": "aem:unlock_mob/evoker",
+  "criteria": {
+    "never": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "never"
+    ]
+  ],
+  "display": {
+    "icon": {
+      "id": "minecraft:ghast_spawn_egg"
+    },
+    "title": "Ghast",
+    "description": "Unlock Ghast spawns",
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": false
+  }
+}

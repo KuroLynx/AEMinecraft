@@ -4,13 +4,45 @@ from Options import (Choice, DefaultOnToggle, OptionDict, OptionError, OptionSet
                      PerGameCommonOptions, Range, Toggle)
 
 from .data import (
-    ADVANCEMENT_LOCATIONS,
+    ALL_VERSIONS_ADVANCEMENTS,
+    ALL_VERSIONS_BOSSES,
+    ALL_VERSIONS_MOBS,
+    ALL_VERSIONS_STRUCTURES,
+    DEFAULT_MINECRAFT_VERSION,
     KNOWLEDGES,
     KNOWLEDGES_BY_CATEGORY,
-    MOBS_ALL,
-    MOBS_BOSS,
-    STRUCTURES,
+    MINECRAFT_VERSIONS,
 )
+
+
+def _minecraft_version_option() -> type:
+    """The minecraft_version option, one choice per version that has packs (built here rather than
+    written out, so a dumped version becomes selectable with no code change). Choices are named by
+    the version itself ("26.1.2") — AP reads an option's names off its ``option_*`` attributes, which a
+    type() call can give dots that a class body can't."""
+    attrs = {f"option_{version}": index for index, version in enumerate(MINECRAFT_VERSIONS)}
+    attrs.update({
+        "__module__": __name__,
+        "__doc__": f"""The Minecraft version you play on.
+
+    Must match the game you run with the mod: items, mobs, structures and advancements differ between
+    versions, and the mod refuses to enter a world generated for another one. With blazeandcave on,
+    install the BlazeandCave's Advancements Pack release made for that version.
+
+    Valid values: {", ".join(MINECRAFT_VERSIONS)}.
+    """,
+        "display_name": "Minecraft Version",
+        "default": MINECRAFT_VERSIONS.index(DEFAULT_MINECRAFT_VERSION),
+        # By name: YAML reads 26.2 as a number, and Choice.from_any would take a bare integer as a
+        # choice INDEX. An integer that isn't a version name still is one (AP passes the default
+        # that way when a YAML omits the option).
+        "from_any": classmethod(lambda cls, data: cls(data) if isinstance(data, int) and str(data) not in cls.options
+                                else cls.from_text(str(data))),
+    })
+    return type("MinecraftVersion", (Choice,), attrs)
+
+
+MinecraftVersion = _minecraft_version_option()
 
 
 class BossList(OptionSet):
@@ -28,7 +60,7 @@ class BossList(OptionSet):
             - Ender Dragon
     """
     display_name = "Boss List"
-    valid_keys = {"All"} | set(MOBS_BOSS.keys())
+    valid_keys = {"All"} | set(ALL_VERSIONS_BOSSES.keys())
     default = frozenset({"Ender Dragon"})
 
 
@@ -46,9 +78,9 @@ class AdvancementsRequired(Range):
     display_name = "Advancements Required"
     range_start = 0
     # Derived from the loaded content so the cap always matches the bundled manifests (vanilla +
-    # BACAP); it shifts automatically when a manifest is updated for a new/older game version. The
+    # BACAP, every Minecraft version); it shifts automatically when a manifest is updated. The
     # generator still clamps the chosen value down to the advancements that exist in each seed.
-    range_end = len(ADVANCEMENT_LOCATIONS)
+    range_end = len(ALL_VERSIONS_ADVANCEMENTS)
     default = 75
 
 
@@ -113,7 +145,7 @@ class MobSpawnLock(OptionSet):
             - Creeper
     """
     display_name = "Mob Spawn Lock"
-    valid_keys = {"All", "passive", "neutral", "hostile", "boss"} | set(MOBS_ALL.keys())
+    valid_keys = {"All", "passive", "neutral", "hostile", "boss"} | set(ALL_VERSIONS_MOBS.keys())
     default = frozenset({"boss"})
 
 
@@ -140,7 +172,7 @@ class StructureUnlock(OptionSet):
             - All
     """
     display_name = "Structure Unlock"
-    valid_keys = {"All", "Overworld", "Nether", "The End"} | {data.label for data in STRUCTURES.values()}
+    valid_keys = {"All", "Overworld", "Nether", "The End"} | {data.label for data in ALL_VERSIONS_STRUCTURES.values()}
     default = frozenset({"Stronghold"})
 
 
@@ -581,6 +613,7 @@ class InventoryLock(OptionDict):
 
 @dataclass
 class MCOptions(PerGameCommonOptions):
+    minecraft_version: MinecraftVersion
     boss_list: BossList
     start_dimension: StartDimension
     advancements_required: AdvancementsRequired

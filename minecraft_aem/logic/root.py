@@ -3,8 +3,8 @@ from importlib.resources import files
 
 from worlds.generic.Rules import set_rule
 
-from ..data import ADVANCEMENT_LOCATIONS, MOBS_ALL, MCEntityCategory
-from ..content.registry import base_pack, overlay_packs
+from ..data import MCEntityCategory
+from ..content.registry import overlay_packs
 from .acquisition import RuleHelper
 from .ast import Const
 from .constants import *
@@ -32,12 +32,13 @@ def build_location_rules(world, glitch: bool = False) -> dict:
     helper = RuleHelper(world, glitch=glitch)
     existing = set(world._get_active_locations())
     curated = collect_advancement_rules(helper)              # by display name
-    _bacap = overlay_packs().get("blazeandcave")
-    manifest = _manifest(_bacap if (world.options.blazeandcave and _bacap) else base_pack())
+    content = world.content
+    _bacap = overlay_packs(content.version).get("blazeandcave")
+    manifest = _manifest(_bacap if (world.options.blazeandcave and _bacap) else content.BASE_PACK)
     compiler = CriteriaCompiler(helper, frozenset(existing), records=manifest)
 
     rules: dict = {}
-    for location_name, loc_data in ADVANCEMENT_LOCATIONS.items():
+    for location_name, loc_data in content.ADVANCEMENT_LOCATIONS.items():
         if location_name not in existing:
             continue
         record = manifest.get(loc_data.game_id)
@@ -52,9 +53,9 @@ def build_location_rules(world, glitch: bool = False) -> dict:
         rules[location_name] = condition
 
     for mob_name, condition in collect_entity_rules(helper).items():
-        if mob_name not in MOBS_ALL:
-            raise KeyError(f"Mob {mob_name} not in MOBS_ALL")
-        prefix = BOSS_KILL_PREFIX if MOBS_ALL[mob_name].category == MCEntityCategory.BOSS \
+        if mob_name not in content.MOBS_ALL:
+            raise KeyError(f"Mob {mob_name} not in MOBS_ALL ({content.version})")
+        prefix = BOSS_KILL_PREFIX if content.MOBS_ALL[mob_name].category == MCEntityCategory.BOSS \
             else ENTITY_KILL_PREFIX
         location_name = f"{prefix}{mob_name}"
         if location_name in existing:

@@ -14,6 +14,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.FormattedText;
 import net.minecraft.network.chat.Style;
 import net.minecraft.server.packs.repository.PackRepository;
+import java.util.Optional;
 
 /**
  * Pre-flight "Connecting to Archipelago…" step shown during world load, before the integrated server
@@ -70,14 +71,18 @@ public final class ArchipelagoConnectingScreen extends Screen {
         APConnectController.Status status = APConnectController.INSTANCE.status();
         if (status == APConnectController.Status.CONNECTED) {
             // Gate before entering the world: refuse (like a failed connect) a world whose slot-data
-            // schema this mod can't read, or whose required datapacks/mods aren't installed at the
-            // matching version — either would load broken.
+            // schema this mod can't read, that was generated for another Minecraft version, or whose
+            // required datapacks/mods aren't installed at the matching version — any would load broken.
             if (!gateChecked) {
                 gateChecked = true;
                 APSlotData slot = AEM.ARCHIPELAGO.client().state().parsedSlotData();
                 CompatibilityService.Result compat = CompatibilityService.check(slot.slotDataVersion());
+                Optional<Component> wrongVersion =
+                        CompatibilityService.minecraftVersionMismatch(slot.minecraftVersion());
                 if (compat.blocking()) {
                     block(compat.message(), "gui.aem.connect.incompatible_header");
+                } else if (wrongVersion.isPresent()) {
+                    block(wrongVersion.get(), "gui.aem.connect.incompatible_header");
                 } else {
                     ContentVerification.Result content =
                             ContentVerification.verify(slot.requiredContent(), packs);

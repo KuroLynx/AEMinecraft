@@ -58,11 +58,10 @@ os.chdir(AP_ROOT)
 
 from worlds.AutoWorld import AutoWorldRegister  # noqa: E402
 from test.general import setup_multiworld  # noqa: E402
-from worlds.minecraft_aem.data import ADVANCEMENT_LOCATIONS  # noqa: E402
-from worlds.minecraft_aem.content.registry import base_pack, overlay_packs  # noqa: E402
+from worlds.minecraft_aem.content.registry import overlay_packs  # noqa: E402
 from worlds.minecraft_aem.logic.acquisition import RuleHelper  # noqa: E402
 from worlds.minecraft_aem.logic.constants import (  # noqa: E402
-    ADVANCEMENT_PREFIX, BOSS_KILL_PREFIX, ENTITY_KILL_PREFIX,
+    ADVANCEMENT_PREFIX, BOSS_KILL_PREFIX, DEFAULT_MINECRAFT_VERSION, ENTITY_KILL_PREFIX,
 )
 from worlds.minecraft_aem.logic.engine import collect_advancement_rules  # noqa: E402
 from worlds.minecraft_aem.logic.criteria import CriteriaCompiler  # noqa: E402
@@ -71,6 +70,13 @@ from worlds.minecraft_aem.logic.root import (  # noqa: E402
 )
 
 WORLD = AutoWorldRegister.world_types["AEMinecraft"]
+
+
+def _minecraft_version() -> str:
+    """``--minecraft-version <v>``: the Minecraft version to audit (default: the apworld's default)."""
+    if "--minecraft-version" in sys.argv:
+        return sys.argv[sys.argv.index("--minecraft-version") + 1]
+    return DEFAULT_MINECRAFT_VERSION
 
 # Checks that legitimately ask for nothing: you can do them the moment you spawn. Listed so the
 # report stays short and every remaining line is a real question. Roots are detected structurally.
@@ -180,8 +186,8 @@ def audit(world, *, glitch: bool) -> list[dict]:
     placement = derive_location_regions(rules)
     helper = RuleHelper(world, glitch=glitch)
     curated = collect_advancement_rules(helper)
-    bacap = overlay_packs().get("blazeandcave")
-    manifest = _manifest(bacap if (world.options.blazeandcave and bacap) else base_pack())
+    bacap = overlay_packs(world.content.version).get("blazeandcave")
+    manifest = _manifest(bacap if (world.options.blazeandcave and bacap) else world.content.BASE_PACK)
     # Same construction as build_location_rules, so compile() answers what it answered there.
     compiler = CriteriaCompiler(helper, frozenset(world._get_active_locations()))
 
@@ -192,7 +198,7 @@ def audit(world, *, glitch: bool) -> list[dict]:
         gated, regions = rule.gate_summary()
         if gated:
             continue
-        data = ADVANCEMENT_LOCATIONS.get(name)
+        data = world.content.ADVANCEMENT_LOCATIONS.get(name)
         record = manifest.get(data.game_id) if data else None
         short = name.removeprefix(ADVANCEMENT_PREFIX)
         if name.startswith((ENTITY_KILL_PREFIX, BOSS_KILL_PREFIX)):
@@ -281,7 +287,7 @@ def main() -> int:
     # need looking at, so the union is the work list; the config list says where to reproduce it.
     union: dict[str, tuple[dict, list[str]]] = {}
     for label, options in cases.items():
-        world = setup_multiworld(WORLD, options=options).worlds[1]
+        world = setup_multiworld(WORLD, options={**options, "minecraft_version": _minecraft_version()}).worlds[1]
         for graph, glitch in graphs:
             tag = f"{label} | {graph}"
             for f in report(tag, audit(world, glitch=glitch), verbose=verbose, quiet=markdown):

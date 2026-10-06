@@ -64,7 +64,6 @@
   "gui.aem.dump.open_failed": "Could not open folder.",
   "gui.aem.dump.no_packs": "No datapacks in aem-datapacks/ (use Open Source Folder)",
   "gui.aem.dump.running": "Dumping…",
-  "gui.aem.dump.none": "Select at least one file to dump.",
 
   "gui.aem.toggle.on": "ON",
   "gui.aem.toggle.off": "OFF",
@@ -138,6 +137,7 @@
 
 
   "message.aem.compat.mod_too_old": "This world needs a newer mod (slot data v%s; this mod supports up to v%s). Update the Archipelago mod.",
+  "message.aem.compat.minecraft_version": "This world was generated for Minecraft %1$s, but this is Minecraft %2$s. Play it on %1$s, or regenerate with minecraft_version: %2$s in your YAML.",
   "message.aem.compat.apworld_too_old": "This world was made with an older apworld (slot data v%s; this mod needs at least v%s). Regenerate with an updated apworld.",
 
   "message.aem.lock.requires": "Requires %s",

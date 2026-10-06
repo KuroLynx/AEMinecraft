@@ -1,0 +1,24 @@
+{
+  "parent": "aem:unlock_knowledge/campfire/1",
+  "criteria": {
+    "never": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "never"
+    ]
+  ],
+  "display": {
+    "icon": {
+      "id": "minecraft:cartography_table"
+    },
+    "title": "Knowledge: Cartography Table",
+    "description": "Unlock Knowledge: Cartography Table",
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": false
+  }
+}

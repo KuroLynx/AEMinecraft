@@ -123,9 +123,12 @@ def _glitch_rules(world, locations: dict) -> dict:
     there red. The mod evaluates this second rule for anything strict logic calls unreachable, and
     paints it GLITCHABLE (yellow) when it passes.
 
-    Most locations compile identically in both graphs, and shipping only the differences keeps this
-    close to free — the shared subtrees are hoisted into the same ``definitions`` table by
-    _dedup_rules, so a glitch rule is usually a handful of refs.
+    Most locations DO differ — measured 94/104 at defaults and 927/1182 on a BACAP seed with every
+    lock on, because structure_located hands nearly anything findable a free ``Const(True)``. So the
+    "only the differences" filter earns less than it looks like; what keeps this affordable is
+    _dedup_rules hoisting the shared subtrees into the same ``definitions`` table, leaving a glitch
+    rule as a handful of refs, plus ast._Interned handing the second pass the very same node objects
+    (caches already warm) rather than rebuilding them.
 
     Empty when the player turned glitch_logic off, which is the whole of that option: it changes what
     the tracker tells you and nothing else. Placement never consults this graph.

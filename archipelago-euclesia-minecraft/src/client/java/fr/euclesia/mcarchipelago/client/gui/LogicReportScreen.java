@@ -1,8 +1,8 @@
 package fr.euclesia.mcarchipelago.client.gui;
 
 import fr.euclesia.mcarchipelago.client.logic.LogicProviders;
-import fr.euclesia.mcarchipelago.client.mixin.ScreenAccessor;
 import fr.euclesia.mcarchipelago.client.report.LogicReportMode;
+import fr.euclesia.mcarchipelago.client.utils.MCClient;
 import fr.euclesia.mcarchipelago.net.LogicReportNet;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.client.Minecraft;
@@ -40,7 +40,12 @@ public final class LogicReportScreen extends Screen {
         if (holder == null) {
             return id.toString();
         }
+        // 26.3 made DisplayInfo a record: getTitle() became title().
+        //? if >=26.3 {
+        /*return holder.value().display().map(display -> display.title().getString()).orElse(id.toString());
+        *///?} else {
         return holder.value().display().map(display -> display.getTitle().getString()).orElse(id.toString());
+        //?}
     }
 
     @Override
@@ -80,12 +85,13 @@ public final class LogicReportScreen extends Screen {
                 this.width / 2, top + 16, 0xFFA0A0A0);
     }
 
-    /** Back to the advancement screen, rebuilt — vanilla only runs a screen's init the first time. */
+    /** Back to the advancement screen, rebuilt. */
     @Override
     public void onClose() {
-        this.minecraft.setScreen(parent);
         if (parent != null) {
-            ((ScreenAccessor) parent).archipelago_euclesia$rebuildWidgets();
+            AEMScreenButtons.reopen(parent);
+        } else {
+            MCClient.setScreen(null);
         }
     }
 }

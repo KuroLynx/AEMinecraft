@@ -1,15 +1,18 @@
 package fr.euclesia.mcarchipelago.client.gui;
 
 import fr.euclesia.mcarchipelago.client.mixin.InventoryScreenAccessor;
+import fr.euclesia.mcarchipelago.client.mixin.ScreenAccessor;
 import fr.euclesia.mcarchipelago.client.net.BiomeFinderClient;
 import fr.euclesia.mcarchipelago.client.render.ConnectionStatusIndicator;
 import fr.euclesia.mcarchipelago.client.report.LogicReportMode;
+import fr.euclesia.mcarchipelago.client.utils.MCClient;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
 import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.navigation.ScreenPosition;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.advancements.AdvancementsScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.gui.screens.options.OptionsScreen;
@@ -56,6 +59,26 @@ public final class AEMScreenButtons {
 
     private AEMScreenButtons() {}
 
+    /**
+     * Shows {@code screen} again, rebuilt — vanilla only runs a screen's init the first time it is
+     * shown. The rebuild clears every widget but does not fire Fabric's AFTER_INIT, so the buttons
+     * added there are put back here; the per-screen hooks registered there survive on their own.
+     */
+    public static void reopen(Screen screen) {
+        MCClient.setScreen(screen);
+        ((ScreenAccessor) screen).archipelago_euclesia$rebuildWidgets();
+        if (screen instanceof AdvancementsScreen) {
+            addReportButton(screen);
+        }
+    }
+
+    private static void addReportButton(Screen screen) {
+        ItemIconButton report = new ItemIconButton(MARGIN, screen.height - SIZE - MARGIN, SIZE, SIZE,
+                REPORT_LABEL, Items.WRITABLE_BOOK, ignored -> LogicReportMode.toggle());
+        report.setTooltip(Tooltip.create(REPORT_LABEL));
+        Screens.getWidgets(screen).add(report);
+    }
+
     public static void register() {
         ScreenEvents.AFTER_INIT.register((client, screen, width, height) -> {
             // Draw the connection sphere over every screen, so it stays visible in menus where the
@@ -67,7 +90,7 @@ public final class AEMScreenButtons {
             // options for; connecting happens from the world-creation screen instead.
             if (screen instanceof OptionsScreen) {
                 SpriteIconButton button = SpriteIconButton.builder(CONNECT_LABEL,
-                                ignored -> client.setScreen(new ArchipelagoOptionScreen(screen)), true)
+                                ignored -> MCClient.setScreen(new ArchipelagoOptionScreen(screen)), true)
                         .sprite(CONNECT_ICON, 16, 16)
                         .size(SIZE, SIZE)
                         .build();
@@ -80,10 +103,7 @@ public final class AEMScreenButtons {
             // screen only; the compat adapters' screens still feed the hover, but get no button.
             if (screen instanceof AdvancementsScreen) {
                 LogicReportMode.disarm();
-                ItemIconButton report = new ItemIconButton(MARGIN, height - SIZE - MARGIN, SIZE, SIZE,
-                        REPORT_LABEL, Items.WRITABLE_BOOK, ignored -> LogicReportMode.toggle());
-                report.setTooltip(Tooltip.create(REPORT_LABEL));
-                Screens.getWidgets(screen).add(report);
+                addReportButton(screen);
                 ScreenMouseEvents.allowMouseClick(screen).register(LogicReportMode::allowClick);
                 ScreenEvents.afterExtract(screen).register((s, graphics, mouseX, mouseY, tickDelta) -> {
                     if (LogicReportMode.armed()) {
@@ -102,7 +122,7 @@ public final class AEMScreenButtons {
                 ItemIconButton button = new ItemIconButton(
                         recipeButton.x() + RECIPE_BUTTON_WIDTH + BIOME_FINDER_GAP, recipeButton.y(),
                         BIOME_FINDER_WIDTH, BIOME_FINDER_HEIGHT, BIOME_FINDER_LABEL, Items.COMPASS,
-                        ignored -> client.setScreen(new BiomeFinderScreen()));
+                        ignored -> MCClient.setScreen(new BiomeFinderScreen()));
                 button.setTooltip(Tooltip.create(BIOME_FINDER_LABEL));
                 Screens.getWidgets(screen).add(button);
             }

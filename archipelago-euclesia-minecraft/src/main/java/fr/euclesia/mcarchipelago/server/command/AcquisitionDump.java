@@ -101,8 +101,9 @@ final class AcquisitionDump {
         dump.forEachJson(rm, "tags/items", dump::onItemTag);
         dump.forEachJson(rm, "recipe", (path, json) -> dump.onRecipe(json));
         dump.forEachJson(rm, "recipes", (path, json) -> dump.onRecipe(json));
-        dump.forEachJson(rm, "loot_table", dump::onLoot);
-        dump.forEachJson(rm, "loot_tables", dump::onLoot);
+        // LegacyLoot: 26.3 reshaped loot conditions/functions; the readers below expect the old shape
+        dump.forEachJson(rm, "loot_table", (path, loot) -> dump.onLoot(path, LegacyLoot.convert(loot, rm)));
+        dump.forEachJson(rm, "loot_tables", (path, loot) -> dump.onLoot(path, LegacyLoot.convert(loot, rm)));
         dump.forEachJson(rm, "villager_trade", dump::onTrade);
         if (BACAP_NAMESPACE.equals(primaryNamespace)) {
             dump.collectAdvancementRewards(rm);
@@ -142,7 +143,23 @@ final class AcquisitionDump {
             JsonObject obj = result.getAsJsonObject();
             item = string(obj.get("item"), string(obj.get("id"), null));
         }
-        if (item == null || item.isEmpty()) {
+        List<String> made = new ArrayList<>();
+        if (item != null && !item.isEmpty()) {
+            made.add(item);
+        } else if (result != null && result.isJsonObject()) {
+            // 26.3: an empty result is "the input item, unchanged", and map cloning/extending name
+            // that input by tag (#clonable_maps / #extendable_maps)
+            JsonElement input = recipe.has("input") ? recipe.get("input") : recipe.get("map");
+            if (input != null && input.isJsonPrimitive()) {
+                String id = input.getAsString();
+                if (id.startsWith("#")) {
+                    made.addAll(resolveTag(stripNs(id.substring(1)), new java.util.HashSet<>()));
+                } else {
+                    made.add(id);
+                }
+            }
+        }
+        if (made.isEmpty()) {
             return;
         }
         List<JsonObject> ingredients = recipeIngredients(recipe);
@@ -154,7 +171,9 @@ final class AcquisitionDump {
         JsonObject record = new JsonObject();
         record.add("ingredients", array);                          // alphabetical: ingredients < station
         record.addProperty("station", stripNs(string(recipe.get("type"), "")));
-        recipes.computeIfAbsent(stripNs(item), k -> new ArrayList<>()).add(record);
+        for (String product : made) {
+            recipes.computeIfAbsent(stripNs(product), k -> new ArrayList<>()).add(record.deepCopy());
+        }
     }
 
     /** Distinct input ingredients of a recipe across the formats vanilla uses. */

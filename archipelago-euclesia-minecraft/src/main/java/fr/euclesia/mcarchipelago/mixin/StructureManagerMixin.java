@@ -45,11 +45,20 @@ public abstract class StructureManagerMixin {
         return archipelago_euclesia$suppressIfLocked(original.call(pos, predicate));
     }
 
+    // 26.3 takes the position as three ints.
+    //? if >=26.3 {
+    /*@WrapMethod(method = "getStructureWithPieceAt(IIILnet/minecraft/world/level/levelgen/structure/Structure;)Lnet/minecraft/world/level/levelgen/structure/StructureStart;")
+    private StructureStart archipelago_euclesia$hideLockedByStructure(int x, int y, int z, Structure structure,
+                                                                      Operation<StructureStart> original) {
+        return archipelago_euclesia$suppressIfLocked(original.call(x, y, z, structure));
+    }
+    *///?} else {
     @WrapMethod(method = "getStructureWithPieceAt(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/levelgen/structure/Structure;)Lnet/minecraft/world/level/levelgen/structure/StructureStart;")
     private StructureStart archipelago_euclesia$hideLockedByStructure(BlockPos pos, Structure structure,
                                                                       Operation<StructureStart> original) {
         return archipelago_euclesia$suppressIfLocked(original.call(pos, structure));
     }
+    //?}
 
     @Unique
     private StructureStart archipelago_euclesia$suppressIfLocked(StructureStart start) {

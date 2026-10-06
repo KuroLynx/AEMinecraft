@@ -1,0 +1,22 @@
+{
+  "criteria": {
+    "never": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "never"
+    ]
+  ],
+  "display": {
+    "icon": {
+      "id": "minecraft:iron_sword"
+    },
+    "title": "Kills",
+    "description": "Mobs & bosses to kill",
+    "background": "minecraft:gui/advancements/backgrounds/adventure",
+    "show_toast": false,
+    "announce_to_chat": false
+  }
+}

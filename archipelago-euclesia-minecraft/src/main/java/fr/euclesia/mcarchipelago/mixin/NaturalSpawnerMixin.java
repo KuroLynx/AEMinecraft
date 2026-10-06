@@ -1,19 +1,12 @@
 package fr.euclesia.mcarchipelago.mixin;
 
 import fr.euclesia.mcarchipelago.server.gameplay.MobSpawnLockService;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.random.Weighted;
 import net.minecraft.util.random.WeightedList;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.level.NaturalSpawner;
-import net.minecraft.world.level.StructureManager;
-import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.MobSpawnSettings;
-import net.minecraft.world.level.chunk.ChunkGenerator;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -54,10 +47,10 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Mixin(NaturalSpawner.class)
 public abstract class NaturalSpawnerMixin {
+    // No target arguments on purpose: 26.3 dropped mobsAt's Holder<Biome>, and a handler that takes
+    // none of them fits every version.
     @Inject(method = "mobsAt", at = @At("RETURN"), cancellable = true)
     private static void archipelago_euclesia$dropLockedCandidates(
-            ServerLevel level, StructureManager structures, ChunkGenerator generator, MobCategory category,
-            BlockPos pos, Holder<Biome> biome,
             CallbackInfoReturnable<WeightedList<MobSpawnSettings.SpawnerData>> cir) {
         WeightedList<MobSpawnSettings.SpawnerData> candidates = cir.getReturnValue();
         if (candidates == null || candidates.isEmpty()) {

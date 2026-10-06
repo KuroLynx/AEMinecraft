@@ -115,8 +115,17 @@ public final class StructureReplayService {
                 level.registryAccess(),
                 generator,
                 generator.getBiomeSource(),
+                // 26.3 wants a climate sampler before the random state (vanilla's plain uncached form), and
+                // renamed the template manager's getter.
+                //? if >=26.3 {
+                /*level.getChunkSource().randomState().createClimateSampler(
+                        net.minecraft.world.level.levelgen.densityfunction.SamplerContext.builder().enableCaches().build()),
+                level.getChunkSource().randomState(),
+                level.getStructureTemplateManager(),
+                *///?} else {
                 level.getChunkSource().randomState(),
                 level.getStructureManager(),
+                //?}
                 level.getSeed(),
                 origin,
                 0,

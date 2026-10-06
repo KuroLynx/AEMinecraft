@@ -1,6 +1,7 @@
 package fr.euclesia.mcarchipelago.client.logic;
 
 import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.TextColor;
 
 /**
  * Maps a {@link LogicState} to its indicator colour, shared by the icon-background
@@ -14,14 +15,19 @@ import net.minecraft.ChatFormatting;
  */
 public final class LogicColors {
     // Minecraft's own text colours, so the tiles speak the palette the rest of the game already uses.
-    public static final int RGB_IN_LOGIC = ChatFormatting.GREEN.getColor();
-    public static final int RGB_OUT_OF_LOGIC = ChatFormatting.RED.getColor();
+    public static final int RGB_IN_LOGIC = rgb(ChatFormatting.GREEN);
+    public static final int RGB_OUT_OF_LOGIC = rgb(ChatFormatting.RED);
     /** Dim, so a completed tile reads as done and stops competing with the ones still to do. */
-    public static final int RGB_CHECKED = ChatFormatting.DARK_GRAY.getColor();
-    public static final int RGB_GLITCHABLE = ChatFormatting.YELLOW.getColor();
-    public static final int RGB_COLLECTED = ChatFormatting.BLUE.getColor();
+    public static final int RGB_CHECKED = rgb(ChatFormatting.DARK_GRAY);
+    public static final int RGB_GLITCHABLE = rgb(ChatFormatting.YELLOW);
+    public static final int RGB_COLLECTED = rgb(ChatFormatting.BLUE);
 
     private LogicColors() {}
+
+    /** A text colour's RGB. Through TextColor rather than ChatFormatting.getColor(), which 26.2 removed. */
+    public static int rgb(ChatFormatting format) {
+        return TextColor.fromLegacyFormat(format).getValue();
+    }
 
     /** @return the 0xRRGGBB colour for a state, or {@code null} if no indicator should be drawn. */
     public static Integer rgb(LogicState state) {

@@ -95,7 +95,12 @@ public final class BacapRewardService {
         }
         int removed = amount - remaining;
         if (removed > 0) {
+            // 26.3 asks who predicted the drop; the server alone did, as for vanilla's own advancement rewards.
+            //? if >=26.3 {
+            /*player.drop(new ItemStack(item, removed), false, net.minecraft.util.Prediction.SERVER_ONLY);
+            *///?} else {
             player.drop(new ItemStack(item, removed), false);
+            //?}
         }
     }
 }

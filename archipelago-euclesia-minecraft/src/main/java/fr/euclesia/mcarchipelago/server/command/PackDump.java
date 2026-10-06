@@ -7,9 +7,11 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import fr.euclesia.mcarchipelago.AEM;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import net.minecraft.SharedConstants;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.locale.Language;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -60,7 +62,7 @@ public final class PackDump {
 
     /** Dumpable file ids (UI checkboxes); {@code meta} + {@code acquisition} etc. map to one file each. */
     public static final List<String> FILES = List.of(
-            "advancements", "structures", "acquisition", "block_mining", "block_biomes", "tags", "meta");
+            "advancements", "structures", "acquisition", "block_mining", "block_biomes", "brewing", "tags", "meta");
 
     /** Opt-in heavy target: copy the loaded datapacks VERBATIM into {@code <outDir>/datapack/} as a
      *  real, loadable datapack tree (not the derived content-pack JSON). Not part of the default
@@ -123,6 +125,12 @@ public final class PackDump {
         }
         if (selected.contains("block_biomes")) {
             done.add("block_biomes " + writeCount(packDir, "block_biomes.json", blockBiomes(rm)));
+        }
+        if (selected.contains("brewing")) {
+            JsonObject brewing = brewing(rm);
+            if (brewing != null) {   // no brewing recipes (before 26.3): the curated table stands
+                done.add("brewing " + writeCount(packDir, "brewing.json", brewing));
+            }
         }
         if (selected.contains("tags")) {
             write(packDir, "tags.json", tags(rm));
@@ -266,8 +274,8 @@ public final class PackDump {
                 if (rel.startsWith("recipes/")) {
                     continue;  // recipe advancements are not checks
                 }
-                records.putIfAbsent(entry.getKey().getNamespace() + ":" + rel,
-                        advancementRecord(entry.getValue(), rel));
+                records.putIfAbsent(entry.getKey().getNamespace() + ":" + rel,   // 26.3 criteria shape undone
+                        advancementRecord(LegacyLoot.convertAdvancement(entry.getValue(), rm), rel));
             }
         }
         JsonObject out = new JsonObject();
@@ -351,7 +359,7 @@ public final class PackDump {
         for (Map.Entry<Identifier, JsonObject> entry : jsonResources(rm, "loot_table/blocks")) {
             String block = stripExt(entry.getKey().getPath()
                     .substring("loot_table/blocks/".length()));
-            JsonObject needed = lootToolRequirements(entry.getValue());
+            JsonObject needed = lootToolRequirements(LegacyLoot.convert(entry.getValue(), rm));   // 26.3 shape
             if (needed.size() > 0) {
                 drops.put(block, needed);
             }
@@ -378,7 +386,109 @@ public final class PackDump {
         return out;
     }
 
+    // -- brewing (data/<ns>/recipe/brewing/*.json, 26.3+) ----------------------
+
+    /**
+     * {@code brewing.json} from the brewing recipes 26.3 introduced: potion type -> the reagents that
+     * brew it from a water bottle, the same table that was hand-written while brewing was hard-coded.
+     * Only drinkable-potion recipes count (splash/lingering add a trivial gunpowder/dragon's breath
+     * step), and long_/strong_ variants are left to their base type, as before. Where several routes
+     * need equally few reagents (slowness off swiftness or leaping; mundane off any of a dozen
+     * items), the entry is {@code {"any_of": [[...], ...]}} instead of one list. Null when the pack
+     * has no brewing recipes.
+     */
+    private static JsonObject brewing(ResourceManager rm) {
+        List<String[]> edges = new ArrayList<>();   // {input type, output type, reagent}
+        for (Map.Entry<Identifier, JsonObject> entry : jsonResources(rm, "recipe/brewing")) {
+            JsonObject recipe = entry.getValue();
+            JsonObject input = obj(recipe.get("input"));
+            JsonObject output = obj(recipe.get("output"));
+            if (!stripNs(string(input.get("item"), "")).equals("potion")
+                    || !stripNs(string(output.get("id"), "")).equals("potion")) {
+                continue;
+            }
+            String from = stripNs(string(obj(input.get("potion_contents")).get("potions"), ""));
+            String to = stripNs(string(obj(obj(output.get("components")).get("minecraft:potion_contents")).get("potion"), ""));
+            String reagent = stripNs(string(obj(recipe.get("reagent")).get("item"), ""));
+            if (!from.isEmpty() && !to.isEmpty() && !reagent.isEmpty()) {
+                edges.add(new String[]{from, to, reagent});
+            }
+        }
+        if (edges.isEmpty()) {
+            return null;
+        }
+        // Every minimal reagent set per potion type, relaxed to a fixed point (the graph is ~50 nodes).
+        Map<String, Set<Set<String>>> routes = new TreeMap<>();
+        routes.put("water", Set.of(Set.of()));
+        boolean changed = true;
+        while (changed) {
+            changed = false;
+            for (String[] edge : edges) {
+                Set<Set<String>> sources = routes.get(edge[0]);
+                if (sources == null) {
+                    continue;
+                }
+                for (Set<String> source : List.copyOf(sources)) {
+                    Set<String> route = new TreeSet<>(source);
+                    route.add(edge[2]);
+                    changed |= addMinimal(routes.computeIfAbsent(edge[1], key -> new HashSet<>()), route);
+                }
+            }
+        }
+        JsonObject out = new JsonObject();
+        out.addProperty("_comment", "Dumped from the game's brewing recipes: potion type -> the reagents "
+                + "that brew it from a water bottle (any_of: equally short alternatives). long_/strong_ "
+                + "variants share their base type's reagents.");
+        routes.forEach((type, sets) -> {
+            if (type.equals("water") || type.startsWith("long_") || type.startsWith("strong_")) {
+                return;
+            }
+            List<JsonArray> lists = new ArrayList<>();
+            for (Set<String> set : sets) {
+                JsonArray list = new JsonArray();
+                new TreeSet<>(set).forEach(list::add);
+                lists.add(list);
+            }
+            lists.sort(Comparator.comparing(JsonArray::toString));
+            if (lists.size() == 1) {
+                out.add(type, lists.get(0));
+            } else {
+                JsonArray any = new JsonArray();
+                lists.forEach(any::add);
+                JsonObject alternatives = new JsonObject();
+                alternatives.add("any_of", any);
+                out.add(type, alternatives);
+            }
+        });
+        return out;
+    }
+
+    /** Keeps only the smallest routes: adds {@code route} if no kept one is smaller, dropping larger
+     *  ones. True if the set changed. */
+    private static boolean addMinimal(Set<Set<String>> kept, Set<String> route) {
+        int best = kept.stream().mapToInt(Set::size).min().orElse(Integer.MAX_VALUE);
+        if (route.size() > best || kept.contains(route)) {
+            return false;
+        }
+        if (route.size() < best) {
+            kept.clear();
+        }
+        kept.add(Set.copyOf(route));
+        return true;
+    }
+
     // -- block_biomes (data/<ns>/worldgen/{biome,placed_feature,configured_feature,noise_settings}) ---
+    //
+    // 26.3 reshaped this data: configured_feature/ became feature/ with the config fields at the top
+    // level, block states may be a plain id string or {"id": ...} instead of {"Name": ...}, and
+    // surface rules left noise_settings for material_rule/ + material_condition/ files referenced by
+    // id (as block_state_provider/ files are). Both shapes are read, so older versions dump unchanged.
+
+    /** Keys whose string values name blocks the feature TESTS for (where it may go or grow), not blocks
+     *  it places. */
+    private static final Set<String> NON_PLACING_KEYS = Set.of("type", "blocks", "block", "tag",
+            "predicate_type", "fluids", "noise", "biome_is",
+            "valid_blocks", "can_be_placed_on", "muddy_roots_in", "accepted_neighbors");
 
     /** Tree decorators place blocks by decorator TYPE; their config never spells the block out. */
     private static final Map<String, String> DECORATOR_BLOCKS = Map.of(
@@ -392,7 +502,11 @@ public final class PackDump {
     /** Feature types that place blocks in code, with no block state in their config. */
     private static final Map<String, List<String>> FEATURE_TYPE_BLOCKS = Map.of(
             "minecraft:bamboo", List.of("bamboo", "podzol"),
-            "minecraft:sculk_patch", List.of("sculk", "sculk_vein", "sculk_catalyst", "sculk_shrieker"));
+            "minecraft:sculk_patch", List.of("sculk", "sculk_vein", "sculk_catalyst", "sculk_shrieker"),
+            // Freezes water and lays snow wherever it's cold. It sits in nearly every biome, so this
+            // over-reaches into warm ones, which only ever makes ice/snow look commoner than they
+            // are, never rarer. 26.3 dropped the ocean-ice surface rule, leaving this as ice's source.
+            "minecraft:freeze_top_layer", List.of("ice", "snow"));
 
     /**
      * Which biomes each block generates in: {@code {"<block>": ["<biome>", ...]}}, the same file
@@ -402,8 +516,10 @@ public final class PackDump {
      * gates a block that only generates in rare biomes behind the Biome Finder.
      */
     private static JsonObject blockBiomes(ResourceManager rm) {
-        FeatureBlocks features = new FeatureBlocks(idMap(rm, "worldgen/placed_feature"),
-                idMap(rm, "worldgen/configured_feature"));
+        Map<String, JsonObject> configured = idMap(rm, "worldgen/configured_feature");
+        configured.putAll(idMap(rm, "worldgen/feature"));   // 26.3's name for it
+        FeatureBlocks features = new FeatureBlocks(idMap(rm, "worldgen/placed_feature"), configured,
+                idMap(rm, "worldgen/block_state_provider"));
         Map<String, TreeSet<String>> result = new TreeMap<>();
         TreeSet<String> allBiomes = new TreeSet<>();
         for (Map.Entry<Identifier, JsonObject> entry : jsonResources(rm, "worldgen/biome")) {
@@ -418,10 +534,13 @@ public final class PackDump {
             }
         }
         Map<String, JsonObject> settings = idMap(rm, "worldgen/noise_settings");
+        SurfaceRules rules = new SurfaceRules(idMap(rm, "worldgen/material_rule"),
+                idMap(rm, "worldgen/material_condition"));
         for (String dimension : List.of("minecraft:overworld", "minecraft:nether", "minecraft:end")) {
             JsonObject body = settings.get(dimension);
             if (body != null) {
-                surfaceBlocks(body.get("surface_rule"), allBiomes, result);
+                JsonElement rule = body.has("surface_rule") ? body.get("surface_rule") : body.get("material_rule");
+                surfaceBlocks(rule, allBiomes, result, rules);
             }
         }
         JsonObject out = new JsonObject();
@@ -445,38 +564,56 @@ public final class PackDump {
         return out;
     }
 
+    /** 26.3's surface rules and conditions, which rules may name by id instead of inlining. */
+    private record SurfaceRules(Map<String, JsonObject> rules, Map<String, JsonObject> conditions) {
+        JsonElement rule(JsonElement element) {
+            return element != null && element.isJsonPrimitive() ? rules.get(namespaced(element.getAsString())) : element;
+        }
+
+        JsonObject condition(JsonElement element) {
+            return element != null && element.isJsonPrimitive()
+                    ? Optional.ofNullable(conditions.get(namespaced(element.getAsString()))).orElseGet(JsonObject::new)
+                    : obj(element);
+        }
+    }
+
     /** Walks a surface rule tree, narrowing the biome set on each {@code biome} condition. A {@code not}
      *  around one is read as no narrowing: wider, never falsely rare. */
-    private static void surfaceBlocks(JsonElement element, Set<String> biomes, Map<String, TreeSet<String>> out) {
+    private static void surfaceBlocks(JsonElement element, Set<String> biomes, Map<String, TreeSet<String>> out,
+                                      SurfaceRules refs) {
+        element = refs.rule(element);
         if (element == null || !element.isJsonObject()) {
             return;
         }
         JsonObject rule = element.getAsJsonObject();
         switch (stripNs(string(rule.get("type"), ""))) {
             case "block" -> {
-                String block = stripNs(string(obj(rule.get("result_state")).get("Name"), ""));
-                if (!block.isEmpty()) {
+                String block = blockState(rule.get("result_state"));
+                if (block != null && !block.isEmpty()) {
                     out.computeIfAbsent(block, key -> new TreeSet<>()).addAll(biomes);
                 }
             }
             case "sequence" -> {
                 for (JsonElement child : array(rule.get("sequence"))) {
-                    surfaceBlocks(child, biomes, out);
+                    surfaceBlocks(child, biomes, out, refs);
                 }
             }
             case "condition" -> {
-                JsonObject test = obj(rule.get("if_true"));
+                JsonObject test = refs.condition(rule.get("if_true"));
                 Set<String> narrowed = biomes;
                 if (stripNs(string(test.get("type"), "")).equals("biome")) {
                     narrowed = new TreeSet<>();
-                    for (JsonElement biome : array(test.get("biome_is"))) {
+                    // a list or a single id; both occur in 26.2 already, and a single id used to be
+                    // read as no biome at all, which dropped every one-biome surface block
+                    JsonElement biomeIs = test.get("biome_is");
+                    for (JsonElement biome : biomeIs != null && biomeIs.isJsonPrimitive() ? List.of(biomeIs) : array(biomeIs)) {
                         String name = stripNs(biome.getAsString());
                         if (biomes.contains(name)) {
                             narrowed.add(name);
                         }
                     }
                 }
-                surfaceBlocks(rule.get("then_run"), narrowed, out);
+                surfaceBlocks(rule.get("then_run"), narrowed, out, refs);
             }
             default -> { }
         }
@@ -489,12 +626,15 @@ public final class PackDump {
     private static final class FeatureBlocks {
         private final Map<String, JsonObject> placedDefs;
         private final Map<String, JsonObject> configuredDefs;
+        private final Map<String, JsonObject> providerDefs;
         private final Map<String, Set<String>> placedCache = new HashMap<>();
         private final Map<String, Set<String>> configuredCache = new HashMap<>();
 
-        FeatureBlocks(Map<String, JsonObject> placedDefs, Map<String, JsonObject> configuredDefs) {
+        FeatureBlocks(Map<String, JsonObject> placedDefs, Map<String, JsonObject> configuredDefs,
+                      Map<String, JsonObject> providerDefs) {
             this.placedDefs = placedDefs;
             this.configuredDefs = configuredDefs;
+            this.providerDefs = providerDefs;
         }
 
         Set<String> placed(JsonElement ref) {
@@ -532,7 +672,13 @@ public final class PackDump {
             if (ref != null && ref.isJsonObject()) {
                 JsonObject body = ref.getAsJsonObject();
                 found.addAll(FEATURE_TYPE_BLOCKS.getOrDefault(string(body.get("type"), ""), List.of()));
-                walk(body.get("config"), found);
+                if (body.has("config")) {
+                    walk(body.get("config"), found);
+                } else {   // 26.3: the config fields sit beside "type"
+                    JsonObject fields = body.deepCopy();
+                    fields.remove("type");
+                    walk(fields, found);
+                }
             }
             return found;
         }
@@ -554,6 +700,11 @@ public final class PackDump {
             String name = string(node.get("Name"), null);
             if (name != null) {
                 found.add(stripNs(name));
+            } else {
+                String block = blockId(node.get("id"));   // 26.3: {"id": ..., "properties": ...}
+                if (block != null) {
+                    found.add(block);
+                }
             }
             String decorator = DECORATOR_BLOCKS.get(string(node.get("type"), ""));
             if (decorator != null) {
@@ -568,11 +719,53 @@ public final class PackDump {
                                 ? item.getAsJsonObject().get("feature") : item;
                         found.addAll(placed(target));
                     }
-                } else {
+                } else if (NON_PLACING_KEYS.contains(key)) {
                     walk(entry.getValue(), found);
+                } else {
+                    // 26.3: a block state may be a bare id, alone or in a list (a flower patch's
+                    // states, a geode's buds), or a block_state_provider named by id
+                    JsonElement value = entry.getValue();
+                    for (JsonElement item : value.isJsonArray() ? value.getAsJsonArray() : List.of(value)) {
+                        if (item.isJsonPrimitive()) {
+                            placedId(item, found);
+                        } else {
+                            walk(item, found);
+                        }
+                    }
                 }
             }
         }
+
+        private void placedId(JsonElement id, Set<String> found) {
+            String block = blockId(id);
+            if (block != null) {
+                found.add(block);
+                return;
+            }
+            JsonObject provider = providerDefs.get(namespaced(id.getAsString()));
+            if (provider != null) {
+                walk(provider, found);
+            }
+        }
+    }
+
+    /** A block state in either shape ({"Name"}/{"id"} object or bare id), as a bare block id; null if none. */
+    private static String blockState(JsonElement element) {
+        if (element != null && element.isJsonObject()) {
+            JsonObject state = element.getAsJsonObject();
+            return state.has("Name") ? stripNs(string(state.get("Name"), "")) : blockId(state.get("id"));
+        }
+        return blockId(element);
+    }
+
+    /** {@code element}'s string if it names a registered block (bare id), else null. Strings in worldgen
+     *  JSON are also feature, provider, noise and template ids, so the registry decides. */
+    private static String blockId(JsonElement element) {
+        if (element == null || !element.isJsonPrimitive() || !element.getAsJsonPrimitive().isString()) {
+            return null;
+        }
+        Identifier id = Identifier.tryParse(element.getAsString());
+        return id != null && BuiltInRegistries.BLOCK.containsKey(id) ? stripNs(element.getAsString()) : null;
     }
 
     /** Per-item tool requirements for one block loot table: {@code {"<item>": ["shears","silk"]}}. */
@@ -913,9 +1106,12 @@ public final class PackDump {
      * {@code ruined_portal}). A template sitting directly under {@code structure/} keys on its own
      * file name. {@link #bestPalette} later matches each structure id to one of these folders.
      */
+    private static boolean paletteFailureLogged;
+
     private static Map<String, TreeSet<String>> structurePalettes(ResourceManager rm) {
         Map<String, TreeSet<String>> palettes = new HashMap<>();
         Map<Identifier, Resource> nbts = rm.listResources("structure", id -> id.getPath().endsWith(".nbt"));
+        paletteFailureLogged = false;
         for (Map.Entry<Identifier, Resource> entry : nbts.entrySet()) {
             String rel = entry.getKey().getPath().substring("structure/".length());
             int slash = rel.indexOf('/');
@@ -937,10 +1133,16 @@ public final class PackDump {
         List<String> idTokens = tokens(stripNs(gameId));
         TreeSet<String> best = null;
         int bestScore = 0;
+        int bestUnmatched = Integer.MAX_VALUE;
         for (String folder : new TreeSet<>(palettes.keySet())) {
-            int score = overlapScore(idTokens, tokens(folder));
-            if (score > bestScore) {
+            List<String> folderTokens = tokens(folder);
+            int score = overlapScore(idTokens, folderTokens);
+            // A tie goes to the folder with fewer words the id doesn't share: village_desert is the
+            // village/ templates, not 26.3's desert_well/ (both share one word with it).
+            int unmatched = unmatchedTokens(idTokens, folderTokens);
+            if (score > bestScore || (score == bestScore && score > 0 && unmatched < bestUnmatched)) {
                 bestScore = score;
+                bestUnmatched = unmatched;
                 best = palettes.get(folder);
             }
         }
@@ -965,6 +1167,21 @@ public final class PackDump {
             }
         }
         return 2 * exact + stemOnly;
+    }
+
+    /** Folder tokens that match the id neither exactly nor by {@link #stem}. */
+    private static int unmatchedTokens(List<String> idTokens, List<String> folderTokens) {
+        Set<String> idStems = new HashSet<>();
+        for (String token : idTokens) {
+            idStems.add(stem(token));
+        }
+        int unmatched = 0;
+        for (String token : folderTokens) {
+            if (!idTokens.contains(token) && !idStems.contains(stem(token))) {
+                unmatched++;
+            }
+        }
+        return unmatched;
     }
 
     private static List<String> tokens(String text) {
@@ -1003,15 +1220,21 @@ public final class PackDump {
             for (ListTag palette : palettes) {
                 for (int i = 0; i < palette.size(); i++) {
                     palette.getCompound(i).ifPresent(state -> {
-                        String name = state.getStringOr("Name", "");
+                        // 26.3 renamed a palette entry's block key from "Name" to "id"
+                        String name = state.getStringOr("Name", state.getStringOr("id", ""));
                         if (!name.isEmpty()) {
                             blocks.add(stripNs(name));
                         }
                     });
                 }
             }
-        } catch (Exception ignored) {
-            // a template that won't parse contributes no palette
+        } catch (Exception exception) {
+            // a template that won't parse contributes no palette; say so once per dump, since when
+            // EVERY template fails (a changed NBT API) the only symptom is empty structure palettes
+            if (!paletteFailureLogged) {
+                paletteFailureLogged = true;
+                AEM.LOGGER.warn("Could not read structure template palettes (first failure)", exception);
+            }
         }
         return blocks;
     }

@@ -4,6 +4,7 @@ import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.client.connect.WorldLoadResume;
 import fr.euclesia.mcarchipelago.client.dump.HeadlessWorldDump;
 import fr.euclesia.mcarchipelago.client.gui.ArchipelagoConnectingScreen;
+import fr.euclesia.mcarchipelago.client.utils.MCClient;
 import fr.euclesia.mcarchipelago.server.connect.APWorldConnection;
 import fr.euclesia.mcarchipelago.server.session.APSessionCache;
 import net.minecraft.client.Minecraft;
@@ -73,10 +74,10 @@ public abstract class MinecraftWorldLoadMixin {
             stem.close();
             storageAccess.safeClose();
             APWorldConnection.takePending();
-            SystemToast.addOrUpdate(self.getToastManager(), SystemToast.SystemToastId.WORLD_ACCESS_FAILURE,
+            SystemToast.addOrUpdate(MCClient.toastManager(), SystemToast.SystemToastId.WORLD_ACCESS_FAILURE,
                     Component.translatable("gui.aem.world.incompatible"),
                     Component.translatable("gui.aem.world.blocked"));
-            self.setScreen(new SelectWorldScreen(new TitleScreen()));
+            MCClient.setScreen(new SelectWorldScreen(new TitleScreen()));
             return;
         }
         if (AEM.ARCHIPELAGO.client().state().isConnected()) {
@@ -85,7 +86,7 @@ public abstract class MinecraftWorldLoadMixin {
 
         ci.cancel();
         APWorldConnection target = connection;
-        self.setScreen(new ArchipelagoConnectingScreen(
+        MCClient.setScreen(new ArchipelagoConnectingScreen(
                 target,
                 packs,
                 () -> WorldLoadResume.schedule(() -> {
@@ -103,7 +104,7 @@ public abstract class MinecraftWorldLoadMixin {
                     // there is nothing to fall back to, and generating would place locked content for
                     // real, so that one still goes home.
                     if (APSessionCache.exists(storageAccess.getLevelPath(LevelResource.ROOT))) {
-                        SystemToast.addOrUpdate(self.getToastManager(), SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
+                        SystemToast.addOrUpdate(MCClient.toastManager(), SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
                                 Component.translatable("gui.aem.offline.title"),
                                 Component.translatable("gui.aem.offline.subtitle"));
                         APSessionCache.requestOfflineStart();
@@ -117,7 +118,7 @@ public abstract class MinecraftWorldLoadMixin {
                     stem.close();
                     storageAccess.safeClose();
                     APWorldConnection.takePending();
-                    self.setScreen(new TitleScreen());
+                    MCClient.setScreen(new TitleScreen());
                 }));
     }
 }

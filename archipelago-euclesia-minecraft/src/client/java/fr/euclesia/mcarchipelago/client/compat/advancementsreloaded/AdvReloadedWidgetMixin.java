@@ -1,8 +1,13 @@
 package fr.euclesia.mcarchipelago.client.compat.advancementsreloaded;
 
+//? if >=26.3 {
+/*import com.mojang.renderpearl.api.pipeline.RenderPipeline;
+*///?} else {
 import com.mojang.blaze3d.pipeline.RenderPipeline;
+//?}
 import fr.euclesia.mcarchipelago.client.hint.HintHoldTracker;
 import fr.euclesia.mcarchipelago.client.render.AdvancementRenderHooks;
+import fr.euclesia.mcarchipelago.client.utils.MixinTargets;
 import net.minecraft.advancements.AdvancementNode;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.resources.Identifier;
@@ -59,7 +64,7 @@ public abstract class AdvReloadedWidgetMixin {
             method = "renderWidgets(Lnet/minecraft/client/gui/GuiGraphicsExtractor;II)V",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;blitSprite(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIII)V"))
+                    target = MixinTargets.BLIT_SPRITE_BOX))
     private void archipelago_euclesia$frame(GuiGraphicsExtractor graphics, RenderPipeline pipeline,
                                             Identifier sprite, int x, int y, int width, int height) {
         Identifier id = advancement == null ? null : advancement.holder().id();
@@ -81,7 +86,7 @@ public abstract class AdvReloadedWidgetMixin {
             method = "drawTooltip(Lnet/minecraft/client/gui/GuiGraphicsExtractor;IIFII)V",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;blitSprite(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIIIIIII)V"))
+                    target = MixinTargets.BLIT_SPRITE_SLICE))
     private void archipelago_euclesia$box(GuiGraphicsExtractor graphics, RenderPipeline pipeline, Identifier sprite,
                                           int textureWidth, int textureHeight, int u, int v,
                                           int x, int y, int width, int height) {

@@ -1,6 +1,10 @@
 package fr.euclesia.mcarchipelago.client.render;
 
+//? if >=26.3 {
+/*import com.mojang.renderpearl.api.pipeline.RenderPipeline;
+*///?} else {
 import com.mojang.blaze3d.pipeline.RenderPipeline;
+//?}
 import fr.euclesia.mcarchipelago.client.logic.LogicColors;
 import fr.euclesia.mcarchipelago.client.logic.LogicProviders;
 import fr.euclesia.mcarchipelago.registry.APTrackerRegistry;
