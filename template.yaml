@@ -444,34 +444,25 @@ AEMinecraft:
   # -------------------------------------------------------------------------
 
   inventory_lock:
-    # Restrict how many inventory slots you can actually use.
+    # Start the game with part of your inventory locked, and unlock it as you go.
     #
-    # Three modes:
+    # Two modes:
     #     - disabled (default): your full inventory is available, as normal.
-    #     - fixed: only 'slots' of your 36 hotbar+main-inventory slots are ever usable. The rest are
-    #       locked for the whole game — there is no item that unlocks them.
-    #     - progressive: you start with 'slots' of those 36 locked, and copies of the 'Progressive
-    #       Inventory Slot' item are shuffled into the multiworld — each one unlocks 'slots_per_item'
-    #       more, until everything locked is open.
+    #     - progressive: you start with 'slots' of your 36 hotbar+main-inventory slots locked, and
+    #       copies of the 'Progressive Inventory Slot' item are shuffled into the multiworld — each one
+    #       unlocks 'slots_per_item' more, until everything locked is open.
     #
     # Locked slots open in a fixed order: the hotbar first, then the offhand slot (if 'offhand' is
     # included), then the main-inventory row closest to the hotbar, then your armor slots (if 'armor'
     # is included), then the two remaining main-inventory rows.
     #
-    # 'offhand' and 'armor' mean different things depending on 'mode':
-    #     - fixed: true means that slot group is EXEMPT from the restriction — always usable
-    #       regardless of 'slots'. false means it is locked for the whole game, same as any
-    #       hotbar/main slot beyond 'slots'.
-    #     - progressive: true means that slot group is ADDED to what starts locked (offhand adds 1,
-    #       armor adds 4) and gets its own share of the unlock items. false means it is left alone,
-    #       always usable, with no unlock items generated for it.
+    # 'offhand' and 'armor' add that slot group to what starts locked (offhand adds 1, armor adds 4)
+    # and give it its own share of the unlock items. false leaves it alone, always usable.
     #
     # Keys, with their defaults:
-    #     - mode: "disabled", "fixed" or "progressive". Default "disabled".
-    #     - slots: how many of your 36 hotbar+main-inventory slots are usable (fixed) or start locked
-    #       (progressive). 1-36. Default 36.
-    #     - slots_per_item: progressive only — how many slots each 'Progressive Inventory Slot' item
-    #       unlocks. Default 1.
+    #     - mode: "disabled" or "progressive". Default "disabled".
+    #     - slots: how many of your 36 hotbar+main-inventory slots start locked. 1-36. Default 36.
+    #     - slots_per_item: how many slots each 'Progressive Inventory Slot' item unlocks. Default 1.
     #     - offhand: true/false, see above. Default false.
     #     - armor: true/false, see above. Default false.
     #
