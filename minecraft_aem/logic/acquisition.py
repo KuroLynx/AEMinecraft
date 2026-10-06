@@ -1,4 +1,5 @@
 import json
+import os
 import re
 from contextlib import contextmanager
 from importlib.resources import files
@@ -8,8 +9,13 @@ from importlib.resources import files
 from BaseClasses import ItemClassification
 
 from .ast import And, Const, Has, ReachRegion, ReachLocation, and_, or_, at_least
+from . import fixed_point
 from ..content.registry import base_pack, overlay_packs  # registry only imports constants → cycle-safe
 from .. import *
+
+# ponytail: dev A/B switch for the fixed-point acquire() prototype (logic/fixed_point.py); becomes the
+# default (or goes) once it is compared.
+_FIXED_POINT = os.environ.get("AEM_ACQUIRE") == "fixed"
 
 # Wood-family items (planks / logs / wood / stems / hyphae, stripped or not) have no knowledge or
 # material gate — they are free once their dimension is reached. Collapsing them to a bare region
@@ -1734,6 +1740,8 @@ class RuleHelper:
     _SIZE_CAP = 1500  # serialized bytes; larger trees collapse to their region floor (see _coarsen)
 
     def acquire(self, item_id: str, _stack: frozenset = frozenset()):
+        if _FIXED_POINT:
+            return fixed_point.acquire(self, item_id)
         base = item_id.split(":", 1)[-1] if ":" in item_id else item_id
         if base.startswith("#"):
             return None  # a raw tag (recipe tags are pre-expanded; a bare tag can't be resolved)
