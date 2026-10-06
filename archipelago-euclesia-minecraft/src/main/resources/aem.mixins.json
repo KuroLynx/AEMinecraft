@@ -15,6 +15,7 @@
     "GiveCommandMixin",
     "InventoryLockAddMixin",
     "InventoryLockArmorSlotMixin",
+    "InventoryLockOffhandKeyMixin",
     "InventoryLockSlotMixin",
     "ItemEntityMixin",
     "KilledTriggerMixin",
