@@ -31,12 +31,12 @@ import java.util.UUID;
  */
 public final class TrapScheduler {
     /** Shortest gap between two traps hitting the same player. */
-    public static final int MIN_SPACING_SECONDS = 30;
+    public static final int MIN_SPACING_SECONDS = 10;
     /** Longest gap; the actual delay is rolled per trap between the two. */
-    public static final int MAX_SPACING_SECONDS = 60;
+    public static final int MAX_SPACING_SECONDS = 20;
     /**
-     * How many traps may be waiting per player. A mass release can send dozens, and at one per
-     * three-quarters of a minute that is an afternoon of being blown up; past this the surplus is
+     * How many traps may be waiting per player. A mass release can send dozens, and even at one every
+     * quarter-minute that is a long time of being blown up; past this the surplus is
      * dropped rather than queued into a punishment with no end.
      */
     private static final int MAX_QUEUED = 5;
@@ -53,7 +53,7 @@ public final class TrapScheduler {
         ServerTickEvents.END_SERVER_TICK.register(TrapScheduler::tick);
     }
 
-    /** Queues one trap for {@code player}; it fires as soon as the spacing (and their grace) allows. */
+    /** Queues one trap for {@code player}; it fires as soon as the spacing allows. */
     public static void submit(ServerPlayer player, String effectKey) {
         Deque<String> queue = QUEUES.computeIfAbsent(player.getUUID(), uuid -> new ArrayDeque<>());
         if (queue.size() >= MAX_QUEUED) {

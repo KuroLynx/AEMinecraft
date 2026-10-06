@@ -118,8 +118,7 @@ public final class FillerTrapService {
         }
         String trap = slot.trapItems().get(itemId);
         if (trap != null && mode == Mode.LIVE) {
-            // Queued rather than fired: traps are spaced out, and none goes off during the arrival
-            // grace (see TrapScheduler).
+            // Queued rather than fired: traps are spaced out (see TrapScheduler).
             TrapScheduler.submit(player, trap);
         }
     }
