@@ -1979,7 +1979,12 @@ class RuleHelper:
         # or one closer to home than anything dependable, is kept whatever its odds).
         options: list = []
         loose: list = []
-        finite: set = set()   # ids of routes that run dry — see bulk_mode
+        # Whether each route runs dry (see bulk_mode), kept per ROUTE rather than per node: nodes are
+        # interned, so a renewable route priced "Overworld" is the very node a chest route priced
+        # "Overworld" is, and a set of ids made the renewable one finite too. That flipped beetroot
+        # seeds between "replant them" and "loot them" forever in the bulk glitch graph.
+        dry_options: list = []
+        dry_loose: list = []
 
         def add(node, glitchy: bool = False, runs_dry: bool = False):
             # Const(False) is not a source, it is the absence of one — an inactive structure, or a
@@ -1991,9 +1996,9 @@ class RuleHelper:
             # instead of falling through to _acquire_fallback.
             if node is None or (isinstance(node, Const) and not node.value):
                 return
-            (loose if glitchy or id(node) in self._loose_nodes else options).append(node)
-            if runs_dry or id(node) in self._dry_nodes:
-                finite.add(id(node))
+            flimsy = glitchy or id(node) in self._loose_nodes
+            (loose if flimsy else options).append(node)
+            (dry_loose if flimsy else dry_options).append(runs_dry or id(node) in self._dry_nodes)
 
         def unreliable(kind: str, name: str) -> bool:
             return chances.get(f"{kind}/{name}", 1.0) < self._GLITCH_CHANCE
@@ -2125,10 +2130,10 @@ class RuleHelper:
             # Counted renewable, its 0.3% diamond block was 'Diamond Miner' (64 diamonds) without a pickaxe.
             add(self._gameplay_node(table), unreliable("gameplay", table),
                 runs_dry=table in ("corridor", "trial_chamber_melee", "trial_chamber_ranged"))
-        if self._bulk and any(id(node) not in finite for node in options + loose):
-            options = [node for node in options if id(node) not in finite]
-            loose = [node for node in loose if id(node) not in finite]
-        elif self._bulk and finite:
+        if self._bulk and not all(dry_options + dry_loose):
+            options = [node for node, dry in zip(options, dry_options) if not dry]
+            loose = [node for node, dry in zip(loose, dry_loose) if not dry]
+        elif self._bulk and (options or loose):
             self._sourced_dry = True
         if not self.glitch and not options and loose:
             self._sourced_loose = True
