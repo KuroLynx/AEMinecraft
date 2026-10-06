@@ -53,6 +53,14 @@ public final class BacapConfigService {
             return; // Already applied for this world.
         }
 
+        // BACAP creates bac_settings (and, on a new world, sets rewards ON) in its #load functions,
+        // which only run on the first server tick. The connect handler can land earlier, during
+        // prepareLevels' task pump: our commands would hit a missing objective and the marker would
+        // stop any retry. Wait for the join path instead, which is always after the first tick.
+        if (server.getScoreboard().getObjective("bac_settings") == null) {
+            return;
+        }
+
         // Mark up front so a second call this session (JOIN then the connect handler) can't re-run.
         if (!writeMarker(server)) {
             return; // Couldn't persist the marker; skip rather than risk re-running every load.
