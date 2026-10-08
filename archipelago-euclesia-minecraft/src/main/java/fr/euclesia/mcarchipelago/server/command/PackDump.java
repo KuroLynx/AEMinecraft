@@ -1061,7 +1061,12 @@ public final class PackDump {
                         values.getAsJsonArray());
             }
         }
-        Map<String, TreeSet<String>> palettes = structurePalettes(rm);  // NBT folder -> merged palette
+        Map<String, Map<String, TreeSet<String>>> palettes = structurePalettes(rm);  // folder -> template -> blocks
+        List<String> paletteIds = new ArrayList<>(structDefs.keySet());
+        for (String[] feature : FEATURE_STRUCTURES) {
+            paletteIds.add(feature[0]);
+        }
+        Map<String, TreeSet<String>> structurePalette = paletteByStructure(paletteIds, palettes);
 
         // game_id -> record, so the worldgen structures and the curated feature-structures emit in one
         // stable game_id-sorted order (the Structure-Unlock id order, which the apworld keys on).
@@ -1069,7 +1074,7 @@ public final class PackDump {
         for (Map.Entry<String, JsonObject> entry : structDefs.entrySet()) {
             String gameId = entry.getKey();
             records.put(gameId, structureRecord(prettifyId(gameId), gameId, entry.getValue(),
-                    biomeTags, bestPalette(gameId, palettes)));
+                    biomeTags, structurePalette.get(gameId)));
         }
         // Curated feature-structures only when THIS pack actually defines the placed feature, so the
         // vanilla pack (worldgen/placed_feature/monster_room|desert_well) gets them but a structure-less
@@ -1083,7 +1088,7 @@ public final class PackDump {
         for (String[] feature : FEATURE_STRUCTURES) {
             if (placedFeatures.contains(feature[0])) {
                 records.putIfAbsent(feature[0], featureStructureRecord(feature[0], feature[1],
-                        bestPalette(feature[0], palettes)));
+                        structurePalette.get(feature[0])));
             }
         }
         JsonArray table = new JsonArray();
@@ -1198,40 +1203,102 @@ public final class PackDump {
     }
 
     /**
-     * Merge every structure template into its NBT folder, keyed by the top-level folder under
-     * {@code structure/} (e.g. {@code ancient_city}, {@code nether_fossils}, {@code village},
-     * {@code ruined_portal}). A template sitting directly under {@code structure/} keys on its own
-     * file name. {@link #bestPalette} later matches each structure id to one of these folders.
+     * Every structure template's blocks, grouped by the top-level folder under {@code structure/} (e.g.
+     * {@code ancient_city}, {@code nether_fossils}, {@code village}, {@code ruined_portal}) and keyed
+     * within it by the template's path below that folder ({@code desert/houses/desert_small_house_8}).
+     * A template sitting directly under {@code structure/} is a folder of its own. {@link #bestPalette}
+     * matches each structure id to a folder; {@link #paletteByStructure} picks its templates in it.
      */
     private static boolean paletteFailureLogged;
 
-    private static Map<String, TreeSet<String>> structurePalettes(ResourceManager rm) {
-        Map<String, TreeSet<String>> palettes = new HashMap<>();
+    private static Map<String, Map<String, TreeSet<String>>> structurePalettes(ResourceManager rm) {
+        Map<String, Map<String, TreeSet<String>>> palettes = new HashMap<>();
         Map<Identifier, Resource> nbts = rm.listResources("structure", id -> id.getPath().endsWith(".nbt"));
         paletteFailureLogged = false;
         for (Map.Entry<Identifier, Resource> entry : nbts.entrySet()) {
-            String rel = entry.getKey().getPath().substring("structure/".length());
+            String rel = stripExt(entry.getKey().getPath().substring("structure/".length()));
             int slash = rel.indexOf('/');
-            String folder = slash < 0 ? stripExt(rel) : rel.substring(0, slash);
-            palettes.computeIfAbsent(folder, k -> new TreeSet<>()).addAll(paletteBlocks(entry.getValue()));
+            String folder = slash < 0 ? rel : rel.substring(0, slash);
+            palettes.computeIfAbsent(folder, k -> new HashMap<>())
+                    .computeIfAbsent(slash < 0 ? "" : rel.substring(slash + 1), k -> new TreeSet<>())
+                    .addAll(paletteBlocks(entry.getValue()));
         }
         return palettes;
     }
 
     /**
-     * Palette of the NBT folder whose name shares the most tokens with this structure's id (both
+     * Each structure's palette: the templates of its {@link #bestPalette} folder, but only its own when
+     * the folder serves several structures. The words of the id the folder name does not cover are its
+     * variant ({@code village_desert} in {@code village/} -> {@code desert},
+     * {@code abandoned_camp_old_growth_birch_forest} -> {@code old_growth_birch_forest}). A structure
+     * takes the templates under a sub-folder named after its own variant, plus those under no sibling's
+     * variant at all ({@code village/common}, {@code abandoned_camp/camp/default}). Without this every
+     * village counted the desert house's sea pickles, and every camp the snowy camps' powder snow.
+     */
+    private static Map<String, TreeSet<String>> paletteByStructure(List<String> gameIds,
+                                                                   Map<String, Map<String, TreeSet<String>>> palettes) {
+        Map<String, String> folderOf = new HashMap<>();
+        Map<String, String> variantOf = new HashMap<>();
+        Map<String, Set<String>> variantsIn = new HashMap<>();   // folder -> every structure's variant there
+        for (String gameId : gameIds) {
+            String folder = bestPalette(gameId, palettes.keySet());
+            if (folder == null) {
+                continue;
+            }
+            String variant = variant(stripNs(gameId), folder);
+            folderOf.put(gameId, folder);
+            variantOf.put(gameId, variant);
+            if (!variant.isEmpty()) {
+                variantsIn.computeIfAbsent(folder, k -> new HashSet<>()).add(variant);
+            }
+        }
+        Map<String, TreeSet<String>> out = new HashMap<>();
+        for (Map.Entry<String, String> entry : folderOf.entrySet()) {
+            String variant = variantOf.get(entry.getKey());
+            Set<String> siblings = variantsIn.getOrDefault(entry.getValue(), Set.of());
+            TreeSet<String> blocks = new TreeSet<>();
+            for (Map.Entry<String, TreeSet<String>> template : palettes.get(entry.getValue()).entrySet()) {
+                List<String> dirs = new ArrayList<>(List.of(template.getKey().split("/")));
+                dirs.remove(dirs.size() - 1);   // the file name is never a variant folder
+                if (dirs.contains(variant) || dirs.stream().noneMatch(siblings::contains)) {
+                    blocks.addAll(template.getValue());
+                }
+            }
+            out.put(entry.getKey(), blocks);
+        }
+        return out;
+    }
+
+    /** The id's words the folder name does not cover (exactly or by {@link #stem}), joined by {@code _}. */
+    private static String variant(String id, String folder) {
+        Set<String> folderWords = new HashSet<>();
+        for (String token : tokens(folder)) {
+            folderWords.add(token);
+            folderWords.add(stem(token));
+        }
+        List<String> rest = new ArrayList<>();
+        for (String token : tokens(id)) {
+            if (!folderWords.contains(token) && !folderWords.contains(stem(token))) {
+                rest.add(token);
+            }
+        }
+        return String.join("_", rest);
+    }
+
+    /**
+     * The NBT folder whose name shares the most tokens with this structure's id (both
      * split on {@code _}), so every structure — vanilla or modded, jigsaw or single-piece — gets its
      * template blocks with zero curation. Score = 2 x exact-token overlap + 1 x stem-only overlap, so
      * an exact match wins over a mere stem match (underwater_ruin beats ruined_portal for
      * ocean_ruin_cold; nether_fossils beats fossil for nether_fossil). Needs score >= 1, else no
      * palette ({@code null}). Folders are scanned in sorted order so ties resolve deterministically.
      */
-    private static TreeSet<String> bestPalette(String gameId, Map<String, TreeSet<String>> palettes) {
+    private static String bestPalette(String gameId, Set<String> folders) {
         List<String> idTokens = tokens(stripNs(gameId));
-        TreeSet<String> best = null;
+        String best = null;
         int bestScore = 0;
         int bestUnmatched = Integer.MAX_VALUE;
-        for (String folder : new TreeSet<>(palettes.keySet())) {
+        for (String folder : new TreeSet<>(folders)) {
             List<String> folderTokens = tokens(folder);
             int score = overlapScore(idTokens, folderTokens);
             // A tie goes to the folder with fewer words the id doesn't share: village_desert is the
@@ -1240,7 +1307,7 @@ public final class PackDump {
             if (score > bestScore || (score == bestScore && score > 0 && unmatched < bestUnmatched)) {
                 bestScore = score;
                 bestUnmatched = unmatched;
-                best = palettes.get(folder);
+                best = folder;
             }
         }
         return best;
