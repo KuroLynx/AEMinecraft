@@ -170,8 +170,11 @@ jobs:
           set -euo pipefail
           # A pre-release never becomes "Latest", so players on the stable release aren't offered it.
           if [ "${PRERELEASE}" = "true" ]; then kind=(--prerelease --latest=false); else kind=(--latest); fi
+          # Hand-written notes when docs/release-notes/v<version>.md exists, else GitHub's generated list.
+          notes_file="docs/release-notes/v${VERSION}.md"
+          if [ -f "${notes_file}" ]; then notes=(--notes-file "${notes_file}"); else notes=(--generate-notes); fi
           gh release create "v${VERSION}" dist/* \
             --target "${TARGET_SHA}" \
             --title "v${VERSION}" \
             "${kind[@]}" \
-            --generate-notes
+            "${notes[@]}"
