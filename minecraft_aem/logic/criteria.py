@@ -192,7 +192,9 @@ TRIGGERS: dict[str, dict] = {
     "hero_of_the_village": {"implied": [_call("can_win_raid")]},
     "voluntary_exile": {"implied": [need("entity_id", "minecraft:pillager"), _call("any_village")]},
     "avoid_vibration": {"implied": [need("structure_id", "minecraft:ancient_city")]},
-    "nether_travel": {"implied": [need("region", REGION_NETHER)], "ignore": {"start_position", "distance"}},
+    # Fires on stepping out of the Nether INTO the Overworld (ServerPlayer.triggerDimensionChangeTriggers).
+    "nether_travel": {"implied": [need("region", REGION_NETHER), need("enter", REGION_OVERWORLD)],
+                      "ignore": {"start_position", "distance"}},
     "levitation": {"implied": [need("entity_id", "minecraft:shulker")], "ignore": {"distance", "duration"}},
     "fall_from_height": {"implied": [need("region", REGION_OVERWORLD)], "ignore": {"start_position", "distance"}},
     "allay_drop_item_on_block": {"implied": [need("entity_id", "minecraft:allay"), _item("minecraft:note_block")],
