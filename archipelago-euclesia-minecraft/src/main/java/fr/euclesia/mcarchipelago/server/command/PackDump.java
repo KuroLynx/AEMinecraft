@@ -564,13 +564,33 @@ public final class PackDump {
             "minecraft:creaking_heart", "creaking_heart");
 
     /** Feature types that place blocks in code, with no block state in their config. */
-    private static final Map<String, List<String>> FEATURE_TYPE_BLOCKS = Map.of(
-            "minecraft:bamboo", List.of("bamboo", "podzol"),
-            "minecraft:sculk_patch", List.of("sculk", "sculk_vein", "sculk_catalyst", "sculk_shrieker"),
+    private static final List<String> CORAL_BLOCKS = List.of("tube_coral_block", "brain_coral_block",
+            "bubble_coral_block", "fire_coral_block", "horn_coral_block");
+
+    private static final Map<String, List<String>> FEATURE_TYPE_BLOCKS = Map.ofEntries(
+            Map.entry("minecraft:bamboo", List.of("bamboo", "podzol")),
+            Map.entry("minecraft:sculk_patch", List.of("sculk", "sculk_vein", "sculk_catalyst", "sculk_shrieker")),
             // Freezes water and lays snow wherever it's cold. It sits in nearly every biome, so this
             // over-reaches into warm ones, which only ever makes ice/snow look commoner than they
             // are, never rarer. 26.3 dropped the ocean-ice surface rule, leaving this as ice's source.
-            "minecraft:freeze_top_layer", List.of("ice", "snow"));
+            Map.entry("minecraft:freeze_top_layer", List.of("ice", "snow")),
+            // Coded features before 26.3 made them data-driven (26.3 reads these off block states):
+            // without them 26.1.2/26.2 had no sea pickle, kelp, coral or Nether vines in the table, so
+            // 'In a Pickle' cost no Biome Finder there while it did on 26.3.
+            Map.entry("minecraft:sea_pickle", List.of("sea_pickle")),
+            Map.entry("minecraft:kelp", List.of("kelp", "kelp_plant")),
+            Map.entry("minecraft:seagrass", List.of("seagrass", "tall_seagrass")),
+            Map.entry("minecraft:coral_tree", CORAL_BLOCKS),
+            Map.entry("minecraft:coral_claw", CORAL_BLOCKS),
+            Map.entry("minecraft:coral_mushroom", CORAL_BLOCKS),
+            Map.entry("minecraft:twisting_vines", List.of("twisting_vines", "twisting_vines_plant")),
+            Map.entry("minecraft:weeping_vines", List.of("weeping_vines", "weeping_vines_plant")),
+            Map.entry("minecraft:glowstone_blob", List.of("glowstone")),
+            Map.entry("minecraft:basalt_columns", List.of("basalt")),
+            Map.entry("minecraft:basalt_pillar", List.of("basalt")),
+            Map.entry("minecraft:dripstone_cluster", List.of("dripstone_block", "pointed_dripstone")),
+            Map.entry("minecraft:large_dripstone", List.of("dripstone_block")),
+            Map.entry("minecraft:pointed_dripstone", List.of("pointed_dripstone")));
 
     /**
      * Which biomes each block generates in: {@code {"<block>": ["<biome>", ...]}}, the same file

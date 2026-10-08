@@ -243,7 +243,11 @@ _PLACED_FROM = {
         "light_gray", "cyan", "purple", "blue", "brown", "green", "red", "black")},
     "chipped_anvil": "minecraft:anvil",
     "damaged_anvil": "minecraft:anvil",
+    # A bamboo shoot is bamboo somebody planted; reading it as natural made bamboo free off it.
+    "bamboo_sapling": "minecraft:bamboo",
 }
+# Potted blocks whose plant item is not simply the name after "potted_".
+_POTTED_PLANT = {"potted_azalea_bush": "minecraft:azalea", "potted_flowering_azalea_bush": "minecraft:flowering_azalea"}
 # Copper ages where it stands. An `exposed_/weathered_/oxidized_` block is the plain one after it
 # weathered, so mining one back is circular — but nothing in the dump says so: you don't CRAFT an
 # aged block (you wait), so it has no "recipes" key, `placed_only` read False, and every aged copper
@@ -2056,6 +2060,10 @@ class RuleHelper:
         A crop block exists only because its seed was planted (see ``_PLANTED_CROPS``), and for
         potato/carrot that seed is the item being acquired: a cycle, which fixed_point settles."""
         seed = _PLANTED_CROPS.get(block) or _PLACED_FROM.get(block)
+        if seed is None and block.startswith("potted_"):
+            # A potted plant is the plant, put in a pot: mining one back is circular (potted bamboo
+            # made bamboo free). Structures that generate a pot come through no other route here.
+            seed = _POTTED_PLANT.get(block, f"minecraft:{block.removeprefix('potted_')}")
         if seed is not None:
             return self.acquire(seed)
         aged = _aged_source(self.content, block)

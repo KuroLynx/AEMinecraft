@@ -938,9 +938,15 @@ class CriteriaCompiler:
             return _BLOCK_GATE[key](self.h)
         if key in _BLOCK_REGION:
             extra = _BLOCK_EXTRA_GATE.get(key)
-            return self._any_opt(*[self.h.access_region(r) if extra is None
-                                   else and_(self.h.access_region(r), extra(self.h))
-                                   for r in _BLOCK_REGION[key]])
+            region = self._any_opt(*[self.h.access_region(r) if extra is None
+                                     else and_(self.h.access_region(r), extra(self.h))
+                                     for r in _BLOCK_REGION[key]])
+            # The dimension is not the whole story for a block that grows only in rare biomes (sweet
+            # berry bushes in taigas, powder snow on snowy slopes): standing at one is finding that
+            # biome, or a structure that places it — unless you place it yourself.
+            placed = self._price_place(block)
+            found = self.h._natural_origin(key)
+            return and_(region, found if placed is None else or_(found, placed))
         if key in _BLOCK_SOURCE:
             return _BLOCK_SOURCE[key](self)
         node = self.h.acquire(block) or self._price_place(block)
