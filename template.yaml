@@ -421,7 +421,7 @@ AEMinecraft:
     #     - inventory_crafting: crafting in your own 2x2 inventory grid at all. Unlike the routes
     #       above this gates the grid, not a locked item: while true, the 2x2 grid crafts nothing
     #       until you have the crafting table's Knowledge (logic prices every crafting recipe at it
-    #       anyway). Wood stays free: logs into planks or wood, planks into sticks.
+    #       anyway) — planks and sticks included.
     #     - given: the /give command handing you a locked item. Note that BlazeandCave's item rewards
     #       travel this route too — the pack hands them out with plain /give commands — so leaving
     #       'given' open lets a BACAP reward drop a still-locked item into your inventory, which can
