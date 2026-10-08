@@ -3,6 +3,9 @@ description: AEMinecraft — Minecraft Randomizer by KuroLynx (mod by EDGN)
 game: AEMinecraft
 requires:
   version: 0.6.7
+  # The apworld this template was written for: an older one doesn't know every option below.
+  game:
+    AEMinecraft: 0.7.0
 
 AEMinecraft:
   # -------------------------------------------------------------------------
@@ -31,16 +34,13 @@ AEMinecraft:
   # Minecraft Version
   # -------------------------------------------------------------------------
 
-  minecraft_version:
-    # The Minecraft version you play on.
-    #
-    # Must match the game you run with the mod: items, mobs, structures and advancements differ
-    # between versions, and the mod refuses to enter a world generated for another one. With
-    # blazeandcave on, install the BlazeandCave's Advancements Pack release made for that version
-    # (26.1.2: 1.20.3, 26.2: 1.21, 26.3: 1.21.1). Each player picks their own.
-    '26.1.2': 50
-    '26.2': 0
-    '26.3': 0
+  # The Minecraft version you play on: '26.1.2', '26.2' or '26.3' (quoted, so YAML keeps it as text).
+  #
+  # Must match the game you run with the mod: items, mobs, structures and advancements differ
+  # between versions, and the mod refuses to enter a world generated for another one. With
+  # blazeandcave on, install the BlazeandCave's Advancements Pack release made for that version
+  # (26.1.2: 1.20.3, 26.2: 1.21, 26.3: 1.21.1). Each player picks their own.
+  minecraft_version: '26.1.2'
 
   # -------------------------------------------------------------------------
   # Boss Goal
