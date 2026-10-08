@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from Options import (Choice, DefaultOnToggle, OptionDict, OptionError, OptionSet,
+from Options import (Choice, DefaultOnToggle, FreeText, OptionDict, OptionError, OptionSet,
                      PerGameCommonOptions, Range, Toggle)
 
 from .data import (
@@ -15,34 +15,26 @@ from .data import (
 )
 
 
-def _minecraft_version_option() -> type:
-    """The minecraft_version option, one choice per version that has packs (built here rather than
-    written out, so a dumped version becomes selectable with no code change). Choices are named by
-    the version itself ("26.1.2") — AP reads an option's names off its ``option_*`` attributes, which a
-    type() call can give dots that a class body can't."""
-    attrs = {f"option_{version}": index for index, version in enumerate(MINECRAFT_VERSIONS)}
-    attrs.update({
-        "__module__": __name__,
-        "__doc__": f"""The Minecraft version you play on.
+class MinecraftVersion(FreeText):
+    __doc__ = f"""The Minecraft version you play on, written as the version itself: minecraft_version: '26.3'.
 
     Must match the game you run with the mod: items, mobs, structures and advancements differ between
     versions, and the mod refuses to enter a world generated for another one. With blazeandcave on,
-    install the BlazeandCave's Advancements Pack release made for that version.
+    install the BlazeandCave's Advancements Pack release made for that version. Quote it, so YAML
+    keeps it as text.
 
     Valid values: {", ".join(MINECRAFT_VERSIONS)}.
-    """,
-        "display_name": "Minecraft Version",
-        "default": MINECRAFT_VERSIONS.index(DEFAULT_MINECRAFT_VERSION),
-        # By name: YAML reads 26.2 as a number, and Choice.from_any would take a bare integer as a
-        # choice INDEX. An integer that isn't a version name still is one (AP passes the default
-        # that way when a YAML omits the option).
-        "from_any": classmethod(lambda cls, data: cls(data) if isinstance(data, int) and str(data) not in cls.options
-                                else cls.from_text(str(data))),
-    })
-    return type("MinecraftVersion", (Choice,), attrs)
+    """
+    display_name = "Minecraft Version"
+    default = DEFAULT_MINECRAFT_VERSION
 
-
-MinecraftVersion = _minecraft_version_option()
+    @classmethod
+    def from_text(cls, text: str) -> "MinecraftVersion":
+        # A version that has packs; the list grows by dumping a new one, with no code change here.
+        if text not in MINECRAFT_VERSIONS:
+            raise OptionError(f"minecraft_version {text!r} is not supported; pick one of "
+                              f"{', '.join(MINECRAFT_VERSIONS)}")
+        return cls(text)
 
 
 class BossList(OptionSet):
