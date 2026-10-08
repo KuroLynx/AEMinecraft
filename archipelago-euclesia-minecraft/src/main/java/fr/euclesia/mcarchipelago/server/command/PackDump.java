@@ -11,6 +11,7 @@ import fr.euclesia.mcarchipelago.AEM;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import net.minecraft.SharedConstants;
+import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.locale.Language;
 import net.minecraft.nbt.CompoundTag;
@@ -23,6 +24,12 @@ import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.MultiPackResourceManager;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.tags.ItemTags;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -35,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -121,7 +129,7 @@ public final class PackDump {
             done.add("acquisition " + writeCount(packDir, "acquisition.json", AcquisitionDump.build(rm, ns)));
         }
         if (selected.contains("block_mining")) {
-            done.add("block_mining " + writeCount(packDir, "block_mining.json", blockMining(rm)));
+            done.add("block_mining " + writeCount(packDir, "block_mining.json", blockMining(rm, ns)));
         }
         if (selected.contains("block_biomes")) {
             done.add("block_biomes " + writeCount(packDir, "block_biomes.json", blockBiomes(rm)));
@@ -323,7 +331,7 @@ public final class PackDump {
 
     // -- block_mining (data/<ns>/tags/block/...) ----------------------------
 
-    private static JsonObject blockMining(ResourceManager rm) {
+    private static JsonObject blockMining(ResourceManager rm, String ns) {
         TreeSet<String> pickaxe = new TreeSet<>();
         Map<String, String> needs = new HashMap<>();
         for (Map.Entry<Identifier, JsonObject> entry : jsonResources(rm, "tags/block")) {
@@ -365,8 +373,11 @@ public final class PackDump {
             }
         }
 
+        Map<String, TreeSet<String>> tools = correctTools(ns);
+
         TreeSet<String> blocks = new TreeSet<>(pickaxe);
         blocks.addAll(drops.keySet());
+        blocks.addAll(tools.keySet());
         JsonObject out = new JsonObject();
         for (String block : blocks) {
             JsonObject record = new JsonObject();
@@ -377,11 +388,64 @@ public final class PackDump {
                 record.add("needs", tier == null ? JsonNull.INSTANCE
                         : new com.google.gson.JsonPrimitive(tier));
             }
+            TreeSet<String> kinds = tools.get(block);
+            if (kinds != null) {
+                JsonArray tool = new JsonArray();
+                kinds.forEach(tool::add);
+                record.add("tool", tool);
+            }
             JsonObject needed = drops.get(block);
             if (needed != null) {
                 record.add("drops", needed);
             }
             out.add(block, record);
+        }
+        return out;
+    }
+
+    /** Tool kind -> the item tag holding every tool of that kind (see {@link #correctTools}). */
+    private static final Map<String, TagKey<Item>> TOOL_KINDS = new LinkedHashMap<>();
+    static {
+        TOOL_KINDS.put("pickaxe", ItemTags.PICKAXES);
+        TOOL_KINDS.put("axe", ItemTags.AXES);
+        TOOL_KINDS.put("shovel", ItemTags.SHOVELS);
+        TOOL_KINDS.put("hoe", ItemTags.HOES);
+        TOOL_KINDS.put("sword", ItemTags.SWORDS);
+        TOOL_KINDS.put("spear", ItemTags.SPEARS);
+    }
+
+    /**
+     * Blocks that drop NOTHING to the wrong tool ({@code requiresCorrectToolForDrops}): block -> the
+     * tool kinds that do get a drop. Snow is the case the tags alone miss — its loot table names no
+     * tool, the block's own "correct tool" rule (shovels) is what stops a bare hand — and cobweb,
+     * which no {@code mineable/*} tag lists at all (swords or shears). Asked of the game rather than
+     * read off tags: one tool of each kind, held against the block's default state. Only {@code ns}'s
+     * blocks: the registry is global, and a datapack's folder must not repeat vanilla's.
+     */
+    private static Map<String, TreeSet<String>> correctTools(String ns) {
+        Map<String, TreeSet<String>> out = new HashMap<>();
+        for (Block block : BuiltInRegistries.BLOCK) {
+            Identifier id = BuiltInRegistries.BLOCK.getKey(block);
+            if (!id.getNamespace().equals(ns)) {
+                continue;   // the registry is global; each pack records only its own blocks
+            }
+            BlockState state = block.defaultBlockState();
+            if (!state.requiresCorrectToolForDrops()) {
+                continue;
+            }
+            TreeSet<String> kinds = new TreeSet<>();
+            for (Map.Entry<String, TagKey<Item>> kind : TOOL_KINDS.entrySet()) {
+                for (Holder<Item> tool : BuiltInRegistries.ITEM.getTagOrEmpty(kind.getValue())) {
+                    if (tool.value().getDefaultInstance().isCorrectToolForDrops(state)) {
+                        kinds.add(kind.getKey());
+                        break;
+                    }
+                }
+            }
+            if (Items.SHEARS.getDefaultInstance().isCorrectToolForDrops(state)) {
+                kinds.add("shears");
+            }
+            out.put(id.getPath(), kinds);
         }
         return out;
     }
@@ -768,7 +832,8 @@ public final class PackDump {
         return id != null && BuiltInRegistries.BLOCK.containsKey(id) ? stripNs(element.getAsString()) : null;
     }
 
-    /** Per-item tool requirements for one block loot table: {@code {"<item>": ["shears","silk"]}}. */
+    /** Per-item tool requirements for one block loot table: {@code {"<item>": ["shears","silk"]}} — any
+     *  tool kind ({@link #TOOL_KINDS}), "shears" or "silk" (Silk Touch). */
     private static JsonObject lootToolRequirements(JsonObject table) {
         Map<String, Set<String>> found = new HashMap<>();
         Set<String> free = new HashSet<>();
@@ -876,11 +941,23 @@ public final class PackDump {
         }
         JsonObject predicate = obj.has("predicate") && obj.get("predicate").isJsonObject()
                 ? obj.getAsJsonObject("predicate") : new JsonObject();
-        if (predicate.has("items") && predicate.get("items").toString().contains("shears")) {
-            return Set.of("shears");
-        }
         if (predicate.toString().contains("silk_touch")) {
             return Set.of("silk");
+        }
+        if (predicate.has("items")) {
+            String items = predicate.get("items").toString();
+            Set<String> kinds = new HashSet<>();
+            if (items.contains("shears")) {
+                kinds.add("shears");
+            }
+            for (Map.Entry<String, TagKey<Item>> toolKind : TOOL_KINDS.entrySet()) {
+                if (items.contains(toolKind.getValue().location().getPath())) {   // "#minecraft:shovels"
+                    kinds.add(toolKind.getKey());
+                }
+            }
+            if (!kinds.isEmpty()) {
+                return kinds;
+            }
         }
         // A match_tool we cannot read still gates the drop on SOMETHING held; claiming "free" would
         // be the very bug this table exists to fix, so demand a tool nothing satisfies.
