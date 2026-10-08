@@ -210,7 +210,8 @@
     "jungle"
   ],
   "basalt": [
-    "basalt_deltas"
+    "basalt_deltas",
+    "soul_sand_valley"
   ],
   "bedrock": [
     "badlands",
@@ -329,6 +330,9 @@
   "blue_orchid": [
     "swamp"
   ],
+  "brain_coral_block": [
+    "warm_ocean"
+  ],
   "brown_mushroom": [
     "badlands",
     "bamboo_jungle",
@@ -382,6 +386,9 @@
   "brown_mushroom_block": [
     "dark_forest",
     "mushroom_fields"
+  ],
+  "bubble_coral_block": [
+    "warm_ocean"
   ],
   "budding_amethyst": [
     "badlands",
@@ -1563,6 +1570,9 @@
     "soul_sand_valley",
     "warped_forest"
   ],
+  "fire_coral_block": [
+    "warm_ocean"
+  ],
   "firefly_bush": [
     "badlands",
     "bamboo_jungle",
@@ -1613,6 +1623,13 @@
   ],
   "flowering_azalea_leaves": [
     "lush_caves"
+  ],
+  "glowstone": [
+    "basalt_deltas",
+    "crimson_forest",
+    "nether_wastes",
+    "soul_sand_valley",
+    "warped_forest"
   ],
   "gold_ore": [
     "badlands",
@@ -1867,6 +1884,9 @@
   "hanging_roots": [
     "lush_caves"
   ],
+  "horn_coral_block": [
+    "warm_ocean"
+  ],
   "ice": [
     "badlands",
     "bamboo_jungle",
@@ -2014,6 +2034,22 @@
     "bamboo_jungle",
     "jungle",
     "sparse_jungle"
+  ],
+  "kelp": [
+    "cold_ocean",
+    "deep_cold_ocean",
+    "deep_lukewarm_ocean",
+    "deep_ocean",
+    "lukewarm_ocean",
+    "ocean"
+  ],
+  "kelp_plant": [
+    "cold_ocean",
+    "deep_cold_ocean",
+    "deep_lukewarm_ocean",
+    "deep_ocean",
+    "lukewarm_ocean",
+    "ocean"
   ],
   "lapis_ore": [
     "badlands",
@@ -2908,6 +2944,21 @@
   "sculk_vein": [
     "deep_dark"
   ],
+  "sea_pickle": [
+    "warm_ocean"
+  ],
+  "seagrass": [
+    "cold_ocean",
+    "deep_cold_ocean",
+    "deep_lukewarm_ocean",
+    "deep_ocean",
+    "lukewarm_ocean",
+    "mangrove_swamp",
+    "ocean",
+    "river",
+    "swamp",
+    "warm_ocean"
+  ],
   "short_dry_grass": [
     "badlands",
     "desert",
@@ -3336,10 +3387,25 @@
     "sulfur_caves",
     "sunflower_plains"
   ],
+  "tall_seagrass": [
+    "cold_ocean",
+    "deep_cold_ocean",
+    "deep_lukewarm_ocean",
+    "deep_ocean",
+    "lukewarm_ocean",
+    "mangrove_swamp",
+    "ocean",
+    "river",
+    "swamp",
+    "warm_ocean"
+  ],
   "terracotta": [
     "badlands",
     "eroded_badlands",
     "wooded_badlands"
+  ],
+  "tube_coral_block": [
+    "warm_ocean"
   ],
   "tuff": [
     "badlands",
@@ -3397,6 +3463,12 @@
     "windswept_hills",
     "windswept_savanna",
     "wooded_badlands"
+  ],
+  "twisting_vines": [
+    "warped_forest"
+  ],
+  "twisting_vines_plant": [
+    "warped_forest"
   ],
   "vine": [
     "bamboo_jungle",
@@ -3489,6 +3561,12 @@
     "windswept_hills",
     "windswept_savanna",
     "wooded_badlands"
+  ],
+  "weeping_vines": [
+    "crimson_forest"
+  ],
+  "weeping_vines_plant": [
+    "crimson_forest"
   ],
   "white_terracotta": [
     "badlands",
