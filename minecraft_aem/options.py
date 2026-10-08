@@ -428,7 +428,7 @@ class ItemGateBehavior(OptionDict):
     material tier. This option chooses, for each route by which such an item could reach your
     inventory, whether that route is gated (blocked) or left open.
 
-    Five routes are configurable, each set to true (gated) or false (allowed):
+    Six routes are configurable, each set to true (gated) or false (allowed):
         - crafting: taking a locked item out of a crafting grid — the crafting table or your own 2x2
           inventory grid.
         - station: taking a locked item out of a workstation that makes or transforms items — furnace,
@@ -437,6 +437,10 @@ class ItemGateBehavior(OptionDict):
         - container: taking a locked item out of plain storage — chest, barrel, shulker box, hopper,
           dispenser, ender chest, minecart and mount inventories.
         - pickup: picking a locked item up off the ground.
+        - inventory_crafting: crafting in your own 2x2 inventory grid at all. Unlike the routes
+          above this gates the grid, not a locked item: while true, the 2x2 grid crafts nothing
+          until you have the crafting table's Knowledge (logic prices every crafting recipe at it
+          anyway). Wood stays free: logs into planks or wood, planks into sticks.
         - given: the /give command handing you a locked item. Note that BlazeandCave's item rewards
           travel this route too — the pack hands them out with plain /give commands — so leaving
           'given' open lets a BACAP reward drop a still-locked item into your inventory, which can
@@ -462,13 +466,14 @@ class ItemGateBehavior(OptionDict):
             given: false
     """
     display_name = "Item Gate Behavior"
-    valid_keys = {"crafting", "station", "container", "pickup", "given"}
+    valid_keys = {"crafting", "station", "container", "pickup", "inventory_crafting", "given"}
     # Preserves the historical behavior: every GUI take and floor pickup is gated, while /give (a newer
     # route) is left open. Omitted keys fall back to these in fill_slot_data(). Note that this also
     # means BACAP's /give-based item rewards travel an open route by default: BacapRewardService pulls
     # them back out only once the reward has run, after any inventory_changed advancement has fired.
     # That is the intended default — a player who wants those rewards gated sets 'given' to true.
-    default = {"crafting": True, "station": True, "container": True, "pickup": True, "given": False}
+    default = {"crafting": True, "station": True, "container": True, "pickup": True,
+               "inventory_crafting": True, "given": False}
 
     # Accepted spellings of each truth value, so a YAML "yes"/"no"/1/0 works as well as true/false.
     _TRUE = {True, 1, "true", "yes", "gated", "1"}

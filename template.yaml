@@ -409,7 +409,7 @@ AEMinecraft:
     # material tier. This option chooses, for each route by which such an item could reach your
     # inventory, whether that route is gated (blocked) or left open.
     #
-    # Five routes are configurable, each set to true (gated) or false (allowed):
+    # Six routes are configurable, each set to true (gated) or false (allowed):
     #     - crafting: taking a locked item out of a crafting grid — the crafting table or your own 2x2
     #       inventory grid.
     #     - station: taking a locked item out of a workstation that makes or transforms items — furnace,
@@ -418,6 +418,10 @@ AEMinecraft:
     #     - container: taking a locked item out of plain storage — chest, barrel, shulker box, hopper,
     #       dispenser, ender chest, minecart and mount inventories.
     #     - pickup: picking a locked item up off the ground.
+    #     - inventory_crafting: crafting in your own 2x2 inventory grid at all. Unlike the routes
+    #       above this gates the grid, not a locked item: while true, the 2x2 grid crafts nothing
+    #       until you have the crafting table's Knowledge (logic prices every crafting recipe at it
+    #       anyway). Wood stays free: logs into planks or wood, planks into sticks.
     #     - given: the /give command handing you a locked item. Note that BlazeandCave's item rewards
     #       travel this route too — the pack hands them out with plain /give commands — so leaving
     #       'given' open lets a BACAP reward drop a still-locked item into your inventory, which can
@@ -437,6 +441,7 @@ AEMinecraft:
     station: true
     container: true
     pickup: true
+    inventory_crafting: true
     given: false
 
   # -------------------------------------------------------------------------

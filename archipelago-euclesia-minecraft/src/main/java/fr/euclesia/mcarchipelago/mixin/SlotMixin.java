@@ -56,8 +56,15 @@ public abstract class SlotMixin {
         if (this.container == player.getInventory()) {
             return;
         }
-        MaterialLockService.Channel channel = archipelago_euclesia$channelFor(player);
-        Component reason = MaterialLockService.blockReason(getItem(), channel);
+        // The 2x2 grid in the player's own inventory has a gate of its own (inventory_crafting), on
+        // whatever it crafts, ahead of the per-item lock every other take goes through.
+        Object self = this;
+        Component reason = self == player.inventoryMenu.getResultSlot()
+                ? MaterialLockService.inventoryCraftingReason(getItem())
+                : null;
+        if (reason == null) {
+            reason = MaterialLockService.blockReason(getItem(), archipelago_euclesia$channelFor(player));
+        }
         if (reason != null) {
             cir.setReturnValue(false);
             if (player instanceof ServerPlayer serverPlayer) {

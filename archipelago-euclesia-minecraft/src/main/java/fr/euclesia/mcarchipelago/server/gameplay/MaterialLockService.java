@@ -12,6 +12,8 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 
+import java.util.regex.Pattern;
+
 /**
  * Decides whether an item is too "advanced" to be picked up yet. Two gates, both keyed off received
  * Archipelago items:
@@ -62,6 +64,28 @@ public final class MaterialLockService {
             case PICKUP -> behavior.pickup();
             case GIVEN -> behavior.given();
         };
+    }
+
+    /**
+     * What the player's own 2x2 grid may craft without the crafting table's Knowledge: logic's free wood
+     * ({@code _wood_region} in acquisition.py) — logs into planks or wood, planks into sticks.
+     */
+    private static final Pattern FREE_WOOD = Pattern.compile("(stripped_)?[a-z]+_(planks|log|wood|stem|hyphae)|stick");
+
+    /**
+     * Why the 2x2 inventory grid can't hand over {@code result}, or {@code null} if it can. With the
+     * {@code inventory_crafting} route gated the grid crafts nothing but wood until the crafting table's
+     * Knowledge arrives — logic prices every crafting recipe at that Knowledge, since the recipe dump
+     * can't tell a 2x2 recipe from a 3x3 one.
+     */
+    public static Component inventoryCraftingReason(ItemStack result) {
+        APSlotData slotData = AEM.ARCHIPELAGO.client().state().parsedSlotData();
+        ItemGateBehavior behavior = slotData == null ? ItemGateBehavior.DEFAULT : slotData.itemGateBehavior();
+        if (result.isEmpty() || !behavior.inventoryCrafting()
+                || FREE_WOOD.matcher(BuiltInRegistries.ITEM.getKey(result.getItem()).getPath()).matches()) {
+            return null;
+        }
+        return KnowledgeLockService.stationBlockReason("minecraft:crafting_table");
     }
 
     /**
