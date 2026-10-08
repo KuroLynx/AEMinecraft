@@ -5,11 +5,20 @@ name: Release
 # the two ship together as one GitHub Release vX.Y.Z. Every push to master reads that version and
 # publishes it ONLY if a release for it does not already exist — so bumping world_version is the whole
 # release signal, and re-pushing after a failed build simply retries (the release still doesn't
-# exist). Run the workflow manually (workflow_dispatch) to build both artifacts without publishing.
+# exist). Run the workflow manually (workflow_dispatch) to build both artifacts without publishing,
+# or give it a `prerelease` suffix to publish a GitHub pre-release from any branch:
+#   gh workflow run release.yml --ref release/v0.7.0 -f prerelease=rc.1   ->  v0.7.0-rc.1
+# The suffix goes on the tag and the jar names only; world_version stays X.Y.Z, so the final v0.7.0
+# still publishes from master as usual.
 on:
   push:
     branches: [master]
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      prerelease:
+        description: "Pre-release suffix (e.g. rc.1) to publish vX.Y.Z-<suffix>; empty = dry run"
+        required: false
+        default: ""
 
 # Least privilege: the job only needs to create the GitHub Release.
 permissions:
@@ -36,6 +45,8 @@ jobs:
 
       - name: Resolve version and decide whether to release
         id: resolve
+        env:
+          PRERELEASE: ${{ github.event.inputs.prerelease }} # via env to keep it out of the shell command line
         run: |
           set -euo pipefail
 
@@ -45,12 +56,19 @@ jobs:
           mc="$(sed -nE "s/^[[:space:]]*versions[[:space:]]+(.*)$/\1/p" archipelago-euclesia-minecraft/settings.gradle | tr -d "'\"," | xargs)"
           [ -n "${mc}" ] || { echo "no Minecraft versions found in settings.gradle" >&2; exit 1; }
 
-          {
-            echo "version=${version}"
-            echo "mc=${mc}"
-          } >> "$GITHUB_OUTPUT"
-
-          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+          prerelease=false
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] && [ -n "${PRERELEASE:-}" ]; then
+            [[ "${PRERELEASE}" =~ ^[0-9A-Za-z.]+$ ]] || { echo "bad prerelease suffix: ${PRERELEASE}" >&2; exit 1; }
+            version="${version}-${PRERELEASE}"
+            if gh release view "v${version}" >/dev/null 2>&1; then
+              echo "v${version} already exists; pick another suffix." >&2
+              exit 1
+            fi
+            echo "Pre-release: building and publishing v${version}."
+            build=true
+            publish=true
+            prerelease=true
+          elif [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
             echo "Dry run: building v${version} without publishing."
             build=true
             publish=false
@@ -65,8 +83,11 @@ jobs:
           fi
 
           {
+            echo "version=${version}"
+            echo "mc=${mc}"
             echo "build=${build}"
             echo "publish=${publish}"
+            echo "prerelease=${prerelease}"
           } >> "$GITHUB_OUTPUT"
 
       - name: Set up JDK 25
@@ -143,11 +164,17 @@ jobs:
         if: steps.resolve.outputs.publish == 'true'
         env:
           VERSION: ${{ steps.resolve.outputs.version }}
-          TARGET_SHA: ${{ github.sha }} # the pushed commit on master; tag points here
+          TARGET_SHA: ${{ github.sha }} # the commit built (master, or the pre-release's branch); tag points here
+          PRERELEASE: ${{ steps.resolve.outputs.prerelease }}
         run: |
           set -euo pipefail
+          # A pre-release never becomes "Latest", so players on the stable release aren't offered it.
+          if [ "${PRERELEASE}" = "true" ]; then kind=(--prerelease --latest=false); else kind=(--latest); fi
+          # Hand-written notes when docs/release-notes/v<version>.md exists, else GitHub's generated list.
+          notes_file="docs/release-notes/v${VERSION}.md"
+          if [ -f "${notes_file}" ]; then notes=(--notes-file "${notes_file}"); else notes=(--generate-notes); fi
           gh release create "v${VERSION}" dist/* \
             --target "${TARGET_SHA}" \
             --title "v${VERSION}" \
-            --latest \
-            --generate-notes
+            "${kind[@]}" \
+            "${notes[@]}"
