@@ -170,7 +170,10 @@ _BOW_AND_ARROW = All((Any((_item("minecraft:bow"), _item("minecraft:crossbow")))
                       _call("can_get_arrow")))
 
 # Mounts you can only ride once something is put on them (the item is yours to make and hold first).
-_MOUNT_NEED = {"happy_ghast": need("item_tag", "#minecraft:harnesses")}
+# Camels/horses mount bare-handed; a nautilus only once tamed (AbstractNautilus.mobInteract checks isTame).
+_MOUNT_NEED = {"happy_ghast": need("item_tag", "#minecraft:harnesses"),
+               "nautilus": need("item_tag", "#minecraft:nautilus_taming_items"),
+               "zombie_nautilus": need("item_tag", "#minecraft:nautilus_taming_items")}
 # The most a bare hand deals in one hit (1, or 1.5 as a critical); a "dealt" above it needs a weapon.
 _FIST_DAMAGE = 1.5
 
