@@ -1,4 +1,6 @@
 import logging
+import time
+from contextlib import contextmanager
 
 from BaseClasses import Item, Location, Region, Tutorial
 from worlds.AutoWorld import WebWorld, World
@@ -141,6 +143,15 @@ class MCWorld(World):
             return MCItem(name, classification, BASE_ID_STRUCT_UNLOCK + struct_data.id, self.player)
 
         raise KeyError(f"Unknown item: {name}")
+
+    @contextmanager
+    def _status(self, step: str):
+        """Log a generation step and how long it took, so a slow BACAP seed shows where it is."""
+        player = self.multiworld.get_player_name(self.player)
+        logging.info("AEMinecraft (%s): %s...", player, step)
+        start = time.perf_counter()
+        yield
+        logging.info("AEMinecraft (%s): %s done in %.1fs", player, step, time.perf_counter() - start)
 
     def generate_early(self) -> None:
         """Génère les données aléatoires qui doivent être disponibles dès set_rules."""
@@ -323,7 +334,9 @@ class MCWorld(World):
         # always-reachable origin), instead of the legacy uniform-Overworld floor that over-gated
         # non-Overworld checks and broke a Nether start. The rules are cached for set_rules so the two
         # stay in lockstep. (Falls back to the data-declared region for any location without a rule.)
-        self._location_rules = build_location_rules(self)
+        with self._status(f"compiling logic for {len(self._get_active_locations())} locations "
+                          f"(Minecraft {self.content.version}{', BACAP' if self.options.blazeandcave else ''})"):
+            self._location_rules = build_location_rules(self)
         placement = derive_location_regions(self._location_rules)
         for loc_name, loc_data in self._get_active_locations().items():
             region = added_regions[MCRegion(placement.get(loc_name, loc_data.region))]
@@ -501,6 +514,7 @@ class MCWorld(World):
                         pool[index] = self.create_item(self.random.choice(mc_trap_items))
 
         self.multiworld.itempool += pool
+        logging.info("AEMinecraft (%s): item pool ready, %d items", self.multiworld.get_player_name(self.player), len(pool))
 
     def set_rules(self) -> None:
         set_rules(self)
@@ -700,6 +714,8 @@ class MCWorld(World):
         }
 
     def fill_slot_data(self) -> dict:
+        with self._status("exporting logic for the mod"):
+            logic = build_logic_export(self)
         return {
             # Slot-data schema version; the mod refuses to enter a world it can't read (see
             # SLOT_DATA_VERSION and the mod's CompatibilityService).
@@ -859,7 +875,7 @@ class MCWorld(World):
 
             # --- Logic graph (region graph + per-location reachability rules) ---
             # The mod evaluates this against received items to colour advancements in/out of logic.
-            "logic"                : build_logic_export(self),
+            "logic"                : logic,
 
             # --- Tracker tab (active mob/boss kills + mob/structure unlocks) ---
             # Active-only; maps each tracker advancement id to its AP location/item (see trackers.py).
