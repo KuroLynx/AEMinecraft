@@ -65,6 +65,21 @@ public final class MaterialLockService {
     }
 
     /**
+     * Why the 2x2 inventory grid can't hand over {@code result}, or {@code null} if it can. With the
+     * {@code inventory_crafting} route gated the grid crafts nothing at all, planks included, until the
+     * crafting table's Knowledge arrives — logic prices every crafting recipe at that Knowledge, since the recipe dump
+     * can't tell a 2x2 recipe from a 3x3 one.
+     */
+    public static Component inventoryCraftingReason(ItemStack result) {
+        APSlotData slotData = AEM.ARCHIPELAGO.client().state().parsedSlotData();
+        ItemGateBehavior behavior = slotData == null ? ItemGateBehavior.DEFAULT : slotData.itemGateBehavior();
+        if (result.isEmpty() || !behavior.inventoryCrafting()) {
+            return null;
+        }
+        return KnowledgeLockService.stationBlockReason("minecraft:crafting_table");
+    }
+
+    /**
      * The reason {@code stack} can't be picked up yet (a red chat line for {@link LockFeedback}), or
      * {@code null} if it's allowed. Same gates as {@link #isPickupBlocked}.
      */

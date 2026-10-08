@@ -63,13 +63,15 @@ public record APSlotData(
      *       shulker box, hopper, dispenser, ender chest, minecart/mount inventories
      *       ({@code SlotMixin});</li>
      *   <li>{@code pickup} — picking it up off the ground ({@code ItemEntityMixin});</li>
+     *   <li>{@code inventoryCrafting} — crafting in the player's own 2x2 grid at all, locked item or
+     *       not: gated, the grid needs the crafting table's Knowledge ({@code SlotMixin});</li>
      *   <li>{@code given} — the {@code /give} command handing it over ({@code GiveCommandMixin}).</li>
      * </ul>
      * {@link #DEFAULT} matches the historical behavior for slot data that predates this field.
      */
     public record ItemGateBehavior(boolean crafting, boolean station, boolean container, boolean pickup,
-                                   boolean given) {
-        public static final ItemGateBehavior DEFAULT = new ItemGateBehavior(true, true, true, true, false);
+                                   boolean inventoryCrafting, boolean given) {
+        public static final ItemGateBehavior DEFAULT = new ItemGateBehavior(true, true, true, true, true, false);
     }
 
     /**
@@ -277,6 +279,7 @@ public record APSlotData(
                 APJson.getBoolean(routes, "station", crafting),
                 APJson.getBoolean(routes, "container", crafting),
                 APJson.getBoolean(routes, "pickup", fallback.pickup()),
+                APJson.getBoolean(routes, "inventory_crafting", fallback.inventoryCrafting()),
                 APJson.getBoolean(routes, "given", fallback.given()));
     }
 

@@ -18,7 +18,9 @@ from .. import *
 # material gate — they are free once their dimension is reached. Collapsing them to a bare region
 # node instead of recursing through every plank variant keeps acquisition trees small (a recipe that
 # takes "#planks" otherwise fans out into a dozen wood subtrees).
-_WOOD_RE = re.compile(r"^(stripped_)?[a-z]+_(planks|log|wood|stem|hyphae)$")
+# Only what you chop: planks, bark blocks and sticks are CRAFTED, so they go through their recipes and
+# pay the crafting Knowledge like any other (the 2x2 grid is gated too: item_gate_behavior.inventory_crafting).
+_WOOD_RE = re.compile(r"^(stripped_)?[a-z]+_(log|stem)$")
 _NETHER_WOODS = ("crimson", "warped")
 
 # Item -> required Progressive Material Handling tier (inverted from data.MATERIAL_HANDLING_ITEMS):
@@ -129,8 +131,8 @@ def _entity_by_gid(content) -> dict:
 
 
 def _wood_region(base: str) -> str | None:
-    """Region a wood-family item (or a stick) is free in, or ``None`` if it is not wood."""
-    if base == "stick" or _WOOD_RE.match(base):
+    """Region a log or stem is free in, or ``None`` if it is not one."""
+    if _WOOD_RE.match(base):
         return REGION_NETHER if any(w in base for w in _NETHER_WOODS) else REGION_OVERWORLD
     return None
 
@@ -1401,11 +1403,9 @@ class RuleHelper:
             self._bulk = outer
 
     def _acquire_compute(self, base: str):
-        # Wood is free once its dimension is reached; collapse it instead of fanning out variants.
+        # A log is free once its dimension is reached; collapse it instead of fanning out variants.
         wood_region = _wood_region(base)
         if wood_region is not None:
-            if base == "stick":
-                return self.access_region(wood_region)
             species = base.removeprefix("stripped_").rsplit("_", 1)[0]
             # Jungle wood grows only in jungles — see _natural_origin.
             return self.all_of(self.access_region(wood_region), self._natural_origin(f"{species}_log"))

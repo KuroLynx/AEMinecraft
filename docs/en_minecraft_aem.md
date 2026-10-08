@@ -58,7 +58,9 @@ include:
   one by one, or `All` — and any entry written with a leading `-` (e.g. `-Chest`) switches that gate
   back off, so you can take a few out of a preset. A station/container gate blocks both crafting the
   block and using it, including ones you find in the world. The default is everything except the
-  chest, crafting table and furnace.
+  chest, crafting table and furnace. When the crafting table is gated, the `item_gate_behavior` route `inventory_crafting`
+  (on by default) gates your own 2x2 inventory grid as well: it crafts nothing, not even planks, until
+  you receive Knowledge: Crafting Table.
 - **Progressive Villager Trust** — villagers refuse to trade until you unlock each of the five trade
   levels (optional).
 

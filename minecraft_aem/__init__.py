@@ -680,7 +680,7 @@ class MCWorld(World):
     def _item_gate_routes(self) -> dict:
         """Every item_gate_behavior route as a plain bool (true = the route is gated).
 
-        Emitting all five keys keeps the fallback logic on this side: the mod only has to read them. The
+        Emitting every key keeps the fallback logic on this side: the mod only has to read them. The
         'crafting' route predates 'station'/'container' (it used to cover every GUI take), so an explicit
         'crafting' value carries over to those two when they are omitted — a config written before the
         split still opens or gates every GUI the way it used to.
@@ -694,6 +694,7 @@ class MCWorld(World):
                 ("station", crafting),
                 ("container", crafting),
                 ("pickup", True),
+                ("inventory_crafting", True),
                 ("given", False),
             )
         }
