@@ -37,21 +37,37 @@ def _alt(atoms) -> frozenset:
     return frozenset((kind, name, n) for (kind, name), n in best.items())
 
 
-def _subsumes(a: frozenset, b: frozenset, have: dict) -> bool:
-    """Every state satisfying ``b`` satisfies ``a``: each leaf of ``a`` is in ``b`` with at least its count.
+_SIG: dict = {}   # alternative -> (its (kind, name) set, its leaves needing a count above 1); pure
 
-    ``have`` is ``b`` as {(kind, name): count}, built once by the caller rather than per comparison."""
-    if len(a) > len(b):
-        return False
-    return all(have.get((kind, name), 0) >= n for kind, name, n in a)
+
+def _sig(alt: frozenset) -> tuple:
+    sig = _SIG.get(alt)
+    if sig is None:
+        sig = _SIG[alt] = (frozenset((kind, name) for kind, name, _ in alt),
+                           tuple(((kind, name), n) for kind, name, n in alt if n > 1))
+    return sig
 
 
 def _minimal(alts) -> frozenset:
+    """Drop every alternative that a kept one subsumes (each of its leaves present with at least its count).
+
+    The name-set test is a C-level subset check; counts are compared only for the few leaves above 1."""
     keep: list = []
+    kept: list = []
     for alt in sorted(set(alts), key=len):
-        have = {(kind, name): n for kind, name, n in alt}
-        if not any(_subsumes(k, alt, have) for k in keep):
+        names = _sig(alt)[0]
+        have = None
+        for k_names, k_counts in kept:
+            if k_names <= names:
+                if not k_counts:
+                    break
+                if have is None:
+                    have = {(kind, name): n for kind, name, n in alt}
+                if all(have[leaf] >= n for leaf, n in k_counts):
+                    break
+        else:
             keep.append(alt)
+            kept.append(_sig(alt))
     return frozenset(keep)
 
 

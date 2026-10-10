@@ -281,8 +281,13 @@ class And(Rule):
     def __init__(self, children: list[Rule]):
         self.children = children
 
+    # Plain loops, not all()/any() over a generator: AP evaluates these millions of times per seed,
+    # and the generator setup costs more than the check (BaseClasses does the same for has_all/any).
     def __call__(self, state) -> bool:
-        return all(child(state) for child in self.children)
+        for child in self.children:
+            if not child(state):
+                return False
+        return True
 
     def _to_dict(self) -> dict:
         return {"k": "and", "c": [child.to_dict() for child in self.children]}
@@ -305,7 +310,10 @@ class Or(Rule):
         self.children = children
 
     def __call__(self, state) -> bool:
-        return any(child(state) for child in self.children)
+        for child in self.children:
+            if child(state):
+                return True
+        return False
 
     def _to_dict(self) -> dict:
         return {"k": "or", "c": [child.to_dict() for child in self.children]}
