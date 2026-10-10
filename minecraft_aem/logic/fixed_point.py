@@ -54,7 +54,10 @@ def _minimal(alts) -> frozenset:
     The name-set test is a C-level subset check; counts are compared only for the few leaves above 1."""
     keep: list = []
     kept: list = []
-    for alt in sorted(set(alts), key=len):
+    # By size, then total count: whatever subsumes an alternative is then always looked at first. By
+    # size alone, {Material 3, X} could come before {Material 2, X} and survive it, and which came
+    # first was set order — the string hash — so the logic changed from one process to the next.
+    for alt in sorted(set(alts), key=lambda alt: (len(alt), sum(n for _, _, n in alt))):
         names = _sig(alt)[0]
         have = None
         for k_names, k_counts in kept:
@@ -132,7 +135,9 @@ class _State:
     def __init__(self):
         self.price: dict = {}                       # (base, bulk) -> Rule | None
         self.flags: dict = {}                       # (base, bulk) -> (loose, dry)
-        self.readers: dict = defaultdict(set)       # key -> keys whose computation read it
+        # key -> keys whose computation read it. A dict used as an ordered set: a set's order follows the
+        # string hash, which changes per process, and the order readers are re-queued in changes the result.
+        self.readers: dict = defaultdict(dict)
         self.recomputes: dict = defaultdict(int)
         self.work: deque = deque()
         self.queued: set = set()
@@ -151,7 +156,7 @@ def acquire(h, item_id: str):
     if st.current is not None:
         # Inside a computation an unpriced item is "no route yet": Const(False) folds out of every
         # AND/OR the caller builds, where None would have to be checked at each of ~40 call sites.
-        st.readers[key].add(st.current)
+        st.readers[key][st.current] = None
         if key not in st.price:
             st.price[key] = None
             _queue(st, key)
