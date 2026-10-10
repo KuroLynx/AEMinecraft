@@ -1,4 +1,5 @@
 import logging
+import itertools
 import time
 from contextlib import contextmanager
 
@@ -676,11 +677,15 @@ class MCWorld(World):
             ]
             required = min(required_advancement_count, len(advancements_locations))
 
+            # Stops at `required`: the playthrough cull asks this hundreds of times, and walking every
+            # BACAP rule each time was most of a multiworld's generation time.
             def advancement_condition(state) -> bool:
-                return sum(1 for location in advancements_locations if state.can_reach(location, "Location", self.player)
-                           ) >= required
+                reachable = (location for location in advancements_locations
+                             if state.can_reach(location, "Location", self.player))
+                return next(itertools.islice(reachable, required - 1, None), None) is not None
 
-            conditions.append(advancement_condition)
+            if required:
+                conditions.append(advancement_condition)
 
         def completion_condition(state) -> bool:
             return all(cond(state) for cond in conditions)

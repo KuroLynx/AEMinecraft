@@ -37,18 +37,20 @@ def _alt(atoms) -> frozenset:
     return frozenset((kind, name, n) for (kind, name), n in best.items())
 
 
-def _subsumes(a: frozenset, b: frozenset) -> bool:
-    """Every state satisfying ``b`` satisfies ``a``: each leaf of ``a`` is in ``b`` with at least its count."""
+def _subsumes(a: frozenset, b: frozenset, have: dict) -> bool:
+    """Every state satisfying ``b`` satisfies ``a``: each leaf of ``a`` is in ``b`` with at least its count.
+
+    ``have`` is ``b`` as {(kind, name): count}, built once by the caller rather than per comparison."""
     if len(a) > len(b):
         return False
-    have = {(kind, name): n for kind, name, n in b}
     return all(have.get((kind, name), 0) >= n for kind, name, n in a)
 
 
 def _minimal(alts) -> frozenset:
     keep: list = []
     for alt in sorted(set(alts), key=len):
-        if not any(_subsumes(k, alt) for k in keep):
+        have = {(kind, name): n for kind, name, n in alt}
+        if not any(_subsumes(k, alt, have) for k in keep):
             keep.append(alt)
     return frozenset(keep)
 
