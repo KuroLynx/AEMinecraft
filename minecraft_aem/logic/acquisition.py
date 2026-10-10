@@ -407,9 +407,21 @@ _PALE_GARDEN_BLOCKS = frozenset({
 })
 
 
+class _AllHeld:
+    """``prog_items`` of a state holding everything: any player, any item, any count."""
+
+    def __getitem__(self, _player):
+        return self
+
+    def get(self, _item, _default=0):
+        return 1 << 30
+
+
 class _HomeOnly:
     """A stand-in CollectionState for RuleHelper._stays_home: every item and location held, but only
-    the start region reachable."""
+    the start region reachable. Has/And/Or read ``prog_items`` directly, so it answers that too."""
+
+    prog_items = _AllHeld()
 
     def __init__(self, region: str):
         self.region = region

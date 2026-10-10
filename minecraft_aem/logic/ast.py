@@ -208,8 +208,10 @@ class Has(Rule):
         self.item = item
         self.count = count
 
+    # CollectionState.has, inlined: the hottest line of every AP sweep. .get, not [ ]: prog_items are
+    # Counters, whose [ ] on an item not held yet runs Counter.__missing__ in Python.
     def __call__(self, state) -> bool:
-        return state.has(self.item, self.player, self.count)
+        return state.prog_items[self.player].get(self.item, 0) >= self.count
 
     def _to_dict(self) -> dict:
         return {"k": "has", "i": self.item, "n": self.count}
@@ -297,14 +299,32 @@ class AtLeast(Rule):
         return self._merge_gate(self.children)
 
 
+def _split_has(children) -> tuple:
+    """``(player, ((item, count), ...), other_children)``: the Has children pulled out, so And/Or test
+    them in one loop over the player's item counts instead of a call per leaf. Only when every Has
+    child is the same player's (always, in practice); otherwise none are pulled out."""
+    has = [c for c in children if type(c) is Has]
+    if not has or len({c.player for c in has}) != 1:
+        return None, (), tuple(children)
+    return (has[0].player, tuple((c.item, c.count) for c in has),
+            tuple(c for c in children if type(c) is not Has))
+
+
 class And(Rule):
     def __init__(self, children: list[Rule]):
         self.children = children
+        self._player, self._has, self._rest = _split_has(children)
 
     # Plain loops, not all()/any() over a generator: AP evaluates these millions of times per seed,
     # and the generator setup costs more than the check (BaseClasses does the same for has_all/any).
+    # Order inside a node doesn't matter: a rule only reads the state.
     def __call__(self, state) -> bool:
-        for child in self.children:
+        if self._has:
+            held = state.prog_items[self._player]
+            for item, count in self._has:
+                if held.get(item, 0) < count:
+                    return False
+        for child in self._rest:
             if not child(state):
                 return False
         return True
@@ -328,9 +348,15 @@ class And(Rule):
 class Or(Rule):
     def __init__(self, children: list[Rule]):
         self.children = children
+        self._player, self._has, self._rest = _split_has(children)
 
     def __call__(self, state) -> bool:
-        for child in self.children:
+        if self._has:
+            held = state.prog_items[self._player]
+            for item, count in self._has:
+                if held.get(item, 0) >= count:
+                    return True
+        for child in self._rest:
             if child(state):
                 return True
         return False
