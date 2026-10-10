@@ -71,10 +71,18 @@ def _minimal(alts) -> frozenset:
     return frozenset(keep)
 
 
+def _join(a: frozenset, b: frozenset) -> frozenset:
+    """``_alt(a | b)``: the union is already an alternative unless an item appears in both at two counts."""
+    union = a | b
+    if len(_sig(a)[0] | _sig(b)[0]) == len(union):
+        return union
+    return _alt(union)
+
+
 def _and(*dnfs) -> frozenset:
     out = {frozenset()}
     for dnf in dnfs:
-        out = _minimal(_alt(a | b) for a in out for b in dnf)
+        out = _minimal(_join(a, b) for a in out for b in dnf)
         if not out:
             break
     return frozenset(out)

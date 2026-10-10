@@ -366,11 +366,12 @@ def const(value: bool) -> Rule:
 def and_(*rules: Rule) -> Rule:
     children: list[Rule] = []
     for rule in rules:
-        if isinstance(rule, Const):
+        kind = type(rule)   # exact type, not isinstance: no node class is subclassed, and this is hot
+        if kind is Const:
             if not rule.value:
                 return Const(False)  # annihilator: anything AND False == False
             continue  # identity: drop Const(True)
-        if isinstance(rule, And):
+        if kind is And:
             children.extend(rule.children)  # flatten
         else:
             children.append(rule)
@@ -398,11 +399,12 @@ def and_(*rules: Rule) -> Rule:
 def or_(*rules: Rule) -> Rule:
     children: list[Rule] = []
     for rule in rules:
-        if isinstance(rule, Const):
+        kind = type(rule)
+        if kind is Const:
             if rule.value:
                 return Const(True)  # annihilator: anything OR True == True
             continue  # identity: drop Const(False)
-        if isinstance(rule, Or):
+        if kind is Or:
             children.extend(rule.children)  # flatten
         else:
             children.append(rule)
