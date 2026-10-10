@@ -657,8 +657,9 @@ class MCWorld(World):
         return ItemClassification.progression_skip_balancing
 
     def _get_primary_condition(self):
-        boss_locations = [f"{BOSS_KILL_PREFIX}{name}" for name in self.selected_bosses]
-        return lambda state: all(state.can_reach(location, "Location", self.player) for location in boss_locations)
+        boss_locations = [self.multiworld.get_location(f"{BOSS_KILL_PREFIX}{name}", self.player)
+                          for name in self.selected_bosses]
+        return lambda state: all(location.can_reach(state) for location in boss_locations)
 
     def _set_goal_rule(self) -> None:
         player = self.player
@@ -671,8 +672,10 @@ class MCWorld(World):
         if required_advancement_count > 0:
             # Only consider advancement locations that actually exist this seed (challenge_sanity
             # may drop some), and never require more than exist — otherwise the goal is impossible.
+            # Resolved once: by name, every goal check paid a location lookup per advancement.
             advancements_locations = [
-                name for name, loc_data in self._get_active_locations().items()
+                self.multiworld.get_location(name, player)
+                for name, loc_data in self._get_active_locations().items()
                 if loc_data.category == MCLocationCategory.ADVANCEMENT
             ]
             required = min(required_advancement_count, len(advancements_locations))
@@ -680,8 +683,7 @@ class MCWorld(World):
             # Stops at `required`: the playthrough cull asks this hundreds of times, and walking every
             # BACAP rule each time was most of a multiworld's generation time.
             def advancement_condition(state) -> bool:
-                reachable = (location for location in advancements_locations
-                             if state.can_reach(location, "Location", self.player))
+                reachable = (location for location in advancements_locations if location.can_reach(state))
                 return next(itertools.islice(reachable, required - 1, None), None) is not None
 
             if required:

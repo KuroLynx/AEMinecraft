@@ -35,6 +35,7 @@ from typing import Iterable
 # if that ever matters. Never reuse ids: a live node's cached key must not be handed to a new shape.
 _KEY_IDS: dict = {}
 _NODES: dict = {}
+_LEAVES: dict = {}   # (leaf class, constructor args) -> its node; same lifetime as _NODES
 
 
 class _Interned(type):
@@ -48,6 +49,16 @@ class _Interned(type):
     caches included."""
 
     def __call__(cls, *args, **kwargs):
+        if cls._leaf and not kwargs:
+            # Leaves are most of the construction traffic and their args are hashable: look the node
+            # up by them instead of building a throwaway object just to key it.
+            node = _LEAVES.get((cls, args))
+            if node is None:
+                node = _LEAVES[(cls, args)] = cls._intern(*args)
+            return node
+        return cls._intern(*args, **kwargs)
+
+    def _intern(cls, *args, **kwargs):
         node = super().__call__(*args, **kwargs)
         return _NODES.setdefault(node.key(), node)
 
@@ -66,6 +77,7 @@ class Rule(metaclass=_Interned):
     _key_cache = None
     _gate_cache = None
     _size_cache = None
+    _leaf = False
 
     def __call__(self, state) -> bool:  # pragma: no cover - overridden
         raise NotImplementedError
@@ -170,6 +182,8 @@ def _composite_size(children, close: str) -> int:
 
 
 class Const(Rule):
+    _leaf = True
+
     def __init__(self, value: bool):
         self.value = bool(value)
 
@@ -187,6 +201,8 @@ class Const(Rule):
 
 
 class Has(Rule):
+    _leaf = True
+
     def __init__(self, player: int, item: str, count: int = 1):
         self.player = player
         self.item = item
@@ -206,6 +222,8 @@ class Has(Rule):
 
 
 class ReachRegion(Rule):
+    _leaf = True
+
     def __init__(self, player: int, region: str):
         self.player = player
         # Normalise to a plain str: region may be a (str, Enum) member (MCRegion),
@@ -226,6 +244,8 @@ class ReachRegion(Rule):
 
 
 class ReachLocation(Rule):
+    _leaf = True
+
     def __init__(self, player: int, location: str):
         self.player = player
         self.location = location
