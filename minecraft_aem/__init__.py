@@ -414,6 +414,39 @@ class MCWorld(World):
 
         self.multiworld.regions += list(added_regions.values())
 
+    def _pool_overflow_message(self, pool: list[MCItem], location_count: int) -> str:
+        """Say which options filled the pool and which location options are still off."""
+        def source(name: str) -> str:
+            if name == ITEM_KEEP_INVENTORY:
+                return "keep_inventory (keep_inventory_pool_size)"
+            if name == ITEM_INVENTORY_SLOT:
+                return "inventory_lock (slots / slots_per_item)"
+            if name.startswith(ENTITY_UNLOCK_PREFIX):
+                return "mob_spawn_lock"
+            if name.startswith(STRUCT_UNLOCK_PREFIX):
+                return "structure_unlock"
+            if name in KNOWLEDGE_ITEMS:
+                return "knowledge_gates"
+            return "other progression items"
+
+        counts: dict[str, int] = {}
+        for item in pool:
+            counts[source(item.name)] = counts.get(source(item.name), 0) + 1
+        lines = [f"  {count:>4}  {label}" for label, count in sorted(counts.items(), key=lambda kv: -kv[1])]
+
+        more_locations = [name for name, off in (
+            ("kill_sanity", not self.options.kill_sanity),
+            ("challenge_sanity", self.options.challenge_sanity == ChallengeSanity.option_none),
+            ("blazeandcave", not self.options.blazeandcave),
+        ) if off]
+        hint = "Reduce the largest sources above"
+        if more_locations:
+            hint += f", or enable {' / '.join(more_locations)} for more locations"
+
+        return (f"AEMinecraft ({self.player_name}): {len(pool)} required items but only {location_count} "
+                f"locations ({len(pool) - location_count} too many). Items by source:\n"
+                + "\n".join(lines) + f"\n{hint}.")
+
     def create_items(self) -> None:
         pool: list[MCItem] = []
 
@@ -490,11 +523,7 @@ class MCWorld(World):
         active_location_count = len(self._get_active_locations())
 
         if len(pool) > active_location_count:
-            raise Exception(
-                f"AEMinecraft: required item pool ({len(pool)}) exceeds active locations "
-                f"({active_location_count}). Enable kill_sanity / challenge_sanity, or reduce "
-                f"mob_spawn_lock."
-            )
+            raise Exception(self._pool_overflow_message(pool, active_location_count))
 
         filler_items = [item_name for item_name, item_data in ITEMS.items()
                         if item_data.classification == ItemClassification.filler
