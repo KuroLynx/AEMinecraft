@@ -18,6 +18,11 @@ import net.minecraft.world.phys.Vec3;
  * height, pointing at the tracked biome — straight ahead when you face it, back at you when it is
  * behind — with a slow pulse so it catches the eye.
  *
+ * <p>Gliding with an elytra, swimming or crawling lays the body flat and points the view where you
+ * travel, so a flat arrow just ahead would sit inside you, seen edge-on. Then it floats further out
+ * along the line of sight instead, just under the crosshair, standing square to the camera: "ahead"
+ * becomes up on screen, like a compass held in front of you.
+ *
  * <p>Like the vanilla compass, the arrow is never rotated at runtime: the quad always lies square to the
  * player's view, and one of {@link #FRAMES} pre-drawn textures is picked for the target's angle
  * ({@code assets/aem/textures/misc/biome_finder_arrow/arrow_NN.png}, frame k pointing k·360/FRAMES°
@@ -42,6 +47,10 @@ public final class BiomeArrowRenderer {
     private static final float SIZE = 1.0F;
     /** Height above the player's feet: about the waist, between feet and head. */
     private static final float HEIGHT = 0.9F;
+    /** Flat-bodied (elytra, swimming, crawling): distance along the line of sight, drop below it, size. */
+    private static final float FLAT_DISTANCE = 2.5F;
+    private static final float FLAT_DROP = 0.45F;
+    private static final float FLAT_SIZE = 0.6F;
     /** Closer than this the direction is meaningless; arrival clears the target soon after. */
     private static final double MIN_DISTANCE = 4.0;
     /** Packed block/sky light, both at 15: the arrows glow the same by day, night and underground. */
@@ -83,15 +92,28 @@ public final class BiomeArrowRenderer {
         double angle = Math.atan2(dx * rx + dz * rz, dx * fx + dz * fz);
         int frame = Math.floorMod((int) Math.round(angle / (2.0 * Math.PI) * FRAMES), FRAMES);
 
-        Vec3 camera = context.levelState().cameraRenderState.pos;
-        long now = System.currentTimeMillis();
-        PoseStack poseStack = context.poseStack();
-        float ox = (float) (feet.x + fx * DISTANCE - camera.x);
-        float oy = (float) (feet.y + HEIGHT - camera.y);
-        float oz = (float) (feet.z + fz * DISTANCE - camera.z);
-        int argb = alpha(now) << 24 | 0xFFFFFF;
-        context.submitNodeCollector().submitCustomGeometry(poseStack, RenderTypes.entityTranslucent(TEXTURES[frame]),
-                (pose, consumer) -> arrowhead(pose, consumer, ox, oy, oz, fx, fz, rx, rz, argb));
+        // The quad's two axes: "top" (where the texture points) and right. Standing, it lies flat
+        // ahead of you; flat-bodied, it stands square to the view ahead and below the crosshair.
+        Vec3 right = new Vec3(rx, 0.0, rz);
+        Vec3 top;
+        Vec3 center;
+        float size;
+        if (player.isFallFlying() || player.isVisuallySwimming() || player.isVisuallyCrawling()) {
+            Vec3 look = player.getViewVector(partialTick);
+            top = right.cross(look).normalize(); // the camera's up: right × look
+            center = player.getEyePosition(partialTick).add(look.scale(FLAT_DISTANCE)).subtract(top.scale(FLAT_DROP));
+            size = FLAT_SIZE;
+        } else {
+            top = new Vec3(fx, 0.0, fz);
+            center = feet.add(top.scale(DISTANCE)).add(0.0, HEIGHT, 0.0);
+            size = SIZE;
+        }
+
+        Vec3 at = center.subtract(context.levelState().cameraRenderState.pos);
+        int argb = alpha(System.currentTimeMillis()) << 24 | 0xFFFFFF;
+        context.submitNodeCollector().submitCustomGeometry(context.poseStack(),
+                RenderTypes.entityTranslucent(TEXTURES[frame]),
+                (pose, consumer) -> arrowhead(pose, consumer, at, top, right, size, argb));
     }
 
     /** A slow breathe between dim and bright. */
@@ -100,25 +122,28 @@ public final class BiomeArrowRenderer {
         return (int) (150 + 105 * wave);
     }
 
-    /** One textured square centred on (ox, oy, oz), square to the view: the texture's top edge faces forward. */
-    private static void arrowhead(PoseStack.Pose pose, VertexConsumer consumer, float ox, float oy, float oz,
-                                  float fx, float fz, float rx, float rz, int argb) {
-        float half = SIZE / 2.0F;
-        vertex(pose, consumer, ox, oy, oz, fx, fz, rx, rz, -half, -half, 0.0F, 1.0F, argb);
-        vertex(pose, consumer, ox, oy, oz, fx, fz, rx, rz, -half, half, 1.0F, 1.0F, argb);
-        vertex(pose, consumer, ox, oy, oz, fx, fz, rx, rz, half, half, 1.0F, 0.0F, argb);
-        vertex(pose, consumer, ox, oy, oz, fx, fz, rx, rz, half, -half, 0.0F, 0.0F, argb);
+    /** One textured square of side {@code size} centred on {@code at}; the texture's top edge faces {@code top}. */
+    private static void arrowhead(PoseStack.Pose pose, VertexConsumer consumer, Vec3 at, Vec3 top, Vec3 right,
+                                  float size, int argb) {
+        float half = size / 2.0F;
+        Vec3 normal = right.cross(top); // which side faces the viewer doesn't matter: the quad is unculled
+        vertex(pose, consumer, at, top, right, normal, -half, -half, 0.0F, 1.0F, argb);
+        vertex(pose, consumer, at, top, right, normal, -half, half, 1.0F, 1.0F, argb);
+        vertex(pose, consumer, at, top, right, normal, half, half, 1.0F, 0.0F, argb);
+        vertex(pose, consumer, at, top, right, normal, half, -half, 0.0F, 0.0F, argb);
     }
 
-    /** A vertex {@code forward} blocks ahead and {@code right} blocks to the right of the centre. */
-    private static void vertex(PoseStack.Pose pose, VertexConsumer consumer, float ox, float oy, float oz,
-                               float fx, float fz, float rx, float rz, float forward, float right,
-                               float u, float v, int argb) {
-        consumer.addVertex(pose, ox + fx * forward + rx * right, oy, oz + fz * forward + rz * right)
+    /** A vertex {@code up} blocks along {@code top} and {@code side} blocks along {@code right} from the centre. */
+    private static void vertex(PoseStack.Pose pose, VertexConsumer consumer, Vec3 at, Vec3 top, Vec3 right,
+                               Vec3 normal, float up, float side, float u, float v, int argb) {
+        consumer.addVertex(pose,
+                        (float) (at.x + top.x * up + right.x * side),
+                        (float) (at.y + top.y * up + right.y * side),
+                        (float) (at.z + top.z * up + right.z * side))
                 .setColor(argb)
                 .setUv(u, v)
                 .setOverlay(OverlayTexture.NO_OVERLAY)
                 .setLight(FULL_BRIGHT)
-                .setNormal(pose, 0.0F, 1.0F, 0.0F);
+                .setNormal(pose, (float) normal.x, (float) normal.y, (float) normal.z);
     }
 }
