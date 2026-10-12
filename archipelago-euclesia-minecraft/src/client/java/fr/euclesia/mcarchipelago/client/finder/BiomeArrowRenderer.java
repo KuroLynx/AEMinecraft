@@ -14,25 +14,35 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * The Biome Finder's guide: one arrowhead floating just ahead of the player at waist height, between
- * them and the tracked biome and pointing at it, with a slow pulse so it catches the eye.
+ * The Biome Finder's guide: one arrowhead floating a block ahead of where the player looks, at waist
+ * height, pointing at the tracked biome — straight ahead when you face it, back at you when it is
+ * behind — with a slow pulse so it catches the eye.
  *
- * <p>Each one is a flat, horizontal quad textured with {@link #TEXTURE}, which resource packs can
- * replace: the texture's top edge points at the target. Drawn translucent, unculled and full-bright
- * ({@code RenderTypes.entityTranslucent}), relative to the camera like everything the level renderer
- * submits.
+ * <p>Like the vanilla compass, the arrow is never rotated at runtime: the quad always lies square to the
+ * player's view, and one of {@link #FRAMES} pre-drawn textures is picked for the target's angle
+ * ({@code assets/aem/textures/misc/biome_finder_arrow/arrow_NN.png}, frame k pointing k·360/FRAMES°
+ * clockwise from straight ahead; resource packs can replace any of them, and
+ * {@code tools/gen_biome_arrow_textures.py} regenerates the set). Drawn translucent, unculled and
+ * full-bright ({@code RenderTypes.entityTranslucent}), relative to the camera like everything the
+ * level renderer submits.
  */
 public final class BiomeArrowRenderer {
-    /** {@code assets/aem/textures/misc/biome_finder_arrow.png}; its top edge is the arrow's point. */
-    public static final Identifier TEXTURE =
-            Identifier.fromNamespaceAndPath(AEM.MOD_ID, "textures/misc/biome_finder_arrow.png");
-    /** Distance (blocks) from the player to the arrowhead's centre. */
-    private static final float DISTANCE = 1.6F;
+    /** Direction frames, as many as the vanilla compass has. */
+    private static final int FRAMES = 32;
+    private static final Identifier[] TEXTURES = new Identifier[FRAMES];
+    static {
+        for (int i = 0; i < FRAMES; i++) {
+            TEXTURES[i] = Identifier.fromNamespaceAndPath(AEM.MOD_ID,
+                    String.format("textures/misc/biome_finder_arrow/arrow_%02d.png", i));
+        }
+    }
+    /** Distance (blocks) ahead of the player, along where they look. */
+    private static final float DISTANCE = 1.0F;
     /** The arrowhead is a SIZE×SIZE square of texture, in blocks. */
-    private static final float SIZE = 1.4F;
+    private static final float SIZE = 1.0F;
     /** Height above the player's feet: about the waist, between feet and head. */
     private static final float HEIGHT = 0.9F;
-    /** Closer than this the arrows would overshoot the target; arrival clears it soon after. */
+    /** Closer than this the direction is meaningless; arrival clears the target soon after. */
     private static final double MIN_DISTANCE = 4.0;
     /** Packed block/sky light, both at 15: the arrows glow the same by day, night and underground. */
     private static final int FULL_BRIGHT = 0xF000F0;
@@ -56,18 +66,22 @@ public final class BiomeArrowRenderer {
             return;
         }
 
-        Vec3 feet = player.getPosition(minecraft.getDeltaTracker().getGameTimeDeltaPartialTick(false));
+        float partialTick = minecraft.getDeltaTracker().getGameTimeDeltaPartialTick(false);
+        Vec3 feet = player.getPosition(partialTick);
         double dx = target.pos().getX() + 0.5 - feet.x;
         double dz = target.pos().getZ() + 0.5 - feet.z;
-        double distance = Math.sqrt(dx * dx + dz * dz);
-        if (distance < MIN_DISTANCE) {
+        if (dx * dx + dz * dz < MIN_DISTANCE * MIN_DISTANCE) {
             return;
         }
-        // Forward (towards the target) and right, on the horizontal plane.
-        float fx = (float) (dx / distance);
-        float fz = (float) (dz / distance);
+        // Forward (where the player looks, flattened) and right, on the horizontal plane.
+        double yaw = Math.toRadians(player.getViewYRot(partialTick));
+        float fx = (float) -Math.sin(yaw);
+        float fz = (float) Math.cos(yaw);
         float rx = -fz;
         float rz = fx;
+        // The target's angle from straight ahead, clockwise seen from above, picks the frame.
+        double angle = Math.atan2(dx * rx + dz * rz, dx * fx + dz * fz);
+        int frame = Math.floorMod((int) Math.round(angle / (2.0 * Math.PI) * FRAMES), FRAMES);
 
         Vec3 camera = context.levelState().cameraRenderState.pos;
         long now = System.currentTimeMillis();
@@ -76,7 +90,7 @@ public final class BiomeArrowRenderer {
         float oy = (float) (feet.y + HEIGHT - camera.y);
         float oz = (float) (feet.z + fz * DISTANCE - camera.z);
         int argb = alpha(now) << 24 | 0xFFFFFF;
-        context.submitNodeCollector().submitCustomGeometry(poseStack, RenderTypes.entityTranslucent(TEXTURE),
+        context.submitNodeCollector().submitCustomGeometry(poseStack, RenderTypes.entityTranslucent(TEXTURES[frame]),
                 (pose, consumer) -> arrowhead(pose, consumer, ox, oy, oz, fx, fz, rx, rz, argb));
     }
 
@@ -86,7 +100,7 @@ public final class BiomeArrowRenderer {
         return (int) (150 + 105 * wave);
     }
 
-    /** One textured square centred on (ox, oy, oz): the texture's top edge (v = 0) faces forward. */
+    /** One textured square centred on (ox, oy, oz), square to the view: the texture's top edge faces forward. */
     private static void arrowhead(PoseStack.Pose pose, VertexConsumer consumer, float ox, float oy, float oz,
                                   float fx, float fz, float rx, float rz, int argb) {
         float half = SIZE / 2.0F;
