@@ -14,7 +14,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * The Biome Finder's guide: one arrowhead floating a block ahead of where the player looks, at waist
+ * The Biome Finder's guide: one arrowhead floating half a block ahead of where the player looks, at waist
  * height, pointing at the tracked biome — straight ahead when you face it, back at you when it is
  * behind — with a slow pulse so it catches the eye.
  *
@@ -37,7 +37,7 @@ public final class BiomeArrowRenderer {
         }
     }
     /** Distance (blocks) ahead of the player, along where they look. */
-    private static final float DISTANCE = 1.0F;
+    private static final float DISTANCE = 0.5F;
     /** The arrowhead is a SIZE×SIZE square of texture, in blocks. */
     private static final float SIZE = 1.0F;
     /** Height above the player's feet: about the waist, between feet and head. */
