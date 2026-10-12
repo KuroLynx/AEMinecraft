@@ -9,6 +9,7 @@ import fr.euclesia.mcarchipelago.server.connect.APWorldConnection;
 import fr.euclesia.mcarchipelago.server.connect.APWorldConnector;
 import fr.euclesia.mcarchipelago.server.gameplay.AdvancementBridge;
 import fr.euclesia.mcarchipelago.server.gameplay.BacapConfigService;
+import fr.euclesia.mcarchipelago.server.gameplay.BiomeFinderService;
 import fr.euclesia.mcarchipelago.server.gameplay.FillerTrapService;
 import fr.euclesia.mcarchipelago.server.gameplay.KeepInventoryService;
 import fr.euclesia.mcarchipelago.server.gameplay.KnowledgeUseGate;
@@ -45,6 +46,7 @@ public final class MinecraftEventBridge {
         // Recompute the Structure Finder's targets on the server tick (throttled) and publish them
         // to StructureFinderState for the client to render.
         StructureFinderDriver.register();
+        BiomeFinderService.register();
 
         // Station/container Knowledge gates: refuse right-clicking a block whose Knowledge is
         // still missing (see KnowledgeUseGate).

@@ -76,6 +76,13 @@ public final class BiomeFinderClient {
         return AEM.ARCHIPELAGO.client().registries().apItems().receivedCount(BiomeFinderService.AP_ITEM) > 0;
     }
 
+    /** Stops tracking: an empty pick, which the server answers by clearing the HUD target. */
+    public static void clear() {
+        if (ClientPlayNetworking.canSend(BiomeSearchPayload.TYPE)) {
+            ClientPlayNetworking.send(new BiomeSearchPayload(""));
+        }
+    }
+
     /** Sends a pick; the server runs the search and points the HUD tracker bar. */
     public static void pick(Identifier biomeId) {
         if (ClientPlayNetworking.canSend(BiomeSearchPayload.TYPE)) {

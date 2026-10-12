@@ -54,6 +54,10 @@ public final class BiomeFinderNet {
      * anything.
      */
     private static void search(ServerPlayer player, String biomeId) {
+        if (biomeId.isEmpty()) { // an empty pick means "stop tracking" (the screen's ✕), no finder needed
+            BiomeFinderService.clear(player);
+            return;
+        }
         Identifier id = Identifier.tryParse(biomeId);
         if (id == null || !BiomeFinderService.owns()) {
             return;

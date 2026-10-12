@@ -129,12 +129,13 @@ public final class APStateSync {
         }
     }
 
-    /** Pushes one player's tracked biome (the Biome Finder HUD indicator). Sent on each pick. */
+    /** Pushes one player's tracked biome (the Biome Finder HUD indicator), or {@code null} to clear it. */
     public static void sendBiomeTracker(ServerPlayer player, BiomeFinderTrackerState.Target target) {
         if (!ServerPlayNetworking.canSend(player, BiomeTrackerSyncPayload.TYPE)) {
             return;
         }
-        ServerPlayNetworking.send(player, BiomeTrackerSyncPayload.of(target));
+        ServerPlayNetworking.send(player,
+                target == null ? BiomeTrackerSyncPayload.absent() : BiomeTrackerSyncPayload.of(target));
     }
 
     /** Pushes the current session to one player. */

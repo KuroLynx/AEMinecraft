@@ -11,11 +11,14 @@ import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.biome.Biome;
 
 import java.util.ArrayList;
+import java.util.UUID;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Predicate;
@@ -38,8 +41,49 @@ public final class BiomeFinderService {
     private static final int SEARCH_RADIUS = 6400;
     private static final int HORIZONTAL_STEP = 32;
     private static final int VERTICAL_STEP = 64;
+    /** How often (ticks) to check whether a tracking player has reached their biome. */
+    private static final int ARRIVAL_CHECK_INTERVAL = 20;
+
+    private static int tickCounter;
 
     private BiomeFinderService() {}
+
+    public static void register() {
+        ServerTickEvents.END_SERVER_TICK.register(BiomeFinderService::checkArrivals);
+    }
+
+    /**
+     * Stops tracking for every player now standing in the biome they asked for: the compass has done
+     * its job, and keeping it would point at one spot inside a biome you are already in.
+     */
+    private static void checkArrivals(MinecraftServer server) {
+        if (++tickCounter % ARRIVAL_CHECK_INTERVAL != 0) {
+            return;
+        }
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            BiomeFinderTrackerState.Target target = BiomeFinderTrackerState.get().target(player.getUUID());
+            if (target == null || !target.dimension().equals(player.level().dimension())) {
+                continue;
+            }
+            Identifier here = player.level().getBiome(player.blockPosition()).unwrapKey()
+                    .map(key -> key.identifier()).orElse(null);
+            if (here != null && here.toString().equals(target.biomeId())) {
+                clear(player);
+                player.sendSystemMessage(Component.translatable("message.aem.biome_finder.arrived",
+                        Component.translatable(biomeTranslationKey(here))).withStyle(ChatFormatting.GREEN));
+            }
+        }
+    }
+
+    /** Stops tracking for {@code player}, on the server and on their HUD. */
+    public static void clear(ServerPlayer player) {
+        UUID id = player.getUUID();
+        if (BiomeFinderTrackerState.get().target(id) == null) {
+            return;
+        }
+        BiomeFinderTrackerState.get().remove(id);
+        APStateSync.sendBiomeTracker(player, null);
+    }
 
     /** The vanilla translation key for a biome's display name, e.g. {@code biome.minecraft.plains}. */
     public static String biomeTranslationKey(Identifier biomeId) {

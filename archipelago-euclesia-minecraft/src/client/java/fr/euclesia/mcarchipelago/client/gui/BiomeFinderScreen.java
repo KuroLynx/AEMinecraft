@@ -2,11 +2,14 @@ package fr.euclesia.mcarchipelago.client.gui;
 
 import fr.euclesia.mcarchipelago.client.net.BiomeFinderClient;
 import fr.euclesia.mcarchipelago.server.gameplay.BiomeFinderService;
+import fr.euclesia.mcarchipelago.server.gameplay.BiomeFinderTrackerState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 
@@ -25,12 +28,16 @@ import java.util.Locale;
  * <p>Both halves of that go through the server ({@link BiomeFinderClient}), so the list arrives a
  * round trip after the screen opens: it draws a loading line until then, and fills itself in from
  * {@link #tick()}.
+ *
+ * <p>Under the list, "Currently tracking: <biome>" with a ✕ that stops tracking — the only way to drop
+ * a target short of reaching the biome, which clears it by itself (see {@link BiomeFinderService}).
  */
 public final class BiomeFinderScreen extends Screen {
     private static final int LIST_WIDTH = 220;
     private static final int ROW_HEIGHT = 20;
     private static final int ROW_SPACING = 22;
-    private static final int VISIBLE_ROWS = 6;
+    // 5, not 6: the "Currently tracking" row under Close needs the room on a 240px-tall GUI.
+    private static final int VISIBLE_ROWS = 5;
 
     /** A searchable biome: its id plus the display name and a lowercase haystack for filtering. */
     private record Entry(Identifier id, Component name, String haystack) {}
@@ -40,6 +47,8 @@ public final class BiomeFinderScreen extends Screen {
     private final List<Button> rowButtons = new ArrayList<>();
 
     private EditBox searchField;
+    /** The ✕ beside "Currently tracking"; shown only while something is tracked. */
+    private Button clearButton;
     private String lastQuery = "";
     private int scroll;
     /** False until the server's biome list has arrived; the list is empty rather than absent. */
@@ -68,6 +77,15 @@ public final class BiomeFinderScreen extends Screen {
                 .bounds(left, listTop() + VISIBLE_ROWS * ROW_SPACING + 4, LIST_WIDTH, ROW_HEIGHT)
                 .build());
 
+        clearButton = addRenderableWidget(Button.builder(Component.literal("✕"), button -> {
+                    BiomeFinderClient.clear();
+                    button.visible = false;
+                })
+                .tooltip(Tooltip.create(Component.translatable("gui.aem.biome_finder.stop")))
+                .bounds(left + LIST_WIDTH - ROW_HEIGHT, trackingY(), ROW_HEIGHT, ROW_HEIGHT)
+                .build());
+        clearButton.visible = tracked() != null;
+
         applyFilter();
         rebuildRows();
     }
@@ -90,6 +108,17 @@ public final class BiomeFinderScreen extends Screen {
     /** Y of the count/scroll hint line, sitting in the gap between the search box and the list. */
     private int hintY() {
         return this.height / 6 + ROW_HEIGHT + 6;
+    }
+
+    /** Y of the "Currently tracking" row, under the Close button. */
+    private int trackingY() {
+        return listTop() + VISIBLE_ROWS * ROW_SPACING + 4 + ROW_SPACING;
+    }
+
+    /** The local player's tracked biome, or null. */
+    private static BiomeFinderTrackerState.Target tracked() {
+        LocalPlayer player = Minecraft.getInstance().player;
+        return player == null ? null : BiomeFinderTrackerState.get().target(player.getUUID());
     }
 
     private int listTop() {
@@ -135,6 +164,8 @@ public final class BiomeFinderScreen extends Screen {
     @Override
     public void tick() {
         super.tick();
+        // The server clears the target on arrival or after the ✕; follow it rather than our own guess.
+        clearButton.visible = tracked() != null;
         if (!loaded && BiomeFinderClient.biomes() != null) {
             loadEntries();
             applyFilter();
@@ -171,6 +202,18 @@ public final class BiomeFinderScreen extends Screen {
         } else if (filtered.size() > VISIBLE_ROWS) {
             String hint = (scroll + VISIBLE_ROWS) + " / " + filtered.size() + " (scroll for more)";
             graphics.centeredText(this.font, hint, this.width / 2, hintY(), 0xFFA0A0A0);
+        }
+
+        BiomeFinderTrackerState.Target target = tracked();
+        if (target != null && clearButton.visible) {
+            Identifier biome = Identifier.tryParse(target.biomeId());
+            Component name = biome == null ? Component.literal(target.biomeId())
+                    : Component.translatable(BiomeFinderService.biomeTranslationKey(biome));
+            String line = Component.translatable("gui.aem.biome_finder.tracking", name,
+                    target.pos().getX(), target.pos().getZ()).getString();
+            line = this.font.plainSubstrByWidth(line, LIST_WIDTH - ROW_HEIGHT - 4); // stop short of the ✕
+            int textY = trackingY() + (ROW_HEIGHT - this.font.lineHeight) / 2 + 1;
+            graphics.text(this.font, line, this.width / 2 - LIST_WIDTH / 2, textY, 0xFFFFFFFF);
         }
     }
 }
