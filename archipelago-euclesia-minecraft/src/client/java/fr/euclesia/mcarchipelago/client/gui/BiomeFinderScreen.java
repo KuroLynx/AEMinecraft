@@ -1,6 +1,8 @@
 package fr.euclesia.mcarchipelago.client.gui;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import com.mojang.blaze3d.platform.NativeImage;
+import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.client.net.BiomeFinderClient;
 import fr.euclesia.mcarchipelago.server.gameplay.BiomeFinderService;
 import fr.euclesia.mcarchipelago.server.gameplay.BiomeFinderTrackerState;
@@ -12,6 +14,7 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 
@@ -43,6 +46,7 @@ public final class BiomeFinderScreen extends Screen {
     private static final int SWATCH = 8;
     private static final int BORDER = 0xFF000000;
     private static final int HOVER = 0x30FFFFFF;
+    private static final Identifier MAP_TEXTURE = Identifier.fromNamespaceAndPath(AEM.MOD_ID, "biome_finder_map");
 
     /** A biome in the legend: id, name, map colour, how many map cells it covers, filter haystack. */
     private record Entry(int index, Identifier id, Component name, int color, int cells, String haystack) {}
@@ -52,10 +56,20 @@ public final class BiomeFinderScreen extends Screen {
     /** {@link #entries} by biome index, for the map's per-cell lookups. */
     private Entry[] byIndex = new Entry[0];
     private BiomeFinderClient.BiomeMap map;
+    /**
+     * The map as one texture, a pixel per cell, drawn as a single quad. Drawing it as a fill per
+     * same-biome run cost thousands of GUI elements a frame (30 fps); now the pixels are only rewritten
+     * when the map or the legend highlight changes.
+     */
+    private DynamicTexture mapTexture;
+    private BiomeFinderClient.BiomeMap paintedMap;
+    private int paintedHighlight;
 
     private EditBox searchField;
     private Button clearButton;
     private String lastQuery = "";
+    /** The biome {@link #applyFilter} left out of the list (the pinned one), to refilter when it changes. */
+    private String listedWithout;
     private int scroll;
     /** False until the server's answer has arrived; the list is empty rather than absent. */
     private boolean loaded;
@@ -152,13 +166,24 @@ public final class BiomeFinderScreen extends Screen {
 
     private void applyFilter() {
         String query = searchField.getValue().trim().toLowerCase(Locale.ROOT);
+        // The tracked biome has its own pinned row above the list, so it is left out of the list.
+        listedWithout = trackedId();
         filtered.clear();
         for (Entry entry : entries) {
+            if (entry.id().toString().equals(listedWithout)) {
+                continue;
+            }
             if (query.isEmpty() || entry.haystack().contains(query)) {
                 filtered.add(entry);
             }
         }
         scroll = 0;
+    }
+
+    /** The pinned (tracked) biome's id, or null when nothing is pinned. */
+    private String trackedId() {
+        BiomeFinderTrackerState.Target target = tracked();
+        return target != null && clearButton != null && clearButton.visible ? target.biomeId() : null;
     }
 
     /** Where the scrolling rows start: under the pinned tracked row while something is tracked. */
@@ -261,6 +286,8 @@ public final class BiomeFinderScreen extends Screen {
         if (!searchField.getValue().equals(lastQuery)) {
             lastQuery = searchField.getValue();
             applyFilter();
+        } else if (!java.util.Objects.equals(trackedId(), listedWithout)) {
+            applyFilter(); // a new target, or the ✕: the pinned biome moves in or out of the list
         }
     }
 
@@ -284,32 +311,12 @@ public final class BiomeFinderScreen extends Screen {
         drawTracked(graphics);
     }
 
-    /** The map, one horizontal run per stretch of same-biome cells; {@code highlight} dims the rest. */
+    /** The map texture, one pixel per cell; {@code highlight} dims every other biome. */
     private void drawMap(GuiGraphicsExtractor graphics, int highlight) {
         graphics.fill(mapX - 1, mapY - 1, mapX + mapSide + 1, mapY + mapSide + 1, BORDER);
         int size = map.size();
-        for (int row = 0; row < size; row++) {
-            int top = edge(mapY, row);
-            int bottom = edge(mapY, row + 1);
-            if (bottom <= top) {
-                continue;
-            }
-            int start = 0;
-            while (start < size) {
-                int index = map.at(start, row);
-                int end = start + 1;
-                while (end < size && map.at(end, row) == index) {
-                    end++;
-                }
-                Entry entry = entryFor(index);
-                int color = entry == null ? BORDER : entry.color();
-                if (highlight >= 0 && index != highlight) {
-                    color = dim(color);
-                }
-                graphics.fill(edge(mapX, start), top, edge(mapX, end), bottom, color);
-                start = end;
-            }
-        }
+        paintMap(highlight);
+        graphics.blit(MAP_TEXTURE, mapX, mapY, mapX + mapSide, mapY + mapSide, 0.0F, 1.0F, 0.0F, 1.0F);
 
         // You: a white dot ringed in black at the centre.
         int cx = edge(mapX, size / 2);
@@ -329,6 +336,38 @@ public final class BiomeFinderScreen extends Screen {
                 graphics.fill(tx - 2, ty - 2, tx + 3, ty + 3, BORDER);
                 graphics.fill(tx - 1, ty - 1, tx + 2, ty + 2, 0xFFFF5555);
             }
+        }
+    }
+
+    /** (Re)writes the map texture when the map or the highlight has changed since the last paint. */
+    private void paintMap(int highlight) {
+        int size = map.size();
+        if (mapTexture == null || paintedMap != map) {
+            mapTexture = new DynamicTexture(MAP_TEXTURE::toString, new NativeImage(size, size, false));
+            Minecraft.getInstance().getTextureManager().register(MAP_TEXTURE, mapTexture);
+            paintedMap = map;
+        } else if (paintedHighlight == highlight) {
+            return;
+        }
+        NativeImage pixels = mapTexture.getPixels();
+        for (int row = 0; row < size; row++) {
+            for (int col = 0; col < size; col++) {
+                int index = map.at(col, row);
+                Entry entry = entryFor(index);
+                int color = entry == null ? BORDER : entry.color();
+                pixels.setPixel(col, row, highlight >= 0 && index != highlight ? dim(color) : color);
+            }
+        }
+        mapTexture.upload();
+        paintedHighlight = highlight;
+    }
+
+    @Override
+    public void removed() {
+        super.removed();
+        if (mapTexture != null) {
+            Minecraft.getInstance().getTextureManager().release(MAP_TEXTURE); // closes the texture too
+            mapTexture = null;
         }
     }
 
