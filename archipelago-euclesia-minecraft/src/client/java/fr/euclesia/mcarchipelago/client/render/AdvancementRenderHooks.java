@@ -43,8 +43,8 @@ public final class AdvancementRenderHooks {
 
     /**
      * Draws tile {@code id}'s frame in its logic colour. A progressive tile part-way through its copies
-     * fills green from the left, one copy's width at a time: the red frame first, then the same frame
-     * repainted green and clipped to {@code received / count} of its width.
+     * fills gray (the received colour) from the left, one copy's width at a time: the red frame first,
+     * then the same frame repainted gray and clipped to {@code received / count} of its width.
      */
     public static void drawFrame(GuiGraphicsExtractor graphics, RenderPipeline pipeline, Identifier sprite,
                                  int x, int y, int width, int height, Identifier id, int plainArgb) {
@@ -54,7 +54,7 @@ public final class AdvancementRenderHooks {
             return;
         }
         graphics.enableScissor(x, y, x + filled, y + height);
-        drawFrame(graphics, pipeline, sprite, x, y, width, height, LogicColors.RGB_IN_LOGIC, plainArgb);
+        drawFrame(graphics, pipeline, sprite, x, y, width, height, LogicColors.RGB_CHECKED, plainArgb);
         graphics.disableScissor();
     }
 
