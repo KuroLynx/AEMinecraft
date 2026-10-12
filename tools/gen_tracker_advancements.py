@@ -56,7 +56,6 @@ from worlds.minecraft_aem.trackers import (  # noqa: E402
     TRACKER_NAMESPACE,
     TRACKER_ROOT,
     goal_boss_tracker_id,
-    knowledge_count,
     knowledge_tracker_id,
     tracker_id,
 )
@@ -164,20 +163,6 @@ KNOWLEDGE_ICON_FALLBACK = "minecraft:book"
 # Station/container gate icons, derived from the block dump in main(); see derive_gate_icons.
 GATE_ICONS: dict[str, str] = {}
 
-# Progressive Material Handling level -> (icon, material name). Each received copy raises the material
-# tier the player can pick up (see minecraft/data.py MATERIAL_HANDLING_ITEMS), so each level's tile
-# shows that tier's representative item.
-MATERIAL_HANDLING_ITEM = "Progressive Material Handling"
-MATERIAL_HANDLING_TIERS = {
-    1: ("minecraft:stone", "Stone"),
-    2: ("minecraft:copper_ingot", "Copper"),
-    3: ("minecraft:iron_ingot", "Iron"),
-    4: ("minecraft:gold_ingot", "Gold"),
-    5: ("minecraft:diamond", "Diamond"),
-    6: ("minecraft:netherite_ingot", "Netherite"),
-}
-
-
 def derive_gate_icons(content, item_slugs: set[str]) -> dict[str, str]:
     """Icons for the station/container Knowledge gates, taken from the blocks those gates cover.
 
@@ -212,23 +197,6 @@ def knowledge_icon(item_name: str) -> str:
         print(f"  WARN: no icon mapping for knowledge item '{item_name}', using {KNOWLEDGE_ICON_FALLBACK}")
         return KNOWLEDGE_ICON_FALLBACK
     return icon
-
-
-def knowledge_level_tile(item_name: str, level: int, count: int) -> dict:
-    """Tile (icon/title/description) for one level of a knowledge/utility item.
-
-    Material Handling levels show the tier's ingot and material name; other progressive items repeat
-    their icon with a level suffix; single-level items keep the plain name.
-    """
-    if item_name == MATERIAL_HANDLING_ITEM and level in MATERIAL_HANDLING_TIERS:
-        icon, material = MATERIAL_HANDLING_TIERS[level]
-        return {"icon": icon, "title": f"Material Handling: {material}",
-                "description": f"Pick up {material.lower()}-tier materials"}
-    if count > 1:
-        return {"icon": knowledge_icon(item_name), "title": f"{item_name} {level}",
-                "description": f"Unlock {item_name} (level {level})"}
-    return {"icon": knowledge_icon(item_name), "title": item_name,
-            "description": f"Unlock {item_name}"}
 
 
 def load_spawn_egg_slugs(jar_path: str) -> set[str]:
@@ -321,9 +289,8 @@ def write_grid(category_id: str, entries: list[dict]) -> None:
 def write_rows(category_id: str, rows: list[list[dict]]) -> None:
     """Write a category as explicit rows. Each inner list is one horizontal parent->child chain
     (tile i parents tile i-1), and every row's first tile parents the category root, so the rows
-    stack vertically. Use this (instead of write_grid) when row composition matters — e.g. to keep
-    every level of a progressive item together on a single row so its levels always follow each
-    other, instead of wrapping mid-item at the fixed ROW_WIDTH grid boundary.
+    stack vertically. Use this (instead of write_grid) when row composition matters — e.g. one
+    block of rows per mob category, instead of wrapping across categories at the ROW_WIDTH boundary.
     """
     for row in rows:
         for i, entry in enumerate(row):
@@ -433,32 +400,20 @@ def generate(version: str) -> int:
         for struct in STRUCTURES.values()
     ]
 
-    # Knowledge tab layout: each progressive item (Material Handling, Villager Trust, Structure
-    # Finder) gets its OWN row so its levels always follow each other left-to-right and never wrap
-    # mid-item; the progressive rows are emitted first (so the progressives also follow one another),
-    # then the single-level items pack into rows of ROW_WIDTH below them.
-    progressive_rows: list[list[dict]] = []
-    single_tiles: list[dict] = []
-    for item_name in KNOWLEDGE_UTILITY_ITEMS:
-        levels = knowledge_count(item_name)
-        item_tiles = [
-            {"id": knowledge_tracker_id(item_name, level),
-             **knowledge_level_tile(item_name, level, levels)}
-            for level in range(1, levels + 1)
-        ]
-        if levels > 1:
-            progressive_rows.append(item_tiles)
-        else:
-            single_tiles.extend(item_tiles)
-    knowledge_rows = progressive_rows + [
-        single_tiles[i:i + ROW_WIDTH] for i in range(0, len(single_tiles), ROW_WIDTH)
+    # Knowledge tab: one tile per item, progressive ones first. A progressive tile carries a criterion
+    # per copy, added at runtime (RootAdvancementService), since how many copies exist is per seed.
+    knowledge_items = sorted(KNOWLEDGE_UTILITY_ITEMS, key=lambda name: not name.startswith("Progressive "))
+    knowledge_tiles = [
+        {"id": knowledge_tracker_id(name), "icon": knowledge_icon(name), "title": name,
+         "description": f"Unlock {name}"}
+        for name in knowledge_items
     ]
 
     # Kills & Entity Unlocks tabs: one grid block per mob category (passive, hostile, neutral, bosses).
     write_rows(CATEGORY_KILLS, rows_by_category(kills_by_cat))
     write_rows(CATEGORY_ENTITY_UNLOCKS, rows_by_category(unlocks_by_cat))
     write_grid(CATEGORY_STRUCTURE_UNLOCKS, structure_unlocks)
-    write_rows(CATEGORY_KNOWLEDGE, knowledge_rows)
+    write_grid(CATEGORY_KNOWLEDGE, knowledge_tiles)
     # Per-boss goal tiles each parent the Bosses goal DIRECTLY (one tile per row) rather than chaining
     # through each other: the runtime export activates only the goal's required bosses, and a chained
     # tile whose predecessor is hidden wouldn't render. Stacking them keeps every required boss visible.
@@ -466,7 +421,7 @@ def generate(version: str) -> int:
     count += (sum(len(t) for t in kills_by_cat.values())
               + sum(len(t) for t in unlocks_by_cat.values())
               + len(structure_unlocks)
-              + sum(len(row) for row in knowledge_rows) + len(boss_goals))
+              + len(knowledge_tiles) + len(boss_goals))
 
     print(f"wrote {count} advancements to {OUT_DIR}")
     return 0

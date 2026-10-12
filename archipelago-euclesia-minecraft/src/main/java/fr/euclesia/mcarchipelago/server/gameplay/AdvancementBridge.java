@@ -136,6 +136,7 @@ public final class AdvancementBridge {
         // Re-evaluate the advancement-count goal progress once after the batch (syncProgress is an
         // idempotent recompute, so a single call covers every advancement just folded in above).
         RootAdvancementService.syncProgress(player);
+        RootAdvancementService.syncItems(player);
         GoalTracker.evaluate();
     }
 }

@@ -23,7 +23,7 @@ import java.util.List;
  * Rewrites an unlock tile's description in Archipelago's terms. It names the item as AP does
  * ("Structure Unlock: Ancient City"), in AP's colour for its classification. While the item has not
  * arrived it also says where it is: once hinted, "Structure Unlock: Ancient City @ Location in Slot's
- * world" (a progressive item's levels each take their own copy's hint, in hint order); until then, a
+ * world" (a progressive tile shows the next copy's hint, in hint order); until then, a
  * reminder that holding the tile asks for a hint.
  *
  * <p>Hooked on the display rather than the widget so every advancement screen shows it, vanilla's
@@ -49,37 +49,29 @@ public abstract class DisplayInfoDescriptionMixin {
             cir.setReturnValue(base);
             return;
         }
-        // One hint per tile. The copies still out are this tile's and the ones above it, oldest hint
-        // first: level received+1 takes the first, the next level the second, and so on — so a level
-        // keeps its copy until an earlier level's arrives, and then everything moves up one.
+        // The next copy's hint: the copies still out, oldest hint first. A progressive tile is every
+        // copy at once, so it shows where the next one is and moves on as each arrives.
         List<HintLocationListener.Spot> spots = HintLocationListener.spots(tracker.itemId());
-        int index = tracker.count() - received - 1;
-        if (index >= spots.size()) {
+        if (spots.isEmpty()) {
             cir.setReturnValue(base.copy().append("\n").append(Component.translatable("gui.aem.hint.hold")
                     .withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC)));
             return;
         }
-        HintLocationListener.Spot spot = spots.get(index);
+        HintLocationListener.Spot spot = spots.get(0);
         cir.setReturnValue(Component.translatable("gui.aem.hint.spot", base,
                 Component.literal(spot.location()).withStyle(ChatFormatting.GREEN),
                 Component.literal(spot.player()).withStyle(ChatFormatting.YELLOW))
                 .withStyle(ChatFormatting.WHITE)); // the joining words; each argument keeps its own colour
     }
 
-    /**
-     * The item's AP name in its AP colour, or the original description when the name is unknown. A
-     * progressive tile keeps its " (level N)" — the pack's own description is the one place that says
-     * which level this tile is.
-     */
+    /** The item's AP name in its AP colour, or the original description when the name is unknown. */
     private static Component archipelago_euclesia$apName(Component original, APTrackerRegistry.Tracker tracker,
                                                          AEMRegistries registries) {
         String name = registries.apItems().name(tracker.itemId()).orElse(null);
         if (name == null) {
             return original;
         }
-        String text = original.getString();
-        int level = text.lastIndexOf(" (level ");
-        MutableComponent apName = Component.literal(level >= 0 ? name + text.substring(level) : name);
+        MutableComponent apName = Component.literal(name);
         return tracker.flags() == null ? apName : apName.withStyle(ArchipelagoChatListener.itemColor(tracker.flags()));
     }
 }
