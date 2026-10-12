@@ -7,7 +7,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 
 /**
- * A pick from the Biome Finder screen: locate this biome and point my needle at it.
+ * A pick from the Biome Finder screen: locate this biome and point my needle at it. An empty id
+ * means "stop tracking".
  *
  * <p>The search itself is worldgen work and stays on the server, which is also the only side that can
  * write the lodestone component onto the player's finder stack.

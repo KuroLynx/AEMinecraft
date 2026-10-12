@@ -85,6 +85,8 @@
   "gui.aem.biome_finder.search_hint": "Search biomes…",
   "gui.aem.biome_finder.loading": "Asking the server…",
   "gui.aem.biome_finder.empty": "No biomes available here.",
+  "gui.aem.biome_finder.tracking": "Currently tracking: %s (%s, %s)",
+  "gui.aem.biome_finder.stop": "Stop tracking",
 
   "gui.aem.hint.hold": "Hold to hint",
   "gui.aem.logic_report.open": "Report a logic error",
@@ -144,5 +146,6 @@
   "message.aem.lock.requires_tier": "Requires %s (%s)",
 
   "message.aem.biome_finder.none": "No %s nearby.",
+  "message.aem.biome_finder.arrived": "You reached %s; the Biome Finder stopped tracking.",
   "message.aem.biome_finder.tracking": "Biome Finder now points to %s (%s, %s)."
 }
