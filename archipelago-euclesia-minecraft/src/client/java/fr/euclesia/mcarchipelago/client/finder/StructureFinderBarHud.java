@@ -1,5 +1,6 @@
 package fr.euclesia.mcarchipelago.client.finder;
 
+import fr.euclesia.mcarchipelago.server.gameplay.BiomeFinderTrackerState;
 import fr.euclesia.mcarchipelago.server.gameplay.FinderTarget;
 import fr.euclesia.mcarchipelago.server.gameplay.StructureFinderState;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElement;
@@ -8,9 +9,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.core.BlockPos;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import org.joml.Matrix3x2fStack;
 
 import java.util.List;
@@ -23,6 +26,9 @@ import java.util.List;
  * once it passes {@value #VISIBLE_DEGREE_RANGE}° to either side. How many structures appear is
  * decided server-side by the finder tier; each icon is scaled by its distance, so nearby structures
  * look big and far ones small.
+ *
+ * <p>The Biome Finder shares the bar: the last biome it located shows as a compass, scaled by
+ * distance like the structures and drawn over them so it is never hidden behind one.
  */
 public final class StructureFinderBarHud implements HudElement {
     private static final Identifier BACKGROUND = Identifier.withDefaultNamespace("hud/locator_bar_background");
@@ -40,6 +46,9 @@ public final class StructureFinderBarHud implements HudElement {
     private static final double FAR_DISTANCE = 1024.0;
     // Biome badge drawn at this fraction of the main icon, in the bottom-right corner.
     private static final float BADGE_SCALE = 0.55F;
+    // Built on first render, not in a static initialiser: an ItemStack made while the client is still
+    // initialising throws "Components not bound yet". Same reason StructureIcons resolves on demand.
+    private static ItemStack compass;
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
@@ -48,8 +57,12 @@ public final class StructureFinderBarHud implements HudElement {
             return;
         }
         StructureFinderState.Snapshot snapshot = StructureFinderState.get().snapshot(player.getUUID());
-        List<FinderTarget> targets = snapshot.targets();
-        if (snapshot.tier() < 1 || targets.isEmpty()) {
+        List<FinderTarget> targets = snapshot.tier() < 1 ? List.of() : snapshot.targets();
+        BiomeFinderTrackerState.Target biome = BiomeFinderTrackerState.get().target(player.getUUID());
+        if (biome != null && !biome.dimension().equals(player.level().dimension())) {
+            biome = null;
+        }
+        if (targets.isEmpty() && biome == null) {
             return;
         }
 
@@ -61,22 +74,41 @@ public final class StructureFinderBarHud implements HudElement {
 
         graphics.blitSprite(RenderPipelines.GUI_TEXTURED, BACKGROUND, barLeft, barTop, BAR_WIDTH, BAR_HEIGHT);
 
-        double yaw = player.getYRot();
-        double px = player.getX();
-        double pz = player.getZ();
         // Targets are sorted nearest-first; draw far→near so closer (larger) icons land on top.
         for (int i = targets.size() - 1; i >= 0; i--) {
             FinderTarget target = targets.get(i);
-            double dx = target.pos().getX() + 0.5 - px;
-            double dz = target.pos().getZ() + 0.5 - pz;
-            double bearing = Math.toDegrees(Math.atan2(dz, dx)) - 90.0;
-            double relative = Mth.wrapDegrees(bearing - yaw);
-            double clamped = Mth.clamp(relative, -VISIBLE_DEGREE_RANGE, VISIBLE_DEGREE_RANGE);
-            int x = centerX + (int) Math.round(clamped / VISIBLE_DEGREE_RANGE * halfSpan);
-
-            float scale = scaleForDistance(Math.sqrt(dx * dx + dz * dz));
-            drawIcon(graphics, target.structureId(), x, iconCenterY, scale);
+            float scale = scaleFor(player, target.pos());
+            drawIcon(graphics, target.structureId(), barX(player, target.pos(), centerX, halfSpan), iconCenterY, scale);
         }
+        if (biome != null) {
+            float scale = scaleFor(player, biome.pos());
+            float size = ICON_PX * scale;
+            drawItem(graphics, compass(), barX(player, biome.pos(), centerX, halfSpan) - size / 2.0F,
+                    iconCenterY - size / 2.0F, scale);
+        }
+    }
+
+    /** Where {@code pos} sits on the bar: its bearing from where the player faces, pinned at the edges. */
+    private static int barX(LocalPlayer player, BlockPos pos, int centerX, int halfSpan) {
+        double dx = pos.getX() + 0.5 - player.getX();
+        double dz = pos.getZ() + 0.5 - player.getZ();
+        double bearing = Math.toDegrees(Math.atan2(dz, dx)) - 90.0;
+        double relative = Mth.wrapDegrees(bearing - player.getYRot());
+        double clamped = Mth.clamp(relative, -VISIBLE_DEGREE_RANGE, VISIBLE_DEGREE_RANGE);
+        return centerX + (int) Math.round(clamped / VISIBLE_DEGREE_RANGE * halfSpan);
+    }
+
+    private static float scaleFor(LocalPlayer player, BlockPos pos) {
+        double dx = pos.getX() + 0.5 - player.getX();
+        double dz = pos.getZ() + 0.5 - player.getZ();
+        return scaleForDistance(Math.sqrt(dx * dx + dz * dz));
+    }
+
+    private static ItemStack compass() {
+        if (compass == null) {
+            compass = new ItemStack(Items.COMPASS);
+        }
+        return compass;
     }
 
     private static float scaleForDistance(double distance) {
