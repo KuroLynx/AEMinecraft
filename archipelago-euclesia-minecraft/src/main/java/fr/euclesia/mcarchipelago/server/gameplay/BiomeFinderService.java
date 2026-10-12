@@ -18,6 +18,10 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.biome.Biome;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.Comparator;
 import java.util.List;
@@ -43,8 +47,20 @@ public final class BiomeFinderService {
     private static final int VERTICAL_STEP = 64;
     /** How often (ticks) to check whether a tracking player has reached their biome. */
     private static final int ARRIVAL_CHECK_INTERVAL = 20;
+    /** The pick screen's map: MAP_SIZE² cells, MAP_STEP blocks apart, so about ±2000 blocks around you. */
+    private static final int MAP_SIZE = 128;
+    private static final int MAP_STEP = 32;
 
     private static int tickCounter;
+    /**
+     * Players who have been OUTSIDE their target biome since it was set. Arrival means entering it, so
+     * a target clears only once armed — otherwise picking a far patch of the biome you stand in (easy
+     * on the map) would clear itself on the next check. Server thread only.
+     */
+    private static final Set<UUID> armed = new HashSet<>();
+
+    /** A sampled biome map; see {@link fr.euclesia.mcarchipelago.net.BiomeListPayload} for the layout. */
+    public record BiomeMap(int centerX, int centerZ, int step, int size, byte[] cells) {}
 
     private BiomeFinderService() {}
 
@@ -67,7 +83,9 @@ public final class BiomeFinderService {
             }
             Identifier here = player.level().getBiome(player.blockPosition()).unwrapKey()
                     .map(key -> key.identifier()).orElse(null);
-            if (here != null && here.toString().equals(target.biomeId())) {
+            if (here == null || !here.toString().equals(target.biomeId())) {
+                armed.add(player.getUUID());
+            } else if (armed.contains(player.getUUID())) {
                 clear(player);
                 player.sendSystemMessage(Component.translatable("message.aem.biome_finder.arrived",
                         Component.translatable(biomeTranslationKey(here))).withStyle(ChatFormatting.GREEN));
@@ -82,7 +100,69 @@ public final class BiomeFinderService {
             return;
         }
         BiomeFinderTrackerState.get().remove(id);
+        armed.remove(id);
         APStateSync.sendBiomeTracker(player, null);
+    }
+
+    /**
+     * Samples the biome layout around {@code player} at their height, straight from the biome source:
+     * no chunk is loaded or generated. Each cell is the index of its biome in {@code palette} as an unsigned byte, 255 if absent.
+     * ponytail: 16k noise-biome lookups on the server thread per screen opening (tens of ms); move it off
+     * thread or cache per region if a big server feels it.
+     */
+    public static BiomeMap sampleMap(ServerPlayer player, List<Identifier> palette) {
+        ServerLevel level = player.level();
+        Registry<Biome> registry = level.registryAccess().lookupOrThrow(Registries.BIOME);
+        Map<Identifier, Integer> index = new HashMap<>();
+        for (int i = 0; i < palette.size() && i < 255; i++) {
+            index.put(palette.get(i), i);
+        }
+        int centerX = player.getBlockX();
+        int centerZ = player.getBlockZ();
+        int quartY = player.getBlockY() >> 2;
+        byte[] cells = new byte[MAP_SIZE * MAP_SIZE];
+        for (int row = 0; row < MAP_SIZE; row++) {
+            int z = centerZ + (row - MAP_SIZE / 2) * MAP_STEP;
+            for (int col = 0; col < MAP_SIZE; col++) {
+                int x = centerX + (col - MAP_SIZE / 2) * MAP_STEP;
+                Identifier id = registry.getKey(level.getUncachedNoiseBiome(x >> 2, quartY, z >> 2).value());
+                cells[row * MAP_SIZE + col] = (byte) (int) index.getOrDefault(id, 255);
+            }
+        }
+        return new BiomeMap(centerX, centerZ, MAP_STEP, MAP_SIZE, cells);
+    }
+
+    /**
+     * Points {@code player} at exactly ({@code x}, {@code z}), at their own height — a click on the map.
+     * The biome is read here, not taken from the client, and the spot must lie on the map they were sent.
+     */
+    public static void trackSpot(ServerPlayer player, int x, int z) {
+        int reach = (MAP_SIZE / 2 + 1) * MAP_STEP;
+        if (Math.abs(x - player.getBlockX()) > reach || Math.abs(z - player.getBlockZ()) > reach) {
+            return;
+        }
+        ServerLevel level = player.level();
+        BlockPos pos = new BlockPos(x, player.getBlockY(), z);
+        Identifier biomeId = level.registryAccess().lookupOrThrow(Registries.BIOME)
+                .getKey(level.getUncachedNoiseBiome(x >> 2, pos.getY() >> 2, z >> 2).value());
+        if (biomeId != null) {
+            track(player, biomeId, pos);
+        }
+    }
+
+    /** Sets {@code player}'s target, on the server and on their HUD, and says so in chat. */
+    private static void track(ServerPlayer player, Identifier biomeId, BlockPos pos) {
+        BiomeFinderTrackerState.Target target =
+                new BiomeFinderTrackerState.Target(biomeId.toString(), player.level().dimension(), pos);
+        BiomeFinderTrackerState.get().putTarget(player.getUUID(), target);
+        armed.remove(player.getUUID());
+        // Singleplayer reads the state above straight out of this holder; a remote client has no
+        // such holder to read, so the same target goes down the wire (see FinderSyncPayload for
+        // why the Structure Finder bar needs the same split).
+        APStateSync.sendBiomeTracker(player, target);
+        player.sendSystemMessage(Component.translatable("message.aem.biome_finder.tracking",
+                        Component.translatable(biomeTranslationKey(biomeId)), pos.getX(), pos.getZ())
+                .withStyle(ChatFormatting.GREEN));
     }
 
     /** The vanilla translation key for a biome's display name, e.g. {@code biome.minecraft.plains}. */
@@ -140,17 +220,6 @@ public final class BiomeFinderService {
             return;
         }
 
-        BlockPos pos = nearest.getFirst();
-        BiomeFinderTrackerState.Target target =
-                new BiomeFinderTrackerState.Target(biomeId.toString(), level.dimension(), pos);
-        BiomeFinderTrackerState.get().putTarget(player.getUUID(), target);
-        // Singleplayer reads the state above straight out of this holder; a remote client has no
-        // such holder to read, so the same target goes down the wire (see FinderSyncPayload for
-        // why the Structure Finder bar needs the same split).
-        APStateSync.sendBiomeTracker(player, target);
-
-        player.sendSystemMessage(Component.translatable(
-                        "message.aem.biome_finder.tracking", biomeName, pos.getX(), pos.getZ())
-                .withStyle(ChatFormatting.GREEN));
+        track(player, biomeId, nearest.getFirst());
     }
 }

@@ -33,19 +33,22 @@ public final class BiomeFinderNet {
         ServerPlayNetworking.registerGlobalReceiver(BiomeListRequestPayload.TYPE,
                 (payload, context) -> sendList(context.player()));
         ServerPlayNetworking.registerGlobalReceiver(BiomeSearchPayload.TYPE,
-                (payload, context) -> search(context.player(), payload.biomeId()));
+                (payload, context) -> search(context.player(), payload));
     }
 
-    /** Answers a list request with the biomes the player's current dimension can generate. */
+    /** Answers a list request with the biomes the player's current dimension can generate, and the map around them. */
     private static void sendList(ServerPlayer player) {
         if (!ServerPlayNetworking.canSend(player, BiomeListPayload.TYPE)) {
             return;
         }
+        List<Identifier> biomes = BiomeFinderService.availableBiomes(player.level());
         List<String> ids = new ArrayList<>();
-        for (Identifier id : BiomeFinderService.availableBiomes(player.level())) {
+        for (Identifier id : biomes) {
             ids.add(id.toString());
         }
-        ServerPlayNetworking.send(player, new BiomeListPayload(List.copyOf(ids)));
+        BiomeFinderService.BiomeMap map = BiomeFinderService.sampleMap(player, biomes);
+        ServerPlayNetworking.send(player, new BiomeListPayload(List.copyOf(ids),
+                map.centerX(), map.centerZ(), map.step(), map.size(), map.cells()));
     }
 
     /**
@@ -53,7 +56,14 @@ public final class BiomeFinderNet {
      * blocks, so a client that asks for one without owning the finder is refused before it costs
      * anything.
      */
-    private static void search(ServerPlayer player, String biomeId) {
+    private static void search(ServerPlayer player, BiomeSearchPayload payload) {
+        if (payload.atSpot()) {
+            if (BiomeFinderService.owns()) {
+                BiomeFinderService.trackSpot(player, payload.x(), payload.z());
+            }
+            return;
+        }
+        String biomeId = payload.biomeId();
         if (biomeId.isEmpty()) { // an empty pick means "stop tracking" (the screen's ✕), no finder needed
             BiomeFinderService.clear(player);
             return;
