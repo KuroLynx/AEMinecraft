@@ -10,13 +10,17 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.GlobalPos;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.LodestoneTracker;
 import org.joml.Matrix3x2fStack;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * The Structure Finder bar: a custom locator bar showing each revealed structure as its
@@ -28,7 +32,8 @@ import java.util.List;
  * look big and far ones small.
  *
  * <p>The Biome Finder shares the bar: the last biome it located shows as a compass, scaled by
- * distance like the structures and drawn over them so it is never hidden behind one.
+ * distance like the structures and drawn over them so it is never hidden behind one. Its needle
+ * points at the biome too: the stack carries a lodestone target at the located coordinates.
  */
 public final class StructureFinderBarHud implements HudElement {
     private static final Identifier BACKGROUND = Identifier.withDefaultNamespace("hud/locator_bar_background");
@@ -49,6 +54,7 @@ public final class StructureFinderBarHud implements HudElement {
     // Built on first render, not in a static initialiser: an ItemStack made while the client is still
     // initialising throws "Components not bound yet". Same reason StructureIcons resolves on demand.
     private static ItemStack compass;
+    private static BiomeFinderTrackerState.Target compassTarget;
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
@@ -83,7 +89,7 @@ public final class StructureFinderBarHud implements HudElement {
         if (biome != null) {
             float scale = scaleFor(player, biome.pos());
             float size = ICON_PX * scale;
-            drawItem(graphics, compass(), barX(player, biome.pos(), centerX, halfSpan) - size / 2.0F,
+            drawItem(graphics, compass(biome), barX(player, biome.pos(), centerX, halfSpan) - size / 2.0F,
                     iconCenterY - size / 2.0F, scale);
         }
     }
@@ -104,9 +110,14 @@ public final class StructureFinderBarHud implements HudElement {
         return scaleForDistance(Math.sqrt(dx * dx + dz * dz));
     }
 
-    private static ItemStack compass() {
-        if (compass == null) {
+    /** A compass whose needle points at {@code target}, rebuilt only when the target changes. */
+    private static ItemStack compass(BiomeFinderTrackerState.Target target) {
+        if (compass == null || !target.equals(compassTarget)) {
             compass = new ItemStack(Items.COMPASS);
+            compass.set(DataComponents.LODESTONE_TRACKER, new LodestoneTracker(
+                    Optional.of(GlobalPos.of(target.dimension(), target.pos())), false));
+            compass.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, false); // a lodestone target adds the shimmer
+            compassTarget = target;
         }
         return compass;
     }
