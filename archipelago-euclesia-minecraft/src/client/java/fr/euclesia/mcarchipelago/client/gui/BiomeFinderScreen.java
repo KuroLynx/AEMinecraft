@@ -27,8 +27,9 @@ import java.util.Locale;
  * <p>Left: a top-down map of the biomes around you, north up, you at the centre (sampled by the server,
  * see {@link BiomeFinderService#sampleMap}). Click a patch to track exactly that spot. Right: every biome
  * the dimension can generate, the ones on the map first and with their map colour, then the rest; click
- * one to locate the nearest (the 6400-block search), hover one to light it up on the map. Under that,
- * "Currently tracking" with a ✕ that stops tracking — reaching the biome also clears it by itself.
+ * one to locate the nearest (the 6400-block search), hover one to light it up on the map. The biome
+ * being tracked is pinned above the list, scrolling or not, with a ✕ that stops tracking — reaching
+ * the biome also clears it by itself.
  *
  * <p>Both halves go through the server ({@link BiomeFinderClient}), so the data arrives a round trip
  * after the screen opens: it draws a loading line until then, and fills itself in from {@link #tick()}.
@@ -65,12 +66,12 @@ public final class BiomeFinderScreen extends Screen {
     private int mapSide;
     private int legendX;
     private int legendWidth;
-    private int rowsTop;
+    /** Top of the legend: the pinned tracked row when there is one, else the first list row. */
+    private int legendTop;
     private int rowsBottom;
-    private int trackingY;
 
     public BiomeFinderScreen() {
-        super(Minecraft.getInstance(), Minecraft.getInstance().font, Component.translatable("item.aem.biome_finder"));
+        super(Minecraft.getInstance(), Minecraft.getInstance().font, Component.translatable("gui.aem.biome_finder.open"));
         // Asked for once per opening — init() also runs on resize, which must not restart the wait.
         BiomeFinderClient.requestList();
     }
@@ -81,7 +82,6 @@ public final class BiomeFinderScreen extends Screen {
 
         int top = MARGIN + 14;
         int closeY = this.height - MARGIN - ROW_HEIGHT;
-        trackingY = closeY - ROW_HEIGHT - 2;
         int available = closeY - 6 - top;
         mapSide = Math.max(0, Math.min(available, this.width - 3 * MARGIN - LEGEND_MIN_WIDTH));
         legendWidth = Math.min(LEGEND_MAX_WIDTH, this.width - 3 * MARGIN - mapSide);
@@ -89,8 +89,8 @@ public final class BiomeFinderScreen extends Screen {
         mapX = left;
         mapY = top;
         legendX = left + mapSide + MARGIN;
-        rowsTop = top + ROW_HEIGHT + 4;
-        rowsBottom = trackingY - 2;
+        legendTop = top + ROW_HEIGHT + 4;
+        rowsBottom = closeY - 4;
 
         String query = searchField == null ? "" : searchField.getValue();
         searchField = new EditBox(this.font, legendX, top, legendWidth, ROW_HEIGHT,
@@ -106,7 +106,7 @@ public final class BiomeFinderScreen extends Screen {
                     button.visible = false;
                 })
                 .tooltip(Tooltip.create(Component.translatable("gui.aem.biome_finder.stop")))
-                .bounds(legendX + legendWidth - ROW_HEIGHT, trackingY, ROW_HEIGHT, ROW_HEIGHT)
+                .bounds(legendX, legendTop, ROW_HEIGHT, ROW_HEIGHT)
                 .build());
         clearButton.visible = tracked() != null;
 
@@ -161,8 +161,13 @@ public final class BiomeFinderScreen extends Screen {
         scroll = 0;
     }
 
+    /** Where the scrolling rows start: under the pinned tracked row while something is tracked. */
+    private int rowsTop() {
+        return clearButton != null && clearButton.visible ? legendTop + ROW_HEIGHT + 2 : legendTop;
+    }
+
     private int visibleRows() {
-        return Math.max(1, (rowsBottom - rowsTop) / LEGEND_ROW);
+        return Math.max(1, (rowsBottom - rowsTop()) / LEGEND_ROW);
     }
 
     /** The local player's tracked biome, or null. */
@@ -206,10 +211,10 @@ public final class BiomeFinderScreen extends Screen {
 
     /** The legend entry under the mouse, or null. */
     private Entry legendAt(double mouseX, double mouseY) {
-        if (mouseX < legendX || mouseX >= legendX + legendWidth || mouseY < rowsTop) {
+        if (mouseX < legendX || mouseX >= legendX + legendWidth || mouseY < rowsTop()) {
             return null;
         }
-        int line = (int) ((mouseY - rowsTop) / LEGEND_ROW);
+        int line = (int) ((mouseY - rowsTop()) / LEGEND_ROW);
         int index = scroll + line;
         return line < visibleRows() && index < filtered.size() ? filtered.get(index) : null;
     }
@@ -276,7 +281,7 @@ public final class BiomeFinderScreen extends Screen {
                     mapX + mapSide / 2, mapY + mapSide / 2, 0xFFA0A0A0);
         }
         drawLegend(graphics, hoveredLegend);
-        drawTracking(graphics);
+        drawTracked(graphics);
     }
 
     /** The map, one horizontal run per stretch of same-biome cells; {@code highlight} dims the rest. */
@@ -345,25 +350,25 @@ public final class BiomeFinderScreen extends Screen {
         }
         graphics.fill(edge(mapX, cell[0]), edge(mapY, cell[1]), edge(mapX, cell[0] + 1) + 1,
                 edge(mapY, cell[1] + 1) + 1, HOVER);
-        graphics.setTooltipForNextFrame(Component.translatable("gui.aem.biome_finder.map_hover",
-                entry.name(), blockX(cell[0]), blockZ(cell[1])), mouseX, mouseY);
+        graphics.setTooltipForNextFrame(Component.translatable("gui.aem.biome_finder.map_hover", entry.name()),
+                mouseX, mouseY);
     }
 
     private void drawLegend(GuiGraphicsExtractor graphics, Entry hovered) {
         if (!loaded) {
             graphics.text(this.font, Component.translatable("gui.aem.biome_finder.loading").getString(),
-                    legendX, rowsTop, 0xFFA0A0A0);
+                    legendX, rowsTop(), 0xFFA0A0A0);
             return;
         }
         if (entries.isEmpty()) {
             graphics.text(this.font, Component.translatable("gui.aem.biome_finder.empty").getString(),
-                    legendX, rowsTop, 0xFFFF5555);
+                    legendX, rowsTop(), 0xFFFF5555);
             return;
         }
         int rows = Math.min(visibleRows(), filtered.size() - scroll);
         for (int i = 0; i < rows; i++) {
             Entry entry = filtered.get(scroll + i);
-            int y = rowsTop + i * LEGEND_ROW;
+            int y = rowsTop() + i * LEGEND_ROW;
             if (entry == hovered) {
                 graphics.fill(legendX, y, legendX + legendWidth, y + LEGEND_ROW, HOVER);
             }
@@ -377,7 +382,8 @@ public final class BiomeFinderScreen extends Screen {
         }
     }
 
-    private void drawTracking(GuiGraphicsExtractor graphics) {
+    /** The pinned row: ✕ (the button, drawn by the screen), then the tracked biome's swatch and name. */
+    private void drawTracked(GuiGraphicsExtractor graphics) {
         BiomeFinderTrackerState.Target target = tracked();
         if (target == null || !clearButton.visible) {
             return;
@@ -385,10 +391,15 @@ public final class BiomeFinderScreen extends Screen {
         Identifier biome = Identifier.tryParse(target.biomeId());
         Component name = biome == null ? Component.literal(target.biomeId())
                 : Component.translatable(BiomeFinderService.biomeTranslationKey(biome));
-        String line = Component.translatable("gui.aem.biome_finder.tracking", name,
-                target.pos().getX(), target.pos().getZ()).getString();
-        line = this.font.plainSubstrByWidth(line, legendWidth - ROW_HEIGHT - 4); // stop short of the ✕
-        int textY = trackingY + (ROW_HEIGHT - this.font.lineHeight) / 2 + 1;
-        graphics.text(this.font, line, legendX, textY, 0xFFFFFFFF);
+        graphics.fill(legendX, legendTop, legendX + legendWidth, legendTop + ROW_HEIGHT, HOVER);
+        int x = legendX + ROW_HEIGHT + 4;
+        int swatchY = legendTop + (ROW_HEIGHT - SWATCH) / 2;
+        if (biome != null) {
+            graphics.fill(x, swatchY, x + SWATCH, swatchY + SWATCH, BORDER);
+            graphics.fill(x + 1, swatchY + 1, x + SWATCH - 1, swatchY + SWATCH - 1, BiomeMapColors.argb(biome));
+        }
+        String text = this.font.plainSubstrByWidth(name.getString(), legendX + legendWidth - (x + SWATCH + 4));
+        graphics.text(this.font, text, x + SWATCH + 4, legendTop + (ROW_HEIGHT - this.font.lineHeight) / 2 + 1,
+                0xFFFFFFFF);
     }
 }
