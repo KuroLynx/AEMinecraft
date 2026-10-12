@@ -57,7 +57,8 @@ CATEGORY_BY_KIND = {
 # Knowledge / utility items tracked on the Knowledge tab — every "Knowledge: *", the progressive
 # utilities (Material Handling, Villager Trust, Structure Finder) and the "Dimension Unlock: *"
 # items. Derived from the item table so the set stays in sync with items.csv; the generator
-# and the export both consume this list. Progressive items (count > 1) become one tile per level.
+# and the export both consume this list. Each item is ONE tile; a progressive one gets a criterion per
+# copy this seed (the mod rebuilds it at connect, RootAdvancementService), so its levels show as X/N.
 KNOWLEDGE_UTILITY_PREFIXES = ("Knowledge: ", "Progressive ", "Dimension Unlock: ")
 # Finders gate like the others but their item names carry no tracked prefix, so list them by name.
 KNOWLEDGE_UTILITY_EXTRAS = (ITEM_BIOME_FINDER,)
@@ -102,15 +103,9 @@ def knowledge_slug(item_name: str) -> str:
     return name.lower().replace(" ", "_")
 
 
-def knowledge_count(item_name: str) -> int:
-    """How many progressive levels a knowledge/utility item has (1 for non-progressive items)."""
-    return ITEMS[item_name].count
-
-
-def knowledge_tracker_id(item_name: str, level: int) -> str:
-    """Stable advancement id for one level of a knowledge/utility tracker, e.g.
-    ``aem:unlock_knowledge/material_handling/3``. Non-progressive items have a single level ``1``."""
-    return f"{TRACKER_NAMESPACE}:{KIND_UNLOCK_KNOWLEDGE}/{knowledge_slug(item_name)}/{level}"
+def knowledge_tracker_id(item_name: str) -> str:
+    """Stable advancement id for a knowledge/utility tracker, e.g. ``aem:unlock_knowledge/material_handling``."""
+    return f"{TRACKER_NAMESPACE}:{KIND_UNLOCK_KNOWLEDGE}/{knowledge_slug(item_name)}"
 
 
 def build_trackers_export(world) -> dict:
@@ -118,7 +113,7 @@ def build_trackers_export(world) -> dict:
 
     Descriptors:
       kill/boss   -> {"kind": "kill"|"boss", "location_name": <AP loc name>, "location_id": <id>}
-      unlock      -> {"kind": "unlock", "item_id": <received item id>}
+      unlock      -> {"kind": "unlock", "item_id": <received item id>, "count": <copies to finish the tile>}
     """
     trackers: dict[str, dict] = {}
 
@@ -168,34 +163,32 @@ def build_trackers_export(world) -> dict:
             "item_id": BASE_ID_STRUCT_UNLOCK + struct_data.id,
         }
 
-    # Knowledge / utility items (received AP items) — green once received. Progressive items get one
-    # tile per level: level N's tile turns green once N copies of the item are received. The start
-    # dimension's unlock isn't in the pool (you spawn there), so skip it — its tile could never green.
+    # Knowledge / utility items (received AP items) — one tile each, done once every copy this seed is
+    # received. `count` is that number of copies, counted off the pool rather than items.csv: Keep
+    # Inventory and Inventory Slot copies are sized by options. The start dimension's unlock isn't in
+    # the pool (you spawn there), so skip it — its tile could never finish.
     #
     # Gate on the items actually created this seed: options like villager_trust / structure_finder /
     # biome_finder drop their items from the pool entirely, and a tile for a never-granted item must
     # not appear (it could never turn green). item_name_to_id is the static full catalogue, so it
     # can't tell disabled options apart — the per-seed itempool (+ precollected for "start" modes) can.
-    active_item_names = {
-        item.name for item in world.multiworld.itempool if item.player == world.player
-    }
-    active_item_names.update(
-        item.name for item in world.multiworld.precollected_items.get(world.player, [])
-    )
+    copies: dict[str, int] = {}
+    for item in [*world.multiworld.itempool, *world.multiworld.precollected_items.get(world.player, [])]:
+        if item.player == world.player:
+            copies[item.name] = copies.get(item.name, 0) + 1
 
     start_dimension_item = world._start_dimension_item()
     for item_name in KNOWLEDGE_UTILITY_ITEMS:
-        if item_name == start_dimension_item or item_name not in active_item_names:
+        if item_name == start_dimension_item or item_name not in copies:
             continue
         item_id = world.item_name_to_id.get(item_name)
         if item_id is None:
             continue
-        for level in range(1, knowledge_count(item_name) + 1):
-            trackers[knowledge_tracker_id(item_name, level)] = {
-                "kind": "unlock",
-                "item_id": item_id,
-                "count": level,
-            }
+        trackers[knowledge_tracker_id(item_name)] = {
+            "kind": "unlock",
+            "item_id": item_id,
+            "count": copies[item_name],
+        }
 
     # How AP classifies each unlock item, as the network flags (progression 1, useful 2, trap 4), so
     # the tile can draw its name in AP's colour before the item ever arrives. Read off the placed

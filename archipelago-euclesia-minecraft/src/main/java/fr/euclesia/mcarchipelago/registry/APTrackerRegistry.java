@@ -43,8 +43,8 @@ public final class APTrackerRegistry {
     /**
      * One tracker's linkage. {@code locationName}/{@code locationId} are set for kill/boss
      * (an AP location); {@code itemId} is set for unlocks (a received AP item). {@code count} is the
-     * number of copies needed to satisfy an unlock tile — 1 for normal unlocks, N for level N of a
-     * progressive item (e.g. Progressive Material Handling). {@code flags} is the unlock item's AP
+     * number of copies needed to finish an unlock tile — 1 for normal unlocks, every copy this seed for
+     * a progressive item (e.g. Progressive Material Handling). {@code flags} is the unlock item's AP
      * classification as network flags, or {@code null} when the slot data predates it.
      */
     public record Tracker(String kind, String locationName, Long locationId, Long itemId, int count, Integer flags) {}
@@ -101,6 +101,11 @@ public final class APTrackerRegistry {
     /** The tracker linkage for an advancement id, or {@code null} if it is not an active tracker. */
     public Tracker get(String advancementId) {
         return byId.get(advancementId);
+    }
+
+    /** Every active tracker this seed, by advancement id. */
+    public void forEach(java.util.function.BiConsumer<String, Tracker> action) {
+        byId.forEach(action);
     }
 
     /** Whether {@code advancementId} is an active tracker this seed. */

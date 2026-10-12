@@ -59,7 +59,7 @@ public abstract class PagAdvWidgetMixin {
                                             Identifier sprite, int x, int y, int width, int height) {
         Identifier id = archipelago_euclesia$id();
         AdvancementRenderHooks.drawFrame(graphics, pipeline, sprite, x, y, width, height,
-                id == null ? null : AdvancementRenderHooks.frameColor(id), AdvancementRenderHooks.NO_TINT);
+                id, AdvancementRenderHooks.NO_TINT);
     }
 
     private Identifier archipelago_euclesia$id() {

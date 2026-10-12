@@ -101,6 +101,11 @@ public final class ArchipelagoGameplayListener implements APEventListener {
         // New items change what is reachable, which is most of what the tracker draws. Only the
         // item list is sent, and only once per tick however many packets arrive.
         APStateSync.markProgressDirty();
+        // …and moves the progressive Knowledge tiles, which are real criteria granted server-side.
+        MinecraftServer server = AEMServerRuntime.server();
+        if (server != null) {
+            server.execute(RootAdvancementService::syncItemsToAll);
+        }
     }
 
     @Override

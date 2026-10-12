@@ -114,7 +114,8 @@ public final class DataLogicProvider implements LogicProvider {
     private LogicState trackerState(ArchipelagoClient client, APTrackerRegistry.Tracker tracker) {
         if (APTrackerRegistry.KIND_UNLOCK.equals(tracker.kind())) {
             Long itemId = tracker.itemId();
-            // Progressive tiles need `count` copies (level N); normal unlocks need 1.
+            // Progressive tiles need every copy this seed (`count`); normal unlocks need 1. Partial progress
+            // shows as the tile's own X/N criteria, granted server-side by RootAdvancementService.
             boolean received = itemId != null
                     && client.registries().apItems().receivedCount(itemId) >= tracker.count();
             // Received = obtained: gray it out like a checked location. Not yet received = red.

@@ -5,6 +5,7 @@ package fr.euclesia.mcarchipelago.client.render;
 *///?} else {
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 //?}
+import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.client.logic.LogicColors;
 import fr.euclesia.mcarchipelago.client.logic.LogicProviders;
 import fr.euclesia.mcarchipelago.registry.APTrackerRegistry;
@@ -38,6 +39,37 @@ public final class AdvancementRenderHooks {
     /** @return the 0xRRGGBB logic colour for {@code id}, or {@code null} to keep the frame as drawn. */
     public static Integer frameColor(Identifier id) {
         return id == null ? null : LogicColors.rgb(LogicProviders.stateFor(id));
+    }
+
+    /**
+     * Draws tile {@code id}'s frame in its logic colour. A progressive tile part-way through its copies
+     * fills gray (the received colour) from the right, one copy's width at a time: the red frame first,
+     * then the same frame repainted gray and clipped to {@code received / count} of its width.
+     */
+    public static void drawFrame(GuiGraphicsExtractor graphics, RenderPipeline pipeline, Identifier sprite,
+                                 int x, int y, int width, int height, Identifier id, int plainArgb) {
+        drawFrame(graphics, pipeline, sprite, x, y, width, height, id == null ? null : frameColor(id), plainArgb);
+        int filled = Math.round(width * progress(id));
+        if (filled <= 0 || filled >= width) {
+            return;
+        }
+        graphics.enableScissor(x + width - filled, y, x + width, y + height);
+        drawFrame(graphics, pipeline, sprite, x, y, width, height, LogicColors.RGB_CHECKED, plainArgb);
+        graphics.disableScissor();
+    }
+
+    /** Received share of a progressive unlock tile's copies, 0 for any other tile. */
+    private static float progress(Identifier id) {
+        if (id == null) {
+            return 0;
+        }
+        APTrackerRegistry.Tracker tracker = AEM.ARCHIPELAGO.client().registries().apTrackers().get(id.toString());
+        if (tracker == null || tracker.itemId() == null || tracker.count() <= 1
+                || !APTrackerRegistry.KIND_UNLOCK.equals(tracker.kind())) {
+            return 0;
+        }
+        int received = AEM.ARCHIPELAGO.client().registries().apItems().receivedCount(tracker.itemId());
+        return Math.min(1.0F, received / (float) tracker.count());
     }
 
     /**

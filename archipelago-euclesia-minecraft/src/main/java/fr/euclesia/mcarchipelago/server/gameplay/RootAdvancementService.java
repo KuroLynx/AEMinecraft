@@ -2,6 +2,7 @@ package fr.euclesia.mcarchipelago.server.gameplay;
 
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.archipelago.slot.APSlotData;
+import fr.euclesia.mcarchipelago.registry.APItemRegistry;
 import fr.euclesia.mcarchipelago.registry.APLocationRegistry;
 import fr.euclesia.mcarchipelago.registry.APTrackerRegistry;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
@@ -46,6 +47,11 @@ import java.util.Map;
  * (one awarded per completed active advancement). The bosses tile uses <em>one criterion named per
  * boss</em>, awarded by boss identity when that boss is killed — naturally idempotent and restored
  * from disk on rejoin, so no counting is needed.
+ *
+ * <p>Progressive Knowledge-tab tiles (Material Handling, Keep Inventory, Inventory Slot…) get the same
+ * treatment: one tile per item with a criterion per copy this seed ({@code count} in the tracker
+ * export), the first {@code received} of them granted — so a single tile reads "3/6" instead of the
+ * tab growing a tile per copy.
  */
 public final class RootAdvancementService {
     private static final Identifier ADVANCEMENTS_ID = Identifier.parse(APTrackerRegistry.GOAL_ADVANCEMENTS_ID);
@@ -54,6 +60,8 @@ public final class RootAdvancementService {
     /** Currently-installed goal-tile holders (rebuilt, or the static one when nothing to track). */
     private static volatile AdvancementHolder advancementsHolder;
     private static volatile AdvancementHolder bossesHolder;
+    /** Rebuilt progressive item tiles, with the AP item each one counts. */
+    private static volatile Map<AdvancementHolder, Long> itemHolders = Map.of();
 
     /** Advancements the goal requires this seed, capped at how many actually exist (0 = none). */
     private static volatile int requiredAdvancements;
@@ -81,6 +89,24 @@ public final class RootAdvancementService {
 
         // Bosses tile: one criterion per required boss, named by slug.
         bossesHolder = rebuildTile(manager, BOSSES_ID, requiredBossSlugs(slotData), changed);
+
+        // Progressive item tiles: c0..c{count-1}, one per copy of the item this seed.
+        Map<AdvancementHolder, Long> items = new HashMap<>();
+        AEM.ARCHIPELAGO.client().registries().apTrackers().forEach((id, tracker) -> {
+            if (!APTrackerRegistry.KIND_UNLOCK.equals(tracker.kind()) || tracker.itemId() == null
+                    || tracker.count() <= 1) {
+                return;
+            }
+            List<String> copies = new ArrayList<>();
+            for (int i = 0; i < tracker.count(); i++) {
+                copies.add("c" + i);
+            }
+            AdvancementHolder holder = rebuildTile(manager, Identifier.parse(id), copies, changed);
+            if (holder != null) {
+                items.put(holder, tracker.itemId());
+            }
+        });
+        itemHolders = Map.copyOf(items);
 
         if (changed.isEmpty()) {
             return;
@@ -152,6 +178,7 @@ public final class RootAdvancementService {
         rebuild(server, AEM.ARCHIPELAGO.client().state().parsedSlotData());
         player.getAdvancements().reload(server.getAdvancements());
         syncProgress(player);
+        syncItems(player);
     }
 
     /**
@@ -169,8 +196,17 @@ public final class RootAdvancementService {
         if (server == null) {
             return;
         }
+        reconcile(player, holder, countCompletedAdvancements(server, player));
+    }
+
+
+    /**
+     * Grants exactly the first {@code target} criteria of {@code holder} (capped at how many it has),
+     * revoking any past that. Idempotent, so every caller can simply recompute and call it again.
+     */
+    private static void reconcile(ServerPlayer player, AdvancementHolder holder, int target) {
         List<String> names = new ArrayList<>(holder.value().criteria().keySet());
-        int target = Math.min(countCompletedAdvancements(server, player), names.size());
+        target = Math.min(target, names.size());
         AdvancementProgress progress = player.getAdvancements().getOrStartProgress(holder);
         for (int i = 0; i < names.size(); i++) {
             CriterionProgress criterion = progress.getCriterion(names.get(i));
@@ -196,6 +232,23 @@ public final class RootAdvancementService {
         }
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             syncProgress(player);
+        }
+    }
+
+    /** Reconciles a player's progressive item tiles to the copies the slot has received. */
+    public static void syncItems(ServerPlayer player) {
+        APItemRegistry received = AEM.ARCHIPELAGO.client().registries().apItems();
+        itemHolders.forEach((holder, itemId) -> reconcile(player, holder, received.receivedCount(itemId)));
+    }
+
+    /** {@link #syncItems} for everyone online; items belong to the slot, so every player's tiles move. */
+    public static void syncItemsToAll() {
+        MinecraftServer server = AEMServerRuntime.server();
+        if (server == null) {
+            return;
+        }
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            syncItems(player);
         }
     }
 
