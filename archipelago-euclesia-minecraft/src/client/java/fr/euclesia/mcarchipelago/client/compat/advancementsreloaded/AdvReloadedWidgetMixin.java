@@ -69,7 +69,7 @@ public abstract class AdvReloadedWidgetMixin {
                                             Identifier sprite, int x, int y, int width, int height) {
         Identifier id = advancement == null ? null : advancement.holder().id();
         AdvancementRenderHooks.drawFrame(graphics, pipeline, sprite, x, y, width, height,
-                id == null ? null : AdvancementRenderHooks.frameColor(id), AdvancementRenderHooks.NO_TINT);
+                id, AdvancementRenderHooks.NO_TINT);
     }
 
     /**

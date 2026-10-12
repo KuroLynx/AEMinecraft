@@ -70,7 +70,7 @@ public abstract class BetterAdvWidgetMixin {
                                             Identifier sprite, int x, int y, int width, int height, int color) {
         Identifier id = archipelago_euclesia$id();
         AdvancementRenderHooks.drawFrame(graphics, pipeline, sprite, x, y, width, height,
-                id == null ? null : AdvancementRenderHooks.frameColor(id), color);
+                id, color);
         // The indicator goes on beside the frame, in the coordinates this mod just drew in — the
         // screen's render tail is a different pose, so drawing it there would misplace it.
         HintHoldTracker.drawHold(graphics, id, x, y, TILE_SIZE, TILE_SIZE);

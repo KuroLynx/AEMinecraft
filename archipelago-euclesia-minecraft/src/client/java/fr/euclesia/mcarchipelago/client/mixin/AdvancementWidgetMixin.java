@@ -66,7 +66,8 @@ public abstract class AdvancementWidgetMixin {
                     target = MixinTargets.BLIT_SPRITE_BOX))
     private void archipelago_euclesia$colorFrame(GuiGraphicsExtractor graphics, RenderPipeline pipeline,
                                                  Identifier sprite, int x, int y, int width, int height) {
-        AdvancementRenderHooks.drawFrame(graphics, pipeline, sprite, x, y, width, height, frameColor(),
+        AdvancementRenderHooks.drawFrame(graphics, pipeline, sprite, x, y, width, height,
+                advancementNode == null ? null : advancementNode.holder().id(),
                 AdvancementRenderHooks.NO_TINT);
     }
 
@@ -186,10 +187,5 @@ public abstract class AdvancementWidgetMixin {
             at = @At(value = "INVOKE", target = MixinTargets.DISPLAY_IS_HIDDEN))
     private boolean archipelago_euclesia$alwaysShowHidden(DisplayInfo display) {
         return !AdvancementRenderHooks.forceVisible();
-    }
-
-    /** @return the 0xRRGGBB colour for this advancement, or {@code null} to keep the original frame. */
-    private Integer frameColor() {
-        return advancementNode == null ? null : AdvancementRenderHooks.frameColor(advancementNode.holder().id());
     }
 }
