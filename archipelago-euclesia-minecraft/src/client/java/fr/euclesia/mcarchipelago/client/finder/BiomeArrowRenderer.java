@@ -14,9 +14,8 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * The Biome Finder's guide: three arrowheads floating ahead of the player at waist height, in a row
- * towards the tracked biome and pointing at it. They pulse nearest first, so the row reads as "this
- * way" even at a glance.
+ * The Biome Finder's guide: one arrowhead floating just ahead of the player at waist height, between
+ * them and the tracked biome and pointing at it, with a slow pulse so it catches the eye.
  *
  * <p>Each one is a flat, horizontal quad textured with {@link #TEXTURE}, which resource packs can
  * replace: the texture's top edge points at the target. Drawn translucent, unculled and full-bright
@@ -27,9 +26,9 @@ public final class BiomeArrowRenderer {
     /** {@code assets/aem/textures/misc/biome_finder_arrow.png}; its top edge is the arrow's point. */
     public static final Identifier TEXTURE =
             Identifier.fromNamespaceAndPath(AEM.MOD_ID, "textures/misc/biome_finder_arrow.png");
-    /** Distance (blocks) from the player to each arrowhead's centre. */
-    private static final float[] DISTANCES = {2.2F, 3.6F, 5.0F};
-    /** Each arrowhead is a SIZE×SIZE square of texture, in blocks. */
+    /** Distance (blocks) from the player to the arrowhead's centre. */
+    private static final float DISTANCE = 1.6F;
+    /** The arrowhead is a SIZE×SIZE square of texture, in blocks. */
     private static final float SIZE = 1.4F;
     /** Height above the player's feet: about the waist, between feet and head. */
     private static final float HEIGHT = 0.9F;
@@ -37,7 +36,7 @@ public final class BiomeArrowRenderer {
     private static final double MIN_DISTANCE = 4.0;
     /** Packed block/sky light, both at 15: the arrows glow the same by day, night and underground. */
     private static final int FULL_BRIGHT = 0xF000F0;
-    /** One pulse along the row, in milliseconds. */
+    /** One pulse, in milliseconds. */
     private static final long PULSE_MILLIS = 1200;
 
     private BiomeArrowRenderer() {}
@@ -73,21 +72,18 @@ public final class BiomeArrowRenderer {
         Vec3 camera = context.levelState().cameraRenderState.pos;
         long now = System.currentTimeMillis();
         PoseStack poseStack = context.poseStack();
-        for (int i = 0; i < DISTANCES.length; i++) {
-            float ox = (float) (feet.x + fx * DISTANCES[i] - camera.x);
-            float oy = (float) (feet.y + HEIGHT - camera.y);
-            float oz = (float) (feet.z + fz * DISTANCES[i] - camera.z);
-            int argb = alpha(now, i) << 24 | 0xFFFFFF;
-            context.submitNodeCollector().submitCustomGeometry(poseStack, RenderTypes.entityTranslucent(TEXTURE),
-                    (pose, consumer) -> arrowhead(pose, consumer, ox, oy, oz, fx, fz, rx, rz, argb));
-        }
+        float ox = (float) (feet.x + fx * DISTANCE - camera.x);
+        float oy = (float) (feet.y + HEIGHT - camera.y);
+        float oz = (float) (feet.z + fz * DISTANCE - camera.z);
+        int argb = alpha(now) << 24 | 0xFFFFFF;
+        context.submitNodeCollector().submitCustomGeometry(poseStack, RenderTypes.entityTranslucent(TEXTURE),
+                (pose, consumer) -> arrowhead(pose, consumer, ox, oy, oz, fx, fz, rx, rz, argb));
     }
 
-    /** The arrowheads light up in turn, nearest first, and fade back: a wave running towards the target. */
-    private static int alpha(long now, int index) {
-        float phase = ((now % PULSE_MILLIS) / (float) PULSE_MILLIS - index / (float) DISTANCES.length + 1.0F) % 1.0F;
-        float glow = Math.max(0.0F, 1.0F - phase * 3.0F); // a short bright flash, then rest
-        return (int) (110 + 145 * glow);
+    /** A slow breathe between dim and bright. */
+    private static int alpha(long now) {
+        float wave = 0.5F + 0.5F * (float) Math.sin(2.0 * Math.PI * (now % PULSE_MILLIS) / PULSE_MILLIS);
+        return (int) (150 + 105 * wave);
     }
 
     /** One textured square centred on (ox, oy, oz): the texture's top edge (v = 0) faces forward. */
