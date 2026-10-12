@@ -49,6 +49,8 @@ public final class LogicEvaluation {
     private final Map<String, Boolean> regionReach = new HashMap<>();
     private final Map<String, Boolean> locationReach = new HashMap<>();
     private final Set<Integer> resolvingRefs = new HashSet<>();
+    /** Ref results for the CURRENT reach snapshot; cleared whenever {@link #solve} flips anything. */
+    private final Map<Integer, Boolean> refCache = new HashMap<>();
 
     LogicEvaluation(LogicGraph graph, ItemAvailability items, CheckedLocations checked) {
         this.checked = checked;
@@ -101,17 +103,29 @@ public final class LogicEvaluation {
      * Evaluate a shared subtree behind a {@code ref}. Definitions are acyclic by construction
      * (the exporter only hoists subtrees of the acyclic rule forest), so the guard below is purely
      * defensive: a re-entered id means a cycle slipped through, which resolves to {@code false}
-     * (unreachable) rather than recursing forever. Results are NOT cached — region/location
-     * reachability flips during a {@link #solve} pass, so a ref must re-evaluate each time exactly
-     * like the inlined subtree it replaced.
+     * (unreachable) rather than recursing forever.
+     *
+     * <p>Results ARE cached, but only for the current reach snapshot: a ref reads nothing except the
+     * fixed item counts and the region/location maps, so its value holds until {@link #solve} flips
+     * one of those, which clears the cache. Without this, refs sharing refs re-expand the DAG as a
+     * tree — exponential, and enough to freeze the advancement screen on a glitch-logic seed.
      */
     boolean evalRef(int id) {
         RuleNode definition = graph.definition(id);
-        if (definition == null || !resolvingRefs.add(id)) {
+        if (definition == null) {
+            return false;
+        }
+        Boolean cached = refCache.get(id);
+        if (cached != null) {
+            return cached;
+        }
+        if (!resolvingRefs.add(id)) {
             return false;
         }
         try {
-            return definition.eval(this);
+            boolean result = definition.eval(this);
+            refCache.put(id, result);
+            return result;
         } finally {
             resolvingRefs.remove(id);
         }
@@ -139,6 +153,7 @@ public final class LogicEvaluation {
                             && canReachRegion(from)
                             && edge.rule().eval(this)) {
                         regionReach.put(edge.to(), true);
+                        refCache.clear();
                         changed = true;
                     }
                 }
@@ -149,6 +164,7 @@ public final class LogicEvaluation {
                         && canReachRegion(loc.region())
                         && loc.rule().eval(this)) {
                     locationReach.put(entry.getKey(), true);
+                    refCache.clear();
                     changed = true;
                 }
             }
