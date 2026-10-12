@@ -9,7 +9,7 @@ import net.minecraft.resources.Identifier;
 /**
  * A pick from the Biome Finder screen. Three shapes:
  * <ul>
- *   <li>a biome id, no spot — locate the nearest one and point my compass at it (a legend click);</li>
+ *   <li>a biome id, no spot — locate the nearest one and point my arrows at it (a legend click);</li>
  *   <li>a spot ({@code atSpot}) — point at exactly that x/z (a map click; the server reads the biome
  *       there itself, the id is ignored);</li>
  *   <li>an empty id, no spot — stop tracking (the screen's ✕).</li>

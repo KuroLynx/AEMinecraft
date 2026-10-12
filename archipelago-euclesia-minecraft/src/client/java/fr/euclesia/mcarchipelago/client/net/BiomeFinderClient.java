@@ -112,14 +112,14 @@ public final class BiomeFinderClient {
         }
     }
 
-    /** Sends a pick; the server runs the search and points the HUD tracker bar. */
+    /** Sends a pick; the server runs the search and points the ground arrows (BiomeArrowRenderer). */
     public static void pick(Identifier biomeId) {
         if (ClientPlayNetworking.canSend(BiomeSearchPayload.TYPE)) {
             ClientPlayNetworking.send(BiomeSearchPayload.nearest(biomeId.toString()));
         }
     }
 
-    /** Sends a map click: point the HUD tracker bar at exactly this spot. */
+    /** Sends a map click: point the ground arrows at exactly this spot. */
     public static void pickSpot(int x, int z) {
         if (ClientPlayNetworking.canSend(BiomeSearchPayload.TYPE)) {
             ClientPlayNetworking.send(BiomeSearchPayload.spot(x, z));

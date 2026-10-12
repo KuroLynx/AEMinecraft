@@ -69,8 +69,8 @@ public final class BiomeFinderService {
     }
 
     /**
-     * Stops tracking for every player now standing in the biome they asked for: the compass has done
-     * its job, and keeping it would point at one spot inside a biome you are already in.
+     * Stops tracking for every player now standing in the biome they asked for: the arrows have done
+     * their job, and keeping them would point at one spot inside a biome you are already in.
      */
     private static void checkArrivals(MinecraftServer server) {
         if (++tickCounter % ARRIVAL_CHECK_INTERVAL != 0) {
@@ -201,8 +201,8 @@ public final class BiomeFinderService {
     }
 
     /**
-     * Finds the nearest {@code biomeId} in the player's current dimension and points the HUD
-     * tracker bar at it. On no match within range, leaves the tracker alone and sends a red chat
+     * Finds the nearest {@code biomeId} in the player's current dimension and points the ground
+     * arrows at it. On no match within range, leaves the tracker alone and sends a red chat
      * message. Server thread only.
      */
     public static void search(ServerPlayer player, Identifier biomeId) {

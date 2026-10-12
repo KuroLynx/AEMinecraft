@@ -5,6 +5,7 @@ import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.client.connect.APConnectController;
 import fr.euclesia.mcarchipelago.client.connect.WorldLoadResume;
 import fr.euclesia.mcarchipelago.client.dump.HeadlessWorldDump;
+import fr.euclesia.mcarchipelago.client.finder.BiomeArrowRenderer;
 import fr.euclesia.mcarchipelago.client.finder.StructureFinderBarHud;
 import fr.euclesia.mcarchipelago.client.gui.AEMScreenButtons;
 import fr.euclesia.mcarchipelago.client.gui.BiomeFinderScreen;
@@ -95,10 +96,13 @@ public class AEMClient implements ClientModInitializer {
 				Identifier.fromNamespaceAndPath(AEM.MOD_ID, "connection_status"),
 				new ConnectionStatusHud());
 
-		// Finder bar: a custom locator bar with each revealed structure's icon and the Biome Finder's compass.
+		// Structure Finder: a custom locator bar showing each revealed structure's icon.
 		HudElementRegistry.addLast(
 				Identifier.fromNamespaceAndPath(AEM.MOD_ID, "structure_finder_bar"),
 				new StructureFinderBarHud());
+
+		// Biome Finder: arrows on the ground ahead of you, pointing at the tracked biome.
+		BiomeArrowRenderer.register();
 
 		// Advancement frames are repainted from their own artwork (AdvancementRenderHooks), so a
 		// resource reload — a pack switched on, F3+T — has to throw those repaints away: the sprite
