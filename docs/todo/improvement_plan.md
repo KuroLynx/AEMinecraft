@@ -342,6 +342,29 @@ Desert Well / Trail Ruins unlock and no Brush.
   archaeology tables. Vanilla routes now all carry Brush Handling + copper + a feather; BACAP
   unchanged. selfcheck, reachability, all-options, compile x3, vanilla Generate x3 PASS.
 
+### A15. Honey bottles had no bee route (found checking B3, 2026-10-23)
+Bottling a full hive is hard-coded (BeehiveBlock), so the dump never saw it. Honey bottles' only
+source was the Trial Chamber vault (3/25 per common roll, ~24% per vault), which `_demote` promoted to
+green because nothing else existed.
+- [x] A15 fixed (fix/b-section-leaks e401894): `beehive_bottle` harvest = glass bottle + Bee + a hive.
+  Winnie the Pooh / Sticky Situation strict now need the Bee; the vault is glitch.
+
+### A16. Structure palettes had no chances (found checking B4, 2026-10-23)
+`structures.json` listed every block any template can place. A copper golem statue is in 9 of 297
+camp templates (2-14% of camps), yet Such a poser was green with the camp unlock alone.
+- [x] A16 fixed (fix/b-section-leaks): `JigsawChances` (dump) reads a jigsaw structure's pools and
+  writes `block_chances`; a palette block under 30% is a glitch-only route (`palette_structure`). Packs
+  patched from the jars (scratch mirror of the Java). Non-jigsaw structures (shipwreck, ruined portal,
+  igloo basement...) still read 100%.
+  - **Check (in-game):** `/aem dump structures` on 26.1.2/26.2/26.3 reproduces the committed files.
+
+### A17. Dead coral counted as generating (found checking B8, 2026-10-23)
+Dead coral blocks had no origin, so they read as lying around the Overworld: BACAP Just a sample was
+green with a pickaxe and no Biome Finder. Silk Touch mining also skipped the biome gate (coral
+plants/fans), and the dump listed only coral blocks for the coral features.
+- [x] A17 fixed (fix/b-section-leaks 3d43d01): dead coral is aged living coral; silk mining asks the
+  block's origin; plants/fans/wall fans added to the dump and the 3 block_biomes.json.
+
 ---
 
 ## B. Reported but not bugs — reply to the players
@@ -352,16 +375,16 @@ Desert Well / Trail Ruins unlock and no Brush.
 - [x] B2 (verified 2026-10-23; BACAP's Remnants is "hold a sherd", so Trial Chambers vaults count. The vanilla one was a leak: A14) *Brushed Away* vs *Respecting the Remnants*: sherds drop from Trial Chamber pots/vaults
   without a brush, while a brush needs Brush Handling + copper (Material Handling ×2) + a feather.
   Villages do count as a feather source. Out of logic means one of the first two was missing.
-- [x] B3 (verified 2026-10-23: strict = Trial Chambers + Structure Finder) *Winnie the Pooh* / *Sticky Situation*: Trial Chamber spawners reward honey bottles, so no
+- [x] B3 (2026-10-23: half right; vault honey is ~24%/vault, and there was no bee route -> A15) *Winnie the Pooh* / *Sticky Situation*: Trial Chamber spawners reward honey bottles, so no
   bees are needed.
-- [x] B4 (verified 2026-10-23: all 18 camp palettes have the statue) *Such a poser* without Copper Golem: on 26.3, abandoned camps generate copper golem statues.
+- [x] B4 (2026-10-23: the reporter was right; statue in 2-14% of camps -> A16) *Such a poser* without Copper Golem: on 26.3, abandoned camps generate copper golem statues.
   Confirm the statue is in the camp palette (`packs/minecraft_26_3/structures.json`). If it isn't,
   it becomes a leak in A13.
 - [x] B5 (verified 2026-10-23 on Cherry Bomb: strict needs Biome Finder, glitch doesn't) "Craft every X wood" yellow vs green: rare-biome woods (jungle, dark oak, mangrove, cherry,
   pale oak, acacia, …) need the Biome Finder in strict logic. Glitch waives
   the Finder, so they show yellow. Verify on one: `why_rule.py "<cherry wood advancement>"`.
 - [x] B6 (2026-10-23: strict routes are Turtle + Armor Handling, or Buried Treasure + Fishing) Marine Marauder: becomes yellow-only through guardians once A1 lands.
-- [x] B8 (verified 2026-10-23: Pickaxe Handling alone) *Just a sample* with only a pickaxe: the advancement accepts dead coral too, and a coral
+- [x] B8 (2026-10-23: BACAP-only; dead coral drop is right, but logic skipped the Warm Ocean -> A17) *Just a sample* with only a pickaxe: the advancement accepts dead coral too, and a coral
   block mined without Silk Touch drops a dead coral block. See A6.
 - [x] B7 (verified 2026-10-23: strict needs the Ender Dragon unlock + End) *Noxious Fumes* / *Gas!*: the reporter was right. They now need the End (brewing with
   dragon's breath) for green, and Trial Chamber dispensers (14%) only make them yellow. See A3.
