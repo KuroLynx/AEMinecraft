@@ -231,8 +231,11 @@ _EFFECT_SOURCE = {
     # Riding a tamed nautilus is what lets you breathe on its back.
     "minecraft:breath_of_the_nautilus": lambda c: _tamed(c, "nautilus"),
     "minecraft:conduit_power": lambda c: _get(c, "conduit"),
-    # A shrieker darkens you whether or not its Warden may spawn.
-    "minecraft:darkness": lambda c: c._any_opt(c._struct_gid("minecraft:ancient_city"), _mob(c, "warden")),
+    # A shrieker darkens you whether or not its Warden may spawn, and shriekers generate in every Deep
+    # Dark, not only its Ancient Cities. Finding that biome is the Biome Finder's job, like any biome.
+    "minecraft:darkness": lambda c: c._any_opt(
+        c._struct_gid("minecraft:ancient_city"), _mob(c, "warden"),
+        and_(c.h.access_region(REGION_OVERWORLD), c.h.strict_only(c.h.needs_biome_finder()))),
     "minecraft:dolphins_grace": lambda c: _mob(c, "dolphin"),
     "minecraft:fire_resistance": lambda c: c._any_opt(_get(c, "enchanted_golden_apple"), _stew(c, "allium")),
     "minecraft:glowing": lambda c: c._all_req(_get(c, "spectral_arrow"), _get(c, "bow", "crossbow")),
