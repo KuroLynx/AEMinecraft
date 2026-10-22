@@ -215,6 +215,17 @@ public final class HeadlessWorldDump {
                 .resolve(PackDump.basePackFolder());
         List<String> summary = new ArrayList<>();
         try {
+            // The content-pack files, per loaded source pack, exactly as /aem dump writes them.
+            Set<String> packFiles = new java.util.HashSet<>(targets);
+            packFiles.retainAll(PackDump.FILES);
+            if (!packFiles.isEmpty()) {
+                String packs = PackDump.run(server.getResourceManager(),
+                        FabricLoader.getInstance().getGameDir().resolve("aem"), packFiles);
+                if (packs.startsWith("Dump failed")) {
+                    throw new IllegalStateException(packs);
+                }
+                summary.add(packs);
+            }
             if (targets.contains(ENTITIES)) {
                 summary.add(write(packDir, "entities.json", EntitiesDump.build(server), "entities"));
             }

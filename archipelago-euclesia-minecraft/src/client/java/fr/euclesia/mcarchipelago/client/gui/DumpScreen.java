@@ -13,7 +13,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.packs.resources.CloseableResourceManager;
 import net.minecraft.util.Util;
 
 import java.nio.file.Files;
@@ -26,9 +25,10 @@ import java.util.Set;
 /**
  * Content-pack dump panel — pick which source datapacks to fold in and dump every content-pack file
  * for them to {@code <gameDir>/aem/}, from the title menu with no connection. There is no per-file
- * choice: a content pack is only usable whole. The world-free files are read through a standalone
- * {@link DumpDataSource} resource manager on a background thread; entities/containers need a live
- * world, so a throwaway one is created for them ({@link HeadlessWorldDump}).
+ * choice: a content pack is only usable whole. Every file is dumped inside a throwaway world
+ * ({@link HeadlessWorldDump}) loaded with the ticked datapacks: entities/containers need a live
+ * server, and block_mining asks real item stacks which tools work, which needs the item components
+ * a world binds (on the title screen it threw "Components not bound yet").
  *
  * <p>Layout, top to bottom: a bordered, scrollable datapack list styled like the vanilla pack-select
  * screen (icon + title + description, click a row to toggle inclusion, selected rows highlighted);
@@ -43,8 +43,7 @@ public final class DumpScreen extends Screen {
     private static final int VISIBLE_PACK_ROWS = 4;
     private static final int TITLE_SPACE = 16;
 
-    /** The registries that are not {@link PackDump} files: they need a live world, so they are dumped
-     *  via a throwaway one ({@link HeadlessWorldDump}), created once for both. */
+    /** The registries that are not {@link PackDump} files, dumped in the same throwaway world. */
     private static final List<String> WORLD_FILES =
             List.of(HeadlessWorldDump.ENTITIES, HeadlessWorldDump.CONTAINERS);
 
@@ -75,7 +74,6 @@ public final class DumpScreen extends Screen {
 
     private Button dumpButton;
     private volatile String status = "";
-    private volatile boolean running;
 
     public DumpScreen(Screen parent) {
         super(Minecraft.getInstance(), Minecraft.getInstance().font, Component.translatable("gui.aem.dump.title"));
@@ -201,46 +199,16 @@ public final class DumpScreen extends Screen {
     }
 
     private void dump() {
-        if (running) {
+        if (HeadlessWorldDump.isRunning()) {
             return;
         }
-        // The world-free files dump here on a background thread; entities/containers go to the headless
-        // dump, which leaves this screen for a throwaway world and returns once done. (The raw datapack
-        // copy stays a /aem dump command only: nothing reads it, and it is the whole data tree.)
-        // The headless world starts only once the pack files are written: it leaves this screen, and a
-        // pack dump that failed meanwhile had nowhere left to say so.
-        runPackDump(Set.copyOf(PackDump.FILES), failed -> {
-            if (!failed && !HeadlessWorldDump.isRunning()) {
-                status = Component.translatable("gui.aem.dump.running").getString();
-                HeadlessWorldDump.request(parent, sourceDir, Set.copyOf(WORLD_FILES), Set.copyOf(selectedPackIds));
-            }
-        });
-    }
-
-    private void runPackDump(Set<String> selected, java.util.function.Consumer<Boolean> then) {
-        running = true;
-        dumpButton.active = false;
+        // One throwaway world for everything; it leaves this screen and comes back with the result.
+        // (The raw datapack copy stays a /aem dump command only: nothing reads it, and it is the whole
+        // data tree.)
+        Set<String> files = new LinkedHashSet<>(PackDump.FILES);
+        files.addAll(WORLD_FILES);
         status = Component.translatable("gui.aem.dump.running").getString();
-        Set<String> packIds = Set.copyOf(selectedPackIds);
-        new Thread(() -> {
-            String result;
-            try (CloseableResourceManager rm = DumpDataSource.openServerData(sourceDir, packIds)) {
-                result = PackDump.run(rm, dumpDir, selected);
-            } catch (Exception exception) {
-                AEM.LOGGER.warn("Pack dump failed", exception);
-                result = "failed: " + exception;
-            }
-            String message = result;
-            boolean failed = result.startsWith("Dump failed") || result.startsWith("failed:");
-            this.minecraft.execute(() -> {
-                status = message;
-                running = false;
-                if (dumpButton != null) {
-                    dumpButton.active = true;
-                }
-                then.accept(failed);
-            });
-        }, "aem-pack-dump").start();
+        HeadlessWorldDump.request(parent, sourceDir, Set.copyOf(files), Set.copyOf(selectedPackIds));
     }
 
     // -- rendering ----------------------------------------------------------
