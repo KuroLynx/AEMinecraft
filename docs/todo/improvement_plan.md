@@ -18,7 +18,7 @@ python tools/why_rule.py [--mc 26.3] [--without "<item>"] "<advancement name pre
 ---
 
 > **Resume here (2026-10-22, evening):** A1–A11 done and merged into `release/v0.7.0` (unpushed).
-> A11 done too. A8–A11 only ran their own **Check** lines: their
+> A11 and A12 (list form) done too; A12b (structure tags) and A11b (fail loudly) are new. A8–A12 only ran their own **Check** lines: their
 > regression + Generate runs are deferred to one pass at the end of section A (see Z).
 >
 > Found while checking A7 (fixed, `fix/glitch-cycle-depth`, merged): the "stalled" check was a
@@ -256,11 +256,40 @@ them. Find out why: content lookup, overlay merge, or id normalisation. Then aud
 Boatception's glitch route `Nether + Fishing + Bastion` is a separate oddity in the same predicate
 (`vehicle.location.structures`). Fix it here too.
 
-- [ ] A12 fixed
+- [x] A12 fixed for list-form predicates (fix/structure-location-26-3, 2026-10-22). The cause: the
+  26.3 BACAP pack writes `location.structures` as a LIST, and `_location` read only a string, so a
+  list pinned nothing. Now an OR of its structures. Atlantis? and Boatception need their unlocks on
+  26.1.2/26.2/26.3. Ahoy! is not done: it uses a structure TAG, see A12b.
   - **Check:** `why_rule.py --mc 26.3 "Atlantis" "Ahoy" "Boatception"`: every route has the matching
     Structure Unlock. The same on 26.1.2 and 26.2.
   - **Check:** a throwaway loop over every manifest advancement with `location.structures` compares
     26.1.2 against 26.3 and finds no route that drops its structure unlock.
+
+### A12b. Structure tags in location predicates are unpriced
+The 26.3 BACAP pack also writes structure TAGS: `#minecraft:shipwreck` (Ahoy!, Titanic, Raidin'
+Master), `#minecraft:ruined_portal` (Ancient Restoration, From Whence It Came!, Now You're Thinking
+With Portals, Raidin' Master), `#minecraft:abandoned_camp` (Raidin' Master). `_location` only knows
+village tags, so any other tag reads UNKNOWN and the advancement falls back to its parent's rule.
+Ahoy! currently routes through Atlantis?'s ocean ruins.
+
+Fix: dump `worldgen/structure` tags into `tags.json` (PackDump, `structure` key; needs an in-game
+re-dump on all 3 versions) and resolve a tag to the OR of its members in `_location`.
+
+- [ ] A12b fixed
+  - **Check:** `why_rule.py --mc 26.3 "Ahoy" "Titanic" "From Whence It Came"`: every route has the
+    tag's Structure Unlock (Shipwreck / Shipwreck Beached, a Ruined Portal variant).
+
+### A11b. The compiler fails loudly on input it can't read (decided 2026-10-22)
+A12 and A12b are the same class of bug: a predicate field in a shape the compiler doesn't handle (a
+list where it expected a string, a tag where it expected an id) was silently skipped, and the
+advancement became free or fell back to its parent. Every reader in `criteria.py` should raise on a
+shape it doesn't understand, instead of returning None. A new pack format then breaks generation
+loudly in the audit, not quietly in a player's seed.
+
+- [ ] A11b done
+  - **Check:** `tools/audit_predicate_coverage.py` + a compile of every manifest (vanilla + BACAP
+    packs) on 26.1.2/26.2/26.3 raises nothing; a deliberately malformed predicate (a list for a
+    string field) raises with the advancement and field path in the message.
 
 ### A13. Group biome variants of a structure into one unlock (decided 2026-10-22)
 26.3 has one Abandoned Camp per biome (18 items), and every version splits villages (5), ruined
