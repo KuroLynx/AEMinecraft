@@ -101,8 +101,12 @@ public final class PackDump {
                 done.add(dumpPack(pack, namespaces, outDir.resolve(folder), folder, ns, source, selected));
             }
         } catch (Exception exception) {
+            // Logged, not only returned: the dump screen moves on to the headless world dump, and a
+            // failure that lived only in its status line went unseen (no pack file was rewritten).
+            AEM.LOGGER.warn("Pack dump failed after {}", done, exception);
             return "Dump failed: " + exception;
         }
+        AEM.LOGGER.info("Pack dump: {}", String.join(" | ", done));
         return String.join(" | ", done);
     }
 
