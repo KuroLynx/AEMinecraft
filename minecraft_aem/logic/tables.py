@@ -190,12 +190,73 @@ _PROJECTILE_SHOOTERS = (
     "minecraft:breeze",
 )
 
-# A few status effects with a non-brewing environmental source (the rest are gated on brewing in
-# _effects_node). Each maps the effect id to a builder taking the compiler -> a Rule (or None).
+# Effect -> the potion types that give it, where the potion isn't named after the effect. Every other
+# effect whose id is a brewing.json type (poison, water_breathing, …) is its own potion.
+_EFFECT_POTIONS = {
+    "speed": ("swiftness",),
+    "jump_boost": ("leaping",),
+    "slowness": ("slowness", "turtle_master"),
+    "resistance": ("turtle_master",),
+}
+
+
+def _get(c, *items):
+    """Any one of these items, acquired."""
+    return c._any_opt(*[c.h.acquire(f"minecraft:{i}") for i in items])
+
+
+def _stew(c, flower):
+    """A suspicious stew made with this flower — the flower picks the effect."""
+    return c._all_req(c.h.acquire("minecraft:suspicious_stew"), c.h.acquire(f"minecraft:{flower}"))
+
+
+def _mob(c, *mobs):
+    return c._any_opt(*[c._entity_gid(f"minecraft:{m}") for m in mobs])
+
+
+def _tamed(c, mob):
+    name = c._entity_by_path.get(mob)
+    return c.h.can_tame(name) if name in c.content.MOBS_TAMEABLE else None
+
+
+# Status effects from something other than a potion. _price_effect ORs each with the effect's potions
+# (_EFFECT_POTIONS / brewing.json), so a builder lists only the non-brewing sources. An effect missing
+# from here AND from the brewing table falls back to "a brewing stand", which is what used to hand
+# Hero of the Village and water breathing out for a brewing stand alone: keep every effect an
+# advancement names in this table or the brewing table.
 _EFFECT_SOURCE = {
-    "minecraft:levitation": lambda c: c._entity_gid("minecraft:shulker"),
-    "minecraft:dolphins_grace": lambda c: c._entity_gid("minecraft:dolphin"),
-    "minecraft:conduit_power": lambda c: c.h.acquire("minecraft:conduit"),
+    "minecraft:absorption": lambda c: _get(c, "golden_apple", "enchanted_golden_apple"),
+    "minecraft:bad_omen": lambda c: _get(c, "ominous_bottle"),
+    "minecraft:blindness": lambda c: _stew(c, "azure_bluet"),
+    # Riding a tamed nautilus is what lets you breathe on its back.
+    "minecraft:breath_of_the_nautilus": lambda c: _tamed(c, "nautilus"),
+    "minecraft:conduit_power": lambda c: _get(c, "conduit"),
+    # A shrieker darkens you whether or not its Warden may spawn.
+    "minecraft:darkness": lambda c: c._any_opt(c._struct_gid("minecraft:ancient_city"), _mob(c, "warden")),
+    "minecraft:dolphins_grace": lambda c: _mob(c, "dolphin"),
+    "minecraft:fire_resistance": lambda c: c._any_opt(_get(c, "enchanted_golden_apple"), _stew(c, "allium")),
+    "minecraft:glowing": lambda c: c._all_req(_get(c, "spectral_arrow"), _get(c, "bow", "crossbow")),
+    "minecraft:haste": lambda c: _get(c, "beacon"),
+    "minecraft:hero_of_the_village": lambda c: c.h.can_win_raid(),
+    "minecraft:hunger": lambda c: c._any_opt(_get(c, "rotten_flesh"), _mob(c, "husk")),
+    "minecraft:jump_boost": lambda c: c._any_opt(_get(c, "beacon"), _stew(c, "cornflower")),
+    "minecraft:levitation": lambda c: _mob(c, "shulker"),
+    "minecraft:mining_fatigue": lambda c: _mob(c, "elder_guardian"),
+    "minecraft:nausea": lambda c: _get(c, "pufferfish"),
+    "minecraft:night_vision": lambda c: _stew(c, "poppy"),
+    "minecraft:poison": lambda c: c._any_opt(_get(c, "spider_eye", "pufferfish"), _mob(c, "cave_spider", "bee"),
+                                             _stew(c, "lily_of_the_valley")),
+    "minecraft:raid_omen": lambda c: c.h.can_raid(),
+    "minecraft:regeneration": lambda c: c._any_opt(_get(c, "golden_apple", "beacon"), _stew(c, "oxeye_daisy")),
+    "minecraft:resistance": lambda c: _get(c, "enchanted_golden_apple", "beacon", "totem_of_undying"),
+    "minecraft:saturation": lambda c: c._any_opt(_stew(c, "dandelion"), _stew(c, "blue_orchid")),
+    "minecraft:slowness": lambda c: _mob(c, "stray"),
+    "minecraft:speed": lambda c: _get(c, "beacon"),
+    "minecraft:strength": lambda c: _get(c, "beacon"),
+    "minecraft:trial_omen": lambda c: c._all_req(c._struct_gid("minecraft:trial_chambers"), _get(c, "ominous_bottle")),
+    "minecraft:water_breathing": lambda c: _get(c, "turtle_helmet", "conduit"),
+    "minecraft:weakness": lambda c: _stew(c, "white_tulip"),
+    "minecraft:wither": lambda c: c._any_opt(_mob(c, "wither_skeleton", "wither"), _get(c, "wither_rose")),
 }
 
 # Custom counter stats whose real prerequisite is simply obtaining an item (the count isn't a logic

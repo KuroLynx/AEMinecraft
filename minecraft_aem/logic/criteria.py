@@ -42,6 +42,7 @@ from .tables import (
     _CUSTOM_STAT_TRIVIAL,
     _DAMAGE_TAG_GATE,
     _DIMENSION_REGION,
+    _EFFECT_POTIONS,
     _EFFECT_SOURCE,
     _ENCHANT_LOOT_SOURCE,
     _EQUIPMENT_SLOTS,
@@ -970,9 +971,15 @@ class CriteriaCompiler:
         return node
 
     def _price_effect(self, effect):
+        effect = _ns(effect)
         source = _EFFECT_SOURCE.get(effect)
-        node = source(self) if source is not None else None
-        return node if node is not None else self._price_brew_stand()
+        potions = _EFFECT_POTIONS.get(_path(effect), (_path(effect),))
+        node = self._any_opt(source(self) if source is not None else None,
+                             *[self._price_potion(p) for p in potions
+                               if _reagent_routes(self.content, p) is not None])
+        if node is None and source is None:
+            return self._price_brew_stand()   # an effect neither table knows (a mod's): at least a brew
+        return node
 
     def _price_brew_stand(self):
         return self.h.all_of(self.h.acquire("minecraft:brewing_stand"), self.h.knowledge(K_BREWING))
