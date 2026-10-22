@@ -615,7 +615,9 @@ read of the mod code. **Done** = already behaves as the report asks. **Open** = 
   ancestor.
 - [ ] F37 **Goal tiles gray only on their own count.** Open: `DataLogicProvider` grays a goal tile once
   enough targets are *reached* (checked), so a release / collect / another client checks without
-  earning ("Advancements" read done at 325/350). Gray only when the tile's own count is complete.
+  earning ("Advancements" read done at 325/350). Gray only when the tile's own (earned) count is
+  complete; enough checked but not enough earned is **blue** (COLLECTED), like a per-location tile
+  that was released/collected. Same for the Bosses tile.
 - [ ] F38 **Inventory buttons.** To verify in-game: with the Biome Finder the third button sticks out of
   the window, and the recipe book moves the window but not the buttons. Fix: a row along the top
   edge that follows the window.
