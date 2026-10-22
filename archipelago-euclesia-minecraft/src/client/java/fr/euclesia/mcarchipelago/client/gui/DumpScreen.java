@@ -207,14 +207,17 @@ public final class DumpScreen extends Screen {
         // The world-free files dump here on a background thread; entities/containers go to the headless
         // dump, which leaves this screen for a throwaway world and returns once done. (The raw datapack
         // copy stays a /aem dump command only: nothing reads it, and it is the whole data tree.)
-        runPackDump(Set.copyOf(PackDump.FILES));
-        if (!HeadlessWorldDump.isRunning()) {
-            status = Component.translatable("gui.aem.dump.running").getString();
-            HeadlessWorldDump.request(parent, sourceDir, Set.copyOf(WORLD_FILES), Set.copyOf(selectedPackIds));
-        }
+        // The headless world starts only once the pack files are written: it leaves this screen, and a
+        // pack dump that failed meanwhile had nowhere left to say so.
+        runPackDump(Set.copyOf(PackDump.FILES), failed -> {
+            if (!failed && !HeadlessWorldDump.isRunning()) {
+                status = Component.translatable("gui.aem.dump.running").getString();
+                HeadlessWorldDump.request(parent, sourceDir, Set.copyOf(WORLD_FILES), Set.copyOf(selectedPackIds));
+            }
+        });
     }
 
-    private void runPackDump(Set<String> selected) {
+    private void runPackDump(Set<String> selected, java.util.function.Consumer<Boolean> then) {
         running = true;
         dumpButton.active = false;
         status = Component.translatable("gui.aem.dump.running").getString();
@@ -228,12 +231,14 @@ public final class DumpScreen extends Screen {
                 result = "failed: " + exception;
             }
             String message = result;
+            boolean failed = result.startsWith("Dump failed") || result.startsWith("failed:");
             this.minecraft.execute(() -> {
                 status = message;
                 running = false;
                 if (dumpButton != null) {
                     dumpButton.active = true;
                 }
+                then.accept(failed);
             });
         }, "aem-pack-dump").start();
     }
