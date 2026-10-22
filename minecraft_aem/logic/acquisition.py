@@ -67,6 +67,8 @@ _GAMEPLAY_HARVEST: dict[str, tuple] = {
 }
 # A harvest table named differently from the block it is picked off.
 _HARVEST_BLOCK = {"cave_vine": "cave_vines"}
+# A harvest that only grows back while a mob works the block: a hive fills with honey from its bees.
+_HARVEST_MOB = {"beehive": E_BEE}
 
 # Lazily-loaded acquisition table (tools/build_acquisition.py) + reverse id lookups. Cached because
 # they are read once per generation but queried thousands of times by the trigger compiler; cached per
@@ -2228,6 +2230,8 @@ class RuleHelper:
         if harvest is not None:
             region, needs_shears = harvest
             grows = self.all_of(self.access_region(region), self._natural_origin(_HARVEST_BLOCK.get(table, table)))
+            if table in _HARVEST_MOB:
+                grows = self.all_of(grows, self.entity(_HARVEST_MOB[table]))
             if needs_shears:
                 shears = self.acquire("minecraft:shears")
                 if shears is None:
