@@ -17,10 +17,21 @@ python tools/why_rule.py [--mc 26.3] [--without "<item>"] "<advancement name pre
 
 ---
 
-> **Resume here (2026-10-22):** A1–A6 done (A3 redone with a new `_demote` rule, A6 not a bug).
-> A7 is on `fix/happy-ghast-origin`, waiting on its checks. A8 root cause is found (see A8).
-> Tool note: `why_rule.py --routes 0` no longer expands routes; that expansion is combinatorial on
-> big rules (raids, every-effect advancements) and made checks look stalled.
+> **Resume here (2026-10-22, evening):** A1–A11 done and merged into `release/v0.7.0` (unpushed).
+> A11 done too. A8–A11 only ran their own **Check** lines: their
+> regression + Generate runs are deferred to one pass at the end of section A (see Z).
+>
+> Found while checking A7 (fixed, `fix/glitch-cycle-depth`, merged): the "stalled" check was a
+> segfault. Glitch prices on a dependency cycle nested every fixed-point round inside the next (824
+> levels on BACAP), and `why_rule.py` evaluated them unmemoised. Cycle members are now named price
+> refs (`{"k":"price"}`, export `prices` table, solved as a least fixed point in Java and Python):
+> depth 22, BACAP export 5.5 MB → 1.7 MB. **Needs a mod jar rebuild** (an old jar can't read
+> `price` nodes). The same work made `creaking_heart` a natural self-mined block (the resin cycle had
+> no grounding; 26.3 strict resin no longer needs a Mansion).
+>
+> Tool notes: `why_rule.py` now reads its knock-out verdict from the export, like the mod
+> (region-aware; glitch = the mod's yellow). `--routes 0` skips route expansion. It only matches
+> names starting with "Advancement: ". Run heavy jobs one at a time.
 
 ## A. Logic leaks (apworld)
 
@@ -146,12 +157,11 @@ piglin bartering, or crafting it from ghast tears + soul sand: all Nether.
 Fix: the happy ghast's spawn route is `acquire(dried_ghast)` + water + its unlock. It has no natural
 spawn and no biome. Check whether `entities.json` gives it one.
 
-- [ ] A7 fixed — IN PROGRESS: fix on branch `fix/happy-ghast-origin` (bd47fc0, pushed, NOT merged).
-  Done: Overworld start without the Nether → all 7 advancements strict=False glitch=False on
-  26.1.2/26.2/26.3; Nether start without the Overworld → Lead Zeppelin + Stay Hydrated! out on 26.1.2.
-  TODO before merging: the Nether-start check on every advancement × 3 versions (it stalled on
-  26.1.2 at 15:21, 2026-10-22, aborted; find out why), then selfcheck/reachability/all-options +
-  full Generate x3.
+- [x] A7 fixed (fix/happy-ghast-origin bd47fc0, merged 3c024df, 2026-10-22: Overworld start without
+  the Nether → all strict=False glitch=False on 26.1.2/26.2/26.3; Nether start without the Overworld,
+  every advancement × 3 versions → Hot Air Balloon, Lead Zeppelin, Pillow Fight, Snow Cone?, Stay
+  Hydrated! all out (the stall was the glitch-depth bug above); selfcheck, reachability, all-options,
+  full Generate x3 both starts PASS)
   - **Check:** `why_rule.py --without "Dimension Unlock: Nether"` on "Lead Zeppelin", "Hot Air
     Balloon", "Follow the Leader", "Test Flight", "Who Needs Elytra", "Big Blimp", "Pillow Fight" and
     "Snow Cone" → all false (or reached through soul sand from an Ancient City, if that counts).
@@ -173,7 +183,9 @@ Fix: classify by need. An Entity/Structure Unlock that gives a **reliable** (≥
 source for an item some location needs becomes progression. That is a two-pass derive: build rules
 treating every unlock as progression, then mark the unlocks those rules use.
 
-- [ ] A8 fixed
+- [x] A8 fixed (fix/flimsy-unlock-drops, merged afffc1d, 2026-10-22: the 4 conditions and both sets
+  deleted, odds alone decide; checks pass on 26.1.2/26.2/26.3. Classification is unchanged, so the
+  third check doesn't apply. Regression + Generate deferred to Z)
   - **Check:** `why_rule.py "Help! I've been framed"`: a strict route `@Overworld + Entity Unlock:
     Cow` (or Donkey, Horse, Llama) exists.
   - **Check:** `why_rule.py "A Masterpiece"`: a strict route with `Entity Unlock: Spider` exists.
@@ -189,7 +201,11 @@ one.
 Fix: derive a `can_wear_head` set in `EntitiesDump` (don't curate it) and use it for the subject of
 any `equipment.head` predicate. The route also needs a dispenser (or the mob's own pickup).
 
-- [ ] A9 fixed
+- [x] A9 fixed (fix/trick-or-treat + fix/wear-head-dump, merged bb3c6bb, 2026-10-22: EntitiesDump
+  derives `can_wear_head` = canEquipWithDispenser(carved pumpkin) over 32 spawned samples at Hard
+  (zombies/skeletons only roll canPickUpLoot in finalizeSpawn); re-dumped in-game on all 3 versions →
+  13 wearers (zombie + skeleton families, piglin, piglin brute, villager); the route also needs a
+  dispenser; 80 routes per version, every one through a wearer. Regression + Generate deferred to Z)
   - **Check:** `why_rule.py "Trick or Treat"`: every route's mob is a head-wearing mob, and no Cow,
     Pufferfish or Camel Husk.
 
@@ -202,7 +218,11 @@ ages (plain → exposed → weathered → oxidized) by waiting.
 Fix: add weathering and scraping edges from the game's `WeatheringCopper` / `HoneycombItem` maps
 (dump them), with the axe gate on scraping.
 
-- [ ] A10 fixed
+- [x] A10 fixed (fix/lighten-up, merged 0bb16a1, 2026-10-22: scraping derived from the waxing recipes
+  (X + honeycomb → waxed_X, reversed with an axe), and a craftable aged block now also comes from
+  its plain form + waiting; no new dump needed. Without the Nether: strict=True via Trial Chambers +
+  Axe + Pickaxe on 26.1.2/26.2/26.3. Lighting takes a lever, already covered. Regression + Generate
+  deferred to Z)
   - **Check:** `why_rule.py --without "Dimension Unlock: Nether" "Lighten Up"` → strict=True via
     Trial Chambers + Axe Handling (+ redstone).
 
@@ -213,7 +233,16 @@ elder guardians, which only make it harder (mining fatigue). The gate presumably
 monument's boss gate (`_STRUCTURE_BOSS_GATES`) being applied to *placed blocks*, not only to the
 boss itself.
 
-- [ ] A11 fixed
+- [x] A11 fixed (fix/sponge-miner, 2026-10-22). The cause is NOT the boss gate: Sponge Miner
+  wants 64 sponges (bulk mode), which drops finite sources (the monument's wet sponge blocks) when a
+  renewable one exists, and the elder guardian's drop counted as renewable. Elder guardians and
+  piglin brutes are placed once by their structure and never respawn, so their drops now run dry
+  (`_GENERATED_ONCE_MOBS`; not derivable: Java structure pieces place them, not datapack data).
+  Also: a wet sponge placed in the Nether dries on the spot (new source, no furnace), and the new
+  A10/A11 routes now keep their ingredients' dry/loose marks (`_route`), so a stack still prefers an
+  honest route over them. Without the unlock: strict=True via the monument (Nether drying, or a
+  furnace) on 26.1.2/26.2/26.3; "Kill Boss: Elder Guardian" still needs it on all three.
+  Regression + Generate deferred to Z.
   - **Check:** `why_rule.py --without "Entity Unlock: Elder Guardian" "Sponge Miner"` → strict=True.
   - **Check:** "Boss Kill: Elder Guardian" still needs the unlock.
 
@@ -291,7 +320,7 @@ New option **`structure_variant`** (`structure_variant: 'true' / 'false'`, defau
 ## C. New logic options (decided 2026-10-22)
 
 - [ ] C1 **New option `combat_logic`** (decided 2026-10-22). A `Toggle` written
-  `combat_logic: 'true' / 'false'`, the twin of `exploration_logic` (C2). Default `false`; add it to
+  `combat_logic: 'true' / 'false'`, the twin of `exploration_logic` (C2). Default `true` (`false` keeps today's behaviour); add it to
   `template.yaml`. The reporter believed it was already handled: raids, Trial Chambers and hard kills
   were in logic with copper tools, no weapon and no armor slots. Today logic asks for none of that.
   - `true`: a **hard fight** is in logic only once you have **a weapon**, **food**, and **armor
@@ -313,8 +342,8 @@ New option **`structure_variant`** (`structure_variant: 'true' / 'false'`, defau
   - **Check:** a BACAP `Generate.py` with both on passes on 26.1.2 and 26.3. The gate moves progression
     earlier, so watch for fill failures.
 - [ ] C2 **New option `exploration_logic`** (decided 2026-10-22). It's a `Toggle` in `options.py`,
-  written `exploration_logic: 'true' / 'false'` in the YAML like `glitch_logic`. Default `false`
-  (today's behaviour). Add it to `template.yaml` too.
+  written `exploration_logic: 'true' / 'false'` in the YAML like `glitch_logic`. Default `true`
+  (`false` keeps today's behaviour). Add it to `template.yaml` too.
   - `true`: an exploration advancement is in logic only once you have **one reliable food source**
     **and** **≥1 inventory slot**.
   - **Exploration advancement** (derived, not curated): every criterion is a `location`-type visit
@@ -410,6 +439,11 @@ behaviour, `DeathLinkService.applyRemote`) or **all** of them. It's a `/aem deat
 ## Z. Final verification (run when everything above is ticked)
 
 - [ ] Every **Check** line above re-run on the final branch, on `--mc 26.1.2`, `--mc 26.2` **and** `--mc 26.3`.
+- [ ] Deferred from A8–A11 (each only ran its own Check): selfcheck, reachability, all-options and
+      full Generate x3 × both starts, once, on `release/v0.7.0` after section A. Run them one at a
+      time: six parallel fills nearly took the machine down.
+- [ ] Mod jar rebuilt for the glitch price refs and checked in-game: yellow tiles still appear on a
+      glitch-logic seed.
 - [ ] `python tools/logic_selfcheck.py` passes.
 - [ ] `python tools/verify_all_options.py` passes (no dead locks).
 - [ ] `python tools/verify_reachability.py` passes.
