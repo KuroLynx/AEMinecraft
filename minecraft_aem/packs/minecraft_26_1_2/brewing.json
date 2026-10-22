@@ -20,5 +20,9 @@
   "wind_charged": ["nether_wart", "breeze_rod"],
   "weaving": ["nether_wart", "cobweb"],
   "oozing": ["nether_wart", "slime_block"],
-  "infested": ["nether_wart", "stone"]
+  "infested": ["nether_wart", "stone"],
+  "containers": {
+    "splash_potion": ["potion", "gunpowder"],
+    "lingering_potion": ["splash_potion", "dragon_breath"]
+  }
 }
