@@ -586,9 +586,11 @@ public final class PackDump {
             "minecraft:pale_moss", "pale_hanging_moss",
             "minecraft:creaking_heart", "creaking_heart");
 
-    /** Feature types that place blocks in code, with no block state in their config. */
-    private static final List<String> CORAL_BLOCKS = List.of("tube_coral_block", "brain_coral_block",
-            "bubble_coral_block", "fire_coral_block", "horn_coral_block");
+    /** Feature types that place blocks in code, with no block state in their config. A coral feature
+     *  lays the blocks and puts a plant or fan (#corals) on top and wall fans on the sides (CoralFeature). */
+    private static final List<String> CORAL_BLOCKS = java.util.stream.Stream.of("tube", "brain", "bubble", "fire", "horn")
+            .flatMap(c -> java.util.stream.Stream.of(c + "_coral_block", c + "_coral", c + "_coral_fan", c + "_coral_wall_fan"))
+            .toList();
 
     private static final Map<String, List<String>> FEATURE_TYPE_BLOCKS = Map.ofEntries(
             Map.entry("minecraft:bamboo", List.of("bamboo", "podzol")),

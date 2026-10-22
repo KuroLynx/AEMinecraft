@@ -375,7 +375,11 @@ _STRUCTURE_POT_SHERDS: dict[str, str] = {
 def _aged_source(content, block: str) -> str | None:
     """The plain item an aged copper block weathered FROM (``exposed_copper_bars`` ->
     ``minecraft:copper_bars``), or ``None`` when the block is not an aged form of something the
-    acquisition table knows. See ``_AGING_PREFIXES``."""
+    acquisition table knows. See ``_AGING_PREFIXES``. Dead coral is aged the same way: living coral
+    dies out of water, and no dead coral generates (``dead_tube_coral_block`` -> ``tube_coral_block``)."""
+    if block.startswith("dead_") and "coral" in block:
+        plain = block.removeprefix("dead_")
+        return f"minecraft:{plain}" if plain in _acquisition_table(content) else None
     for prefix in _AGING_PREFIXES:
         if block.startswith(prefix):
             plain = block[len(prefix):]
@@ -1837,6 +1841,12 @@ class RuleHelper:
             # region/tier as a normal mine PLUS the capability to silk-touch (enchant). Always behind
             # the silk gate, so it is never a free path even when the block is placed-only.
             node = self._mining_node(block, base, silk=True)
+            if node is not None:
+                # Where the block is: a rare-biome one (coral) takes finding its biome, and a dead coral
+                # fan only exists once a living one died, so it takes the living one.
+                origin = (self._block_origin_node(block) if _aged_source(self.content, block) is not None
+                          else self._natural_origin(block))
+                node = None if origin is None else self._route(origin, node)
             if node is not None:
                 add(node, unreliable("silk_mining", block), chance=chance("silk_mining", block))
         trades = record.get("trades", ())
