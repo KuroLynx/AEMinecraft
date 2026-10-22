@@ -698,12 +698,11 @@ class RuleHelper:
                 self.structure(S_MINESHAFT),
                 self.strict_only(self.needs_biome_finder()),
             ),
-            # Likewise none: a happy ghast comes from a dried ghast, which is Soul Sand Valley — or
-            # Piglin bartering, so the finder is only needed without that path.
-            E_HAPPY_GHAST: lambda: self.any_of(
-                self.can_barter(),
-                self.strict_only(self.needs_biome_finder()),
-            ),
+            # Likewise none: a happy ghast grows from a dried ghast left in water (the Overworld
+            # region it is listed under). The dried ghast is the whole cost, and every one of its
+            # sources is Nether-side (fossils, bartering, ghast tears + soul sand) — the old
+            # "Biome Finder" branch named the Soul Sand Valley but never asked for the Nether.
+            E_HAPPY_GHAST: lambda: self.acquire("minecraft:dried_ghast"),
         })
         if not self.content.BIOME_BOUND_MOBS:
             # A content pack dumped before `biomes` existed says nothing about spawn biomes, and
