@@ -122,6 +122,10 @@ class MCMobData:
     # a boss summoned — which is NOT the same claim as "spawns anywhere". Absent in a pack dumped
     # before the field existed, which reads the same as empty; see data.BIOME_BOUND_MOBS.
     biomes: tuple[str, ...] = ()
+    # A dispenser can put a head item on it (EntitiesDump's `can_wear_head`): who can be the subject
+    # of an equipment.head predicate. Absent in a pack dumped before the field existed, which reads
+    # as True: no restriction, the behaviour before the field.
+    can_wear_head: bool = True
     # No unlock_classification: an Entity Unlock is always a logic gate, and whether it rises from
     # progression_skip_balancing to full progression depends on the seed (does it gate a goal boss?),
     # so it is computed at item creation — see MCWorld._mob_classification — exactly like structures.
@@ -385,6 +389,7 @@ def _load_entities(pack_dir) -> dict[str, MCMobData]:
             leashable=bool(row["leashable"]),
             game_id=game_id if ":" in game_id else f"minecraft:{game_id}",
             biomes=tuple(row.get("biomes") or ()),
+            can_wear_head=bool(row.get("can_wear_head", True)),
         )
     return mobs
 
