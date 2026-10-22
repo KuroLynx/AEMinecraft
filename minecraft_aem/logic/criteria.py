@@ -127,6 +127,12 @@ def _path(gid) -> str:
     return gid.rsplit(":", 1)[-1] if isinstance(gid, str) else gid
 
 
+def _is_ominous_banner(slot, item_pred) -> bool:
+    """A head slot pinned to a patterned banner: how vanilla spells "a raid captain"."""
+    return (slot == "head" and isinstance(item_pred, dict)
+            and "minecraft:banner_patterns" in (item_pred.get("components") or {}))
+
+
 def _ns(gid: str) -> str:
     return gid if ":" in gid else f"minecraft:{gid}"
 
@@ -191,7 +197,8 @@ TRIGGERS: dict[str, dict] = {
     "used_ender_eye": {"implied": [_item("minecraft:ender_eye")]},
     "crafter_recipe_crafted": {"implied": [_item("minecraft:crafter")], "ignore": {"recipe_id", "ingredients"}},
     "hero_of_the_village": {"implied": [_call("can_win_raid")]},
-    "voluntary_exile": {"implied": [need("entity_id", "minecraft:pillager"), _call("any_village")]},
+    # Fires when Raid Omen becomes a raid (Raid.absorbRaidOmen), so it is the raid gate itself.
+    "voluntary_exile": {"implied": [_call("can_raid")]},
     "avoid_vibration": {"implied": [need("structure_id", "minecraft:ancient_city")]},
     # Fires on stepping out of the Nether INTO the Overworld (ServerPlayer.triggerDimensionChangeTriggers).
     "nether_travel": {"implied": [need("region", REGION_NETHER), need("enter", REGION_OVERWORLD)],
@@ -285,7 +292,7 @@ _LOCATION_FREE = {"fluid", "light", "smokey", "can_see_sky"}   # a threshold you
 _ITEM_KEYS = {"items", "count", "components", "predicates"}
 _COMPONENTS = {"potion_contents", "enchantments", "stored_enchantments", "trim", "container",
                "bundle_contents", "jukebox_playable"}
-_TYPE_SPECIFIC_KEYS = {"type", "advancements", "stats", "has_raid", "looking_at"}
+_TYPE_SPECIFIC_KEYS = {"type", "advancements", "stats", "has_raid", "is_captain", "looking_at"}
 _TYPE_SPECIFIC_SKIP = {"gamemode", "level", "recipes", "input", "food"}
 
 # Projectile entities that are fired from a differently named item.
@@ -583,7 +590,10 @@ class CriteriaCompiler:
             self._entity_type(gid, role),
             self._location(pred.get("location"), f"{path}.location"),
             self._location(pred.get("stepping_on"), f"{path}.stepping_on"),
-            *[self._item(v, f"{path}.equipment") or UNKNOWN for k, v in equipment.items() if k in _EQUIPMENT_SLOTS],
+            *[self._item(v, f"{path}.equipment") or UNKNOWN for k, v in equipment.items()
+              if k in _EQUIPMENT_SLOTS and not (role != "self" and _is_ominous_banner(k, v))],
+            # Someone else wearing the ominous banner is a raid captain: only pillagers and raids make one.
+            _call("raid_captain") if role != "self" and _is_ominous_banner("head", equipment.get("head")) else None,
             # Wearing / holding it is what needs the slot (inventory_lock) — only on YOU: a raid
             # captain's banner or a zombie's armor is on someone else's.
             *[need("slot", _SLOT_GROUP[k]) for k in equipment if role == "self" and k in _SLOT_GROUP],
@@ -762,6 +772,7 @@ class CriteriaCompiler:
             return None
         self._check(ts, _TYPE_SPECIFIC_KEYS | _TYPE_SPECIFIC_SKIP, path)
         parts = [_call("can_raid") if ts.get("has_raid") is True else None,
+                 _call("raid_captain") if ts.get("is_captain") is True else None,
                  self._entity(ts.get("looking_at"), "entity", f"{path}.looking_at")]
         for gid, wanted in (ts.get("advancements") or {}).items():
             if wanted is not False:
