@@ -1,0 +1,422 @@
+# Improvement plan — player reports (docs/todo/improvement.txt)
+
+Investigated 2026-10-22 on `release/v0.7.0` (a2f0a5f). Every logic item below was reproduced (or
+ruled out) with `tools/why_rule.py`. It prints a rule's cheapest requirement sets, strict and glitch,
+under the heaviest lock config, and `--without X` drops one item from the full pool to check that a
+gate is really required.
+
+The reporters were on **26.3**: abandoned camps only exist there. Every **Check** runs on all three
+versions: `--mc 26.1.2`, `--mc 26.2` and `--mc 26.3`.
+
+How to use this file: one branch per section (or per tightly-related group). Tick an item only once
+its **Check** passes. When everything is ticked, run the final section.
+
+```
+python tools/why_rule.py [--mc 26.3] [--without "<item>"] "<advancement name prefix>" ...
+```
+
+---
+
+> **Resume here (2026-10-22):** A1–A6 done (A3 redone with a new `_demote` rule, A6 not a bug).
+> A7 is on `fix/happy-ghast-origin`, waiting on its checks. A8 root cause is found (see A8).
+> Tool note: `why_rule.py --routes 0` no longer expands routes; that expansion is combinatorial on
+> big rules (raids, every-effect advancements) and made checks look stalled.
+
+## A. Logic leaks (apworld)
+
+### A1. Status effects default to "own a brewing stand" — biggest root cause
+`criteria.py::_price_effect` falls back to `_price_brew_stand()` for every effect that is not one of
+the 3 in `tables.py::_EFFECT_SOURCE` (levitation, dolphins_grace, conduit_power). It never asks for
+the potion's reagent, or for the effect's real source.
+- BACAP *Hero of the Village* is `effects_changed: hero_of_the_village`. Today: Brewing + a village,
+  with no raid mobs at all.
+- *Marine Marauder* is water breathing. Today: Brewing + a village, with no pufferfish, turtle or
+  conduit.
+- The same goes for every other effect advancement (How Did We Get Here?, A Much More Doable
+  Challenge, …).
+
+Fix: give each effect its real sources.
+- Potion effects: OR over the potion types that carry the effect, priced with `_price_potion`
+  (reagent routes from brewing.json).
+- Non-brewing sources, added to `_EFFECT_SOURCE`:
+  - hero_of_the_village → `can_win_raid`
+  - raid_omen → `can_raid`
+  - bad_omen → kill a captain / ominous bottle
+  - trial_omen → ominous bottle + Trial Chambers
+  - water_breathing → turtle helmet / conduit
+  - mining_fatigue → Elder Guardian
+  - darkness → Warden / shrieker
+  - wither → wither skeleton / wither rose
+  - poison / hunger / … → their mobs and foods
+- Keep `_price_brew_stand` only as the last resort, and make the audit below list every effect that
+  still lands on it.
+
+- [x] A1 fixed (fix/effect-sources, 2026-10-22: knock-outs + audit pass on 26.1.2/26.2/26.3; selfcheck, reachability, all-options, full Generate x3 PASS)
+  - **Check:** `why_rule.py "Hero of the Village"`: every strict route contains Pillager, Vindicator,
+    Evoker, Witch and Ravager, plus Villager and a village. Same on `--mc 26.3`.
+  - **Check:** `why_rule.py "Marine Marauder"`: every route needs Pufferfish (or Fishing), Turtle
+    (helmet) or a conduit, and none is "Brewing + village" alone. A guardian's rare pufferfish drop
+    may appear as a **glitch** route only, which is the yellow the reporter expected.
+  - **Check:** a throwaway loop over every effect named in all manifests prints which ones still fall
+    back to brew-stand-only. Each one left is justified, or fixed.
+
+### A2. Raids: logic must mirror the mod's raid gate
+The mod refuses Bad Omen → Raid Omen while any of the 5 raid mobs is locked
+(`BadOmenMobEffectMixin`). `can_raid` / `can_win_raid` already ask for that, and vanilla
+`hero_of_the_village` uses it. The BACAP raid advancements don't:
+- Hero of the Village (effect): fixed by A1.
+- *War is Coming* (raid_omen effect): fixed by A1.
+- *We're being attacked!* (`minecraft:voluntary_exile` trigger = a raid starting) → `can_raid`.
+- *I've got a bad feeling about this* (kill an `is_captain` raider): captains are pillagers (outpost
+  or patrol) or a raid's wave leader. The Witch route (`@Overworld + Entity Unlock: Witch`) is a leak.
+
+- [x] A2 fixed (fix/raid-logic, 2026-10-22: knock-outs pass on 26.1.2/26.2/26.3, vanilla + BACAP Voluntary Exile; selfcheck, reachability, all-options, full Generate x3 PASS)
+  - **Check:** `--without "Entity Unlock: Ravager"` → strict=False and glitch=False for "Hero of the
+    Village", "War is Coming" and "We're being attacked".
+  - **Check:** the strict routes for "Voluntary Exile" no longer include a Witch-only route.
+
+### A3. Lingering potions: a 14% dispenser counted as green
+Trial Chamber **dispensers** (`dispensers/trial_chambers/chamber`) hold lingering potions at 14%,
+below the 30% limit. They stayed green for two reasons. Brewing (splash = potion + gunpowder,
+lingering = splash + dragon's breath) wasn't a source at all, and `_demote` kept low-chance routes
+whenever the dependable one left the start dimension.
+
+Fix (decided 2026-10-22):
+- `_demote`: any dependable route wins alone. With none, only the highest-odds low-chance route(s)
+  stay green. The start-dimension exception is deleted.
+- Brewing steps live in `brewing.json` `containers`. They are dumped from 26.3's brewing recipes
+  (`PackDump.brewing`) and written by hand for 26.1.2/26.2. A water bottle counts as a `potion`.
+
+- [x] A3 fixed (fix/potion-brewing-sources b5e83b9, 2026-10-22: without the End, Noxious Fumes and
+  Gas! are strict=False, glitch=True on 26.1.2/26.2/26.3; selfcheck, reachability, all-options, full
+  Generate x3 incl. Nether starts PASS; mod compiles on all 3)
+  - **Check:** `why_rule.py --without "Dimension Unlock: The End" "Noxious Fumes" "Gas!"` →
+    strict=False, glitch=True.
+  - **Check (in-game, later):** re-run `/aem dump brewing` on 26.3 and diff it against the committed
+    `brewing.json` (the `containers` section was derived from the jar by script).
+
+### A4. The tipped arrow recipe forgets its potion
+`tipped_arrow` has `recipes: [{ingredients: [arrow], station: crafting_imbue}]`, without the
+lingering potion. *Imbued Projectiles* (`recipe_crafted tipped_arrow`) therefore costs only an arrow.
+That is why it was oddly yellow: glitch routes like "Parrot" alone.
+
+Fix: the imbue recipe takes `lingering_potion` + `arrow` (in the dumper, or in the recipe node for
+`crafting_imbue`).
+
+- [x] A4 fixed (fix/tipped-arrow-recipe, 2026-10-22: dump reads imbue `source`; 3 packs patched; checks pass on 26.1.2/26.2/26.3; selfcheck, reachability, all-options, full Generate x3, compile x3 PASS; confirm with an in-game re-dump later)
+  - **Check:** `why_rule.py "Imbued Projectiles"`: every route carries a lingering-potion source
+    (Trial Chambers for the dispensers, or the End for dragon's breath). No route like "Parrot" or
+    "Villager + Trust" alone is left.
+  - **Check:** `why_rule.py --without "Structure Unlock: Trial Chambers" --without "Dimension Unlock:
+    The End" "Imbued Projectiles"` → strict=False and glitch=False.
+
+### A5. Bees: honey and honeycomb don't need bees
+- `honeycomb` has `gameplay: beehive` (shear a full hive), priced without the Bee.
+- *Bee Our Guest* (smoke + bottle a **full** hive) has strict routes with no Bee: shears + pickaxe,
+  or a stronghold.
+- Not a bug: *Winnie the Pooh* and *Sticky Situation* come from honey bottles in Trial Chamber
+  spawner rewards (`honey_bottle: structures trial_chambers`). That is a real bee-less route.
+
+Fix: the `beehive` gameplay source and the "full hive" block predicate both require
+`entity(Bee)`.
+
+- [x] A5 fixed (fix/bee-gates, 2026-10-22: hive harvest needs Bee; smokey = campfire + Bee; checks pass on 26.1.2/26.2/26.3; selfcheck, reachability, all-options, full Generate x3 PASS)
+  - **Check:** `why_rule.py --without "Entity Unlock: Bee" "Bee Our Guest"` → strict=False and
+    glitch=False.
+  - **Check:** "Winnie the Pooh" still shows its Trial Chambers route (unchanged on purpose).
+
+### A6. ~~Coral blocks drop themselves without Silk Touch~~ NOT A BUG (checked 2026-10-22)
+*Just a sample* has one requirement group that accepts **any** of 30 coral items, **dead coral blocks
+included**. Mining a coral block with a plain pickaxe drops a dead coral block, so "Pickaxe Handling"
+alone is correct. Living coral is correctly Silk-Touch-only: `acquire(tube_coral)` needs Silk Touch.
+
+The silk audit found no leak either. The acquisition dump files entry-level Silk Touch drops
+(`alternatives` children, 47 blocks on 26.1.2/26.2) under `mining`, not `silk_mining`. But the logic
+gates mining through `block_mining.json`'s per-item `drops` tags (`_drop_tool_node`), and every
+genuinely Silk-only drop is tagged `silk` on 26.1.2, 26.2 and 26.3. On 26.3 the condition is the
+named predicate `minecraft:tool/can_silk_touch`, which the in-game dump reads.
+
+- [x] A6 closed as not-a-bug. Reply in B8.
+
+### A7. The Happy Ghast is reachable without the Nether
+*Lead Zeppelin* has the strict route `@Overworld + Biome Finder + Entity Unlock: Happy Ghast`. A
+happy ghast only exists by growing a dried ghast in water. A dried ghast comes from Nether fossils,
+piglin bartering, or crafting it from ghast tears + soul sand: all Nether.
+
+Fix: the happy ghast's spawn route is `acquire(dried_ghast)` + water + its unlock. It has no natural
+spawn and no biome. Check whether `entities.json` gives it one.
+
+- [ ] A7 fixed — IN PROGRESS: fix on branch `fix/happy-ghast-origin` (bd47fc0, pushed, NOT merged).
+  Done: Overworld start without the Nether → all 7 advancements strict=False glitch=False on
+  26.1.2/26.2/26.3; Nether start without the Overworld → Lead Zeppelin + Stay Hydrated! out on 26.1.2.
+  TODO before merging: the Nether-start check on every advancement × 3 versions (it stalled on
+  26.1.2 at 15:21, 2026-10-22, aborted; find out why), then selfcheck/reachability/all-options +
+  full Generate x3.
+  - **Check:** `why_rule.py --without "Dimension Unlock: Nether"` on "Lead Zeppelin", "Hot Air
+    Balloon", "Follow the Leader", "Test Flight", "Who Needs Elytra", "Big Blimp", "Pillow Fight" and
+    "Snow Cone" → all false (or reached through soul sand from an Ancient City, if that counts).
+
+### A8. Mob drops and loot of non-progression unlocks fall to yellow only
+**Root cause found (2026-10-22):** `acquisition.py` marks a drop/loot route flimsy when the unlock
+isn't FULL `progression` (`name not in self.progression_mobs` / `progression_structures`, 4 call
+sites). But every Entity/Structure Unlock is at least `progression_skip_balancing`, which IS
+progression for fill (it's only excluded from balancing). Fix: delete those 4 conditions plus the
+two sets, and let odds alone decide (30% rule). The classification two-pass below is not needed.
+
+`acquisition.py` (drops loop) marks a drop *flimsy* when `name not in self.progression_mobs`. The
+same goes for structure loot and `progression_structures`. Unlocks are classified per seed, so a cow
+or spider that nothing else "needs" makes its leather or string glitch-only. That is why *Help! I've
+been framed!* (leather) and *A Masterpiece!* (string → wool) show yellow even with donkeys or spiders
+unlocked. The strict graph lists no Cow, Donkey or Spider route at all.
+
+Fix: classify by need. An Entity/Structure Unlock that gives a **reliable** (≥ `_GLITCH_CHANCE`)
+source for an item some location needs becomes progression. That is a two-pass derive: build rules
+treating every unlock as progression, then mark the unlocks those rules use.
+
+- [ ] A8 fixed
+  - **Check:** `why_rule.py "Help! I've been framed"`: a strict route `@Overworld + Entity Unlock:
+    Cow` (or Donkey, Horse, Llama) exists.
+  - **Check:** `why_rule.py "A Masterpiece"`: a strict route with `Entity Unlock: Spider` exists.
+  - **Check:** the item-pool classification counts are printed before/after (progression count goes
+    up), and BACAP Generate still passes (see Z).
+
+### A9. Trick or Treat accepts any mob
+`trick_or_treat` = kill an entity wearing a carved pumpkin. Routes like `Cow + Pillager Outpost` or
+`Pufferfish + Mansion` show the equipment predicate is priced as "carved pumpkin + any mob". Only
+mobs with a head slot that a dispenser can equip (zombies, skeletons, piglins and friends) can wear
+one.
+
+Fix: derive a `can_wear_head` set in `EntitiesDump` (don't curate it) and use it for the subject of
+any `equipment.head` predicate. The route also needs a dispenser (or the mob's own pickup).
+
+- [ ] A9 fixed
+  - **Check:** `why_rule.py "Trick or Treat"`: every route's mob is a head-wearing mob, and no Cow,
+    Pufferfish or Camel Husk.
+
+### A10. Lighten Up is too strict: oxidation and wax scraping are missing
+*Bulbous!* is legit: Trial Chambers have `waxed_copper_bulb`. *Lighten Up* needs a lit
+exposed/weathered/oxidized bulb plus an axe, and its only routes are crafted bulbs (blaze rod →
+Nether). Logic is missing two transforms: an axe scrapes wax off (waxed → plain), and plain copper
+ages (plain → exposed → weathered → oxidized) by waiting.
+
+Fix: add weathering and scraping edges from the game's `WeatheringCopper` / `HoneycombItem` maps
+(dump them), with the axe gate on scraping.
+
+- [ ] A10 fixed
+  - **Check:** `why_rule.py --without "Dimension Unlock: Nether" "Lighten Up"` → strict=True via
+    Trial Chambers + Axe Handling (+ redstone).
+
+### A11. Sponge Miner needs the Elder Guardian unlock
+Every route asks for `Entity Unlock: Elder Guardian`. Wet sponge rooms are part of the monument.
+Mining them needs the monument, a pickaxe (or nothing) and some way to breathe. It doesn't need the
+elder guardians, which only make it harder (mining fatigue). The gate presumably comes from the
+monument's boss gate (`_STRUCTURE_BOSS_GATES`) being applied to *placed blocks*, not only to the
+boss itself.
+
+- [ ] A11 fixed
+  - **Check:** `why_rule.py --without "Entity Unlock: Elder Guardian" "Sponge Miner"` → strict=True.
+  - **Check:** "Boss Kill: Elder Guardian" still needs the unlock.
+
+### A12. 26.3: structure-location advancements are free
+On 26.3, *Atlantis?*, *Ahoy!* and *Boatception* are `@Overworld` only. On 26.1.2 they correctly need
+the Ocean Ruin / Shipwreck unlocks. The structure ids are the same in both `structures.json`, so the
+26.3 path through `criteria.py::_location` (`structures` predicate → `need("structure_id")`) loses
+them. Find out why: content lookup, overlay merge, or id normalisation. Then audit every
+`location.structures` advancement on 26.3.
+
+Boatception's glitch route `Nether + Fishing + Bastion` is a separate oddity in the same predicate
+(`vehicle.location.structures`). Fix it here too.
+
+- [ ] A12 fixed
+  - **Check:** `why_rule.py --mc 26.3 "Atlantis" "Ahoy" "Boatception"`: every route has the matching
+    Structure Unlock. The same on 26.1.2 and 26.2.
+  - **Check:** a throwaway loop over every manifest advancement with `location.structures` compares
+    26.1.2 against 26.3 and finds no route that drops its structure unlock.
+
+### A13. Group biome variants of a structure into one unlock (decided 2026-10-22)
+26.3 has one Abandoned Camp per biome (18 items), and every version splits villages (5), ruined
+portals (7), ocean ruins, shipwrecks, mineshafts and so on.
+
+New option **`structure_variant`** (`structure_variant: 'true' / 'false'`, default **`false`**), a
+`Toggle` in `options.py` + `template.yaml`:
+- `false` (default): structures that differ only by biome share **one** unlock item, e.g.
+  `Structure Unlock: Village` (plains/desert/savanna/snowy/taiga), `Structure Unlock: Ruined Portal`
+  (all 7), `Structure Unlock: Abandoned Camp` (all 18), `Ocean Ruin` (cold/warm),
+  `Shipwreck` (+ beached), `Mineshaft` (+ mesa). One item unlocks every variant.
+- `true`: today's behaviour, one item per structure.
+- **Grouping is derived, not curated**: a group is structures whose ids share a base and differ by a
+  biome suffix. Add a `group` field to `structures.json` (or derive it in the overlay merge), so
+  content packs can join a group too. List the derived groups for 26.1.2/26.2/26.3 in the PR and
+  review them by hand once.
+- Logic: `structure(name)` asks for the group's item when grouping is on. Location/advancement names
+  stay per structure. The mod's structure registry maps every member id to the group item (slot data
+  carries the mapping, so the mod needs no option of its own).
+
+- [ ] A13 fixed
+  - **Check:** `structure_variant: false` on 26.3: AP item names contain exactly one
+    `Structure Unlock: Abandoned Camp`, one `Village`, one `Ruined Portal`. `true` → the per-biome
+    items as today.
+  - **Check:** `why_rule.py --mc 26.3 "Such a poser"` routes through `Structure Unlock: Abandoned
+    Camp` (grouped) and `--without` it → strict=False.
+  - **Check:** pool size: the item count drops by the grouped members, and `verify_all_options.py`
+    + full Generate pass with both values on all 3 versions.
+  - **Check (in-game):** receiving the grouped item places camps in two different biomes.
+
+---
+
+## B. Reported but not bugs — reply to the players
+
+- [ ] B1 *Direct Fishing* (kill a cod/salmon/…): bare hands work, so no Sword or Fishing is needed.
+  It needs the fish unlock only. (Verified: `--without "Knowledge: Sword Handling"` → still true,
+  correctly.)
+- [ ] B2 *Brushed Away* vs *Respecting the Remnants*: sherds drop from Trial Chamber pots/vaults
+  without a brush, while a brush needs Brush Handling + copper (Material Handling ×2) + a feather.
+  Villages do count as a feather source. Out of logic means one of the first two was missing.
+- [ ] B3 *Winnie the Pooh* / *Sticky Situation*: Trial Chamber spawners reward honey bottles, so no
+  bees are needed.
+- [ ] B4 *Such a poser* without Copper Golem: on 26.3, abandoned camps generate copper golem statues.
+  Confirm the statue is in the camp palette (`packs/minecraft_26_3/structures.json`). If it isn't,
+  it becomes a leak in A13.
+- [ ] B5 "Craft every X wood" yellow vs green: rare-biome woods (jungle, dark oak, mangrove, cherry,
+  pale oak, acacia, …) need the Biome Finder in strict logic. Glitch waives
+  the Finder, so they show yellow. Verify on one: `why_rule.py "<cherry wood advancement>"`.
+- [ ] B6 Marine Marauder: becomes yellow-only through guardians once A1 lands.
+- [ ] B8 *Just a sample* with only a pickaxe: the advancement accepts dead coral too, and a coral
+  block mined without Silk Touch drops a dead coral block. See A6.
+- [ ] B7 *Noxious Fumes* / *Gas!*: the reporter was right. They now need the End (brewing with
+  dragon's breath) for green, and Trial Chamber dispensers (14%) only make them yellow. See A3.
+
+---
+
+## C. New logic options (decided 2026-10-22)
+
+- [ ] C1 **New option `combat_logic`** (decided 2026-10-22). A `Toggle` written
+  `combat_logic: 'true' / 'false'`, the twin of `exploration_logic` (C2). Default `false`; add it to
+  `template.yaml`. The reporter believed it was already handled: raids, Trial Chambers and hard kills
+  were in logic with copper tools, no weapon and no armor slots. Today logic asks for none of that.
+  - `true`: a **hard fight** is in logic only once you have **a weapon**, **food**, and **armor
+    you can wear**.
+  - **Hard fight** (derived from the rule, not a list of names): any location whose rule goes through
+    `can_raid` / `can_win_raid`, the Trial Chambers' ominous vault / Trial Omen, or the defeat of a
+    boss (`can_defeat` of Wither, Warden, Elder Guardian, Ender Dragon, plus any boss in `boss_list`).
+    The gate goes on those helpers themselves. Every location that reaches them inherits it, including
+    item routes like raid gifts, and nothing else changes.
+  - **Weapon:** Sword Handling or Axe Handling, plus Progressive Material Handling ≥ the iron tier.
+  - **Food:** the same `can_get_food()` helper as C2.
+  - **Armor:** when `inventory_lock` locks armor slots, ≥2 armor slots (helmet + chestplate). Otherwise
+    this part folds away.
+  - Strict graph only. The glitch graph ignores it, so these read yellow instead of red.
+  - **Check:** `why_rule.py --opt combat_logic=1 "Hero of the Village" "Under Lock and Key"` plus a
+    Wither and a Warden kill: every strict route has Sword/Axe Handling + the iron Material tier + the
+    food gate. `false` → output identical to before.
+  - **Check:** `verify_all_options.py` with both C1 and C2 on passes, on both starts.
+  - **Check:** a BACAP `Generate.py` with both on passes on 26.1.2 and 26.3. The gate moves progression
+    earlier, so watch for fill failures.
+- [ ] C2 **New option `exploration_logic`** (decided 2026-10-22). It's a `Toggle` in `options.py`,
+  written `exploration_logic: 'true' / 'false'` in the YAML like `glitch_logic`. Default `false`
+  (today's behaviour). Add it to `template.yaml` too.
+  - `true`: an exploration advancement is in logic only once you have **one reliable food source**
+    **and** **≥1 inventory slot**.
+  - **Exploration advancement** (derived, not curated): every criterion is a `location`-type visit
+    (biome / structure / dimension / position, e.g. Atlantis?, Ahoy!, Adventuring Time). Advancements
+    that also need an item or kill are not included. They already need the Structure Finder / Biome
+    Finder in strict logic. That stays, and this gate is added on top of it.
+  - **Reliable food:** Hoe Handling (crops), or one passive food-mob unlock (cow, pig, chicken, sheep,
+    rabbit, mooshroom, cod, salmon). Built as a `can_get_food()` helper, shared with C1.
+  - **Inventory slot:** only when `inventory_lock` is enabled; otherwise the clause folds away.
+  - Strict graph only. The glitch graph (yellow) ignores it, so a tile still reads yellow instead of
+    red.
+  - **Check:** `why_rule.py --opt exploration_logic=1 "Atlantis"`: every strict route keeps its
+    Structure Finder / Structure Unlock and adds the food gate (and an `Inventory Slot` once `inventory_lock` is on). `false` → routes identical to
+    before (diff the output).
+  - **Check:** `verify_all_options.py` with the option on passes (no dead lock on a Nether start).
+
+---
+
+## D. Mod (Java)
+
+### D1. Raid feedback
+The Bad Omen hold is silent. When `BadOmenMobEffectMixin` holds a raid, tell the player once per Bad
+Omen (throttled): "A raid can't start until these are unlocked: Ravager, Evoker, …", naming the ones
+still locked.
+- [ ] D1 done. **Check (in-game):** drink an ominous bottle in a village with a raid mob locked → one
+  chat line listing exactly the locked raid mobs, with no spam each tick.
+
+### D2. Dispensers equip armor into locked armor slots
+The inventory-lock mixins cover the ArmorSlot, `Equippable.swapWithEquipmentSlot`, the swap keys and
+offhand. They don't cover `EquipmentDispenseItemBehavior.dispenseEquipment` → `setItemSlot` on a
+player. Block it when the target is a player and the slot is locked (the item stays in the
+dispenser / drops as normal).
+- [ ] D2 done. **Check (in-game):** a locked armor slot plus a dispenser firing a helmet at you leaves
+  the slot empty. Unlocked, it equips. `tools/check_mixin_targets.py` passes on all 3 versions.
+
+### D3. XP still drops with keep inventory
+`KeepInventoryService` deliberately leaves XP alone. Make XP follow the kept share: 100%
+(active/progressive at max) keeps all XP like the gamerule does, and partial keeps the same share
+(the rest drops).
+- [ ] D3 done. **Check (in-game):** `keep_inventory: active` → die with levels, respawn with the same
+  levels, and no orbs dropped. Progressive at 50% → about half kept.
+
+### D4. Mineshaft unlock lagged the server
+"362 instance(s) queued for rebuild", then maxed CPU and `Trying to mark a block for post processing
+… not supported` spam. The pre-connect hypothesis is already handled: until slot data arrives,
+everything counts as locked (`StructureLockService.isStructureLocked` → `isAwaitingSlot`). Mineshafts
+generated before connecting were suppressed and are rebuilt now, which is correct. The cost is the
+rebuild itself:
+- `StructurePlacementQueue.Rebuild.step` places chunks of each start. Mineshafts span many chunks,
+  and placing into unloaded chunks forces chunk loads/generation on the server thread. The "at least
+  one per tick" rule then ignores the 2 ms budget.
+- Each piece's post-processing marks hit `ServerLevel` (unsupported, so a WARN per block). The
+  logging alone is costly, and fences/rails are left un-updated.
+
+Fix:
+1. Only place chunks that are loaded. Defer the rest to a chunk-load hook. A far-away mineshaft is
+   then rebuilt when someone gets there, never as a sync load.
+2. Measure the budget against the real per-chunk cost.
+3. Route post-processing marks to the chunk, or apply the shape update directly, so the WARN is gone.
+
+- [ ] D4 done.
+  - **Check (in-game, dedicated server):** pre-generate a large area before connecting, then
+    `/send` Structure Unlock: Mineshaft. MSPT stays under 50 (use `/tick query`), and the log has no
+    post-processing WARN.
+  - **Check (in-game):** walking into a far mineshaft's chunk shows it built, with connected
+    fences/rails.
+
+### D5. DeathLink mode for multiplayer servers
+Add a server-side setting: an incoming DeathLink kills **one random** living player (current
+behaviour, `DeathLinkService.applyRemote`) or **all** of them. It's a `/aem deathlink` sub-command persisted like the other server preferences
+(see `DeathLinkPreference`).
+- [ ] D5 done. **Check (in-game, 2 clients):** in `random` mode a bounce kills exactly one player;
+  in `all` mode it kills both. The setting survives a restart.
+
+---
+
+## E. "Will work on later" (quality of life, no rush)
+
+- [ ] E1 **Why is this in logic?** Tooltip line on an advancement tile: the first satisfied route,
+  humanised ("Trial Chambers + Pickaxe Handling"). The client already evaluates the rule
+  (LogicEvaluation). Walk the satisfied OR branch and collect its Has/region leaves, the same idea as
+  `tools/why_rule.py`. **Check:** the tooltip names the unlocks that make it green, and it matches
+  `why_rule.py`.
+- [ ] E2 **Hinted at a glance + into-logic alert.** Add a marker on hinted tiles and a count badge on
+  tabs. Send a chat line when a hinted location turns green (client-side transition, once per
+  location). **Check:** hint a location → marker + badge. Receive its unlock → one chat line.
+- [ ] E3 **Biome Finder: cycle targets.** A "next" control on the pick screen (or re-pick on the
+  map) moves to the next-nearest instance of the same biome, so the server search skips the previous
+  targets. **Check:** with two Cherry Groves, "next" points at the second one.
+
+---
+
+## Z. Final verification (run when everything above is ticked)
+
+- [ ] Every **Check** line above re-run on the final branch, on `--mc 26.1.2`, `--mc 26.2` **and** `--mc 26.3`.
+- [ ] `python tools/logic_selfcheck.py` passes.
+- [ ] `python tools/verify_all_options.py` passes (no dead locks).
+- [ ] `python tools/verify_reachability.py` passes.
+- [ ] `python tools/audit_bare_rules.py`: the backlog count is not higher than before (28 on 26.3 /
+      32 on 26.1.2).
+- [ ] Full `Generate.py` with the verify YAMLs **plus** BACAP, Overworld and
+      Nether starts, on 26.1.2, 26.2 and 26.3.
+- [ ] `gradlew build` for all 3 Stonecutter versions + `tools/check_mixin_targets.py`.
+- [ ] In-game pass: D1–D5 (+ E items done), on a hosted test seed.
+- [ ] Reply to the reporters with the B section.

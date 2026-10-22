@@ -1,0 +1,57 @@
+
+Logic bugs:
+Direct Fishing in logic without the Sword Handling knowledge
+all of the Happy Ghast in logic with no nether access
+We have Brushed Away out of logic despite technically having access to feathers through villages, yet Respecting the Remnants is in logic (green)
+All the raid related advancements are in logic without unlocking villagers
+Bulbous! in logic (doable via trial chambers), but Lighten Up out of logic despite access to axes
+Atlantis?", "Ahoy!" and "Boatception" are in logic despite not unlocking the underwater ruins and shipwrecks structure locks
+Just a sample" (getting coral) is in logic despite no way to get silk touch tools as far as I can tell
+Bee Our Guest, Winnie the Pooh, Sticky Situation in logic without the bees unlock
+Such a Poser in logic without the copper golem unlock
+Noxious Fumes and Gas! in logic without end access (no way to do eyes of ender without blazes). Also Imbued Projectiles is in yellow for some reason
+Some of the "Craft every item made of xxx wood" advancements are in yellow and some in green, is it because some biomes are harder to find?
+I think we got Trick or Treat in logic without any mob able to wear a pumpkin unlocked
+Help! I've been framed! in yellow despite direct access to sticks and leather (donkeys unlocked).
+A Masterpiece! in yellow despite direct access to sticks and strings (spiders unlocked)
+
+
+I think we fixed that: 
+I think the logic does not account for locked inventory slots of what level of material you have access to. We got the raids and trial chambers (and some difficult mob killing achievements) in logic very early, with copper tools and no weapons and only a few inventory slot (no armor)
+
+
+Should already be in yellow:
+Marine Marauder in logic without fishing rods or pufferfish unlocked. We had guardians, but that's a 0.33% chance, it should be in yellow imo.
+
+Modify how it is handled in the mod:
+We have the keepInventory setting, yet we still drop XP on death. I think this is probably because of the progressive option? If it's set to active, you could simply use the gamerule
+
+Maybe add an option:
+Exploration advancements could be kept out of logic until you get at least one reliable food source (like hoe handling or one passive mob that drops food) and one inventory slot
+
+Will work on later:
+I don't know how difficult it would be to implement, but some way to know why advancements are in logic would be helpful (so that we don't have to look up which structure some item generates in as loot for instance), and would also make it a lot easier to spot logic errors
+Some way to tell which advancements have been hinted at a glance would also be nice. Maybe even a chat message to warn when they come into logic? There's so many tabs it's hard to keep track
+It would be nice if the biome locator could cycle between different found biomes, we had the case on our server where the closest Cherry Grove didn't have a single tree and it was annoying to find a different one
+DeathLink behavior for multiplayer server should be able to set if random or all players
+
+Bug:
+ you can put armor pieces in locked armor slots using a dispenser
+
+Improvement:
+Abandoned Camps could be a single structure unlock instead of having 18 separate ones per biome
+Sponge Miner is gated behind the elder guardian unlock. If anything, I think it's easier to get without them
+
+After we unlocked mineshafts, the server started lagging a lot. The CPU usage was maxed out and the console was being spammed with this warning:
+[21:27:24] [Server thread/INFO]: System chat: Minecraft found their Structure Unlock: Mineshaft (Advancement: Pumpa kungen!)
+[21:27:24] [Server thread/INFO]: Unlocked 1 structure type(s): 362 instance(s) queued for rebuild.
+[21:27:24] [Server thread/WARN]: Trying to mark a block for post processing @ MutableBlockPos{x=45, y=-11, z=133}, but this operation is not supported.
+[21:27:24] [Server thread/WARN]: Trying to mark a block for post processing @ MutableBlockPos{x=42, y=-11, z=133}, but this operation is not supported.
+[21:27:24] [Server thread/WARN]: Trying to mark a block for post processing @ MutableBlockPos{x=91, y=-21, z=171}, but this operation is not supported.
+[21:27:24] [Server thread/WARN]: Trying to mark a block for post processing @ MutableBlockPos{x=91, y=-21, z=169}, but this operation is not supported.
+[21:27:24] [Server thread/WARN]: Trying to mark a block for post processing @ MutableBlockPos{x=81, y=-11, z=164}, but this operation is not supported.
+[21:27:25] [Server thread/WARN]: Trying to mark a block for post processing @ MutableBlockPos{x=36, y=-20, z=181}, but this operation is not supported.
+I think the last one may be linked to the fact that our server launched and generated the spawn before we connected to the archipelago server, thus probably generating mineshafts before we unlocked them
+
+I couldn't get a raid to fire, so I looked into the code of the mod and saw that they are locked until all five raid mobs are unlocked, but the logic of the raid achievements doesn't mirror that 
+Some feedback would be nice, like a chat message explaining you need the unlocks
