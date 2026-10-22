@@ -662,11 +662,18 @@ class CriteriaCompiler:
         self._check(loc, _LOCATION_KEYS | _LOCATION_FREE, path)
         parts = []
         struct = loc.get("structures")
-        if isinstance(struct, str):
-            if struct.startswith("#"):
-                parts.append(_call("any_village") if "village" in struct else UNKNOWN)
+        # One id, a #tag, or (newer BACAP) a list of ids meaning any of them.
+        structs = [struct] if isinstance(struct, str) else struct if isinstance(struct, list) else []
+        options = []
+        for one in structs:
+            if not isinstance(one, str):
+                options.append(UNKNOWN)
+            elif one.startswith("#"):
+                options.append(_call("any_village") if "village" in one else UNKNOWN)
             else:
-                parts.append(need("structure_id", struct))
+                options.append(need("structure_id", one))
+        if options:
+            parts.append(any_(*options))
         region = None
         if "biomes" in loc:
             biome = loc["biomes"] if isinstance(loc["biomes"], str) else ""
