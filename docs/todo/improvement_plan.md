@@ -18,7 +18,7 @@ python tools/why_rule.py [--mc 26.3] [--without "<item>"] "<advancement name pre
 ---
 
 > **Resume here (2026-10-22, evening):** A1–A11 done and merged into `release/v0.7.0` (unpushed).
-> A11, A11b, A12 and A12b done too. A8–A12 only ran their own **Check** lines: their
+> A11, A11b, A12, A12b and A13 done too: section A is complete. A8–A12 only ran their own **Check** lines: their
 > regression + Generate runs are deferred to one pass at the end of section A (see Z).
 >
 > Found while checking A7 (fixed, `fix/glitch-cycle-depth`, merged): the "stalled" check was a
@@ -317,7 +317,14 @@ New option **`structure_variant`** (`structure_variant: 'true' / 'false'`, defau
   stay per structure. The mod's structure registry maps every member id to the group item (slot data
   carries the mapping, so the mod needs no option of its own).
 
-- [ ] A13 fixed
+- [x] A13 fixed (feat/structure-variant-groups, 2026-10-23). Groups come from the game's structure tags
+  (a tag whose members are `<tag>` / `<tag>_<variant>`): Village 5, Ruined Portal 7, Ocean Ruin 2,
+  Shipwreck 2, Mineshaft 2, Abandoned Camp 18 (26.3); identical on 26.1.2/26.2 apart from the camps.
+  Ruined Portal / Shipwreck / Mineshaft reuse their structure's item; Village / Ocean Ruin / Abandoned
+  Camp are new ids (0xEC0300 + lowest member id). Pool 36 -> 23 (26.1.2), 54 -> 24 (26.3); `true`
+  restores them. The mod needed no change (it already unlocks every structure mapped to an item id).
+  Such a poser: routes via the grouped camp; `--without` it stays reachable through the Copper Golem
+  route (legit), and is out without both. all-options + Generate with both values: in the Z pass.
   - **Check:** `structure_variant: false` on 26.3: AP item names contain exactly one
     `Structure Unlock: Abandoned Camp`, one `Village`, one `Ruined Portal`. `true` → the per-biome
     items as today.
