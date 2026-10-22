@@ -6,7 +6,8 @@
     "biomes": [],
     "breedable": false,
     "tameable": false,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:armadillo",
@@ -22,7 +23,8 @@
     ],
     "breedable": true,
     "tameable": false,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:axolotl",
@@ -33,7 +35,8 @@
     ],
     "breedable": true,
     "tameable": false,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:bat",
@@ -96,7 +99,8 @@
     ],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:bee",
@@ -105,7 +109,8 @@
     "biomes": [],
     "breedable": true,
     "tameable": false,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:blaze",
@@ -114,7 +119,8 @@
     "biomes": [],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:bogged",
@@ -126,7 +132,8 @@
     ],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": true
   },
   {
     "game_id": "minecraft:breeze",
@@ -135,7 +142,8 @@
     "biomes": [],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:camel",
@@ -146,7 +154,8 @@
     ],
     "breedable": true,
     "tameable": false,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:camel_husk",
@@ -155,7 +164,8 @@
     "biomes": [],
     "breedable": false,
     "tameable": false,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:cat",
@@ -164,7 +174,8 @@
     "biomes": [],
     "breedable": true,
     "tameable": true,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:cave_spider",
@@ -173,7 +184,8 @@
     "biomes": [],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:chicken",
@@ -207,7 +219,8 @@
     ],
     "breedable": true,
     "tameable": false,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:cod",
@@ -223,7 +236,8 @@
     ],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:copper_golem",
@@ -232,7 +246,8 @@
     "biomes": [],
     "breedable": false,
     "tameable": false,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:cow",
@@ -266,7 +281,8 @@
     ],
     "breedable": true,
     "tameable": false,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:creaking",
@@ -275,7 +291,8 @@
     "biomes": [],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:creeper",
@@ -337,7 +354,8 @@
     ],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:dolphin",
@@ -352,7 +370,8 @@
     ],
     "breedable": false,
     "tameable": false,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:donkey",
@@ -368,7 +387,8 @@
     ],
     "breedable": true,
     "tameable": true,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:drowned",
@@ -390,7 +410,8 @@
     ],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": true
   },
   {
     "game_id": "minecraft:elder_guardian",
@@ -399,7 +420,8 @@
     "biomes": [],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:ender_dragon",
@@ -408,7 +430,8 @@
     "biomes": [],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:enderman",
@@ -478,7 +501,8 @@
     ],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:endermite",
@@ -487,7 +511,8 @@
     "biomes": [],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:evoker",
@@ -496,7 +521,8 @@
     "biomes": [],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:fox",
@@ -511,7 +537,8 @@
     ],
     "breedable": true,
     "tameable": false,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:frog",
@@ -523,7 +550,8 @@
     ],
     "breedable": true,
     "tameable": false,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:ghast",
@@ -536,7 +564,8 @@
     ],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:glow_squid",
@@ -599,7 +628,8 @@
     ],
     "breedable": false,
     "tameable": false,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:goat",
@@ -612,7 +642,8 @@
     ],
     "breedable": true,
     "tameable": false,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:guardian",
@@ -621,7 +652,8 @@
     "biomes": [],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:happy_ghast",
@@ -630,7 +662,8 @@
     "biomes": [],
     "breedable": false,
     "tameable": false,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:hoglin",
@@ -641,7 +674,8 @@
     ],
     "breedable": true,
     "tameable": false,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:horse",
@@ -656,7 +690,8 @@
     ],
     "breedable": true,
     "tameable": true,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:husk",
@@ -667,7 +702,8 @@
     ],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": true
   },
   {
     "game_id": "minecraft:iron_golem",
@@ -676,7 +712,8 @@
     "biomes": [],
     "breedable": false,
     "tameable": false,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:llama",
@@ -690,7 +727,8 @@
     ],
     "breedable": true,
     "tameable": true,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:magma_cube",
@@ -702,7 +740,8 @@
     ],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:mooshroom",
@@ -713,7 +752,8 @@
     ],
     "breedable": true,
     "tameable": false,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:mule",
@@ -722,7 +762,8 @@
     "biomes": [],
     "breedable": false,
     "tameable": true,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:nautilus",
@@ -741,7 +782,8 @@
     ],
     "breedable": true,
     "tameable": true,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:ocelot",
@@ -753,7 +795,8 @@
     ],
     "breedable": true,
     "tameable": false,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:panda",
@@ -765,7 +808,8 @@
     ],
     "breedable": true,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:parched",
@@ -776,7 +820,8 @@
     ],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": true
   },
   {
     "game_id": "minecraft:parrot",
@@ -788,7 +833,8 @@
     ],
     "breedable": false,
     "tameable": true,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:phantom",
@@ -797,7 +843,8 @@
     "biomes": [],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:pig",
@@ -832,7 +879,8 @@
     ],
     "breedable": true,
     "tameable": false,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:piglin",
@@ -844,7 +892,8 @@
     ],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": true
   },
   {
     "game_id": "minecraft:piglin_brute",
@@ -853,7 +902,8 @@
     "biomes": [],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": true
   },
   {
     "game_id": "minecraft:pillager",
@@ -862,7 +912,8 @@
     "biomes": [],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:polar_bear",
@@ -876,7 +927,8 @@
     ],
     "breedable": false,
     "tameable": false,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:pufferfish",
@@ -889,7 +941,8 @@
     ],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:rabbit",
@@ -911,7 +964,8 @@
     ],
     "breedable": true,
     "tameable": false,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:ravager",
@@ -920,7 +974,8 @@
     "biomes": [],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:salmon",
@@ -936,7 +991,8 @@
     ],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:sheep",
@@ -972,7 +1028,8 @@
     ],
     "breedable": true,
     "tameable": false,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:shulker",
@@ -981,7 +1038,8 @@
     "biomes": [],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:silverfish",
@@ -990,7 +1048,8 @@
     "biomes": [],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:skeleton",
@@ -1053,7 +1112,8 @@
     ],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": true
   },
   {
     "game_id": "minecraft:skeleton_horse",
@@ -1062,7 +1122,8 @@
     "biomes": [],
     "breedable": false,
     "tameable": false,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:slime",
@@ -1124,7 +1185,8 @@
     ],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:sniffer",
@@ -1133,7 +1195,8 @@
     "biomes": [],
     "breedable": true,
     "tameable": false,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:snow_golem",
@@ -1142,7 +1205,8 @@
     "biomes": [],
     "breedable": false,
     "tameable": false,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:spider",
@@ -1204,7 +1268,8 @@
     ],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:squid",
@@ -1225,7 +1290,8 @@
     ],
     "breedable": false,
     "tameable": false,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:stray",
@@ -1237,7 +1303,8 @@
     ],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": true
   },
   {
     "game_id": "minecraft:strider",
@@ -1252,7 +1319,8 @@
     ],
     "breedable": true,
     "tameable": false,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:tadpole",
@@ -1261,7 +1329,8 @@
     "biomes": [],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:trader_llama",
@@ -1270,7 +1339,8 @@
     "biomes": [],
     "breedable": true,
     "tameable": true,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:tropical_fish",
@@ -1285,7 +1355,8 @@
     ],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:turtle",
@@ -1296,7 +1367,8 @@
     ],
     "breedable": true,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:vex",
@@ -1305,7 +1377,8 @@
     "biomes": [],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:villager",
@@ -1314,7 +1387,8 @@
     "biomes": [],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": true
   },
   {
     "game_id": "minecraft:vindicator",
@@ -1323,7 +1397,8 @@
     "biomes": [],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:wandering_trader",
@@ -1332,7 +1407,8 @@
     "biomes": [],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:warden",
@@ -1341,7 +1417,8 @@
     "biomes": [],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:witch",
@@ -1403,7 +1480,8 @@
     ],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:wither",
@@ -1412,7 +1490,8 @@
     "biomes": [],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:wither_skeleton",
@@ -1421,7 +1500,8 @@
     "biomes": [],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": true
   },
   {
     "game_id": "minecraft:wolf",
@@ -1440,7 +1520,8 @@
     ],
     "breedable": true,
     "tameable": true,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:zoglin",
@@ -1449,7 +1530,8 @@
     "biomes": [],
     "breedable": false,
     "tameable": false,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:zombie",
@@ -1511,7 +1593,8 @@
     ],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": true
   },
   {
     "game_id": "minecraft:zombie_horse",
@@ -1527,7 +1610,8 @@
     ],
     "breedable": false,
     "tameable": true,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:zombie_nautilus",
@@ -1536,7 +1620,8 @@
     "biomes": [],
     "breedable": false,
     "tameable": true,
-    "leashable": true
+    "leashable": true,
+    "can_wear_head": false
   },
   {
     "game_id": "minecraft:zombie_villager",
@@ -1598,7 +1683,8 @@
     ],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": true
   },
   {
     "game_id": "minecraft:zombified_piglin",
@@ -1610,6 +1696,7 @@
     ],
     "breedable": false,
     "tameable": false,
-    "leashable": false
+    "leashable": false,
+    "can_wear_head": true
   }
 ]
