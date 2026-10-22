@@ -27,6 +27,8 @@ import net.minecraft.world.entity.ai.goal.GoalSelector;
 import net.minecraft.world.entity.ai.goal.WrappedGoal;
 import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.entity.animal.equine.AbstractHorse;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
 import java.io.BufferedReader;
 import java.lang.reflect.Field;
@@ -41,7 +43,7 @@ import java.util.TreeSet;
  * dump uniformly, the same principle as {@link PackDump}:
  * <ul>
  *   <li>{@code category} (passive/neutral/hostile/boss), {@code tameable}, {@code leashable},
- *       {@code breedable} — runtime CLASS BEHAVIOUR, read off a throwaway entity instance. This needs
+ *       {@code breedable}, {@code can_wear_head} — runtime CLASS BEHAVIOUR, read off a throwaway entity instance. This needs
  *       a live {@link ServerLevel}, so unlike {@link PackDump} (raw datapack JSON) it can't run off a
  *       world-free resource manager: {@code /aem dump entities} reads the loaded world, and the
  *       title-menu UI spins up a disposable one ({@code HeadlessEntitiesDump}).</li>
@@ -120,6 +122,10 @@ public final class EntitiesDump {
             boolean tameable = mob instanceof TamableAnimal
                     || (mob instanceof AbstractHorse h && !h.isTamed() && !NON_TAMEABLE_EQUINES.contains(gameId));
             boolean leashable = mob.canBeLeashed();
+            // Whether a dispenser can put a carved pumpkin on it: the game's own test for "this mob
+            // wears a head item" (zombies, skeletons, piglins…), which is how one ends up in a
+            // criterion's equipment.head (Trick or Treat). Read before isBreedable mutates the sample.
+            boolean canWearHead = mob.canEquipWithDispenser(new ItemStack(Items.CARVED_PUMPKIN));
             boolean breedable = isBreedable(type, level, mob);
             mob.discard();
 
@@ -131,6 +137,7 @@ public final class EntitiesDump {
             record.addProperty("breedable", breedable);
             record.addProperty("tameable", tameable);
             record.addProperty("leashable", leashable);
+            record.addProperty("can_wear_head", canWearHead);
             records.put(gameId, record);
         }
 

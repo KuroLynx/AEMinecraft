@@ -585,9 +585,14 @@ class CriteriaCompiler:
                         for k in pred[holder] if str(k).endswith("/variant")), None)
         gid = pred.get("type") or (f"minecraft:{species}" if species else None)
         mount = _MOUNT_NEED.get(_path(gid)) if path.endswith(".vehicle") and isinstance(gid, str) else None
+        # Someone else wearing a head item (a pumpkin, a skull) can only be a mob a dispenser equips:
+        # nobody puts one on a cow. The ominous banner is the raid captain's, priced below instead.
+        head = (role != "self" and "head" in equipment
+                and not _is_ominous_banner("head", equipment.get("head")))
         return all_(
             mount,
-            self._entity_type(gid, role),
+            self._entity_type(gid, role, head),
+            _item("minecraft:dispenser") if head else None,
             self._location(pred.get("location"), f"{path}.location"),
             self._location(pred.get("stepping_on"), f"{path}.stepping_on"),
             *[self._item(v, f"{path}.equipment") or UNKNOWN for k, v in equipment.items()
@@ -624,16 +629,24 @@ class CriteriaCompiler:
             out += [self._entity_by_path[_path(m)] for m in members if _path(m) in self._entity_by_path]
         return out
 
-    def _entity_type(self, gid, role: str):
-        """The species an entity predicate pins, priced by the role the criterion gives it."""
-        if gid is None or role == "self":
+    def _entity_type(self, gid, role: str, head: bool = False):
+        """The species an entity predicate pins, priced by the role the criterion gives it. ``head``:
+        it wears a head item, so only a mob that can (MOBS_WEAR_HEAD) — any of them when no type is
+        pinned."""
+        if role == "self" or (gid is None and not head):
             return None
+        if gid is None:
+            return any_(*[need(role, n) for n in sorted(self.content.MOBS_WEAR_HEAD)]) or UNKNOWN
         ids = [g for g in (gid if isinstance(gid, list) else [gid]) if isinstance(g, str)]
         if role == "projectile":
             return any_(*[need("projectile", _path(g)) for g in ids])
         names = self._entity_names(ids)
         if role == "tame":
             names = [n for n in names if n in self.content.MOBS_TAMEABLE]
+        if head:
+            names = [n for n in names if n in self.content.MOBS_WEAR_HEAD]
+            if not names:
+                return UNKNOWN   # pins a wearer none of these mobs can be
         options = [need(role if role != "explosion" else "entity", n) for n in names]
         if not options:
             # A type that is no mob: something you place or throw (glow item frame, boat, tnt). A tag

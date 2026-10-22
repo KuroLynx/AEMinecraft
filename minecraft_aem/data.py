@@ -346,6 +346,7 @@ class MinecraftContent:
         self.MOBS_BREEDABLE = {k: v for k, v in mobs.items() if v.breedable}
         self.MOBS_TAMEABLE = {k: v for k, v in mobs.items() if v.tameable}
         self.MOBS_LEASHABLE = {k: v for k, v in mobs.items() if v.leashable}
+        self.MOBS_WEAR_HEAD = {k: v for k, v in mobs.items() if v.can_wear_head}
 
         self.LOCATIONS_MOB_KILL: dict[str, MCLocationData] = _load_mob_kill_locations(mobs)
         self.LOCATIONS_BOSS_KILL: dict[str, MCLocationData] = _load_boss_kill_locations(mobs)
