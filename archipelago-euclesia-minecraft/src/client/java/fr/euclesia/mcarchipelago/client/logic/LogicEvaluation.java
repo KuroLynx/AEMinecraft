@@ -48,6 +48,9 @@ public final class LogicEvaluation {
     private final CheckedLocations checked;
     private final Map<String, Boolean> regionReach = new HashMap<>();
     private final Map<String, Boolean> locationReach = new HashMap<>();
+    /** Glitch item prices solved reachable; filled by {@link #solvePrices} on the first glitch query. */
+    private final Set<String> priceReach = new HashSet<>();
+    private boolean pricesSolved;
     private final Set<Integer> resolvingRefs = new HashSet<>();
     /** Ref results for the CURRENT reach snapshot; cleared whenever {@link #solve} flips anything. */
     private final Map<Integer, Boolean> refCache = new HashMap<>();
@@ -73,6 +76,11 @@ public final class LogicEvaluation {
         return Boolean.TRUE.equals(locationReach.get(name));
     }
 
+    /** Reads the solved price snapshot; {@link RuleNode.Price} calls this. */
+    public boolean canReachPrice(String name) {
+        return priceReach.contains(name);
+    }
+
     /**
      * Whether {@code name} is reachable by a route the randomizer refused to count on — a rare drop,
      * a chest in a structure the seed doesn't treat as progression, a Wandering Trader (see
@@ -96,7 +104,13 @@ public final class LogicEvaluation {
         // would paint a Nether advancement yellow while the player has no way into the Nether at all,
         // since a rule need not repeat the region its location already sits in.
         LogicGraph.LocationEntry entry = graph.location(name);
-        return entry != null && canReachRegion(entry.region()) && rule.eval(this);
+        if (entry == null || !canReachRegion(entry.region())) {
+            return false;
+        }
+        if (!pricesSolved) {
+            solvePrices();
+        }
+        return rule.eval(this);
     }
 
     /**
@@ -128,6 +142,27 @@ public final class LogicEvaluation {
             return result;
         } finally {
             resolvingRefs.remove(id);
+        }
+    }
+
+    /**
+     * The least fixed point of the glitch price table over the solved strict snapshot. Prices name
+     * each other in cycles (iron ingot from iron block from iron ingot), so like regions and locations
+     * they start unreachable and flip until a pass changes nothing. Strict rules never contain a price,
+     * so this runs once, lazily, after {@link #solve}.
+     */
+    private void solvePrices() {
+        pricesSolved = true;
+        boolean changed = true;
+        while (changed) { // monotone ⇒ terminates
+            changed = false;
+            for (Map.Entry<String, RuleNode> entry : graph.prices().entrySet()) {
+                if (!priceReach.contains(entry.getKey()) && entry.getValue().eval(this)) {
+                    priceReach.add(entry.getKey());
+                    refCache.clear();
+                    changed = true;
+                }
+            }
         }
     }
 

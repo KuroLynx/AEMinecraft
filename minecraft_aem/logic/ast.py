@@ -22,6 +22,7 @@ Serialized form (compact, mirrored by the Java parser):
     and    : {"k": "and",    "c": [<node>, ...]}
     or     : {"k": "or",     "c": [<node>, ...]}
     atleast: {"k": "atleast", "n": <count>, "c": [<node>, ...]}
+    price  : {"k": "price",  "p": <price name>}   (glitch graph only, see PriceRef)
 """
 from __future__ import annotations
 
@@ -263,6 +264,32 @@ class ReachLocation(Rule):
 
     def _gate_summary(self) -> tuple:
         return (True, frozenset())
+
+
+class PriceRef(Rule):
+    """Glitch graph only: "this item is obtainable", naming its price in the slot's price table instead
+    of copying it in. fixed_point hands one out where a price reads an item on its own dependency
+    cycle: copying there nests each round's price inside the next (760 levels on a BACAP slot).
+
+    Its meaning is the least fixed point of the price table, which the export's evaluators solve the
+    way they solve regions and locations. A state alone can't answer it, hence no ``__call__``."""
+    _leaf = True
+
+    def __init__(self, player: int, name: str):
+        self.player = player
+        self.name = name
+
+    def __call__(self, state) -> bool:
+        raise TypeError(f"price '{self.name}' is only evaluated from the export (logic_export)")
+
+    def _to_dict(self) -> dict:
+        return {"k": "price", "p": self.name}
+
+    def _key(self):
+        return ("price", self.player, self.name)
+
+    def _gate_summary(self) -> tuple:
+        return (True, frozenset())   # opaque: _coarsen must never collapse it to a region
 
 
 class AtLeast(Rule):

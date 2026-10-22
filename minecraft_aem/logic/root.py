@@ -9,6 +9,7 @@ from .acquisition import RuleHelper
 from .ast import Const
 from .constants import *
 from .engine import collect_advancement_rules, collect_entity_rules
+from .fixed_point import price_table
 from .criteria import CriteriaCompiler
 
 
@@ -28,7 +29,9 @@ def build_location_rules(world, glitch: bool = False) -> dict:
 
     ``glitch=True`` builds the permissive twin instead: same locations, but the unreliable alternates
     strict logic drops are kept (see RuleHelper._demote), and BACAP rewards join as ``loc`` nodes.
-    Nothing fills against it — it ships in slot_data so the mod can colour a tile GLITCHABLE."""
+    Nothing fills against it — it ships in slot_data so the mod can colour a tile GLITCHABLE. Its
+    rules can name item prices (ast.PriceRef); the table they resolve against is left on
+    ``world._glitch_prices`` for the export."""
     helper = RuleHelper(world, glitch=glitch)
     existing = set(world._get_active_locations())
     curated = collect_advancement_rules(helper)              # by display name
@@ -61,6 +64,8 @@ def build_location_rules(world, glitch: bool = False) -> dict:
         if location_name in existing:
             rules[location_name] = condition
 
+    if glitch:
+        world._glitch_prices = price_table(helper)
     return rules
 
 

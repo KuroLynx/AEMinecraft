@@ -166,6 +166,10 @@ _NATURAL_SELF_MINED = frozenset({
     # "someone must have placed that" and cost their own craft — a cycle, which would take
     # melon_slice's and snowball's honest routes with it.
     "melon", "snow",
+    # Generates in every Pale Garden: Silk Touch digs it up whole (block_mining's drop gate) and any
+    # tool breaks it for resin. As placed-only, the heart and resin only came from each other's
+    # recipes, a cycle nothing grounded, so they read obtainable only by accident of fixed-point order.
+    "creaking_heart",
 })
 # Blocks that cannot simply be found: they exist only where something put them there, so mining one
 # is not a free natural source the way mining gravel is. Not derivable from the packs — the palettes

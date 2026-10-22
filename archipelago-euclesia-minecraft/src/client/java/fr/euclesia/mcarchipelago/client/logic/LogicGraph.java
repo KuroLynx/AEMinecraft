@@ -31,19 +31,23 @@ public final class LogicGraph {
     /** Permissive rule per location, for the ones whose two graphs disagree (may be empty). */
     private final Map<String, RuleNode> glitchRules;
     private final Map<Integer, RuleNode> definitions;
+    /** Item prices the glitch rules name with {@code price} nodes (may be empty). */
+    private final Map<String, RuleNode> prices;
 
     private LogicGraph(String origin,
                        Map<String, List<Edge>> regions,
                        Map<String, LocationEntry> locations,
                        Map<String, String> locationNameByGameId,
                        Map<String, RuleNode> glitchRules,
-                       Map<Integer, RuleNode> definitions) {
+                       Map<Integer, RuleNode> definitions,
+                       Map<String, RuleNode> prices) {
         this.origin = origin;
         this.regions = regions;
         this.locations = locations;
         this.locationNameByGameId = locationNameByGameId;
         this.glitchRules = glitchRules;
         this.definitions = definitions;
+        this.prices = prices;
     }
 
     public static LogicGraph parse(JsonObject root) {
@@ -90,8 +94,16 @@ public final class LogicGraph {
             }
         }
 
+        // Item prices behind {"k":"price"} nodes (logic_export._referenced_prices); glitch rules only.
+        Map<String, RuleNode> prices = new HashMap<>();
+        if (root.has("prices") && root.get("prices").isJsonObject()) {
+            for (Map.Entry<String, JsonElement> entry : root.getAsJsonObject("prices").entrySet()) {
+                prices.put(entry.getKey(), RuleNode.parse(entry.getValue().getAsJsonObject().get("rule")));
+            }
+        }
+
         return new LogicGraph(origin, regions, locations, locationNameByGameId, glitchRules,
-                definitions);
+                definitions, prices);
     }
 
     /**
@@ -105,6 +117,10 @@ public final class LogicGraph {
     /** @return the shared subtree for a {@code ref} id, or {@code null} if absent. */
     RuleNode definition(int id) {
         return definitions.get(id);
+    }
+
+    Map<String, RuleNode> prices() {
+        return prices;
     }
 
     /** @return the AP location name for an advancement {@code game_id}, or {@code null} if none. */

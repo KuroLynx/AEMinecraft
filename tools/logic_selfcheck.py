@@ -49,8 +49,14 @@ class ExportEvaluator:
         self.regions = export["regions"]
         self.locations = export["locations"]
         self.definitions = export.get("definitions", {})  # shared subtrees behind {"k":"ref"}
+        self.glitch = export.get("glitch", {})
+        self.prices = export.get("prices", {})            # item prices behind {"k":"price"}
         self.items = item_counts
         self._resolving: set[int] = set()
+        # Ref results for the current snapshot, cleared on every flip (mirrors Java's refCache): without
+        # it a glitch rule's shared subtrees are walked as a tree, exponential in their sharing.
+        self._ref_cache: dict[int, bool] = {}
+        self._price_reach: dict[str, bool] | None = None
         self._region_reach: dict[str, bool] = {}
         self._loc_reach: dict[str, bool] = {}
         self._solve()
@@ -69,6 +75,8 @@ class ExportEvaluator:
             return self._region_reach.get(node["r"], False)
         if k == "loc":
             return self._loc_reach.get(node["l"], False)
+        if k == "price":
+            return self._price_reach.get(node["p"], False)
         if k == "and":
             return all(self._eval(c) for c in node["c"])
         if k == "or":
@@ -77,12 +85,16 @@ class ExportEvaluator:
             return sum(1 for c in node["c"] if self._eval(c)) >= node["n"]
         if k == "ref":
             ref_id = node["id"]
+            cached = self._ref_cache.get(ref_id)
+            if cached is not None:
+                return cached
             definition = self.definitions.get(str(ref_id))
             if definition is None or ref_id in self._resolving:
                 return False  # acyclic by construction; guard is defensive (mirrors Java)
             self._resolving.add(ref_id)
             try:
-                return self._eval(definition)
+                result = self._ref_cache[ref_id] = self._eval(definition)
+                return result
             finally:
                 self._resolving.discard(ref_id)
         raise ValueError(f"unknown node kind: {k}")
@@ -100,12 +112,14 @@ class ExportEvaluator:
                             and self._region_reach.get(from_region, False) \
                             and self._eval(entrance["rule"]):
                         self._region_reach[to] = True
+                        self._ref_cache.clear()
                         changed = True
             for name, loc in self.locations.items():
                 if not self._loc_reach.get(name, False) \
                         and self._region_reach.get(loc["region"], False) \
                         and self._eval(loc["rule"]):
                     self._loc_reach[name] = True
+                    self._ref_cache.clear()
                     changed = True
 
     def can_reach_region(self, region: str) -> bool:
@@ -113,6 +127,29 @@ class ExportEvaluator:
 
     def can_reach_location(self, name: str) -> bool:
         return self._loc_reach.get(name, False)
+
+    def _solve_prices(self) -> None:
+        """Least fixed point of the glitch price table over the solved strict snapshot (mirrors Java's
+        solvePrices): prices name each other in cycles, so they start False and flip until stable."""
+        self._price_reach = {}
+        changed = True
+        while changed:
+            changed = False
+            for name, price in self.prices.items():
+                if not self._price_reach.get(name, False) and self._eval(price["rule"]):
+                    self._price_reach[name] = True
+                    self._ref_cache.clear()
+                    changed = True
+
+    def is_glitchable(self, name: str) -> bool:
+        """The mod's yellow: the location's region is reachable and its glitch rule (if it ships one)
+        holds against the strict snapshot (LogicEvaluation.isGlitchable)."""
+        glitch = self.glitch.get(name)
+        if glitch is None or not self._region_reach.get(self.locations[name]["region"], False):
+            return False
+        if self._price_reach is None:
+            self._solve_prices()
+        return self._eval(glitch["rule"])
 
 
 def make_state(world, item_names_with_counts: dict[str, int]) -> CollectionState:

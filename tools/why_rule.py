@@ -6,11 +6,17 @@ Heaviest locked config (every mob/structure lock, BACAP, glitch logic). Run:
   python tools/why_rule.py --mc 26.3 --without "Entity Unlock: Bee" "Bee Our Guest"
   python tools/why_rule.py --opt exploration_logic=1 "Atlantis"
 A name matches every location starting with "Advancement: <name>".
+
+The knock-out verdict is read from the slot's logic EXPORT, the way the mod reads it: strict is the
+export's reachability, glitch is strict or the mod's yellow (LogicEvaluation.isGlitchable), which needs
+the location's region too. Glitch rules can name item prices (ast.PriceRef), which have no meaning
+outside that export.
 """
 import argparse
 import itertools
 import os
 import sys
+from collections import Counter
 
 AP_ROOT = os.environ.get("AP_ROOT", r"C:\Users\benja\PycharmProjects\ArchipelagoClone")
 sys.path.insert(0, AP_ROOT)
@@ -19,11 +25,12 @@ os.chdir(AP_ROOT)
 import logging  # noqa: E402
 logging.disable(logging.WARNING)
 
-from BaseClasses import CollectionState  # noqa: E402
 from worlds.AutoWorld import AutoWorldRegister  # noqa: E402
 from test.general import setup_multiworld  # noqa: E402
-from worlds.minecraft_aem.logic.ast import And, AtLeast, Const, Has, Or, ReachLocation, ReachRegion  # noqa: E402
+from worlds.minecraft_aem.logic.ast import And, AtLeast, Const, Has, Or, PriceRef, ReachLocation, ReachRegion  # noqa: E402
 from worlds.minecraft_aem.logic.root import build_location_rules  # noqa: E402
+from worlds.minecraft_aem.logic_export import build_logic_export  # noqa: E402
+from logic_selfcheck import ExportEvaluator  # noqa: E402
 
 CAP = 40  # requirement sets kept per node; plenty to see the cheapest routes
 
@@ -46,6 +53,8 @@ def dnf(node, rules, memo, seen=()):
         r = [frozenset({node.item if node.count == 1 else f"{node.item} x{node.count}"})]
     elif isinstance(node, ReachRegion):
         r = [frozenset({"@" + node.region})]
+    elif isinstance(node, PriceRef):
+        r = [frozenset({"price:" + node.name})]   # an item on its own cycle: see the export's prices
     elif isinstance(node, ReachLocation):
         sub = rules.get(node.location)
         r = ([frozenset({"loc:" + node.location})] if sub is None or node.location in seen
@@ -86,13 +95,11 @@ def main():
     glitch = build_location_rules(world, glitch=True)
     locations = sorted(loc.name for loc in mw.get_locations(world.player))
 
-    state = None
+    verdict = None
     if args.without:
-        state = CollectionState(mw)
-        for item in mw.itempool:
-            if item.name not in args.without:
-                state.collect(item, prevent_sweep=True)
-        state.sweep_for_advancements()
+        received = Counter(item.name for item in mw.itempool + mw.precollected_items[world.player]
+                           if item.name not in args.without)
+        verdict = ExportEvaluator(build_logic_export(world), received)
 
     for wanted in args.names:
         matches = [n for n in locations if n.startswith(f"Advancement: {wanted}")]
@@ -100,9 +107,10 @@ def main():
             print(f"?? no location starts with 'Advancement: {wanted}'")
         for name in matches:
             print(f"===== {name}")
-            if state is not None:
-                print(f"  without {args.without}: strict={strict[name](state)} "
-                      f"glitch={glitch.get(name, strict[name])(state)}")
+            if verdict is not None:
+                reach = verdict.can_reach_location(name)
+                print(f"  without {args.without}: strict={reach} "
+                      f"glitch={reach or verdict.is_glitchable(name)}")
             for label, rules in (("strict", strict), ("glitch", glitch)):
                 if not args.routes:
                     break   # expanding a big rule (a raid, every effect) is combinatorial: skip it
