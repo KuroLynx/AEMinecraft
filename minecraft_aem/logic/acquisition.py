@@ -58,16 +58,20 @@ _GAMEPLAY_VILLAGER_GIFTS = frozenset({
     "shepherd_gift", "toolsmith_gift", "unemployed_gift", "weaponsmith_gift",
 })
 
-# Block-harvest 'gameplay' tables: pick/shear a block for its yield. (region, needs_shears) — the
-# block's dimension, plus shears when the table is a shear interaction (honeycomb, pumpkin seeds).
+# Block-harvest 'gameplay' tables: pick/shear a block for its yield. (region, tool) — the block's
+# dimension, plus the item used on it, if any (shears for honeycomb / pumpkin seeds).
 _GAMEPLAY_HARVEST: dict[str, tuple] = {
-    "beehive": (REGION_OVERWORLD, True), "pumpkin": (REGION_OVERWORLD, True),
-    "cave_vine": (REGION_OVERWORLD, False), "sweet_berry_bush": (REGION_OVERWORLD, False),
+    "beehive": (REGION_OVERWORLD, "minecraft:shears"), "pumpkin": (REGION_OVERWORLD, "minecraft:shears"),
+    "cave_vine": (REGION_OVERWORLD, None), "sweet_berry_bush": (REGION_OVERWORLD, None),
+    "beehive_bottle": (REGION_OVERWORLD, "minecraft:glass_bottle"),
 }
 # A harvest table named differently from the block it is picked off.
-_HARVEST_BLOCK = {"cave_vine": "cave_vines"}
+_HARVEST_BLOCK = {"cave_vine": "cave_vines", "beehive_bottle": "beehive"}
 # A harvest that only grows back while a mob works the block: a hive fills with honey from its bees.
-_HARVEST_MOB = {"beehive": E_BEE}
+_HARVEST_MOB = {"beehive": E_BEE, "beehive_bottle": E_BEE}
+# Harvests the game hard-codes instead of giving them a loot table, so the dump can't see them: a
+# glass bottle on a full hive is a honey bottle (BeehiveBlock#useItemOn).
+_EXTRA_GAMEPLAY = {"honey_bottle": ("beehive_bottle",)}
 
 # Lazily-loaded acquisition table (tools/build_acquisition.py) + reverse id lookups. Cached because
 # they are read once per generation but queried thousands of times by the trigger compiler; cached per
@@ -1871,7 +1875,7 @@ class RuleHelper:
                 add(self.all_of(self.structure(structure_name), self.has_brush()),
                     unreliable("archaeology", structure_name), runs_dry=True,
                     chance=chance("archaeology", structure_name))
-        for table in record.get("gameplay", ()):
+        for table in (*record.get("gameplay", ()), *_EXTRA_GAMEPLAY.get(base, ())):
             # A trial-chamber vault opens once per player and its spawners go quiet: finite, like a chest.
             # Counted renewable, its 0.3% diamond block was 'Diamond Miner' (64 diamonds) without a pickaxe.
             add(self._gameplay_node(table), unreliable("gameplay", table), chance=chance("gameplay", table),
@@ -2262,15 +2266,15 @@ class RuleHelper:
             return self.can_win_raid()  # villagers throw gifts after a won raid
         harvest = _GAMEPLAY_HARVEST.get(table)
         if harvest is not None:
-            region, needs_shears = harvest
+            region, tool = harvest
             grows = self.all_of(self.access_region(region), self._natural_origin(_HARVEST_BLOCK.get(table, table)))
             if table in _HARVEST_MOB:
                 grows = self.all_of(grows, self.entity(_HARVEST_MOB[table]))
-            if needs_shears:
-                shears = self.acquire("minecraft:shears")
-                if shears is None:
-                    return None  # can't shear-harvest without shears (circular here)
-                return self.all_of(grows, shears)
+            if tool:
+                held = self.acquire(tool)
+                if held is None:
+                    return None  # can't harvest without the tool (circular here)
+                return self.all_of(grows, held)
             return grows
         if table in ("corridor", "trial_chamber_melee", "trial_chamber_ranged"):
             return self.structure(S_TRIAL_CHAMBERS)
