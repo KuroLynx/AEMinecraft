@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_structure/ruined_portal_jungle",
+  "parent": "aem:category/structure_unlocks",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

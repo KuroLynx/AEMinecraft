@@ -302,7 +302,7 @@ loudly in the audit, not quietly in a player's seed.
 26.3 has one Abandoned Camp per biome (18 items), and every version splits villages (5), ruined
 portals (7), ocean ruins, shipwrecks, mineshafts and so on.
 
-New option **`structure_variant`** (`structure_variant: 'true' / 'false'`, default **`false`**), a
+New option **`split_structure_variants`** (`split_structure_variants: 'true' / 'false'`, default **`false`**), a
 `Toggle` in `options.py` + `template.yaml`:
 - `false` (default): structures that differ only by biome share **one** unlock item, e.g.
   `Structure Unlock: Village` (plains/desert/savanna/snowy/taiga), `Structure Unlock: Ruined Portal`
@@ -325,7 +325,7 @@ New option **`structure_variant`** (`structure_variant: 'true' / 'false'`, defau
   restores them. The mod needed no change (it already unlocks every structure mapped to an item id).
   Such a poser: routes via the grouped camp; `--without` it stays reachable through the Copper Golem
   route (legit), and is out without both. all-options + Generate with both values: in the Z pass.
-  - **Check:** `structure_variant: false` on 26.3: AP item names contain exactly one
+  - **Check:** `split_structure_variants: false` on 26.3: AP item names contain exactly one
     `Structure Unlock: Abandoned Camp`, one `Village`, one `Ruined Portal`. `true` → the per-biome
     items as today.
   - **Check:** `why_rule.py --mc 26.3 "Such a poser"` routes through `Structure Unlock: Abandoned

@@ -81,6 +81,13 @@ def tracker_id(kind: str, game_id: str) -> str:
     return f"{TRACKER_NAMESPACE}:{kind}/{_slug(game_id)}"
 
 
+def structure_group_tracker_id(label: str) -> str:
+    """Stable id for a structure group's one tile (split_structure_variants off), e.g.
+    ``aem:unlock_structure/group/village``; under ``group/`` so "Ruined Portal" can't collide with the
+    ruined_portal structure's own tile."""
+    return f"{TRACKER_NAMESPACE}:{KIND_UNLOCK_STRUCTURE}/group/{label.lower().replace(' ', '_')}"
+
+
 def goal_boss_tracker_id(game_id: str) -> str:
     """Stable id for a per-boss tile under the main-tab Bosses goal, e.g. ``aem:goal/bosses/ender_dragon``.
 
@@ -154,10 +161,14 @@ def build_trackers_export(world) -> dict:
             "item_id": BASE_ID_ENTITY_UNLOCK + mob_data.id,
         }
 
-    # Structure unlocks (items) — only structures locked by the structure_unlock option.
+    # Structure unlocks (items) — only structures locked by the structure_unlock option. Variants sharing
+    # one unlock show as their group's single tile instead of one tile each.
     for struct_name in world._get_locked_structures():
         struct_data = world.content.STRUCTURES[struct_name]
-        trackers[tracker_id(KIND_UNLOCK_STRUCTURE, struct_data.game_id)] = {
+        group = world._structure_group(struct_name)
+        tile_id = (structure_group_tracker_id(group) if group is not None
+                   else tracker_id(KIND_UNLOCK_STRUCTURE, struct_data.game_id))
+        trackers[tile_id] = {
             "kind": "unlock",
             "item_id": world.item_name_to_id[world._structure_unlock_name(struct_name)],
         }

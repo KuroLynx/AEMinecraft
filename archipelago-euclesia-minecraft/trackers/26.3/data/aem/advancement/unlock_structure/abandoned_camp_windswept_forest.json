@@ -1,5 +1,5 @@
 {
-  "parent": "aem:category/structure_unlocks",
+  "parent": "aem:unlock_structure/abandoned_camp_taiga",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

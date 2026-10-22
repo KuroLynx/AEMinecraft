@@ -138,7 +138,7 @@ class MCWorld(World):
         # it rises to full progression is a per-seed call, computed from the goal (see
         # _structure_classification), not stored in the data.
         if name.startswith(STRUCT_UNLOCK_PREFIX):
-            # A group item (structure_variant off) counts as much as its most load-bearing member.
+            # A group item (split_structure_variants off) counts as much as its most load-bearing member.
             members = [gid for gid in self._get_locked_structures() if self._structure_unlock_name(gid) == name]
             if not members:
                 members = [self.content.STRUCTURE_BY_LABEL[name.removeprefix(STRUCT_UNLOCK_PREFIX)]]
@@ -214,12 +214,18 @@ class MCWorld(World):
                     locked.add(gid)
         return locked
 
+    def _structure_group(self, struct_gid: str) -> str | None:
+        """The group label ``struct_gid`` is unlocked with this seed, or None when it unlocks alone."""
+        if self.options.split_structure_variants:
+            return None
+        return self.content.STRUCTURE_GROUP_OF.get(struct_gid)
+
     def _structure_unlock_name(self, struct_gid: str) -> str:
-        """The item that unlocks ``struct_gid`` this seed: its group's when structure_variant is off
+        """The item that unlocks ``struct_gid`` this seed: its group's when split_structure_variants is off
         and the structure has biome variants (content.STRUCTURE_GROUPS), else its own. Pool, logic,
         slot_data and trackers all ask here, so they can't disagree."""
-        group = self.content.STRUCTURE_GROUP_OF.get(struct_gid)
-        if group is not None and not self.options.structure_variant:
+        group = self._structure_group(struct_gid)
+        if group is not None:
             return f"{STRUCT_UNLOCK_PREFIX}{group}"
         return f"{STRUCT_UNLOCK_PREFIX}{self.content.STRUCTURES[struct_gid].label}"
 

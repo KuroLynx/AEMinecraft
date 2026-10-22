@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_structure/nether_fossil",
+  "parent": "aem:unlock_structure/group/ocean_ruin",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

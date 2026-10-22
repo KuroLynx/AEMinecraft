@@ -288,7 +288,7 @@ class MinecraftContent:
         # structure_unlock YAML option and parsing a "Structure Unlock: <label>" item name back to its
         # structure).
         self.STRUCTURE_BY_LABEL: dict[str, str] = {data.label: gid for gid, data in self.STRUCTURES.items()}
-        # Biome variants sharing one unlock when structure_variant is off: group label -> member game_ids,
+        # Biome variants sharing one unlock when split_structure_variants is off: group label -> member game_ids,
         # and each member's group. Derived from the game's structure tags (registry.load_structure_groups).
         self.STRUCTURE_GROUPS: dict[str, tuple[str, ...]] = load_structure_groups(
             [self.BASE_PACK, *(pack for pack, _ in self.OVERLAY_PACKS)], self.STRUCTURES)
@@ -455,7 +455,7 @@ ITEM_NAME_TO_ID: dict[str, int] = {
        for structure in ALL_VERSIONS_STRUCTURES.values()},
 }
 
-# Structure groups (structure_variant off), every version's members together. A group named like one of
+# Structure groups (split_structure_variants off), every version's members together. A group named like one of
 # its structures ("Ruined Portal", "Shipwreck", "Mineshaft") IS that structure's item; the others get
 # their own id, BASE_ID_STRUCT_GROUP + the lowest member id.
 ALL_VERSIONS_STRUCTURE_GROUPS: dict[str, set[str]] = {}

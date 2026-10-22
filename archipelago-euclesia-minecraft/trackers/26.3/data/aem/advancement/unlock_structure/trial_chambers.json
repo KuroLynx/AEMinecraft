@@ -1,5 +1,5 @@
 {
-  "parent": "aem:category/structure_unlocks",
+  "parent": "aem:unlock_structure/trail_ruins",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

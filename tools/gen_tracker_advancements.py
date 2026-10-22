@@ -57,6 +57,7 @@ from worlds.minecraft_aem.trackers import (  # noqa: E402
     TRACKER_ROOT,
     goal_boss_tracker_id,
     knowledge_tracker_id,
+    structure_group_tracker_id,
     tracker_id,
 )
 
@@ -392,13 +393,22 @@ def generate(version: str) -> int:
         unlocks_by_cat[mob.category].append({"id": tracker_id(KIND_UNLOCK_MOB, mob.game_id), "icon": icon,
                                "title": name, "description": f"Unlock {name} spawns"})
 
-    # STRUCTURES is keyed by game_id (slug); the pretty display name is struct.label.
-    structure_unlocks = [
-        {"id": tracker_id(KIND_UNLOCK_STRUCTURE, struct.game_id),
-         "icon": structure_icon(struct.game_id), "title": struct.label,
-         "description": f"Unlock {struct.label}"}
-        for struct in STRUCTURES.values()
-    ]
+    # STRUCTURES is keyed by game_id (slug); the pretty display name is struct.label. Each group of
+    # biome variants also gets one tile, just before its first member: a seed that doesn't split
+    # variants shows it instead of the members (the runtime compaction closes the gaps either way).
+    first_member = {min(gids, key=lambda gid: STRUCTURES[gid].id): label
+                    for label, gids in content.STRUCTURE_GROUPS.items()}
+    structure_unlocks = []
+    for gid, struct in STRUCTURES.items():
+        group = first_member.get(gid)
+        if group is not None:
+            structure_unlocks.append(
+                {"id": structure_group_tracker_id(group), "icon": structure_icon(struct.game_id),
+                 "title": group, "description": f"Unlock every {group}"})
+        structure_unlocks.append(
+            {"id": tracker_id(KIND_UNLOCK_STRUCTURE, struct.game_id),
+             "icon": structure_icon(struct.game_id), "title": struct.label,
+             "description": f"Unlock {struct.label}"})
 
     # Knowledge tab: one tile per item, progressive ones first. A progressive tile carries a criterion
     # per copy, added at runtime (RootAdvancementService), since how many copies exist is per seed.

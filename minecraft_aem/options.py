@@ -168,7 +168,7 @@ class StructureUnlock(OptionSet):
     default = frozenset({"Stronghold"})
 
 
-class StructureVariant(Toggle):
+class SplitStructureVariants(Toggle):
     """Give every biome variant of a structure its own Structure Unlock.
 
     Some structures come in one version per biome: five villages, seven ruined portals, two ocean
@@ -183,7 +183,7 @@ class StructureVariant(Toggle):
 
     Only matters for structures that structure_unlock locks.
     """
-    display_name = "Structure Variant"
+    display_name = "Split Structure Variants"
 
 
 # What knowledge_gates accepts, plus the same entries negated with a leading "-". Only presets and
@@ -632,7 +632,7 @@ class MCOptions(PerGameCommonOptions):
     knowledge_gates: KnowledgeGates
     mob_spawn_lock: MobSpawnLock
     structure_unlock: StructureUnlock
-    structure_variant: StructureVariant
+    split_structure_variants: SplitStructureVariants
     trap_chance: TrapChance
     challenge_sanity: ChallengeSanity
     structure_finder: StructureFinder
