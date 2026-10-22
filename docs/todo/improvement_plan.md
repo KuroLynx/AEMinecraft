@@ -18,7 +18,7 @@ python tools/why_rule.py [--mc 26.3] [--without "<item>"] "<advancement name pre
 ---
 
 > **Resume here (2026-10-22, evening):** A1–A11 done and merged into `release/v0.7.0` (unpushed).
-> A11 and A12 (list form) done too; A12b (structure tags) and A11b (fail loudly) are new. A8–A12 only ran their own **Check** lines: their
+> A11, A11b, A12 and A12b done too. A8–A12 only ran their own **Check** lines: their
 > regression + Generate runs are deferred to one pass at the end of section A (see Z).
 >
 > Found while checking A7 (fixed, `fix/glitch-cycle-depth`, merged): the "stalled" check was a
@@ -275,7 +275,9 @@ Ahoy! currently routes through Atlantis?'s ocean ruins.
 Fix: dump `worldgen/structure` tags into `tags.json` (PackDump, `structure` key; needs an in-game
 re-dump on all 3 versions) and resolve a tag to the OR of its members in `_location`.
 
-- [ ] A12b fixed
+- [x] A12b fixed (2026-10-23, with A11b: PackDump writes `biome` + `structure` tags, re-dumped in-world
+  for vanilla + BACAP on all 3 versions; `_location` resolves both. Ahoy!/From Whence It Came!/Void
+  Walker gated correctly on 26.1.2/26.2/26.3)
   - **Check:** `why_rule.py --mc 26.3 "Ahoy" "Titanic" "From Whence It Came"`: every route has the
     tag's Structure Unlock (Shipwreck / Shipwreck Beached, a Ruined Portal variant).
 
@@ -286,7 +288,12 @@ advancement became free or fell back to its parent. Every reader in `criteria.py
 shape it doesn't understand, instead of returning None. A new pack format then breaks generation
 loudly in the audit, not quietly in a player's seed.
 
-- [ ] A11b done
+- [x] A11b done (feat/compiler-fail-loudly, 2026-10-23: readers raise CompileError on a present field
+  of an unreadable shape; unknown KEYS stay audited. Found + fixed: biome lists (read as Overworld),
+  location_check, biome/structure tags; entity_scores declared as pinning nothing.
+  `tools/check_compile_all.py` PASS on all 3 versions. Also fixed the dump button: it dumped pack
+  files on the title screen, where block_mining crashed ("Components not bound yet") and nothing
+  had been rewritten since 2026-09-30; it now dumps everything in its throwaway world)
   - **Check:** `tools/audit_predicate_coverage.py` + a compile of every manifest (vanilla + BACAP
     packs) on 26.1.2/26.2/26.3 raises nothing; a deliberately malformed predicate (a list for a
     string field) raises with the advancement and field path in the message.
@@ -476,6 +483,7 @@ behaviour, `DeathLinkService.applyRemote`) or **all** of them. It's a `/aem deat
 - [ ] `python tools/logic_selfcheck.py` passes.
 - [ ] `python tools/verify_all_options.py` passes (no dead locks).
 - [ ] `python tools/verify_reachability.py` passes.
+- [ ] `python tools/check_compile_all.py` passes (every manifest compiles, nothing unreadable).
 - [ ] `python tools/audit_bare_rules.py`: the backlog count is not higher than before (28 on 26.3 /
       32 on 26.1.2).
 - [ ] Full `Generate.py` with the verify YAMLs **plus** BACAP, Overworld and
