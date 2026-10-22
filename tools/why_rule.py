@@ -12,7 +12,7 @@ import itertools
 import os
 import sys
 
-AP_ROOT = r"C:\Users\benja\PycharmProjects\ArchipelagoClone"
+AP_ROOT = os.environ.get("AP_ROOT", r"C:\Users\benja\PycharmProjects\ArchipelagoClone")
 sys.path.insert(0, AP_ROOT)
 os.chdir(AP_ROOT)
 
