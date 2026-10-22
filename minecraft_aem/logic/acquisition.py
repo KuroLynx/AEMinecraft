@@ -153,6 +153,15 @@ _END_BLOCK_HINTS = ("end_stone", "chorus", "purpur", "dragon_egg")
 # trace, so "wander until you trip over one" is not a route at all, not even an unreliable one. Read
 # by structure_located, which therefore gives these no free glitch pass.
 _NO_SURFACE_TRACE = frozenset({S_STRONGHOLD})
+# Mobs placed once by their structure's generation and never spawned again: three elder guardians per
+# monument, a bastion's brutes. What they drop runs dry like a chest, so a stack (Sponge Miner's 64)
+# can't count on them over the structure's own blocks. Not derivable from the packs: both are placed
+# by the structure's Java pieces, not by datapack spawn data, and a guardian (which does respawn
+# around a monument) looks the same there.
+_GENERATED_ONCE_MOBS = frozenset({E_ELDER_GUARDIAN, E_PIGLIN_BRUTE})
+# Blocks that dry the moment they are placed in the Nether (an ultrawarm dimension): dried item ->
+# the wet one. Game behaviour, not a recipe, so the packs don't carry it.
+_DRIED_IN_NETHER = {"sponge": "minecraft:wet_sponge"}
 
 _NATURAL_SELF_MINED = frozenset({
     "stone", "cobblestone", "granite", "diorite", "andesite", "tuff", "calcite", "deepslate",
@@ -1719,12 +1728,18 @@ class RuleHelper:
         for recipe in record.get("recipes", ()):
             # A recipe is deterministic; whether its INGREDIENTS are is decided in their own acquire.
             add(self._recipe_node(recipe))
+        wet = _DRIED_IN_NETHER.get(base)
+        if wet is not None:
+            # Place it in the Nether and it dries on the spot; break it back. No furnace needed.
+            mine = self._mining_node(base, base)
+            if mine is not None:
+                add(self._route(self.acquire(wet), self.access_region(REGION_NETHER), mine))
         waxed = _wax_scrapes(self.content).get(base)
         if waxed is not None:
             # Place the waxed block, scrape the wax off with an axe, break it back.
             mine = self._mining_node(base, base)
             if mine is not None:
-                add(self.all_of(self.acquire(f"minecraft:{waxed}"), self._tool_kind("axe"), mine))
+                add(self._route(self.acquire(f"minecraft:{waxed}"), self._tool_kind("axe"), mine))
         step = _brewing_steps(self.content).get(base)
         if step:
             # A brew is as deterministic as a recipe. The jar spells these out only from 26.3, so
@@ -1741,7 +1756,8 @@ class RuleHelper:
                 # A drop needs the mob *defeated*, not merely reached: harmless for ordinary mobs
                 # (can_defeat == reachability) but correct for boss drops like the Wither's nether
                 # star, which must gate on the whole boss fight rather than just entering its arena.
-                add(self.can_defeat(name), unreliable("drops", mob_file), chance=chance("drops", mob_file))
+                add(self.can_defeat(name), unreliable("drops", mob_file), chance=chance("drops", mob_file),
+                    runs_dry=name in _GENERATED_ONCE_MOBS)
         mining_blocks = record.get("mining", ())
         # Data-driven: when the item has a tier-gated ORE source, a same-item block carrying no tier
         # info is a circular placed form (e.g. ``redstone_wire`` beside ``redstone_ore`` [iron]) whose
@@ -1803,7 +1819,7 @@ class RuleHelper:
                 aged = _aged_source(self.content, block) if block == base else None
                 if aged is not None:
                     # Craftable AND aged (an exposed copper bulb): place the plain one, wait, break it.
-                    add(self.all_of(self.acquire(aged), mine))
+                    add(self._route(self.acquire(aged), mine))
                 continue
             node = self._mining_node(block, base)
             if node is not None:
@@ -1940,6 +1956,12 @@ class RuleHelper:
             parts.append(node)
         if not parts:
             return None
+        return self._route(*parts)
+
+    def _route(self, *parts):
+        """AND of a source's parts, keeping their marks: it runs dry (pricing a stack) or is loose when
+        any part is. A source built with a bare all_of loses them, and a stack then prefers it over an
+        honest route through the same finite ingredient."""
         node = and_(*parts)
         if self._bulk and any(id(part) in self._dry_nodes for part in parts):
             self._dry_nodes.add(id(node))
