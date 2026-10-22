@@ -287,8 +287,8 @@ _ENTITY_KEYS = {"type", "location", "stepping_on", "effects", "equipment", "vehi
                 "type_specific", "components", "predicates", "nbt"}
 _ENTITY_SKIP = {"distance", "flags", "team", "movement", "movement_affected_by", "targeted_entity",
                 "slots", "periodic_tick"}
-_LOCATION_KEYS = {"position", "biomes", "structures", "dimension", "block"}
-_LOCATION_FREE = {"fluid", "light", "smokey", "can_see_sky"}   # a threshold you can just go and stand in
+_LOCATION_KEYS = {"position", "biomes", "structures", "dimension", "block", "smokey"}
+_LOCATION_FREE = {"fluid", "light", "can_see_sky"}   # a threshold you can just go and stand in
 _ITEM_KEYS = {"items", "count", "components", "predicates"}
 _COMPONENTS = {"potion_contents", "enchantments", "stored_enchantments", "trim", "container",
                "bundle_contents", "jukebox_playable"}
@@ -667,6 +667,11 @@ class CriteriaCompiler:
         if isinstance(loc.get("position"), dict):
             parts.append(self._position(loc["position"], region) or FREE)
         parts += [any_(*[self._block(b) for b in _ids(loc.get("block"))])]
+        if loc.get("smokey") is True:
+            # Vanilla's only use of smoke: harvesting a hive calmly. A campfire under it for the
+            # smoke, and bees to have filled it with honey in the first place.
+            parts += [any_(_item("minecraft:campfire"), _item("minecraft:soul_campfire")),
+                      need("entity_id", "minecraft:bee")]
         node = all_(*parts)
         return node if node is not None else (FREE if _LOCATION_FREE & loc.keys() else None)
 
