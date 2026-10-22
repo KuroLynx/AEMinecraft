@@ -37131,6 +37131,9 @@
         "ingredients": [
           {
             "item": "arrow"
+          },
+          {
+            "item": "lingering_potion"
           }
         ],
         "station": "crafting_imbue"
