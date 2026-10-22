@@ -25,13 +25,31 @@ public final class BiomeFinderClient {
 
     /** Biome ids for the dimension the last request was made from; null until an answer arrives. */
     private static volatile List<Identifier> biomes;
+    /** The map that came with them; null with the list, or when the server sent none. */
+    private static volatile BiomeMap map;
+
+    /**
+     * A biome map from the server: {@code size}² cells {@code step} blocks apart around
+     * ({@code centerX}, {@code centerZ}), row-major from the north-west; each cell indexes
+     * {@link #biomes()} (unsigned byte), 255 for none.
+     */
+    public record BiomeMap(int centerX, int centerZ, int step, int size, byte[] cells) {
+        /** The biome index at a cell, or -1. */
+        public int at(int col, int row) {
+            int value = cells[row * size + col] & 0xFF;
+            return value == 255 ? -1 : value;
+        }
+    }
 
     public static void register() {
         ClientPlayNetworking.registerGlobalReceiver(BiomeListPayload.TYPE,
                 (payload, context) -> context.client().execute(() -> accept(payload)));
 
         // Don't carry one world's biome list into the next.
-        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> biomes = null);
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+            biomes = null;
+            map = null;
+        });
     }
 
     private static void accept(BiomeListPayload payload) {
@@ -42,7 +60,17 @@ public final class BiomeFinderClient {
                 parsed.add(id);
             }
         }
+        // Parsed in order, and an unparseable id is dropped — which would shift every index after it.
+        // Ids come from the server's own registry, so that never happens; if it ever did, drop the map.
+        map = payload.size() > 0 && parsed.size() == payload.biomeIds().size()
+                ? new BiomeMap(payload.centerX(), payload.centerZ(), payload.step(), payload.size(), payload.cells())
+                : null;
         biomes = List.copyOf(parsed);
+    }
+
+    /** The map that arrived with the last list, or null. */
+    public static BiomeMap map() {
+        return map;
     }
 
     /**
@@ -58,6 +86,7 @@ public final class BiomeFinderClient {
             return;
         }
         biomes = null;
+        map = null;
         ClientPlayNetworking.send(BiomeListRequestPayload.INSTANCE);
     }
 
@@ -79,14 +108,21 @@ public final class BiomeFinderClient {
     /** Stops tracking: an empty pick, which the server answers by clearing the HUD target. */
     public static void clear() {
         if (ClientPlayNetworking.canSend(BiomeSearchPayload.TYPE)) {
-            ClientPlayNetworking.send(new BiomeSearchPayload(""));
+            ClientPlayNetworking.send(BiomeSearchPayload.clear());
         }
     }
 
-    /** Sends a pick; the server runs the search and points the HUD tracker bar. */
+    /** Sends a pick; the server runs the search and points the ground arrows (BiomeArrowRenderer). */
     public static void pick(Identifier biomeId) {
         if (ClientPlayNetworking.canSend(BiomeSearchPayload.TYPE)) {
-            ClientPlayNetworking.send(new BiomeSearchPayload(biomeId.toString()));
+            ClientPlayNetworking.send(BiomeSearchPayload.nearest(biomeId.toString()));
+        }
+    }
+
+    /** Sends a map click: point the ground arrows at exactly this spot. */
+    public static void pickSpot(int x, int z) {
+        if (ClientPlayNetworking.canSend(BiomeSearchPayload.TYPE)) {
+            ClientPlayNetworking.send(BiomeSearchPayload.spot(x, z));
         }
     }
 }

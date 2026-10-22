@@ -117,8 +117,8 @@ public final class AEMScreenButtons {
                 // side by side wherever vanilla puts the inventory panel.
                 ScreenPosition recipeButton =
                         ((InventoryScreenAccessor) inventory).archipelago_euclesia$recipeBookButtonPosition();
-                // A vanilla compass as the face — the same icon the Biome Finder's HUD locator bar
-                // uses, and no texture of our own to ship.
+                // A vanilla compass as the face: it reads as "find your way", and no texture of our own
+                // to ship.
                 ItemIconButton button = new ItemIconButton(
                         recipeButton.x() + RECIPE_BUTTON_WIDTH + BIOME_FINDER_GAP, recipeButton.y(),
                         BIOME_FINDER_WIDTH, BIOME_FINDER_HEIGHT, BIOME_FINDER_LABEL, Items.COMPASS,
