@@ -334,28 +334,36 @@ New option **`structure_variant`** (`structure_variant: 'true' / 'false'`, defau
     + full Generate pass with both values on all 3 versions.
   - **Check (in-game):** receiving the grouped item places camps in two different biomes.
 
+### A14. Archaeology loot forgot the brush (found checking B2, 2026-10-23)
+`player_generates_container_loot` on an `archaeology/<structure>` table was priced as just the
+structure. Vanilla *Respecting the Remnants* (BACAP rewrites it to "hold a sherd") was in logic with a
+Desert Well / Trail Ruins unlock and no Brush.
+- [x] A14 fixed (fix/archaeology-brush e5fced3): `_price_loot_table` adds `has_brush()` for
+  archaeology tables. Vanilla routes now all carry Brush Handling + copper + a feather; BACAP
+  unchanged. selfcheck, reachability, all-options, compile x3, vanilla Generate x3 PASS.
+
 ---
 
 ## B. Reported but not bugs — reply to the players
 
-- [ ] B1 *Direct Fishing* (kill a cod/salmon/…): bare hands work, so no Sword or Fishing is needed.
+- [x] B1 (verified 2026-10-23: Cod/Salmon unlock only) *Direct Fishing* (kill a cod/salmon/…): bare hands work, so no Sword or Fishing is needed.
   It needs the fish unlock only. (Verified: `--without "Knowledge: Sword Handling"` → still true,
   correctly.)
-- [ ] B2 *Brushed Away* vs *Respecting the Remnants*: sherds drop from Trial Chamber pots/vaults
+- [x] B2 (verified 2026-10-23; BACAP's Remnants is "hold a sherd", so Trial Chambers vaults count. The vanilla one was a leak: A14) *Brushed Away* vs *Respecting the Remnants*: sherds drop from Trial Chamber pots/vaults
   without a brush, while a brush needs Brush Handling + copper (Material Handling ×2) + a feather.
   Villages do count as a feather source. Out of logic means one of the first two was missing.
-- [ ] B3 *Winnie the Pooh* / *Sticky Situation*: Trial Chamber spawners reward honey bottles, so no
+- [x] B3 (verified 2026-10-23: strict = Trial Chambers + Structure Finder) *Winnie the Pooh* / *Sticky Situation*: Trial Chamber spawners reward honey bottles, so no
   bees are needed.
-- [ ] B4 *Such a poser* without Copper Golem: on 26.3, abandoned camps generate copper golem statues.
+- [x] B4 (verified 2026-10-23: all 18 camp palettes have the statue) *Such a poser* without Copper Golem: on 26.3, abandoned camps generate copper golem statues.
   Confirm the statue is in the camp palette (`packs/minecraft_26_3/structures.json`). If it isn't,
   it becomes a leak in A13.
-- [ ] B5 "Craft every X wood" yellow vs green: rare-biome woods (jungle, dark oak, mangrove, cherry,
+- [x] B5 (verified 2026-10-23 on Cherry Bomb: strict needs Biome Finder, glitch doesn't) "Craft every X wood" yellow vs green: rare-biome woods (jungle, dark oak, mangrove, cherry,
   pale oak, acacia, …) need the Biome Finder in strict logic. Glitch waives
   the Finder, so they show yellow. Verify on one: `why_rule.py "<cherry wood advancement>"`.
-- [ ] B6 Marine Marauder: becomes yellow-only through guardians once A1 lands.
-- [ ] B8 *Just a sample* with only a pickaxe: the advancement accepts dead coral too, and a coral
+- [x] B6 (2026-10-23: strict routes are Turtle + Armor Handling, or Buried Treasure + Fishing) Marine Marauder: becomes yellow-only through guardians once A1 lands.
+- [x] B8 (verified 2026-10-23: Pickaxe Handling alone) *Just a sample* with only a pickaxe: the advancement accepts dead coral too, and a coral
   block mined without Silk Touch drops a dead coral block. See A6.
-- [ ] B7 *Noxious Fumes* / *Gas!*: the reporter was right. They now need the End (brewing with
+- [x] B7 (verified 2026-10-23: strict needs the Ender Dragon unlock + End) *Noxious Fumes* / *Gas!*: the reporter was right. They now need the End (brewing with
   dragon's breath) for green, and Trial Chamber dispensers (14%) only make them yellow. See A3.
 
 ---
