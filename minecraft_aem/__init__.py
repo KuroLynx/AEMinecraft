@@ -138,10 +138,15 @@ class MCWorld(World):
         # it rises to full progression is a per-seed call, computed from the goal (see
         # _structure_classification), not stored in the data.
         if name.startswith(STRUCT_UNLOCK_PREFIX):
-            struct_gid = self.content.STRUCTURE_BY_LABEL[name.removeprefix(STRUCT_UNLOCK_PREFIX)]
-            struct_data = self.content.STRUCTURES[struct_gid]
-            classification = self._structure_classification(struct_gid)
-            return MCItem(name, classification, BASE_ID_STRUCT_UNLOCK + struct_data.id, self.player)
+            # A group item (structure_variant off) counts as much as its most load-bearing member.
+            members = [gid for gid in self._get_locked_structures() if self._structure_unlock_name(gid) == name]
+            if not members:
+                members = [self.content.STRUCTURE_BY_LABEL[name.removeprefix(STRUCT_UNLOCK_PREFIX)]]
+            classifications = {self._structure_classification(gid) for gid in members}
+            classification = (ItemClassification.progression
+                              if ItemClassification.progression in classifications
+                              else ItemClassification.progression_skip_balancing)
+            return MCItem(name, classification, self.item_name_to_id[name], self.player)
 
         raise KeyError(f"Unknown item: {name}")
 
@@ -208,6 +213,15 @@ class MCWorld(World):
                 if gid in active:
                     locked.add(gid)
         return locked
+
+    def _structure_unlock_name(self, struct_gid: str) -> str:
+        """The item that unlocks ``struct_gid`` this seed: its group's when structure_variant is off
+        and the structure has biome variants (content.STRUCTURE_GROUPS), else its own. Pool, logic,
+        slot_data and trackers all ask here, so they can't disagree."""
+        group = self.content.STRUCTURE_GROUP_OF.get(struct_gid)
+        if group is not None and not self.options.structure_variant:
+            return f"{STRUCT_UNLOCK_PREFIX}{group}"
+        return f"{STRUCT_UNLOCK_PREFIX}{self.content.STRUCTURES[struct_gid].label}"
 
     def _get_locked_mobs(self) -> set[str]:
         """Mobs locked behind an 'Entity Unlock' item, per the mob_spawn_lock option.
@@ -517,8 +531,8 @@ class MCWorld(World):
 
         # Structure unlocks: only the structures locked by the structure_unlock option are added.
         # Unlocked structures are gated by their dimension instead (see RuleHelper.structure).
-        for struct_gid in self._get_locked_structures():
-            pool.append(self.create_item(f"{STRUCT_UNLOCK_PREFIX}{self.content.STRUCTURES[struct_gid].label}"))
+        for name in sorted({self._structure_unlock_name(gid) for gid in self._get_locked_structures()}):
+            pool.append(self.create_item(name))
 
         active_location_count = len(self._get_active_locations())
 
@@ -848,7 +862,7 @@ class MCWorld(World):
             # --- Structure lock : game_id de la structure → item ID de son unlock ---
             # Uniquement les structures verrouillées par l'option structure_unlock.
             "structure_locks"      : {
-                self.content.STRUCTURES[name].game_id: BASE_ID_STRUCT_UNLOCK + self.content.STRUCTURES[name].id
+                self.content.STRUCTURES[name].game_id: self.item_name_to_id[self._structure_unlock_name(name)]
                 for name in self._get_locked_structures()
             },
 

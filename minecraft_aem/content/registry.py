@@ -31,6 +31,9 @@ from ..logic.constants import (
 BASE_ID_ITEMS           = 0xEC0000
 BASE_ID_ENTITY_UNLOCK   = 0xEC0100
 BASE_ID_STRUCT_UNLOCK   = 0xEC0200
+# A structure group's own unlock item (structure_variant off), for a group with no structure of its
+# name: + the lowest member's structure id, so it is stable and no two groups share one.
+BASE_ID_STRUCT_GROUP    = 0xEC0300
 BASE_ID_LOC_ADVANCEMENT = 0xEC1000
 BASE_ID_LOC_BOSS_KILL   = 0xEC1100
 BASE_ID_LOC_MOB_KILL    = 0xEC1200
@@ -424,6 +427,29 @@ def _load_structures(pack_dir) -> dict[str, MCStructureData]:
     for index, row in enumerate(rows):
         structs[row["game_id"]] = _struct_record(row, index)
     return structs
+
+
+def load_structure_groups(pack_names, structures: dict) -> dict[str, tuple[str, ...]]:
+    """Biome variants of one structure, as the game groups them: a structure tag (tags.json
+    ``structure``) whose members are all ``<tag>`` or ``<tag>_<variant>`` (``#minecraft:village`` ->
+    village_plains, village_desert…). Tags that only collect unrelated structures (``#dolphin_located``,
+    the map tags) fail that test. Display label -> member game_ids (``structures`` keys), sorted; only
+    groups with at least two of this version's structures. A content pack joins a group by adding
+    to its tag."""
+    raw: dict[str, list] = {}
+    for pack_name in pack_names:
+        path = _pack_dir(pack_name).joinpath("tags.json")
+        if path.is_file():
+            with path.open(encoding="utf-8") as f:
+                for tag, members in json.load(f).get("structure", {}).items():
+                    raw.setdefault(tag, []).extend(members)
+    groups: dict[str, tuple[str, ...]] = {}
+    for tag, members in raw.items():
+        base = tag.removeprefix("minecraft:")
+        gids = sorted({m.removeprefix("minecraft:") for m in members} & set(structures))
+        if len(gids) >= 2 and all(g == base or g.startswith(base + "_") for g in gids):
+            groups[_prettify(base)] = tuple(gids)
+    return groups
 
 
 def load_structures(pack_name: str, id_start: int = 0) -> dict[str, MCStructureData]:

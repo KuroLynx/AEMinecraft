@@ -168,6 +168,24 @@ class StructureUnlock(OptionSet):
     default = frozenset({"Stronghold"})
 
 
+class StructureVariant(Toggle):
+    """Give every biome variant of a structure its own Structure Unlock.
+
+    Some structures come in one version per biome: five villages, seven ruined portals, two ocean
+    ruins, shipwrecks (and beached ones), mineshafts (and mesa ones), and on 26.3 eighteen abandoned
+    camps. The groups are the game's own (its structure tags), so a mod or datapack structure that
+    joins one of those tags joins the group too.
+
+    - false (default): one item unlocks the whole group, e.g. 'Structure Unlock: Village' opens every
+      village and 'Structure Unlock: Abandoned Camp' every camp.
+    - true: one item per variant ('Structure Unlock: Village Plains', 'Structure Unlock: Village
+      Desert', …), which puts many more Structure Unlocks in the pool.
+
+    Only matters for structures that structure_unlock locks.
+    """
+    display_name = "Structure Variant"
+
+
 # What knowledge_gates accepts, plus the same entries negated with a leading "-". Only presets and
 # knowledge names are negatable: "-All" would just mean the empty list, which the player can write.
 _KNOWLEDGE_GATES = {category for category in KNOWLEDGES_BY_CATEGORY} | set(KNOWLEDGES.keys())
@@ -614,6 +632,7 @@ class MCOptions(PerGameCommonOptions):
     knowledge_gates: KnowledgeGates
     mob_spawn_lock: MobSpawnLock
     structure_unlock: StructureUnlock
+    structure_variant: StructureVariant
     trap_chance: TrapChance
     challenge_sanity: ChallengeSanity
     structure_finder: StructureFinder

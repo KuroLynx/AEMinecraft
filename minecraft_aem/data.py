@@ -29,6 +29,7 @@ from .content.registry import (  # noqa: F401
     BASE_ID_LOC_MOB_KILL,
     BASE_ID_LOC_STRUCTURE,
     BASE_ID_STRUCT_UNLOCK,
+    BASE_ID_STRUCT_GROUP,
     ContentRegistry,
     BASE_ID_KNOWLEDGE,
     MCEntityCategory,
@@ -50,6 +51,7 @@ from .content.registry import (  # noqa: F401
     load_manifest_removed,
     load_pack,
     load_structures,
+    load_structure_groups,
     minecraft_versions,
     overlay_packs,
     pack_meta,
@@ -286,6 +288,12 @@ class MinecraftContent:
         # structure_unlock YAML option and parsing a "Structure Unlock: <label>" item name back to its
         # structure).
         self.STRUCTURE_BY_LABEL: dict[str, str] = {data.label: gid for gid, data in self.STRUCTURES.items()}
+        # Biome variants sharing one unlock when structure_variant is off: group label -> member game_ids,
+        # and each member's group. Derived from the game's structure tags (registry.load_structure_groups).
+        self.STRUCTURE_GROUPS: dict[str, tuple[str, ...]] = load_structure_groups(
+            [self.BASE_PACK, *(pack for pack, _ in self.OVERLAY_PACKS)], self.STRUCTURES)
+        self.STRUCTURE_GROUP_OF: dict[str, str] = {
+            gid: label for label, gids in self.STRUCTURE_GROUPS.items() for gid in gids}
 
         # Every station/container block that has a Knowledge gate: full block id -> bare knowledge
         # name. Built from the dumped containers.json (see registry.knowledge_groups), so a block only
@@ -446,6 +454,17 @@ ITEM_NAME_TO_ID: dict[str, int] = {
     **{f"{STRUCT_UNLOCK_PREFIX}{structure.label}": BASE_ID_STRUCT_UNLOCK + structure.id
        for structure in ALL_VERSIONS_STRUCTURES.values()},
 }
+
+# Structure groups (structure_variant off), every version's members together. A group named like one of
+# its structures ("Ruined Portal", "Shipwreck", "Mineshaft") IS that structure's item; the others get
+# their own id, BASE_ID_STRUCT_GROUP + the lowest member id.
+ALL_VERSIONS_STRUCTURE_GROUPS: dict[str, set[str]] = {}
+for _version in MINECRAFT_VERSIONS:
+    for _label, _gids in _CONTENT[_version].STRUCTURE_GROUPS.items():
+        ALL_VERSIONS_STRUCTURE_GROUPS.setdefault(_label, set()).update(_gids)
+for _label, _gids in ALL_VERSIONS_STRUCTURE_GROUPS.items():
+    ITEM_NAME_TO_ID.setdefault(f"{STRUCT_UNLOCK_PREFIX}{_label}",
+                               BASE_ID_STRUCT_GROUP + min(ALL_VERSIONS_STRUCTURES[g].id for g in _gids))
 
 # Advancement and kill locations of every version; BACAP's blazeandcave locations too (always in the
 # static data package, created only when the blazeandcave option is on — its minecraft rewrites reuse
