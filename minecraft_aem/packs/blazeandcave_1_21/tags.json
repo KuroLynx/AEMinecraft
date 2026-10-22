@@ -723,5 +723,16 @@
       "minecraft:waxed_weathered_cut_copper_slab",
       "minecraft:waxed_weathered_cut_copper_stairs"
     ]
+  },
+  "biome": {
+    "blazeandcave:end_barrens": [
+      "minecraft:end_barrens"
+    ],
+    "blazeandcave:end_midlands": [
+      "minecraft:end_midlands"
+    ]
+  },
+  "structure": {
+    "blazeandcave:village": []
   }
 }

@@ -123,6 +123,20 @@ def any_(*parts):
     return kept[0] if len(kept) == 1 else Any(tuple(kept))
 
 
+class CompileError(ValueError):
+    """A predicate field present in a shape the compiler can't read. Raised rather than skipped: a
+    skipped field pins nothing, and that is how a new pack format silently made advancements free
+    (26.3 BACAP wrote ``location.structures`` as a list, and Atlantis? cost an Overworld). Unknown
+    KEYS are different: they stay counted in ``CriteriaCompiler.unread`` for the coverage audit."""
+
+
+def _fail(path: str, what, expected: str = ""):
+    """Raise CompileError for ``what`` found at ``path`` (``expected`` says what would have been read)."""
+    shown = repr(what)
+    shown = shown if len(shown) <= 120 else shown[:117] + "..."
+    raise CompileError(f"{path}: can't read {shown}" + (f" (expected {expected})" if expected else ""))
+
+
 def _path(gid) -> str:
     return gid.rsplit(":", 1)[-1] if isinstance(gid, str) else gid
 
@@ -137,19 +151,27 @@ def _ns(gid: str) -> str:
     return gid if ":" in gid else f"minecraft:{gid}"
 
 
-def _ids(value) -> list:
+def _ids(value, path: str = "ids") -> list:
     """An id, a list of ids, or ``{"blocks": …}`` / ``{"items": …}`` → list of id strings."""
     if isinstance(value, dict):
         value = value.get("blocks", value.get("items"))
+    if value is None:
+        return []
     if isinstance(value, str):
         return [value]
-    return [v for v in value if isinstance(v, str)] if isinstance(value, list) else []
+    if not isinstance(value, list) or not all(isinstance(v, str) for v in value):
+        _fail(path, value, "an id or a list of ids")
+    return value
 
 
-def _min(value) -> int:
+def _min(value, path: str = "range") -> int:
     if isinstance(value, dict):
         value = value.get("min")
-    return value if isinstance(value, int) and not isinstance(value, bool) else 0
+    if value is None:
+        return 0
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        _fail(path, value, "a number or {min, max}")
+    return int(value)
 
 
 # ---------------------------------------------------------------------------------------------------
@@ -352,6 +374,8 @@ class CriteriaCompiler:
         self._item_tags = tags.get("item", {})
         self._entity_tags = tags.get("entity_type", {})
         self._block_tags = tags.get("block", {})
+        self._biome_tags = tags.get("biome", {})
+        self._structure_tags = tags.get("structure", {})
         self.unread: Counter = Counter()   # "<trigger>.<key path>" -> times seen and not read
 
     # -- public ----------------------------------------------------------------------------------
@@ -362,6 +386,10 @@ class CriteriaCompiler:
             self._compiling.append(gid)
         try:
             return self._price(self.requirements(record, gid))
+        except CompileError as error:
+            if gid is None or str(error).startswith("advancement "):
+                raise
+            raise CompileError(f"advancement {gid}: {error}") from error
         finally:
             if gid is not None:
                 self._compiling.pop()
@@ -398,8 +426,7 @@ class CriteriaCompiler:
         spec = TRIGGERS.get(name)
         cond = crit.get("conditions") or {}
         if spec is None:
-            self.unread[f"{name}"] += 1   # a whole trigger nobody handles
-            return None
+            _fail("trigger", trigger, "a trigger in TRIGGERS")
 
         player = self._conditions(cond.get("player"), lambda p: self._entity(p, "self", f"{name}.player"))
         fields = spec.get("fields", {})
@@ -445,27 +472,35 @@ class CriteriaCompiler:
         if kind == "item":
             return self._item(value, path)
         if kind == "items":
-            return all_(*[self._item(v, path) or UNKNOWN for v in value]) if isinstance(value, list) else None
+            if value is not None and not isinstance(value, list):
+                _fail(path, value, "a list of item predicates")
+            return all_(*[self._item(v, path) or UNKNOWN for v in value or ()])
         if kind == "damage":
             return self._damage(value, arg, path)
         if kind == "damage_source":
             return self._damage_source(value, path)
         if kind == "block":
-            return any_(*[self._block(b) for b in _ids(value)])
+            return any_(*[self._block(b) for b in _ids(value, path)])
         if kind == "block_location":
             return self._block_conditions(value, arg, path)
         if kind == "dimension":
+            if value is not None and not isinstance(value, str):
+                _fail(path, value, "a dimension id")
             region = _DIMENSION_REGION.get(_path(value))
             return need("enter" if arg == "enter" else "region", region) if region else None
-        if kind == "potion_id":
-            return need("potion", self._potion_name(value)) if isinstance(value, str) else None
-        if kind == "loot_table":
-            return need("loot_table", value) if isinstance(value, str) else None
+        if kind in ("potion_id", "loot_table"):
+            if value is None:
+                return None
+            if not isinstance(value, str):
+                _fail(path, value, "an id")
+            return need("potion", self._potion_name(value)) if kind == "potion_id" else need("loot_table", value)
         if kind == "trade_output":
-            ids = [i for raw in _ids((value or {}).get("items")) for i in self._expand_items(raw)]
+            ids = [i for raw in _ids((value or {}).get("items"), f"{path}.items") for i in self._expand_items(raw)]
             return any_(*[need("take_lock", i) for i in ids])
         if kind == "effects":
-            return all_(*[need("effect", e) for e in value]) if isinstance(value, dict) else None
+            if value is not None and not isinstance(value, dict):
+                _fail(path, value, "a map of effect -> predicate")
+            return all_(*[need("effect", e) for e in value or {}])
         raise KeyError(reader)
 
     # -- custom triggers (what doesn't fit the table) ---------------------------------------------
@@ -473,8 +508,10 @@ class CriteriaCompiler:
         if cond.get("ingredients"):
             return None
         rid = cond.get("recipe_id")
-        if not isinstance(rid, str):
+        if rid is None:
             return None
+        if not isinstance(rid, str):
+            _fail("recipe_unlocked.recipe_id", rid, "a recipe id")
         base = _path(rid)
         if base.endswith("_smithing_trim"):
             return All((need("station", _SMITHING_STATION), _item(f"minecraft:{base[:-len('_smithing_trim')]}"),
@@ -491,7 +528,7 @@ class CriteriaCompiler:
         """A bucket, plus the mob it scoops up. Priced as the empty bucket at the top level rather than
         acquire("<x>_bucket"): that one level of extra recursion hits acquire's depth limit, whose
         material-tier fallback drops Pickaxe Handling from the iron."""
-        ids = _ids((cond.get("item") or {}).get("items"))
+        ids = _ids((cond.get("item") or {}).get("items"), "filled_bucket.item.items")
         if not ids:
             return None
         mob = self._entity_by_path.get(_path(ids[0]).removesuffix("_bucket"))
@@ -538,7 +575,7 @@ class CriteriaCompiler:
                   if d in _DIMENSION_REGION}
         if not pinned:
             return None
-        blocks = _ids(cond.get("block"))
+        blocks = _ids(cond.get("block"), "transport.block")
         items = [_BLOCK_TRANSPORT[_path(b)] for b in blocks
                  if _path(b) in _BLOCK_TRANSPORT and not pinned & set(_BLOCK_REGION.get(_path(b), ()))]
         return any_(*[_item(i) for i in items])
@@ -554,25 +591,40 @@ class CriteriaCompiler:
         ``any_of`` / ``all_of`` groups, ``entity_properties`` wrappers. ``inverted`` pins nothing."""
         if isinstance(value, list):
             return all_(*[self._conditions(v, read) for v in value])
-        if not isinstance(value, dict):
+        if value is None:
             return None
+        if not isinstance(value, dict):
+            _fail("predicate", value, "a predicate or a list of conditions")
         condition = _path(value.get("condition", ""))
         if condition == "inverted":
             return None
         if condition in ("any_of", "all_of"):
             parts = [self._conditions(t, read) for t in value.get("terms", ())]
             return any_(*parts) if condition == "any_of" else all_(*parts)
-        return read(value.get("predicate", value) if condition in ("", "entity_properties") else {})
+        if condition in ("", "entity_properties"):
+            return read(value.get("predicate", value))
+        if condition == "location_check":
+            # Where the subject stands (the offsets nudge the block checked, not the dimension).
+            return read({"location": value.get("predicate")})
+        if condition == "entity_scores":
+            return None   # a scoreboard value the datapack keeps itself; the rest of the criterion prices it
+        _fail("condition", condition, "entity_properties, location_check, entity_scores, any_of, all_of or inverted")
 
     def _entity(self, pred: dict, role: str, path: str):
-        if not isinstance(pred, dict):
+        if pred is None:
             return None
+        if not isinstance(pred, dict):
+            _fail(path, pred, "an entity predicate")
         self._check(pred, _ENTITY_KEYS | _ENTITY_SKIP, path)
-        equipment = pred.get("equipment") if isinstance(pred.get("equipment"), dict) else {}
+        equipment = pred.get("equipment") or {}
+        if not isinstance(equipment, dict):
+            _fail(f"{path}.equipment", equipment, "a map of slot -> item predicate")
         variant = any(str(k).endswith("/variant")
                       for holder in ("components", "predicates") if isinstance(pred.get(holder), dict)
                       for k in pred[holder])
-        nbt = pred.get("nbt") if isinstance(pred.get("nbt"), str) else ""
+        nbt = pred.get("nbt") or ""
+        if not isinstance(nbt, str):
+            _fail(f"{path}.nbt", nbt, "an SNBT string")
         carried = []
         if nbt.startswith("{Inventory:"):
             carried = [_item(i) for i in sorted(set(re.findall(r'id:"([a-z0-9_:]+)"', nbt)))]
@@ -624,7 +676,7 @@ class CriteriaCompiler:
         out = []
         for one in ids:
             if not isinstance(one, str):
-                continue
+                _fail("entity type", one, "an entity id or #tag")
             members = self._entity_tags.get(_ns(one[1:]), []) if one.startswith("#") else [one]
             out += [self._entity_by_path[_path(m)] for m in members if _path(m) in self._entity_by_path]
         return out
@@ -637,7 +689,9 @@ class CriteriaCompiler:
             return None
         if gid is None:
             return any_(*[need(role, n) for n in sorted(self.content.MOBS_WEAR_HEAD)]) or UNKNOWN
-        ids = [g for g in (gid if isinstance(gid, list) else [gid]) if isinstance(g, str)]
+        ids = gid if isinstance(gid, list) else [gid]
+        if not all(isinstance(g, str) for g in ids):
+            _fail(f"{role} type", gid, "an entity id, #tag or a list of them")
         if role == "projectile":
             return any_(*[need("projectile", _path(g)) for g in ids])
         names = self._entity_names(ids)
@@ -657,36 +711,43 @@ class CriteriaCompiler:
         return any_(*options)
 
     def _location(self, loc, path: str):
-        if not isinstance(loc, dict):
+        if loc is None:
             return None
+        if not isinstance(loc, dict):
+            _fail(path, loc, "a location predicate")
         self._check(loc, _LOCATION_KEYS | _LOCATION_FREE, path)
         parts = []
-        struct = loc.get("structures")
         # One id, a #tag, or (newer BACAP) a list of ids meaning any of them.
-        structs = [struct] if isinstance(struct, str) else struct if isinstance(struct, list) else []
         options = []
-        for one in structs:
-            if not isinstance(one, str):
-                options.append(UNKNOWN)
-            elif one.startswith("#"):
-                options.append(_call("any_village") if "village" in one else UNKNOWN)
-            else:
+        for one in _ids(loc.get("structures"), f"{path}.structures"):
+            if not one.startswith("#"):
                 options.append(need("structure_id", one))
+            elif "village" in one:
+                options.append(_call("any_village"))
+            else:
+                options.extend(need("structure_id", m) for m in self._tag(self._structure_tags, one, f"{path}.structures"))
         if options:
             parts.append(any_(*options))
         region = None
         if "biomes" in loc:
-            biome = loc["biomes"] if isinstance(loc["biomes"], str) else ""
-            region = (REGION_NETHER if _path(biome) in _NETHER_BIOMES
-                      else REGION_END if _path(biome) in _END_BIOMES else REGION_OVERWORLD)
+            # One biome or a list (any of them); each one's dimension. A biome #tag has no table here.
+            biomes = [m for b in _ids(loc["biomes"], f"{path}.biomes")
+                      for m in (self._tag(self._biome_tags, b, f"{path}.biomes") if b.startswith("#") else [b])]
+            regions = {REGION_NETHER if _path(b) in _NETHER_BIOMES
+                       else REGION_END if _path(b) in _END_BIOMES else REGION_OVERWORLD for b in biomes}
+            region = next(iter(regions)) if len(regions) == 1 else None
+            if len(regions) > 1:
+                parts.append(any_(*[need("region", r) for r in sorted(regions)]))
             parts.append(Strict(need("biome_finder")))
         dimension = _DIMENSION_REGION.get(_path(loc.get("dimension")))
         region = dimension or region
         if region:
             parts.append(need("region", region))
-        if isinstance(loc.get("position"), dict):
+        if loc.get("position") is not None:
+            if not isinstance(loc["position"], dict):
+                _fail(f"{path}.position", loc["position"], "{x, y, z} ranges")
             parts.append(self._position(loc["position"], region) or FREE)
-        parts += [any_(*[self._block(b) for b in _ids(loc.get("block"))])]
+        parts += [any_(*[self._block(b) for b in _ids(loc.get("block"), f"{path}.block")])]
         if loc.get("smokey") is True:
             # Vanilla's only use of smoke: harvesting a hive calmly. A campfire under it for the
             # smoke, and bees to have filled it with honey in the first place.
@@ -714,25 +775,29 @@ class CriteriaCompiler:
         return all_(*parts)
 
     def _item(self, pred, path: str):
-        if not isinstance(pred, dict):
+        if pred is None:
             return None
+        if not isinstance(pred, dict):
+            _fail(path, pred, "an item predicate")
         self._check(pred, _ITEM_KEYS, path)
         components = {}
         for holder in ("components", "predicates"):
-            if isinstance(pred.get(holder), dict):
+            if pred.get(holder) is not None:
+                if not isinstance(pred[holder], dict):
+                    _fail(f"{path}.{holder}", pred[holder], "a map of component -> predicate")
                 for key, value in pred[holder].items():
                     components[_path(key)] = value
         for key in components.keys() - _COMPONENTS:
             if not key.endswith("/variant"):
                 self.unread[f"{path}.component.{key}"] += 1
 
-        ids = [i for raw in _ids(pred.get("items")) for i in self._expand_items(raw)]
+        ids = [i for raw in _ids(pred.get("items"), f"{path}.items") for i in self._expand_items(raw)]
         potions = self._potion_types(components.get("potion_contents"))
         if potions and any(i in _POTION_ITEMS for i in ids) and all(p in _brewing(self.content) for p in potions):
             base = any_(*[need("potion", p) for p in potions])
         else:
             # No brewing recipe for the type (water, mundane): the item's own sources.
-            count = _min(pred.get("count")) or 1
+            count = _min(pred.get("count"), f"{path}.count") or 1
             base = any_(*[need("item", i, count) for i in ids])
             if "water" in potions and "minecraft:potion" in ids:
                 base = any_(base, need("potion", "water"))   # or fill a glass bottle yourself
@@ -760,8 +825,10 @@ class CriteriaCompiler:
         return all_(*gates)
 
     def _damage(self, dmg, attacker_role: str, path: str):
-        if not isinstance(dmg, dict):
+        if dmg is None:
             return None
+        if not isinstance(dmg, dict):
+            _fail(path, dmg, "a damage predicate")
         self._check(dmg, {"type", "source_entity", "blocked", "dealt", "taken"}, path)
         attacker = self._conditions(dmg.get("source_entity"), lambda p: self._entity(p, attacker_role, path))
         if attacker is not None and attacker_role != "self" and                 _predicate_value(dmg.get("source_entity"), "type") is None:
@@ -781,11 +848,16 @@ class CriteriaCompiler:
 
     def _damage_source(self, src, path: str, weapon: bool = True):
         """How the blow landed: a projectile, what the attacker wears or holds, else its damage tag."""
-        if not isinstance(src, dict):
+        if src is None:
             return None
+        if not isinstance(src, dict):
+            _fail(path, src, "a damage source predicate")
         self._check(src, {"tags", "direct_entity", "source_entity", "is_direct"}, path)
-        direct = src.get("direct_entity") if isinstance(src.get("direct_entity"), dict) else {}
-        source = src.get("source_entity") if isinstance(src.get("source_entity"), dict) else {}
+        direct = src.get("direct_entity") or {}
+        source = src.get("source_entity") or {}
+        for key, value in (("direct_entity", direct), ("source_entity", source)):
+            if not isinstance(value, dict):
+                _fail(f"{path}.{key}", value, "an entity predicate")
         named = direct.get("type") or direct.get("equipment") or source.get("equipment")
         tags = tuple(t.get("id") for t in src.get("tags") or () if isinstance(t, dict) and t.get("expected", True))
         return all_(self._entity(direct, "projectile", f"{path}.direct_entity") if direct else None,
@@ -793,8 +865,10 @@ class CriteriaCompiler:
                     need("damage_tag", tags) if weapon and tags and not named else None)
 
     def _type_specific(self, ts, path: str):
-        if not isinstance(ts, dict):
+        if ts is None:
             return None
+        if not isinstance(ts, dict):
+            _fail(path, ts, "a type_specific predicate")
         self._check(ts, _TYPE_SPECIFIC_KEYS | _TYPE_SPECIFIC_SKIP, path)
         parts = [_call("can_raid") if ts.get("has_raid") is True else None,
                  _call("raid_captain") if ts.get("is_captain") is True else None,
@@ -804,7 +878,7 @@ class CriteriaCompiler:
                 parts.append(need("adv", gid))
         for stat in ts.get("stats") or ():
             if not isinstance(stat, dict):
-                continue
+                _fail(f"{path}.stats", stat, "a stat matcher")
             kind, sid = _path(stat.get("type")), stat.get("stat")
             if kind == "mined" and isinstance(sid, str):
                 parts.append(_item(sid))
@@ -823,8 +897,10 @@ class CriteriaCompiler:
         prices the no-offset block as the item that places it; offset blocks and groups are context."""
         if isinstance(value, list):
             return all_(*[self._block_conditions(v, mode, path) for v in value])
-        if not isinstance(value, dict):
+        if value is None:
             return None
+        if not isinstance(value, dict):
+            _fail(path, value, "a location condition")
         condition = _path(value.get("condition", ""))
         if condition == "inverted":
             return None
@@ -835,13 +911,25 @@ class CriteriaCompiler:
             return any_(*parts) if condition == "any_of" else all_(*parts)
         if any(k in value for k in ("offsetX", "offsetY", "offsetZ")):
             mode = "use"
-        pred = value.get("predicate") if isinstance(value.get("predicate"), dict) else {}
-        blocks = _ids(value.get("block")) + _ids(pred.get("block"))
+        pred = value.get("predicate") or {}
+        if not isinstance(pred, dict):
+            _fail(f"{path}.predicate", pred, "a location predicate")
+        blocks = _ids(value.get("block"), f"{path}.block") + _ids(pred.get("block"), f"{path}.predicate.block")
         leaves = any_(*[need("place", b) if mode == "place" else self._block(b) for b in blocks])
         where = self._location({k: v for k, v in pred.items() if k != "block"}, f"{path}.predicate")
-        props = value.get("properties") if isinstance(value.get("properties"), dict) else {}
+        props = value.get("properties") or {}
+        if not isinstance(props, dict):
+            _fail(f"{path}.properties", props, "a map of block state -> value")
         water = self._block("minecraft:water") if str(props.get("waterlogged", "")).lower() == "true" else None
         return all_(leaves, where, water)
+
+    @staticmethod
+    def _tag(table: dict, tag: str, path: str) -> list:
+        """A worldgen #tag's members from the dumped tags, or CompileError when the pack has none."""
+        members = table.get(_ns(tag[1:]))
+        if not members:
+            _fail(path, tag, "a tag in tags.json (re-dump tags if it's missing)")
+        return members
 
     def _block(self, block: str):
         if block.startswith("#"):

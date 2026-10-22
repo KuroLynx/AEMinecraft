@@ -1007,13 +1007,17 @@ public final class PackDump {
         return Set.of();
     }
 
-    // -- tags (data/<ns>/tags/{item,block,entity_type}/...) -----------------
+    // -- tags (data/<ns>/tags/{item,block,entity_type,worldgen/biome,worldgen/structure}/...) -----
 
     private static JsonObject tags(ResourceManager rm) {
         JsonObject out = new JsonObject();
         out.add("block", tagRegistry(rm, "block"));
         out.add("entity_type", tagRegistry(rm, "entity_type"));
         out.add("item", tagRegistry(rm, "item"));
+        // Advancements name biomes and structures by tag too (BACAP's #end_midlands, 26.3's
+        // #minecraft:shipwreck); the compiler refuses a tag it can't resolve.
+        out.add("biome", tagRegistry(rm, "worldgen/biome"));
+        out.add("structure", tagRegistry(rm, "worldgen/structure"));
         return out;
     }
 
