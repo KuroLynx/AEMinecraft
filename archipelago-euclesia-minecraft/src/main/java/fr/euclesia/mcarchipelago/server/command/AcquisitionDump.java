@@ -195,6 +195,11 @@ final class AcquisitionDump {
                 addIngredient(out, seen, recipe.get(field));
             }
         }
+        // An imbue's `source` is the lingering potion the arrows soak up. Only there: book cloning's
+        // `source` is the written book being copied, and reading it would make written_book need itself.
+        if (stripNs(string(recipe.get("type"), "")).equals("crafting_imbue") && recipe.has("source")) {
+            addIngredient(out, seen, recipe.get("source"));
+        }
         return out;
     }
 
