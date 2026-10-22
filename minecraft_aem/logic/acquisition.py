@@ -305,6 +305,11 @@ def _block_mining(content) -> dict:
     return _pack_json(content, "block_mining.json")
 
 
+def _brewing_steps(content) -> dict:
+    """Potion containers brewed out of another: item -> [input item, reagent] (brewing.json)."""
+    return _pack_json(content, "brewing.json").get("containers", {})
+
+
 def _ore_like(content, block: str) -> bool:
     """Whether block_mining lists ``block`` for a pickaxe tier ("needs") or a loot-table tool gate
     ("drops") — the two reasons it had an entry before "tool" existed, and what the natural-block
@@ -407,35 +412,6 @@ _PALE_GARDEN_BLOCKS = frozenset({
 })
 
 
-class _AllHeld:
-    """``prog_items`` of a state holding everything: any player, any item, any count."""
-
-    def __getitem__(self, _player):
-        return self
-
-    def get(self, _item, _default=0):
-        return 1 << 30
-
-
-class _HomeOnly:
-    """A stand-in CollectionState for RuleHelper._stays_home: every item and location held, but only
-    the start region reachable. Has/And/Or read ``prog_items`` directly, so it answers that too."""
-
-    prog_items = _AllHeld()
-
-    def __init__(self, region: str):
-        self.region = region
-
-    def has(self, *_args) -> bool:
-        return True
-
-    def can_reach_location(self, *_args) -> bool:
-        return True
-
-    def can_reach_region(self, region, _player) -> bool:
-        return region == self.region
-
-
 class RuleHelper:
     """Builds logic rules as serializable AST nodes (see ``ast.py``).
 
@@ -448,7 +424,7 @@ class RuleHelper:
     # A source you can't count on: worse than three attempts in ten. Note this cut sits just above a
     # dense cluster of exactly-0.25 sources (village/bastion/ruined-portal chest pools, witch drops,
     # villager gifts), so it is deliberately strict — those routes are glitch, not logic. _demote
-    # still keeps any of them that is an item's only source, or its only one in the start dimension.
+    # keeps only the likeliest of them, and only when the item has no dependable source at all.
     _GLITCH_CHANCE = 0.30
 
     def __init__(self, world: World, glitch: bool = False):
@@ -1704,7 +1680,11 @@ class RuleHelper:
         dry_options: list = []
         dry_loose: list = []
 
-        def add(node, glitchy: bool = False, runs_dry: bool = False):
+        # A flimsy source's odds, so _demote can keep the best one when nothing dependable exists.
+        # None = unknown (a Wandering Trader, a route flimsy only through an ingredient): ranks last.
+        odds: dict = {}
+
+        def add(node, glitchy: bool = False, runs_dry: bool = False, chance: float | None = None):
             # Const(False) is not a source, it is the absence of one — an inactive structure, or a
             # route this graph doesn't carry (the Wandering Trader in strict mode). Dropping it here
             # rather than letting or_ swallow it later matters, because _demote counts the lists it
@@ -1716,14 +1696,29 @@ class RuleHelper:
                 return
             flimsy = glitchy or id(node) in self._loose_nodes
             (loose if flimsy else options).append(node)
+            if flimsy:
+                odds[id(node)] = max(odds.get(id(node), 0.0), chance or 0.0)
             (dry_loose if flimsy else dry_options).append(runs_dry or id(node) in self._dry_nodes)
 
+        def chance(kind: str, name: str) -> float:
+            return chances.get(f"{kind}/{name}", 1.0)
+
         def unreliable(kind: str, name: str) -> bool:
-            return chances.get(f"{kind}/{name}", 1.0) < self._GLITCH_CHANCE
+            return chance(kind, name) < self._GLITCH_CHANCE
 
         for recipe in record.get("recipes", ()):
             # A recipe is deterministic; whether its INGREDIENTS are is decided in their own acquire.
             add(self._recipe_node(recipe))
+        step = _brewing_steps(self.content).get(base)
+        if step:
+            # A brew is as deterministic as a recipe. The jar spells these out only from 26.3, so
+            # brewing.json carries them (dumped there, curated before) and acquisition.json never does.
+            add(self.all_of(self.acquire("minecraft:brewing_stand"), self.knowledge(K_BREWING),
+                            self.acquire("minecraft:blaze_powder"),
+                            *[self.acquire(f"minecraft:{item}") for item in step]))
+        if base == "potion":
+            # A water bottle is a potion too: a glass bottle dipped in water, no brewing at all.
+            add(self.all_of(self.acquire("minecraft:glass_bottle"), self.access_region(REGION_OVERWORLD)))
         for mob_file in record.get("drops", ()):
             name = _entity_by_gid(self.content).get(f"minecraft:{mob_file}")
             if name in self.content.MOBS_ALL:
@@ -1731,7 +1726,8 @@ class RuleHelper:
                 # (can_defeat == reachability) but correct for boss drops like the Wither's nether
                 # star, which must gate on the whole boss fight rather than just entering its arena.
                 add(self.can_defeat(name),
-                    unreliable("drops", mob_file) or name not in self.progression_mobs)
+                    unreliable("drops", mob_file) or name not in self.progression_mobs,
+                    chance=chance("drops", mob_file))
         mining_blocks = record.get("mining", ())
         # Data-driven: when the item has a tier-gated ORE source, a same-item block carrying no tier
         # info is a circular placed form (e.g. ``redstone_wire`` beside ``redstone_ore`` [iron]) whose
@@ -1790,7 +1786,7 @@ class RuleHelper:
                 for struct_name in _block_structures(self.content).get(base, ()):
                     if struct_name in self.active_structures:
                         add(self.all_of(self.structure(struct_name), mine),
-                            struct_name not in self.progression_structures, runs_dry=True)
+                            struct_name not in self.progression_structures, runs_dry=True, chance=1.0)
                 continue
             node = self._mining_node(block, base)
             if node is not None:
@@ -1798,7 +1794,7 @@ class RuleHelper:
                 if origin is None:
                     continue          # the block cannot exist for this seed — not a source at all
                 # A block only a structure placed (a monument's wet sponge) runs dry like its chest.
-                add(self.all_of(node, origin), unreliable("mining", block),
+                add(self.all_of(node, origin), unreliable("mining", block), chance=chance("mining", block),
                     runs_dry=_BLOCK_ONLY_FROM.get(block, ("",))[0] == "structures")
         for block in record.get("silk_mining", ()):
             # The block yields itself only to a Silk-Touch tool (bee_nest, ice, coral, …): same
@@ -1806,7 +1802,7 @@ class RuleHelper:
             # the silk gate, so it is never a free path even when the block is placed-only.
             node = self._mining_node(block, base, silk=True)
             if node is not None:
-                add(node, unreliable("silk_mining", block))
+                add(node, unreliable("silk_mining", block), chance=chance("silk_mining", block))
         trades = record.get("trades", ())
         professions = {entry[0] for entry in trades if entry}
         if professions - {"wandering_trader"}:
@@ -1830,7 +1826,8 @@ class RuleHelper:
                 # safe direction for logic. Folds away entirely when the gate is off.
                 add(self.all_of(self.structure(structure_name), self._loot_container_node()),
                     unreliable("structures", structure_name)
-                    or structure_name not in self.progression_structures, runs_dry=True)
+                    or structure_name not in self.progression_structures, runs_dry=True,
+                    chance=chance("structures", structure_name))
         for structure_name in record.get("archaeology", ()):
             if structure_name in self.content.STRUCTURES:
                 # Archaeology loot is not chest loot: a pottery sherd, a sniffer egg or a trail-ruins
@@ -1842,11 +1839,12 @@ class RuleHelper:
                 # branch has always asked for.
                 add(self.all_of(self.structure(structure_name), self.has_brush()),
                     unreliable("archaeology", structure_name)
-                    or structure_name not in self.progression_structures, runs_dry=True)
+                    or structure_name not in self.progression_structures, runs_dry=True,
+                    chance=chance("archaeology", structure_name))
         for table in record.get("gameplay", ()):
             # A trial-chamber vault opens once per player and its spawners go quiet: finite, like a chest.
             # Counted renewable, its 0.3% diamond block was 'Diamond Miner' (64 diamonds) without a pickaxe.
-            add(self._gameplay_node(table), unreliable("gameplay", table),
+            add(self._gameplay_node(table), unreliable("gameplay", table), chance=chance("gameplay", table),
                 runs_dry=table in ("corridor", "trial_chamber_melee", "trial_chamber_ranged"))
         if self._bulk and not all(dry_options + dry_loose):
             options = [node for node, dry in zip(options, dry_options) if not dry]
@@ -1855,40 +1853,25 @@ class RuleHelper:
             self._sourced_dry = True
         if not self.glitch and not options and loose:
             self._sourced_loose = True
-        options = self._demote(options, loose)
+        options = self._demote(options, loose, odds)
         return self._unique_or(options) if options else None
 
-    def _demote(self, strict: list, loose: list) -> list:
+    def _demote(self, strict: list, loose: list, odds: dict) -> list:
         """The sources that survive into THIS graph, given the dependable ones and the flimsy ones.
 
         In glitch mode everything survives — that graph exists to be permissive. In strict mode a
-        flimsy source is dropped, but only when the item is still obtainable without it:
-
-        * **Nothing dependable left** → keep the lot. A 2.5%-only skull is still the way you get a
-          skull, and dropping an item's last source makes it unreachable and the seed unfillable.
-        * **Nothing dependable that stays home** → keep the flimsy routes that do. On a Nether start
-          the surviving diamond route is Overworld mining, behind Dimension Unlock: Overworld, while
-          a bastion sits in the start region: demoting it would make strict logic harder than the
-          game and paint an ordinary route yellow.
-
-        Otherwise the flimsy source goes, and the dependable one carries the item — which is what
-        pushes Pickaxe Handling and Material Handling into the early spheres.
+        flimsy source never stands beside a dependable one: if anything dependable exists, anywhere,
+        it carries the item alone. Only when nothing dependable is left does a flimsy source go
+        green, and then just the likeliest one (ties all kept) — a 2.5%-only skull is still the way
+        you get a skull, but a 14% dispenser doesn't ride along with an End brew, and the 1.7% barter
+        doesn't ride along with the 3.4% chamber.
         """
         if self.glitch or not loose:
             return strict + loose
-        if not strict:
-            return loose
-        if any(self._stays_home(node) for node in strict):
+        if strict:
             return strict
-        return strict + [node for node in loose if self._stays_home(node)]
-
-    def _stays_home(self, node) -> bool:
-        """True when some way through the source never leaves the dimension the player starts in.
-
-        Evaluated, not read off the region leaves: a diamond's tree names the Nether in its bastion
-        branch, and the union of leaves said "leaves home" even though Overworld mining is right there.
-        That kept a husk's rare iron and a vault's diamond block in strict logic."""
-        return node(_HomeOnly(self.start_region))
+        best = max(odds.get(id(node), 0.0) for node in loose)
+        return [node for node in loose if odds.get(id(node), 0.0) == best]
 
     def _coarsen(self, node):
         """Bound the serialized tree: a recipe-combinatorial item (dyes, beds, stews) past

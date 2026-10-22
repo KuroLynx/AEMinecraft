@@ -1,5 +1,5 @@
 {
-  "_comment": "Dumped from the game's brewing recipes: potion type -> the reagents that brew it from a water bottle (any_of: equally short alternatives). long_/strong_ variants share their base type's reagents.",
+  "_comment": "Dumped from the game's brewing recipes: potion type -> the reagents that brew it from a water bottle (any_of: equally short alternatives). long_/strong_ variants share their base type's reagents. containers: item -> [input item, reagent].",
   "awkward": [
     "nether_wart"
   ],
@@ -141,5 +141,15 @@
   "wind_charged": [
     "breeze_rod",
     "nether_wart"
-  ]
+  ],
+  "containers": {
+    "lingering_potion": [
+      "splash_potion",
+      "dragon_breath"
+    ],
+    "splash_potion": [
+      "potion",
+      "gunpowder"
+    ]
+  }
 }

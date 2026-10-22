@@ -463,12 +463,23 @@ public final class PackDump {
      */
     private static JsonObject brewing(ResourceManager rm) {
         List<String[]> edges = new ArrayList<>();   // {input type, output type, reagent}
+        Map<String, String[]> containers = new TreeMap<>();   // output item -> {input item, reagent}
         for (Map.Entry<Identifier, JsonObject> entry : jsonResources(rm, "recipe/brewing")) {
             JsonObject recipe = entry.getValue();
             JsonObject input = obj(recipe.get("input"));
             JsonObject output = obj(recipe.get("output"));
-            if (!stripNs(string(input.get("item"), "")).equals("potion")
-                    || !stripNs(string(output.get("id"), "")).equals("potion")) {
+            String inItem = stripNs(string(input.get("item"), ""));
+            String outItem = stripNs(string(output.get("id"), ""));
+            if (!inItem.equals(outItem)) {
+                // A container step (potion + gunpowder -> splash, splash + dragon's breath ->
+                // lingering): the same for every potion type, so one entry per output item.
+                String reagent = stripNs(string(obj(recipe.get("reagent")).get("item"), ""));
+                if (!inItem.isEmpty() && !reagent.isEmpty()) {
+                    containers.putIfAbsent(outItem, new String[]{inItem, reagent});
+                }
+                continue;
+            }
+            if (!inItem.equals("potion")) {
                 continue;
             }
             String from = stripNs(string(obj(input.get("potion_contents")).get("potions"), ""));
@@ -502,7 +513,7 @@ public final class PackDump {
         JsonObject out = new JsonObject();
         out.addProperty("_comment", "Dumped from the game's brewing recipes: potion type -> the reagents "
                 + "that brew it from a water bottle (any_of: equally short alternatives). long_/strong_ "
-                + "variants share their base type's reagents.");
+                + "variants share their base type's reagents. containers: item -> [input item, reagent].");
         routes.forEach((type, sets) -> {
             if (type.equals("water") || type.startsWith("long_") || type.startsWith("strong_")) {
                 return;
@@ -524,6 +535,14 @@ public final class PackDump {
                 out.add(type, alternatives);
             }
         });
+        JsonObject steps = new JsonObject();
+        containers.forEach((item, step) -> {
+            JsonArray pair = new JsonArray();
+            pair.add(step[0]);
+            pair.add(step[1]);
+            steps.add(item, pair);
+        });
+        out.add("containers", steps);
         return out;
     }
 
