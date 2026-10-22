@@ -11,6 +11,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
@@ -122,10 +124,7 @@ public final class EntitiesDump {
             boolean tameable = mob instanceof TamableAnimal
                     || (mob instanceof AbstractHorse h && !h.isTamed() && !NON_TAMEABLE_EQUINES.contains(gameId));
             boolean leashable = mob.canBeLeashed();
-            // Whether a dispenser can put a carved pumpkin on it: the game's own test for "this mob
-            // wears a head item" (zombies, skeletons, piglins…), which is how one ends up in a
-            // criterion's equipment.head (Trick or Treat). Read before isBreedable mutates the sample.
-            boolean canWearHead = mob.canEquipWithDispenser(new ItemStack(Items.CARVED_PUMPKIN));
+            boolean canWearHead = canWearHead(type, level);
             boolean breedable = isBreedable(type, level, mob);
             mob.discard();
 
@@ -157,6 +156,43 @@ public final class EntitiesDump {
         *///?} else {
         return type.create(level, reason);
         //?}
+    }
+
+    /** Hardest regional difficulty: Hard, a long-inhabited chunk, a full moon (special multiplier 1). */
+    private static final DifficultyInstance HARDEST =
+            new DifficultyInstance(Difficulty.HARD, Long.MAX_VALUE / 2, Long.MAX_VALUE / 2, 1.0F);
+
+    /**
+     * Whether a dispenser can put a carved pumpkin on this mob: the game's own
+     * {@code canEquipWithDispenser}, which is how a mob ends up in a criterion's
+     * {@code equipment.head} (Trick or Treat). That test asks {@code canPickUpLoot()}: piglins and
+     * villagers get it in their constructor, but zombies and skeletons only roll it in
+     * {@code finalizeSpawn} (a chance scaled by difficulty), so a bare sample of them says no. Spawn a
+     * few at the hardest difficulty and take any yes; 32 tries at 55% each can't all miss.
+     */
+    private static boolean canWearHead(EntityType<?> type, ServerLevel level) {
+        ItemStack pumpkin = new ItemStack(Items.CARVED_PUMPKIN);
+        for (int i = 0; i < 32; i++) {
+            if (!(sample(type, level, EntitySpawnReason.NATURAL) instanceof Mob mob)) {
+                return false;
+            }
+            try {
+                mob.finalizeSpawn(level, HARDEST, EntitySpawnReason.NATURAL, null);
+            } catch (RuntimeException ignored) {
+                // A spawn hook that wants a real position or neighbours: judge the bare sample.
+            }
+            boolean yes = mob.canEquipWithDispenser(pumpkin);
+            // finalizeSpawn can add a mount or a rider to the level (chicken jockey, spider jockey).
+            if (mob.getVehicle() != null) {
+                mob.getVehicle().discard();
+            }
+            mob.getPassengers().forEach(Entity::discard);
+            mob.discard();
+            if (yes) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** boss (known set) > neutral (NeutralMob) > hostile (MONSTER category) > passive. */
