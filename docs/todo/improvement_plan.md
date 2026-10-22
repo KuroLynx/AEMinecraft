@@ -333,6 +333,12 @@ New option **`split_structure_variants`** (`split_structure_variants: 'true' / '
   - **Check:** pool size: the item count drops by the grouped members, and `verify_all_options.py`
     + full Generate pass with both values on all 3 versions.
   - **Check (in-game):** receiving the grouped item places camps in two different biomes.
+- [x] A13 follow-up (feat/structure-group-tracker, 2026-10-23): option renamed `structure_variant` ->
+  `split_structure_variants` (same meaning, reads the way it behaves). Grouped, the Structure Unlocks
+  tab shows one `aem:unlock_structure/group/<name>` tile per group instead of its members, and
+  `TrackerLayoutService` re-grids the tab's active tiles into full rows of 8.
+  - **Check (in-game):** grouped village unlock places villages — confirmed 2026-10-23. Re-grid not
+    seen yet.
 
 ---
 
@@ -476,6 +482,18 @@ behaviour, `DeathLinkService.applyRemote`) or **all** of them. It's a `/aem deat
 - [ ] E3 **Biome Finder: cycle targets.** A "next" control on the pick screen (or re-pick on the
   map) moves to the next-nearest instance of the same biome, so the server search skips the previous
   targets. **Check:** with two Cherry Groves, "next" points at the second one.
+
+- [ ] E4 **Tracker tabs as a custom panel (hybrid).** All 4 tracker tabs (Kills, Entity Unlocks,
+  Structure Unlocks, Knowledge) keep their category root as a real advancement, so the tab buttons
+  stay native and other mods still see ordinary tabs. When one of the `aem:category/*` tabs is
+  selected, the mod draws its own grid in the content area from `slot_data["trackers"]`: section
+  headers (dimension / mob category / progressive vs gates), a fixed order, rows wrapping to the
+  window width, no gaps. Reuse the per-tile drawing, tooltip, in-logic glow, hold-to-hint, gray
+  progress fill and X/N code. Under Better Advancements / Advancements Reloaded / Paginated
+  Advancements, fall back to today's tree layout first and port each later if worth it. Once it's
+  done, the tracker tile datapack (`tools/gen_tracker_advancements.py`) and `TrackerLayoutService`
+  can shrink to just the roots. **Check (in-game, 26.1.2/26.2/26.3):** each tab draws a gapless grid
+  with headers, tooltips + hints + glow still work, and the compat mods still show the tree.
 
 ---
 
