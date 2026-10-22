@@ -12,7 +12,7 @@ import java.util.List;
  *
  * <p>Mirrors {@code minecraft/logic/ast.py}: the only kinds that ever reach
  * serialization are {@code const}, {@code has}, {@code region}, {@code loc},
- * {@code and}, {@code or}, {@code atleast} and {@code ref}. The JSON is parsed once into this tree
+ * {@code and}, {@code or}, {@code atleast}, {@code ref} and {@code price}. The JSON is parsed once into this tree
  * (via {@link #parse(JsonElement)}); evaluation then walks the tree against a
  * {@link LogicEvaluation} the same way {@code ExportEvaluator.eval} does in
  * {@code tools/logic_selfcheck.py}.
@@ -20,6 +20,10 @@ import java.util.List;
  * <p>{@code ref} is a pointer into {@code slot_data["logic"]["definitions"]}: the exporter hoists
  * every shared subtree there once (see {@code logic_export._dedup_rules}) and references it
  * everywhere it occurs, keeping a BACAP export small. A ref evaluates to its definition.
+ *
+ * <p>{@code price} names an item price in {@code slot_data["logic"]["prices"]} (glitch rules only,
+ * see {@code ast.PriceRef}). Prices can name each other in cycles, so a price node reads the least
+ * fixed point {@link LogicEvaluation} solves over that table.
  */
 public sealed interface RuleNode {
     boolean eval(LogicEvaluation evaluation);
@@ -36,6 +40,7 @@ public sealed interface RuleNode {
             case "or" -> new Or(parseChildren(node.getAsJsonArray("c")));
             case "atleast" -> new AtLeast(node.get("n").getAsInt(), parseChildren(node.getAsJsonArray("c")));
             case "ref" -> new Ref(node.get("id").getAsInt());
+            case "price" -> new Price(node.get("p").getAsString());
             default -> throw new IllegalArgumentException("unknown rule node kind: " + kind);
         };
     }
@@ -105,6 +110,14 @@ public sealed interface RuleNode {
         @Override
         public boolean eval(LogicEvaluation evaluation) {
             return evaluation.evalRef(id);
+        }
+    }
+
+    /** An item price from the graph's {@code prices} table; true once that price is solved reachable. */
+    record Price(String name) implements RuleNode {
+        @Override
+        public boolean eval(LogicEvaluation evaluation) {
+            return evaluation.canReachPrice(name);
         }
     }
 

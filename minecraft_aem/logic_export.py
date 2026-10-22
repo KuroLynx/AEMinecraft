@@ -14,6 +14,7 @@ Shape::
          "<AP location name>": {"game_id": "<mc id>", "region": "<region>", "rule": <ast>}
       },
       "glitch": { "<AP location name>": {"rule": <ast>} },
+      "prices": { "<price name>": {"rule": <ast>} },
       "definitions": { "<id>": <ast>, ... }
     }
 
@@ -21,6 +22,10 @@ Shape::
 :func:`_glitch_rules`); the mod falls back to it when the strict rule says unreachable, to colour a
 tile GLITCHABLE instead of out-of-logic. Absent locations have identical rules in both graphs, and
 the whole map is empty when the glitch_logic option is off.
+
+``prices`` holds the item prices that glitch rules name with ``{"k": "price", "p": <name>}``
+(ast.PriceRef). A price can name another, cycles included, so a price node means the least fixed
+point of this table, solved against the strict snapshot like the glitch rules themselves.
 
 All keys/strings are plain (region names are normalised away from enum members in
 ``create_regions``). Rules contain only the primitive node kinds documented in
@@ -108,13 +113,13 @@ def build_logic_export(world) -> dict:
         "origin": origin,
         "regions": regions,
         "locations": locations,
-        "glitch": _glitch_rules(world, locations),
     }
+    export["glitch"], export["prices"] = _glitch_rules(world, locations)
     _dedup_rules(export)
     return export
 
 
-def _glitch_rules(world, locations: dict) -> dict:
+def _glitch_rules(world, locations: dict) -> tuple[dict, dict]:
     """The permissive twin of each location rule, ``{name: {"rule": <ast>}}`` — but ONLY where it
     differs from the strict one.
 
@@ -139,7 +144,7 @@ def _glitch_rules(world, locations: dict) -> dict:
     An edge built from a demotable helper would be the case to revisit.
     """
     if not world.options.glitch_logic:
-        return {}
+        return {}, {}
     from .logic.root import build_location_rules  # local import: module-level would cycle
 
     glitch: dict[str, dict] = {}
@@ -149,7 +154,29 @@ def _glitch_rules(world, locations: dict) -> dict:
         as_dict = rule.to_dict()
         if as_dict != locations[name]["rule"]:
             glitch[name] = {"rule": as_dict}
-    return glitch
+    return glitch, _referenced_prices(glitch, world._glitch_prices)
+
+
+def _referenced_prices(glitch: dict, table: dict) -> dict:
+    """``{name: {"rule": <ast>}}`` for every price a glitch rule names, directly or through another
+    price. A price with no route (None) ships as false."""
+    prices: dict[str, dict] = {}
+    seen: set[int] = set()
+    todo = [holder["rule"] for holder in glitch.values()]
+    while todo:
+        node = todo.pop()
+        if id(node) in seen:
+            continue   # to_dict is memoized: a shared subtree is one dict, walked once
+        seen.add(id(node))
+        if node["k"] == "price":
+            name = node["p"]
+            if name not in prices:
+                price = table[name]
+                prices[name] = {"rule": price.to_dict() if price is not None else {"k": "const", "v": False}}
+                todo.append(prices[name]["rule"])
+        else:
+            todo.extend(node.get("c", ()))
+    return prices
 
 
 def _dedup_rules(export: dict) -> None:
@@ -163,6 +190,7 @@ def _dedup_rules(export: dict) -> None:
     smaller than a ref, so hoisting them would only bloat the table."""
     holders = list(export["locations"].values())
     holders.extend(export.get("glitch", {}).values())
+    holders.extend(export.get("prices", {}).values())
     for edges in export["regions"].values():
         holders.extend(edges)
 
@@ -196,7 +224,7 @@ def _dedup_rules(export: dict) -> None:
         children = node.get("c")
         if children is None:
             key = intern(("l", node["k"], node.get("i"), node.get("n"), node.get("r"),
-                          node.get("l"), node.get("v")))
+                          node.get("l"), node.get("v"), node.get("p")))
         else:
             child_keys = tuple(key_of(child) for child in children)
             if node["k"] in ("and", "or", "atleast"):
@@ -230,7 +258,7 @@ def _dedup_rules(export: dict) -> None:
         children = node.get("c")
         if children is None:
             key = intern(("l", node["k"], node.get("i"), node.get("n"), node.get("r"),
-                          node.get("l"), node.get("v")))
+                          node.get("l"), node.get("v"), node.get("p")))
             new_node = node
         else:
             rewritten = [rewrite(child) for child in children]

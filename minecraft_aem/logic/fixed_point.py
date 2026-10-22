@@ -13,14 +13,21 @@ A cycle just reads the other item's current price: iron ingot from iron block fr
 an alternative the ingot already has, and the canonical form below absorbs it. That form is a minimal
 DNF (an antichain of alternatives, each a set of leaves with a count per item), rebuilt as an interned
 Rule, so an unchanged price is the same object and "did it change?" is an identity test.
+
+The glitch graph keeps every unreliable route, so that minimal form is far too big there (hundreds of
+alternatives per item with structures and mobs locked). It is never built: a glitch price keeps its
+rule as built, and a read of an item on the reader's own cycle is a PriceRef to the item's price, not a
+copy of it. Copying is what made a cycle grow: each round's price held the previous round's, 760
+levels deep on a BACAP slot. With refs, a cycle's prices stop changing once the prices feeding it from
+outside do, and the export's evaluators solve the refs as a least fixed point. Fill never reads the
+glitch graph.
 """
 from __future__ import annotations
 
 from collections import defaultdict, deque
 from itertools import combinations
 
-from . import ast
-from .ast import And, AtLeast, Const, Has, Or, ReachLocation, ReachRegion, and_, or_
+from .ast import And, AtLeast, Const, Has, Or, PriceRef, ReachLocation, ReachRegion, and_, or_
 
 # ponytail: a hard stop, not a tuning knob. A price that keeps changing past this many recomputes is
 # oscillating (_demote is not monotone), which is a bug to look at, not a budget to raise.
@@ -119,8 +126,6 @@ def dnf(rule) -> frozenset:
 
 def _leaf(player: int, atom):
     kind, name, n = atom
-    if kind == "x":
-        return ast._NODES[name]   # an opaque subtree (see _glitch_price), stored by its interned key
     if kind == "h":
         return Has(player, name, n)
     if kind == "r":
@@ -132,80 +137,6 @@ def canonical(player: int, rule):
     """The interned Rule for ``rule``'s minimal DNF, in a stable order."""
     alts = sorted(dnf(rule), key=lambda alt: (len(alt), sorted(alt)))
     return or_(*(and_(*(_leaf(player, atom) for atom in sorted(alt))) for alt in alts))
-
-
-# A sub-rule whose minimal form is at most this many alternatives is taken from the shared cache when
-# it is already there; a bigger one is expanded afresh, so its opaque parts stay opaque.
-_REUSE_CAP = 64
-# ponytail: fixed budgets, measured on a BACAP slot with every lock on. A glitch price whose minimal
-# form would pass _GLITCH_DNF_CAP alternatives keeps its rule as built; one still changing after
-# _GLITCH_ROUNDS recomputes stops there (see _solve).
-_GLITCH_DNF_CAP = 256
-_GLITCH_ROUNDS = 12
-
-
-class _TooBig(Exception):
-    pass
-
-
-# Subtrees whose minimal form already came out too big once. Not retried: expanding them again only to
-# give up again was most of a glitch build. Keeping a rule as built is exact either way, so this only
-# decides how much gets minimised. ponytail: process-global like ast._NODES, one entry per node.
-_TOO_BIG: set = set()
-
-
-def _and_capped(*dnfs) -> frozenset:
-    """``_and``, giving up before any step that could pass _GLITCH_DNF_CAP alternatives."""
-    out = {frozenset()}
-    for d in dnfs:
-        if len(out) * len(d) > _GLITCH_DNF_CAP:
-            raise _TooBig
-        out = _minimal(_join(a, b) for a in out for b in d)
-        if not out:
-            break
-    return frozenset(out)
-
-
-def _dnf_opaque(rule, opaque: dict, memo: dict) -> frozenset:
-    """``dnf`` with every node in ``opaque`` (by id) kept as one atom instead of being expanded.
-
-    Exact: an atom stands for its own subtree, and putting the subtree back in its place gives a
-    formula equivalent to ``rule``. Two alternatives that differ only inside an atom are just not
-    merged, which costs size, never meaning."""
-    if id(rule) in opaque:
-        return frozenset({frozenset({("x", rule.key(), 1)})})
-    out = memo.get(id(rule))
-    if out is not None:
-        return out
-    if rule in _TOO_BIG:
-        raise _TooBig
-    try:
-        out = _dnf_opaque_compute(rule, opaque, memo)
-    except _TooBig:
-        _TOO_BIG.add(rule)
-        raise
-    memo[id(rule)] = out
-    return out
-
-
-def _dnf_opaque_compute(rule, opaque: dict, memo: dict) -> frozenset:
-    shared = _DNF.get(rule)
-    if shared is not None and len(shared) <= _REUSE_CAP:
-        out = shared
-    elif isinstance(rule, (Const, Has, ReachRegion, ReachLocation)):
-        out = dnf(rule)
-    elif isinstance(rule, And):
-        out = _and_capped(*(_dnf_opaque(child, opaque, memo) for child in rule.children))
-    elif isinstance(rule, Or):
-        out = _minimal(alt for child in rule.children for alt in _dnf_opaque(child, opaque, memo))
-    elif isinstance(rule, AtLeast):
-        out = _minimal(alt for combo in combinations(rule.children, rule.n)
-                       for alt in _and_capped(*(_dnf_opaque(child, opaque, memo) for child in combo)))
-    else:
-        raise TypeError(f"no DNF for {type(rule).__name__}")
-    if len(out) > _GLITCH_DNF_CAP:
-        raise _TooBig
-    return out
 
 
 def _cycle(st, key) -> set:
@@ -227,42 +158,6 @@ def _cycle(st, key) -> set:
     cycle = ahead & reach(key, st.readers) if key in ahead else set()
     st.cycles[key] = (st.edges, cycle)
     return cycle
-
-
-def _glitch_price(h, st, key, rule):
-    """A glitch price, without the exponential part of the minimal form.
-
-    The glitch graph keeps every unreliable route, so with structures and mobs locked an item has
-    hundreds of alternatives, and canonical()'s DNF multiplies them across every ingredient: a BACAP
-    slot sat in _minimal for good. The minimal form is only NEEDED to settle cycles — iron ingot from
-    iron block from iron ingot keeps adding a route the ingot already has, which only the antichain
-    absorbs. So:
-
-    * an item on no cycle keeps its rule as built. Nodes are interned, so the same inputs give the
-      very same node and "did it change?" stays an identity test;
-    * an item on a cycle is put in minimal form, but every price from outside its cycle is one opaque
-      atom. Those prices settle on their own, and only the cycle's own prices get expanded, which is
-      what makes the cycle stop growing;
-    * a cycle price whose minimal form would still be huge keeps its rule as built too. Glitch
-      routes tie ~140 items into one cycle (trades, rewards, shared materials), so this happens. Such
-      a price changes shape every round even when its meaning doesn't, so _solve stops updating it
-      after _GLITCH_ROUNDS recomputes. Rounds only ever add routes, so a stopped price can only lack
-      a route, never invent one: at worst a doable-by-luck check reads red instead of yellow.
-
-    Fill never reads the glitch graph; strict prices still go through canonical() unchanged."""
-    cycle = _cycle(st, key)
-    if not cycle:
-        return rule
-    opaque = {}
-    for dep in st.deps[key]:
-        price = st.price.get(dep)
-        if dep not in cycle and price is not None:
-            opaque[id(price)] = price
-    try:
-        alts = sorted(_dnf_opaque(rule, opaque, {}), key=lambda alt: (len(alt), sorted(alt)))
-    except _TooBig:
-        return rule   # exact, just not minimal; _solve's round limit settles it if it keeps changing
-    return or_(*(and_(*(_leaf(h.player, atom) for atom in sorted(alt))) for alt in alts))
 
 
 class _State:
@@ -303,6 +198,8 @@ def acquire(h, item_id: str):
         price = st.price[key]
         if price is None:
             return Const(False)
+        if h.glitch and key in _cycle(st, st.current):
+            price = PriceRef(h.player, price_name(key))   # see the module docstring
         # The loose/dry marks go by node identity, and canonical prices are small shared nodes (a
         # flimsy item priced "Overworld" IS the Overworld node). So the marks live for one
         # computation and are set by the item being read, never left on the node for everyone.
@@ -319,6 +216,19 @@ def acquire(h, item_id: str):
     return st.price[key]
 
 
+def price_name(key) -> str:
+    """A price's name in the exported price table: the item, marked when it prices a whole stack."""
+    base, bulk = key
+    return f"{base} (stack)" if bulk else base
+
+
+def price_table(h) -> dict:
+    """Every glitch price by price_name, for the export to resolve PriceRefs against. None (no route)
+    stays None; only the names a rule actually references need shipping."""
+    st = h.__dict__.get("_fp")
+    return {price_name(key): price for key, price in st.price.items()} if st else {}
+
+
 def _queue(st: _State, key) -> None:
     if key not in st.queued:
         st.queued.add(key)
@@ -332,8 +242,6 @@ def _solve(h, st: _State) -> None:
             key = st.work.popleft()
             st.queued.discard(key)
             st.recomputes[key] += 1
-            if h.glitch and st.recomputes[key] > _GLITCH_ROUNDS:
-                continue   # see _glitch_price: this price stays where it is
             if st.recomputes[key] > _MAX_RECOMPUTES:
                 raise RuntimeError(f"fixed-point acquire: {key} still changing after {_MAX_RECOMPUTES} recomputes")
             base, bulk = key
@@ -353,7 +261,7 @@ def _solve(h, st: _State) -> None:
             if rule is None:
                 new = None
             elif h.glitch:
-                new = _glitch_price(h, st, key, rule)
+                new = rule   # as built: interned, so an unchanged price is still the same object
             else:
                 new = canonical(h.player, rule)
             if isinstance(new, Const) and not new.value:
