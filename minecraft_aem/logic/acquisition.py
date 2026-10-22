@@ -810,6 +810,12 @@ class RuleHelper:
             *[self.mob_unlocked(mob) for mob in MOBS_RAID],
         )
 
+    def raid_captain(self):
+        """A raider wearing the ominous banner. Outside a raid only pillagers lead (patrols and
+        outposts); inside one the wave leader is drawn from the raid itself. A witch, a ravager or a
+        mansion's vindicator is never a captain, whatever the criterion's raider tag allows."""
+        return self.any_of(self.entity(E_PILLAGER), self.can_raid())
+
     def can_win_raid(self):
         """Win a raid, which is what makes villagers throw profession gifts.
 
