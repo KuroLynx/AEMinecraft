@@ -17,7 +17,6 @@ from __future__ import annotations
 
 from .data import (
     BASE_ID_ENTITY_UNLOCK,
-    BASE_ID_STRUCT_UNLOCK,
     BOSS_KILL_PREFIX,
     ITEM_BIOME_FINDER,
     ITEMS,
@@ -160,7 +159,7 @@ def build_trackers_export(world) -> dict:
         struct_data = world.content.STRUCTURES[struct_name]
         trackers[tracker_id(KIND_UNLOCK_STRUCTURE, struct_data.game_id)] = {
             "kind": "unlock",
-            "item_id": BASE_ID_STRUCT_UNLOCK + struct_data.id,
+            "item_id": world.item_name_to_id[world._structure_unlock_name(struct_name)],
         }
 
     # Knowledge / utility items (received AP items) — one tile each, done once every copy this seed is

@@ -767,8 +767,7 @@ class RuleHelper:
         prereq = prereq_thunk() if prereq_thunk is not None else Const(True)
         located = self.structure_located(struct_gid)
         if struct_gid in self.locked_structures:
-            return self.all_of(self.has(f"{STRUCT_UNLOCK_PREFIX}{self.content.STRUCTURES[struct_gid].label}"),
-                               region, prereq, located)
+            return self.all_of(self.has(self.world._structure_unlock_name(struct_gid)), region, prereq, located)
         return self.all_of(region, prereq, located)
 
     def any_village(self):

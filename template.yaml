@@ -222,6 +222,23 @@ AEMinecraft:
     #         - All
     ["Stronghold"]
 
+  structure_variant:
+    # Give every biome variant of a structure its own Structure Unlock.
+    #
+    # Some structures come in one version per biome: five villages, seven ruined portals, two ocean
+    # ruins, shipwrecks (and beached ones), mineshafts (and mesa ones), and on 26.3 eighteen abandoned
+    # camps. The groups are the game's own (its structure tags), so a mod or datapack structure that
+    # joins one of those tags joins the group too.
+    #
+    # - false (default): one item unlocks the whole group, e.g. 'Structure Unlock: Village' opens every
+    #   village and 'Structure Unlock: Abandoned Camp' every camp.
+    # - true: one item per variant ('Structure Unlock: Village Plains', 'Structure Unlock: Village
+    #   Desert', …), which puts many more Structure Unlocks in the pool.
+    #
+    # Only matters for structures that structure_unlock locks.
+    'false': 50
+    'true': 0
+
   # -------------------------------------------------------------------------
   # Traps
   # -------------------------------------------------------------------------
