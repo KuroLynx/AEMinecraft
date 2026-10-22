@@ -76,7 +76,45 @@
       "torch",
       "water",
       "white_candle"
-    ]
+    ],
+    "block_chances": {
+      "blue_carpet": 0.937,
+      "blue_ice": 0.8978,
+      "blue_wool": 0.8978,
+      "campfire": 0.8978,
+      "cave_air": 0.3333,
+      "chest": 0.9583,
+      "cobbled_deepslate_slab": 0.5579,
+      "cobbled_deepslate_stairs": 0.9373,
+      "cobbled_deepslate_wall": 0.9242,
+      "cyan_carpet": 0.9372,
+      "cyan_wool": 0.8978,
+      "dark_oak_fence": 0.9243,
+      "dark_oak_log": 0.9374,
+      "dark_oak_planks": 0.9744,
+      "furnace": 0.3333,
+      "ice": 0.8978,
+      "iron_trapdoor": 0.8978,
+      "ladder": 0.9375,
+      "lever": 0.9659,
+      "light_blue_carpet": 0.9736,
+      "light_blue_wool": 0.937,
+      "note_block": 0.8978,
+      "packed_ice": 0.8978,
+      "piston_head": 0.6667,
+      "polished_basalt": 0.9375,
+      "polished_deepslate": 0.9375,
+      "polished_deepslate_slab": 0.9678,
+      "polished_deepslate_stairs": 0.9583,
+      "redstone_torch": 0.3333,
+      "skeleton_skull": 0.9373,
+      "smooth_basalt": 0.671,
+      "snow": 0.8978,
+      "stone_pressure_plate": 0.8978,
+      "torch": 0.9242,
+      "water": 0.9369,
+      "white_candle": 0.9374
+    }
   },
   {
     "name": "Bastion Remnant",
@@ -111,7 +149,25 @@
       "smooth_quartz_slab",
       "soul_sand",
       "spawner"
-    ]
+    ],
+    "block_chances": {
+      "blackstone_slab": 0.875,
+      "blackstone_stairs": 0.8519,
+      "blackstone_wall": 0.6499,
+      "chiseled_polished_blackstone": 0.9944,
+      "fire": 0.2486,
+      "glowstone": 0.035,
+      "gold_block": 0.9815,
+      "magma_block": 0.3792,
+      "nether_wart": 0.25,
+      "netherrack": 0.4947,
+      "polished_basalt": 0.75,
+      "quartz_block": 0.125,
+      "smooth_quartz": 0.125,
+      "smooth_quartz_slab": 0.125,
+      "soul_sand": 0.5,
+      "spawner": 0.25
+    }
   },
   {
     "name": "Buried Treasure",
@@ -443,7 +499,12 @@
       "vine",
       "white_wall_banner",
       "white_wool"
-    ]
+    ],
+    "block_chances": {
+      "carved_pumpkin": 0.9727,
+      "hay_block": 0.9727,
+      "pumpkin": 0.9727
+    }
   },
   {
     "name": "Ruined Portal",
@@ -884,7 +945,87 @@
       "white_concrete",
       "white_stained_glass",
       "yellow_bed"
-    ]
+    ],
+    "block_chances": {
+      "black_bed": 0.1794,
+      "black_stained_glass": 0.1748,
+      "blue_bed": 0.1794,
+      "bone_block": 0.8031,
+      "brown_bed": 0.1794,
+      "cactus": 0.2221,
+      "candle": 0.4038,
+      "chiseled_sandstone": 0.4119,
+      "cobbled_deepslate": 0.0271,
+      "cobblestone": 0.3283,
+      "cobweb": 0.4885,
+      "copper_block": 0.1098,
+      "crafting_table": 0.25,
+      "cyan_bed": 0.1794,
+      "dead_bush": 0.2221,
+      "decorated_pot": 0.5245,
+      "dirt": 0.2221,
+      "dispenser": 0.8329,
+      "flower_pot": 0.3934,
+      "gray_bed": 0.1794,
+      "green_bed": 0.1794,
+      "iron_chain": 0.7537,
+      "ladder": 0.6911,
+      "light_blue_bed": 0.1794,
+      "light_gray_bed": 0.1794,
+      "light_gray_stained_glass": 0.25,
+      "lime_bed": 0.1794,
+      "magenta_bed": 0.1794,
+      "magma_block": 0.4435,
+      "mangrove_leaves": 0.2221,
+      "mangrove_log": 0.2221,
+      "mangrove_roots": 0.2221,
+      "mangrove_wood": 0.2221,
+      "moss_block": 0.3283,
+      "moss_carpet": 0.2221,
+      "mossy_cobblestone": 0.524,
+      "mud": 0.2221,
+      "muddy_mangrove_roots": 0.2221,
+      "oak_button": 0.8268,
+      "oak_fence": 0.25,
+      "oak_leaves": 0.2221,
+      "oak_log": 0.2221,
+      "oak_pressure_plate": 0.816,
+      "oak_slab": 0.25,
+      "orange_bed": 0.1794,
+      "oxidized_copper_trapdoor": 0.3332,
+      "oxidized_cut_copper": 0.5409,
+      "packed_ice": 0.7088,
+      "pink_bed": 0.0718,
+      "podzol": 0.727,
+      "pointed_dripstone": 0.0051,
+      "polished_andesite": 0.0025,
+      "potted_dead_bush": 0.4949,
+      "powder_snow": 0.258,
+      "purple_bed": 0.5475,
+      "red_bed": 0.1794,
+      "red_concrete": 0.1098,
+      "red_mushroom": 0.727,
+      "redstone_wire": 0.0025,
+      "sand": 0.2221,
+      "stone": 0.4885,
+      "stone_bricks": 0.3283,
+      "stone_button": 0.8065,
+      "structure_block": 0.4981,
+      "trial_spawner": 0.9155,
+      "tripwire": 0.1731,
+      "tripwire_hook": 0.1731,
+      "vine": 0.2221,
+      "water": 0.8333,
+      "waxed_copper_door": 0.5,
+      "waxed_cut_copper_stairs": 0.6028,
+      "waxed_oxidized_copper_door": 0.3995,
+      "waxed_oxidized_copper_trapdoor": 0.6939,
+      "waxed_oxidized_cut_copper_slab": 0.606,
+      "white_bed": 0.1794,
+      "white_concrete": 0.1098,
+      "white_stained_glass": 0.1748,
+      "yellow_bed": 0.1794
+    }
   },
   {
     "name": "Village Desert",
@@ -960,7 +1101,15 @@
       "wheat",
       "white_carpet",
       "white_glazed_terracotta"
-    ]
+    ],
+    "block_chances": {
+      "blast_furnace": 0.9896,
+      "granite": 0.9896,
+      "granite_stairs": 0.9896,
+      "granite_wall": 0.9896,
+      "jungle_fence": 0.9896,
+      "stone_button": 0.9896
+    }
   },
   {
     "name": "Village Plains",
@@ -1037,7 +1186,10 @@
       "yellow_carpet",
       "yellow_stained_glass_pane",
       "yellow_wool"
-    ]
+    ],
+    "block_chances": {
+      "oak_leaves": 0.25
+    }
   },
   {
     "name": "Village Savanna",
@@ -1110,7 +1262,11 @@
       "yellow_glazed_terracotta",
       "yellow_stained_glass_pane",
       "yellow_terracotta"
-    ]
+    ],
+    "block_chances": {
+      "blast_furnace": 0.9792,
+      "orange_glazed_terracotta": 0.9792
+    }
   },
   {
     "name": "Village Snowy",
@@ -1177,7 +1333,11 @@
       "water_cauldron",
       "wheat",
       "white_bed"
-    ]
+    ],
+    "block_chances": {
+      "light_gray_wool": 0.9804,
+      "stone_bricks": 0.1667
+    }
   },
   {
     "name": "Village Taiga",
@@ -1246,6 +1406,11 @@
       "water_cauldron",
       "wheat",
       "white_carpet"
-    ]
+    ],
+    "block_chances": {
+      "bell": 0.99,
+      "mossy_cobblestone": 0.9851,
+      "pumpkin_stem": 0.9845
+    }
   }
 ]

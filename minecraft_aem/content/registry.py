@@ -141,6 +141,9 @@ class MCStructureData:
     game_id: str             # the mod-facing registry id ("minecraft:ancient_city"), for slot_data
     label: str = ""          # display name = prettify(game_id); cosmetic — YAML option + AP item label
     blocks: tuple = ()  # palette block ids (natural generation); see logic.acquisition
+    # (block, chance) for the palette blocks not in every one generated (structures.json
+    # block_chances, read off a jigsaw structure's pools); the rest are always there.
+    block_chances: tuple = ()
     # classification is NOT stored: a Structure Unlock is always a logic gate, and whether it rises
     # from progression_skip_balancing to progression depends on the seed (does it gate a goal boss?),
     # so it is computed at item creation — see MCWorld.create_item.
@@ -415,6 +418,7 @@ def _struct_record(row: dict, sid: int) -> MCStructureData:
         game_id=game_id if ":" in game_id else f"minecraft:{game_id}",
         label=_prettify(game_id),
         blocks=tuple(row.get("blocks", ())),
+        block_chances=tuple(sorted(row.get("block_chances", {}).items())),
     )
 
 

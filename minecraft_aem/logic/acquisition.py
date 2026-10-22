@@ -421,6 +421,13 @@ def _block_structures(content) -> dict:
     return mapping
 
 
+@cache
+def _palette_chances(content) -> dict:
+    """(structure, block) -> chance that one generated structure has the block; absent = always."""
+    return {(name, block): chance for name, data in content.STRUCTURES.items()
+            for block, chance in data.block_chances}
+
+
 def _block_region(block: str) -> str:
     if any(hint in block for hint in _END_BLOCK_HINTS):
         return REGION_END
@@ -860,6 +867,14 @@ class RuleHelper:
         boat and an afternoon can walk. Waived in the glitch graph, so the tile reads yellow —
         possible now if you are willing, never something fill leans on."""
         return Const(True) if self.glitch else node
+
+    def palette_structure(self, name: str, block: str):
+        """Reach structure ``name`` to find ``block`` in its palette. A block most of them don't have
+        (a camp's copper golem statue, 2-14%) is a glitch route: AP can't plan on the one you find."""
+        node = self.structure(name)
+        if _palette_chances(self.content).get((name, block), 1.0) < self._GLITCH_CHANCE:
+            return self.glitch_only(node)
+        return node
 
     def glitch_only(self, node):
         """The inverse of ``strict_only``: a ROUTE that exists only in the permissive graph.
@@ -1822,7 +1837,9 @@ class RuleHelper:
                     continue
                 for struct_name in _block_structures(self.content).get(base, ()):
                     if struct_name in self.active_structures:
-                        add(self.all_of(self.structure(struct_name), mine), False, runs_dry=True, chance=1.0)
+                        found = _palette_chances(self.content).get((struct_name, base), 1.0)
+                        add(self.all_of(self.structure(struct_name), mine), found < self._GLITCH_CHANCE,
+                            runs_dry=True, chance=found)
                 aged = _aged_source(self.content, block) if block == base else None
                 if aged is not None:
                     # Craftable AND aged (an exposed copper bulb): place the plain one, wait, break it.
@@ -2122,7 +2139,7 @@ class RuleHelper:
             # The plain item, weathered — plus mining one that generated already aged, which only the
             # structure palettes know about (and which _unique_or collapses when it is redundant).
             routes = [route for route in (self.acquire(aged),) if route is not None]
-            routes += [self.structure(name) for name in _block_structures(self.content).get(block, ())
+            routes += [self.palette_structure(name, block) for name in _block_structures(self.content).get(block, ())
                        if name in self.active_structures]
             return self.any_of(*routes) if routes else None
         entry = _BLOCK_ONLY_FROM.get(block)
@@ -2152,7 +2169,7 @@ class RuleHelper:
         if not _rare_biome_block(self.content, block):
             return self.all_of()
         return self.any_of(self.strict_only(self.needs_biome_finder()),
-                           *[self.structure(name) for name in _block_structures(self.content).get(block, ())])
+                           *[self.palette_structure(name, block) for name in _block_structures(self.content).get(block, ())])
 
     def _placed_block_origin(self, block: str):
         """Origin of a block nobody finds lying around, derived rather than curated: one whose record
@@ -2183,7 +2200,7 @@ class RuleHelper:
             return self._natural_origin(block)
         if any(mined != block for mined in record.get("mining", ())):
             return self._natural_origin(block)
-        routes = [self.structure(name) for name in _block_structures(self.content).get(block, ())
+        routes = [self.palette_structure(name, block) for name in _block_structures(self.content).get(block, ())
                   if name in self.active_structures]
         crafted = self.acquire(f"minecraft:{block}")
         if crafted is not None:

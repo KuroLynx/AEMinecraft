@@ -1081,7 +1081,7 @@ class CriteriaCompiler:
             node = self._all_req(self.h.acquire("minecraft:flower_pot"), plant_node)
         if node is None:
             # Only ever placed by worldgen (a vault): reach a structure whose template has one.
-            node = self._any_opt(*[self.h.structure(s) for s in _block_structures(self.content).get(key, ())
+            node = self._any_opt(*[self.h.palette_structure(s, key) for s in _block_structures(self.content).get(key, ())
                                    if s in self.h.active_structures])
         return node
 
