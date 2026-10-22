@@ -5,7 +5,6 @@ from importlib.resources import files
 
 # AST primitives must be imported directly: `from .. import *` cannot supply them because the
 # package __init__ imports this module (via set_rules) before it defines Const/Has/and_/… .
-from BaseClasses import ItemClassification
 
 from functools import cache
 
@@ -480,17 +479,6 @@ class RuleHelper:
         self.start_region = (REGION_NETHER
                              if world.options.start_dimension.current_key == "nether"
                              else REGION_OVERWORLD)
-        # Structures / mobs whose unlock item is FULL progression this seed. Everything else is
-        # skip_balancing (or has no unlock item at all when the lock option is off), i.e. content the
-        # seed doesn't consider load-bearing — so a route through it is a glitch candidate.
-        self.progression_structures = {
-            name for name in self.active_structures
-            if world._structure_classification(name) == ItemClassification.progression
-        }
-        self.progression_mobs = {
-            name for name in self.content.MOBS_ALL
-            if world._mob_classification(name) == ItemClassification.progression
-        }
         # item_gate_behavior, route -> is it gated. Strict logic ignores this and assumes every route
         # gated (the defaults), which is the safe direction: a route the seed opened makes the GAME
         # more permissive than logic, never less, so fill can't deadlock on it. The glitch graph does
@@ -1730,9 +1718,7 @@ class RuleHelper:
                 # A drop needs the mob *defeated*, not merely reached: harmless for ordinary mobs
                 # (can_defeat == reachability) but correct for boss drops like the Wither's nether
                 # star, which must gate on the whole boss fight rather than just entering its arena.
-                add(self.can_defeat(name),
-                    unreliable("drops", mob_file) or name not in self.progression_mobs,
-                    chance=chance("drops", mob_file))
+                add(self.can_defeat(name), unreliable("drops", mob_file), chance=chance("drops", mob_file))
         mining_blocks = record.get("mining", ())
         # Data-driven: when the item has a tier-gated ORE source, a same-item block carrying no tier
         # info is a circular placed form (e.g. ``redstone_wire`` beside ``redstone_ore`` [iron]) whose
@@ -1790,8 +1776,7 @@ class RuleHelper:
                     continue
                 for struct_name in _block_structures(self.content).get(base, ()):
                     if struct_name in self.active_structures:
-                        add(self.all_of(self.structure(struct_name), mine),
-                            struct_name not in self.progression_structures, runs_dry=True, chance=1.0)
+                        add(self.all_of(self.structure(struct_name), mine), False, runs_dry=True, chance=1.0)
                 continue
             node = self._mining_node(block, base)
             if node is not None:
@@ -1830,8 +1815,7 @@ class RuleHelper:
                 # chest Knowledge for those is stricter than reality rather than looser, which is the
                 # safe direction for logic. Folds away entirely when the gate is off.
                 add(self.all_of(self.structure(structure_name), self._loot_container_node()),
-                    unreliable("structures", structure_name)
-                    or structure_name not in self.progression_structures, runs_dry=True,
+                    unreliable("structures", structure_name), runs_dry=True,
                     chance=chance("structures", structure_name))
         for structure_name in record.get("archaeology", ()):
             if structure_name in self.content.STRUCTURES:
@@ -1843,8 +1827,7 @@ class RuleHelper:
                 # (Brush Handling + copper + a feather), which is what the hand-written sniffer_egg
                 # branch has always asked for.
                 add(self.all_of(self.structure(structure_name), self.has_brush()),
-                    unreliable("archaeology", structure_name)
-                    or structure_name not in self.progression_structures, runs_dry=True,
+                    unreliable("archaeology", structure_name), runs_dry=True,
                     chance=chance("archaeology", structure_name))
         for table in record.get("gameplay", ()):
             # A trial-chamber vault opens once per player and its spawners go quiet: finite, like a chest.
