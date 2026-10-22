@@ -510,6 +510,124 @@ behaviour, `DeathLinkService.applyRemote`) or **all** of them. It's a `/aem deat
 
 ---
 
+## F. Player report (2026-10-23, verified against fix/b-section-leaks b0c1762)
+
+A long-time player's list. Each item was checked before landing here: `why_rule.py` routes and
+knock-outs on 26.1.2 (26.3 for the 26.2+/26.3-only advancements), BACAP on, everything locked, or a
+read of the mod code. **Done** = already behaves as the report asks. **Open** = still wrong today.
+
+### F-logic: advancements that read the wrong thing
+- [x] F1 **Structure lists / families** (Raidin' Master, Atlantis?). Done: on 26.3 Raidin' Master is out
+  without `Structure Unlock: Abandoned Camp`; Atlantis? needs `Ocean Ruin`.
+- [x] F2 **Location conditions** (Quicksand, Ahoy!, Now You're Thinking With Portals). Done: Quicksand
+  needs the Nether (or an Ancient City's soul sand), Ahoy! a Shipwreck, Portals a Ruined Portal.
+- [x] F3 **Worn items, falling blocks** (Stink Bomb, Classic Cartoon Comedy). Done (26.3): Stink Bomb
+  prices the TNT (Creeper / Ghast), Classic Cartoon Comedy needs the Anvil.
+- [ ] F4 **Item colours** (Colorful Cavalry). Open: still in logic `--without` Squid, Glow Squid and
+  Wither, so the 16 dyes aren't asked for. Each colour must ask for its dye.
+- [ ] F5 **Suspicious stew effects** (I'm gonna be sick!). Open: in logic `--without "Biome Finder"`
+  (eyeblossom = Pale Garden) and `--without "Entity Unlock: Wither"` (wither rose). Each effect must
+  ask for one of its flowers. Shares the flower table with F27.
+- [ ] F6 **Ominous banner** (Superhero of the Village). Open: in logic `--without "Entity Unlock:
+  Pillager"`; routes are Sword Handling or Spider (string -> wool). The ominous banner can't be
+  crafted (8 patterns, the loom does 6): it needs a pillager (a patrol captain, no village or raid).
+- [x] F7 **Trick or Treat!** Done (A9): needs a zombie/skeleton-family mob.
+- [x] F8 **Such a poser** Done (A16): strict needs the Copper Golem; the camp statue is glitch.
+
+### F-logic: routes that should not count
+- [ ] F9 **Mining takes the pickaxe itself.** Open: Seeing Red strict = Pickaxe Handling + Material
+  Handling x3, no Furnace / iron. Mining must also acquire the cheapest pickaxe that works (an iron
+  one needs iron, so a furnace or iron loot); the Nether's obsidian likewise a diamond pickaxe.
+- [ ] F10 **Silk Touch from random books.** Partly done: Thin Ice! strict now goes through Knowledge:
+  Enchanting and the chest books are glitch only, but `can_silk_touch` still takes ANY
+  `enchanted_book` + anvil. Make it a librarian (rerollable) for a specific enchantment; random
+  chest/fishing books stay a glitch route. An advancement asking for any book is unchanged.
+- [ ] F11 **Fossils.** To verify: `bone_block` self-mines as a natural block (fossils), while a fossil is
+  a few blocks buried per dozens of chunks. Boned is fine today (Skeleton or Composter), so check
+  which other rules ride `bone_block`, then make the fossil route unreliable.
+- [ ] F12 **Aged copper blocks** (Grate Expectations, Don't Come a Copper!). Open: strict route
+  Pickaxe Handling + Material Handling x1. `_aged_source("exposed_copper")` strips to `copper`, which
+  isn't an item, so the block reads as natural. Full blocks age from `copper_block`.
+- [ ] F13 **Stripped logs** (Shelfception). Open: strict = Knowledge: Shelf, no axe. `stripped_*_log`
+  self-mines as natural. It needs a log + an axe, or a structure that places it.
+- [x] F14 **Coral** Done (A17).
+- [x] F15 **Happy ghast needs the Nether** Done (A7): Lead Zeppelin needs @Nether on every route.
+- [ ] F16 **Camel husk** (Kill Entity: Camel Husk). Open: strict = its own unlock only. It only comes
+  ridden by a husk in a desert: Husk unlock + desert (Biome Finder).
+- [ ] F17 **Wolf armor** (Armadoggo, Good as New, Shear Brilliance). Open: Armadoggo / Good as New ask
+  Wolf + Armadillo but no taming (bones); Shear Brilliance asks Wolf + shears, no Armadillo and no
+  armor. All three need a tamed wolf; Shear Brilliance also the wolf armor.
+
+### F-logic: routes that were missing
+- [ ] F18 **Nether portal from water + lava.** Open: entering the Nether needs obsidian (Ruined Portal /
+  Village loot, or mining). A water bucket over lava in the frame's shape also builds a portal. The
+  way back still needs obsidian (water evaporates in the Nether).
+- [ ] F19 **Cobweb string with water.** Open: Fishy Business strict needs Sword Handling (or a Strider).
+  Water washes a cobweb away and drops string: a water bucket is a route.
+- [x] F20 **Copper bulbs** Done (A10): Lighten Up has the axe-scrape route from Trial Chambers.
+- [ ] F21 **Naturally generated blocks with a recipe.** Partly done: Resinance needs the Biome Finder,
+  not the camp. Still to check: terracotta, coarse dirt, moss carpet, nether wart block, smooth
+  basalt (block_biomes says they generate; `_placed_block_origin` may still read them as crafted).
+- [ ] F22 **Cured zombie villagers.** Open: What a Deal! needs `Structure Unlock: Village`. Curing a
+  zombie villager (weakness potion + golden apple) is another villager, and trading shouldn't ask for
+  a village on top of the villager (`can_sell_to_villager` ANDs `any_village()`).
+- [x] F23 **Crafting criteria cost only the recipe.** Done: Boned strict is Skeleton alone (or
+  Composter); no extra composter on the bone route.
+- [ ] F24 **Armor slots one at a time.** To verify: with `inventory_lock` armor on, does each armor
+  piece need its own slot (boots first), or does logic wait for all four? `why_rule --opt` only takes
+  ints, so check with a YAML (Living Like Kings, golden boots).
+
+### F-logic: unreliable routes
+- [ ] F25 **Raid gifts.** Open in code: `*_gift` gameplay tables carry no chance, so they read as 1.0
+  (reliable) behind `can_win_raid`. Make them as unreliable as mob drops, with a drop winning over
+  them. (Cow Tipper / Salmonella Poisoning / Humble Bundle are fine today only because a drop exists.)
+- [ ] F26 **Villager trades when villages aren't progression.** Open: `can_trade_villager` is always
+  reliable. When the seed doesn't make villages progression, trades should be unreliable (leather
+  gear, arrows, cooked food and Help! I've been framed! fall back to their mob routes).
+
+### F-logic: status effects
+- [ ] F27 **Stew effects.** Open: `tables.py` lists one flower per effect (weakness = white tulip, night
+  vision = poppy, blindness = azure bluet without eyeblossom, nausea = pufferfish only, no stew). Use
+  the full flower -> effect table (shared with F5).
+- [ ] F28 **Beacon effects need a pyramid.** Open: haste / speed / strength / resistance /
+  regeneration / jump boost ask `beacon` only. Add `can_get_beacon_base()` (it exists, used by
+  construct_beacon). No visible change today (the beacon already costs the Wither + iron tools).
+
+### F-mod
+- [ ] F29 **Inventory rows unlock from the hotbar up.** Open: `InventoryLockService` opens the rest rows
+  9-17 before 18-26 (hotbar, row 3, row 1, row 2). Should be hotbar, row 3, row 2, row 1.
+- [ ] F30 **Inventory Shuffle only between unlocked slots.** Open: `TrapEffects.inventoryShuffle`
+  permutes all 36, hiding items in locked slots.
+- [ ] F31 **Dispensers into locked armor slots** = D2 (open).
+- [ ] F32 **keep_inventory keeps XP** = D3 (open).
+- [ ] F33 **Totem with keep_inventory.** Open: nothing in the mod checks for a totem, so kept items are
+  set aside before the totem fires and the player dies. Skip when a held totem will save them.
+- [ ] F34 **Owed structures after a restart.** Partly: `SERVER_STARTED` releases unlocked content only
+  on an offline start. Verify an online restart with owed structures (and held mobs) places them
+  without `/aem structures release`.
+- [ ] F35 **Rebuilt far from the player.** Open: the placement queue never loads the target area, and
+  buried treasure (sea floor) / shipwrecks / ruins / igloos / ruined portals / pyramids / huts read an
+  unloaded chunk's ground as the world bottom. Load the area first. Overlaps D4 (which defers to
+  chunk load instead): pick one approach.
+- [ ] F36 **Checks under a hidden advancement.** Open: only tracker tiles are re-parented
+  (`TrackerLayoutService`). With BACAP + challenge_sanity frames, How Did We Get Here? sits under
+  Global Vaccination (hidden) and shows nowhere. Re-parent any visible check onto its nearest visible
+  ancestor.
+- [ ] F37 **Goal tiles gray only on their own count.** Open: `DataLogicProvider` grays a goal tile once
+  enough targets are *reached* (checked), so a release / collect / another client checks without
+  earning ("Advancements" read done at 325/350). Gray only when the tile's own count is complete.
+- [ ] F38 **Inventory buttons.** To verify in-game: with the Biome Finder the third button sticks out of
+  the window, and the recipe book moves the window but not the buttons. Fix: a row along the top
+  edge that follows the window.
+- [ ] F39 **BACAP rewards marker in the world.** Open: `BacapConfigService` keeps its "already
+  configured" marker through `APWorldPaths` (the `archipelago/` folder), which players copy to a new
+  map, so the new world never gets bacap_rewards applied. Keep it in the world's own data.
+- [ ] F40 **Replacement item for links / plando / start_inventory_from_pool.** Open: the world has no
+  `get_filler_item_name`, so AP's default picks any item (a Knowledge, an unlock not in the pool, or
+  one the seed's MC version lacks, which crashed: "Abandoned Camp"). Draw from the normal filler pool.
+
+---
+
 ## Z. Final verification (run when everything above is ticked)
 
 - [ ] Every **Check** line above re-run on the final branch, on `--mc 26.1.2`, `--mc 26.2` **and** `--mc 26.3`.
