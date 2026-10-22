@@ -372,6 +372,23 @@ def _aged_source(content, block: str) -> str | None:
 
 
 @cache
+def _wax_scrapes(content) -> dict:
+    """Plain item -> its waxed form, read off the waxing recipes (``X + honeycomb -> waxed_X``; the
+    candle and the beehive also take honeycomb, hence the name check). An axe scrapes the wax back off
+    a placed waxed block, which the recipes don't say: a Trial Chamber's waxed copper bulb is the only
+    copper bulb outside the Nether ('Lighten Up')."""
+    scrapes = {}
+    for name, record in _acquisition_table(content).items():
+        for recipe in record.get("recipes", ()):
+            items = [ingredient.get("item") for ingredient in recipe.get("ingredients", ())]
+            if len(items) == 2 and "honeycomb" in items:
+                plain = items[0] if items[1] == "honeycomb" else items[1]
+                if name == f"waxed_{plain}":
+                    scrapes[plain] = name
+    return scrapes
+
+
+@cache
 def _block_structures(content) -> dict:
     """Reverse of each structure's natural-generation palette (structures.json -> STRUCTURES): block
     id -> the structures it generates in. Lets acquire() treat 'mine this block where it spawns in a
@@ -1702,6 +1719,12 @@ class RuleHelper:
         for recipe in record.get("recipes", ()):
             # A recipe is deterministic; whether its INGREDIENTS are is decided in their own acquire.
             add(self._recipe_node(recipe))
+        waxed = _wax_scrapes(self.content).get(base)
+        if waxed is not None:
+            # Place the waxed block, scrape the wax off with an axe, break it back.
+            mine = self._mining_node(base, base)
+            if mine is not None:
+                add(self.all_of(self.acquire(f"minecraft:{waxed}"), self._tool_kind("axe"), mine))
         step = _brewing_steps(self.content).get(base)
         if step:
             # A brew is as deterministic as a recipe. The jar spells these out only from 26.3, so
@@ -1777,6 +1800,10 @@ class RuleHelper:
                 for struct_name in _block_structures(self.content).get(base, ()):
                     if struct_name in self.active_structures:
                         add(self.all_of(self.structure(struct_name), mine), False, runs_dry=True, chance=1.0)
+                aged = _aged_source(self.content, block) if block == base else None
+                if aged is not None:
+                    # Craftable AND aged (an exposed copper bulb): place the plain one, wait, break it.
+                    add(self.all_of(self.acquire(aged), mine))
                 continue
             node = self._mining_node(block, base)
             if node is not None:
