@@ -125,6 +125,13 @@ public final class AEMScreenButtons {
                         ignored -> MCClient.setScreen(new BiomeFinderScreen()));
                 button.setTooltip(Tooltip.create(BIOME_FINDER_LABEL));
                 Screens.getWidgets(screen).add(button);
+                // Opening the recipe book slides the panel (and vanilla's own button) sideways after
+                // init, so follow the recipe-book button every frame instead of keeping the init spot.
+                ScreenEvents.beforeExtract(screen).register((s, graphics, mouseX, mouseY, tickDelta) -> {
+                    ScreenPosition anchor =
+                            ((InventoryScreenAccessor) inventory).archipelago_euclesia$recipeBookButtonPosition();
+                    button.setPosition(anchor.x() + RECIPE_BUTTON_WIDTH + BIOME_FINDER_GAP, anchor.y());
+                });
             }
         });
     }
