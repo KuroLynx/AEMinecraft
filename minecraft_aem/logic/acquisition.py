@@ -1115,6 +1115,16 @@ class RuleHelper:
             "rotten_flesh", "golden_apple", "golden_carrot",
         )
 
+    def has_food_supply(self):
+        """Food you can count on for a long trip, not a lucky meal: crops (Hoe Handling; the seeds come
+        off Overworld grass) or a mob you can farm, the Hoglin for a Nether start. Unlike can_get_food,
+        which is anything edible once, this is what exploration_logic / combat_logic ask for."""
+        return self.any_of(
+            self.all_of(self.knowledge(K_HOE), self.access_region(REGION_OVERWORLD)),
+            *[self.entity(mob) for mob in (E_COW, E_PIG, E_CHICKEN, E_SHEEP, E_RABBIT, E_MOOSHROOM,
+                                           E_COD, E_SALMON, E_HOGLIN) if mob in self.content.MOBS_ALL],
+        )
+
     def can_duplicate_allay(self):
         # Allay duplicate: hand it an Amethyst Shard while it dances to a jukebox.
         return self.all_of(

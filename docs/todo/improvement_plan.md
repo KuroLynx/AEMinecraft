@@ -421,6 +421,13 @@ plants/fans), and the dump listed only coral blocks for the coral features.
   - **Check:** `verify_all_options.py` with both C1 and C2 on passes, on both starts.
   - **Check:** a BACAP `Generate.py` with both on passes on 26.1.2 and 26.3. The gate moves progression
     earlier, so watch for fill failures.
+- [x] C2 done (feat/exploration-logic, 2026-10-23). The food helper is `has_food_supply()` (`can_get_food()`
+  already meant "anything edible once", for the Husbandry root) and also takes the Hoglin, so a Nether
+  start's Nether trips don't wait for the Overworld. "Exploration" = every criterion is
+  `changed_dimension` / `nether_travel`, or a `location` whose location names only a biome / structure
+  / dimension / position (standing on a block, light, an empty location: no). 12 vanilla and 62 BACAP
+  advancements. selfcheck, reachability, all-options, compile x3, BACAP Generate x6 (3 versions x both
+  starts) and one with every inventory slot locked PASS.
 - [ ] C2 **New option `exploration_logic`** (decided 2026-10-22). It's a `Toggle` in `options.py`,
   written `exploration_logic: 'true' / 'false'` in the YAML like `glitch_logic`. Default `true`
   (`false` keeps today's behaviour). Add it to `template.yaml` too.

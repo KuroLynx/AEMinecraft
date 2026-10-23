@@ -412,6 +412,24 @@ class BacapRewards(Toggle):
     default = 0
 
 
+class ExplorationLogic(DefaultOnToggle):
+    """Expect a food supply before sending you exploring.
+
+    An exploration advancement is one that only asks you to go somewhere: a biome, a structure, a
+    dimension or a distance (Adventuring Time, Atlantis?, Subspace Bubble...). One that also needs an
+    item or a kill is not one.
+
+    - true (default): an exploration advancement is in logic only once you have a reliable food
+      supply, Hoe Handling (crops) or one of Cow, Pig, Chicken, Sheep, Rabbit, Mooshroom, Cod or
+      Salmon, and, when inventory_lock is on, an inventory slot to carry it in.
+    - false: exploring needs nothing beyond getting there.
+
+    Only changes where items are placed. The tracker still shows such a check yellow when you could
+    already make the trip.
+    """
+    display_name = "Exploration Logic"
+
+
 class GlitchLogic(DefaultOnToggle):
     """Show, in the advancement tracker, the checks you can only reach by an unreliable route.
 
@@ -642,5 +660,6 @@ class MCOptions(PerGameCommonOptions):
     blazeandcave: BlazeAndCave
     bacap_rewards: BacapRewards
     item_gate_behavior: ItemGateBehavior
+    exploration_logic: ExplorationLogic
     glitch_logic: GlitchLogic
     inventory_lock: InventoryLock
