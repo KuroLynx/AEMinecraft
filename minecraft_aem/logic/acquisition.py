@@ -318,6 +318,12 @@ _BUCKET_CONTENT_MOBS: dict[str, tuple[str, ...]] = {
 }
 # needs_<tier>_tool tag -> the material tier the mining pickaxe (and the player) must have reached.
 _NEEDS_TIER = {"stone": MAT_STONE, "iron": MAT_IRON, "diamond": MAT_DIAMOND}
+# What each pickaxe can break, as block_mining's "needs": a tool's material is not its mining tier
+# (golden mines like wood, copper like stone). A pickaxe not listed here (a mod's) is taken as wood.
+_MINING_RANK = {None: 0, "stone": 1, "iron": 2, "diamond": 3}
+_PICKAXE_RANK = {"minecraft:wooden_pickaxe": 0, "minecraft:golden_pickaxe": 0, "minecraft:stone_pickaxe": 1,
+                 "minecraft:copper_pickaxe": 1, "minecraft:iron_pickaxe": 2, "minecraft:diamond_pickaxe": 3,
+                 "minecraft:netherite_pickaxe": 3}
 @cache
 def _pack_json(content, filename: str, missing_ok: bool = False) -> dict:
     """One of this version's base-pack files, parsed once."""
@@ -2148,8 +2154,14 @@ class RuleHelper:
             # A block is listed for either reason now — a pickaxe tier, or a per-item tool. Only the
             # first means "you need a pickaxe"; glow lichen is in the table and mines bare-handed.
             if "needs" in info:
-                parts.append(self.knowledge(K_PICKAXE))
-                tier = _MATERIAL_TIER_BY_ITEM.get(item) or _NEEDS_TIER.get(info.get("needs"))
+                # The pickaxe itself, the cheapest that breaks it: an iron one costs iron (a furnace,
+                # or iron loot), the Nether's obsidian a diamond one. acquire() brings its Handling.
+                with self.bulk_mode(False):   # one pickaxe mines the whole stack
+                    pickaxe = self._pickaxe(info.get("needs"))
+                if pickaxe is None:
+                    return None      # no pickaxe that breaks it is reachable here
+                parts.append(pickaxe)
+                tier = _MATERIAL_TIER_BY_ITEM.get(item)   # picking the drop up (diamond, emerald…)
                 if tier is not None:
                     parts.append(self.material(tier))
             elif info.get("tool"):
@@ -2287,6 +2299,19 @@ class RuleHelper:
     # block_mining tool kind -> the item tag of every such tool (tags.json, per version).
     _TOOL_KIND_TAG = {"pickaxe": "pickaxes", "axe": "axes", "shovel": "shovels", "hoe": "hoes",
                       "sword": "swords", "spear": "spears"}
+
+    def _pickaxe(self, needs):
+        """Holding a pickaxe of the tier a block needing ``needs`` asks for (block_mining), or None.
+
+        Only that tier, not the ones above: each higher pickaxe is made from what this tier mines (a
+        diamond one from diamonds, which an iron one mines), so offering it here is a cycle the fixed
+        point cuts into a route that skips the materials. A looted higher pickaxe would also do; leaving
+        it out is the strict side."""
+        rank = _MINING_RANK.get(needs, 0)
+        picks = [self.acquire(f"minecraft:{pick}") for pick in sorted(_item_tag(self.content, "minecraft:pickaxes"))
+                 if _PICKAXE_RANK.get(f"minecraft:{pick}", 0) == rank]
+        picks = [pick for pick in picks if pick is not None]
+        return self.any_of(*picks) if picks else None
 
     def _tool_kind(self, kind: str):
         """Holding a tool of ``kind`` (a block_mining tool kind): shears, or any item of that kind's

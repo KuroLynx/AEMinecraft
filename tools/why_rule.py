@@ -88,6 +88,7 @@ def main():
     mw = setup_multiworld(world_type, options={
         "blazeandcave": 1, "kill_sanity": 1, "villager_trust": 1, "glitch_logic": 1,
         "mob_spawn_lock": {"passive", "neutral", "hostile", "boss"}, "structure_unlock": {"All"},
+        "knowledge_gates": {"All"},
         "boss_list": {"Ender Dragon"}, "advancements_required": 50, "minecraft_version": args.mc,
         **{k: int(v) for k, v in (o.split("=", 1) for o in args.opt)}})
     world = mw.worlds[1]
