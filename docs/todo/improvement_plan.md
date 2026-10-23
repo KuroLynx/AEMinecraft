@@ -637,7 +637,7 @@ read of the mod code. **Done** = already behaves as the report asks. **Open** = 
 - [x] F32 **keep_inventory keeps XP** = D3 (done).
 - [x] F33 **Totem with keep_inventory.** Done with D3 (hook moved to `dropAllDeathLoot`). Was: nothing in the mod checks for a totem, so kept items are
   set aside before the totem fires and the player dies. Skip when a held totem will save them.
-- [ ] F34 **Owed structures after a restart.** Partly: `SERVER_STARTED` releases unlocked content only
+- [x] F34 **Owed structures after a restart.** Done, verified on a 26.1.2 dedicated server: an online start connects at SERVER_STARTING, before AEMServerRuntime has the server, so the connect-time release and the received-items unlocks were no-ops; SERVER_STARTED now releases on every start. Village (+9 held villagers) and mineshaft unlocked while the server was down were placed on restart with no command. Was partly: `SERVER_STARTED` releases unlocked content only
   on an offline start. Verify an online restart with owed structures (and held mobs) places them
   without `/aem structures release`.
 - [x] F35 **Rebuilt far from the player.** Closed by D4 (defer to loaded chunks), the approach kept. Built with D4 (defer to loaded chunks). Was: the placement queue never loads the target area, and
