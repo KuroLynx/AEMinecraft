@@ -171,7 +171,7 @@ _NATURAL_SELF_MINED = frozenset({
     "stone", "cobblestone", "granite", "diorite", "andesite", "tuff", "calcite", "deepslate",
     "cobbled_deepslate", "dripstone_block", "amethyst_block", "sandstone", "red_sandstone",
     "clay", "snow_block", "packed_ice", "blue_ice", "glowstone", "magma_block", "obsidian",
-    "mossy_cobblestone", "mud", "packed_mud", "bone_block",
+    "mossy_cobblestone", "mud", "packed_mud",
     # Also here for _placed_block_origin rather than for self-mining: both are craftable from what
     # they drop (a melon from 9 slices, a snow block from 4 snowballs) and neither has a recipe-free
     # source in the packs, so without this a jungle melon and a snowy-biome snow layer would read as
@@ -183,6 +183,11 @@ _NATURAL_SELF_MINED = frozenset({
     # recipes, a cycle nothing grounded, so they read obtainable only by accident of fixed-point order.
     "creaking_heart",
 })
+# Blocks that do generate on their own, but only as a few buried blocks per dozens of chunks with no way to
+# find them: an Overworld fossil's bone blocks (a worldgen feature, so no structure or Finder points at
+# one). Finding one is luck, so that route is glitch only; crafting and the structures that place the
+# block (a Nether Fossil, Trial Chambers) stand as usual.
+_BURIED_NATURAL = frozenset({"bone_block"})
 # Blocks that cannot simply be found: they exist only where something put them there, so mining one
 # is not a free natural source the way mining gravel is. Not derivable from the packs — the palettes
 # in structures.json say which structures a block DECORATES, not whether it also generates in the
@@ -2274,6 +2279,8 @@ class RuleHelper:
         crafted = self.acquire(f"minecraft:{block}")
         if crafted is not None:
             routes.append(crafted)
+        if block in _BURIED_NATURAL:
+            routes.append(self.glitch_only(self._natural_origin(block)))
         return self.any_of(*routes) if routes else None
 
     # Loot-table tool name -> the capability that satisfies it.
