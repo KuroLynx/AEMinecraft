@@ -1173,7 +1173,13 @@ class CriteriaCompiler:
         if name is None or name not in _NOT_IN_ENCHANTING_TABLE:
             routes.append(self.h.acquire("minecraft:enchanting_table"))
         if book is not None:
-            routes.append(self._all_req(book, anvil) if on_item else book)
+            found = self._all_req(book, anvil) if on_item else book
+            # Any book will do for "some enchantment"; one named enchantment is a random book's luck
+            # (glitch), or a librarian rerolled until it offers it.
+            routes.append(found if name is None or found is None else self.h.glitch_only(found))
+        if name is not None:
+            librarian = self.h.librarian_book()
+            routes.append(self._all_req(librarian, anvil) if on_item else librarian)
         return self._any_opt(*routes)
 
     def _price_projectile(self, proj):
