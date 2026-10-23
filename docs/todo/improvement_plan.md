@@ -558,7 +558,7 @@ read of the mod code. **Done** = already behaves as the report asks. **Open** = 
   prices the TNT (Creeper / Ghast), Classic Cartoon Comedy needs the Anvil.
 - [x] F4 **Item colours** (Colorful Cavalry). Done: the compiler reads `dyed_color` (a vanilla dye colour asks for that dye); strict is out `--without` Squid + Glow Squid + Wither. Was: still in logic `--without` Squid, Glow Squid and
   Wither, so the 16 dyes aren't asked for. Each colour must ask for its dye.
-- [ ] F5 **Suspicious stew effects** (I'm gonna be sick!). Open: in logic `--without "Biome Finder"`
+- [x] F5 **Suspicious stew effects** (I'm gonna be sick!). Done: `suspicious_stew_effects` item components ask for a stew of that effect; strict is out `--without` Biome Finder or Wither. Was: in logic `--without "Biome Finder"`
   (eyeblossom = Pale Garden) and `--without "Entity Unlock: Wither"` (wither rose). Each effect must
   ask for one of its flowers. Shares the flower table with F27.
 - [ ] F6 **Ominous banner** (Superhero of the Village). Open: in logic `--without "Entity Unlock:
@@ -619,7 +619,7 @@ read of the mod code. **Done** = already behaves as the report asks. **Open** = 
   gear, arrows, cooked food and Help! I've been framed! fall back to their mob routes).
 
 ### F-logic: status effects
-- [ ] F27 **Stew effects.** Open: `tables.py` lists one flower per effect (weakness = white tulip, night
+- [x] F27 **Stew effects.** Done with F5: effect -> flowers is read off the stew recipes (the dump now records their `effects`; the 3 vanilla packs patched from the jars, `/aem dump acquisition` must reproduce them). Was: `tables.py` lists one flower per effect (weakness = white tulip, night
   vision = poppy, blindness = azure bluet without eyeblossom, nausea = pufferfish only, no stew). Use
   the full flower -> effect table (shared with F5).
 - [ ] F28 **Beacon effects need a pyramid.** Open: haste / speed / strength / resistance /

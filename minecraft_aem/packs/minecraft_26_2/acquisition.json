@@ -31371,6 +31371,9 @@
     },
     "recipes": [
       {
+        "effects": [
+          "fire_resistance"
+        ],
         "ingredients": [
           {
             "item": "bowl"
@@ -31388,6 +31391,9 @@
         "station": "crafting_shapeless"
       },
       {
+        "effects": [
+          "blindness"
+        ],
         "ingredients": [
           {
             "item": "bowl"
@@ -31405,6 +31411,9 @@
         "station": "crafting_shapeless"
       },
       {
+        "effects": [
+          "saturation"
+        ],
         "ingredients": [
           {
             "item": "bowl"
@@ -31422,6 +31431,9 @@
         "station": "crafting_shapeless"
       },
       {
+        "effects": [
+          "nausea"
+        ],
         "ingredients": [
           {
             "item": "bowl"
@@ -31439,6 +31451,9 @@
         "station": "crafting_shapeless"
       },
       {
+        "effects": [
+          "jump_boost"
+        ],
         "ingredients": [
           {
             "item": "bowl"
@@ -31456,6 +31471,9 @@
         "station": "crafting_shapeless"
       },
       {
+        "effects": [
+          "saturation"
+        ],
         "ingredients": [
           {
             "item": "bowl"
@@ -31473,6 +31491,9 @@
         "station": "crafting_shapeless"
       },
       {
+        "effects": [
+          "saturation"
+        ],
         "ingredients": [
           {
             "item": "bowl"
@@ -31490,6 +31511,9 @@
         "station": "crafting_shapeless"
       },
       {
+        "effects": [
+          "poison"
+        ],
         "ingredients": [
           {
             "item": "bowl"
@@ -31507,6 +31531,9 @@
         "station": "crafting_shapeless"
       },
       {
+        "effects": [
+          "blindness"
+        ],
         "ingredients": [
           {
             "item": "bowl"
@@ -31524,6 +31551,9 @@
         "station": "crafting_shapeless"
       },
       {
+        "effects": [
+          "weakness"
+        ],
         "ingredients": [
           {
             "item": "bowl"
@@ -31541,6 +31571,9 @@
         "station": "crafting_shapeless"
       },
       {
+        "effects": [
+          "regeneration"
+        ],
         "ingredients": [
           {
             "item": "bowl"
@@ -31558,6 +31591,9 @@
         "station": "crafting_shapeless"
       },
       {
+        "effects": [
+          "weakness"
+        ],
         "ingredients": [
           {
             "item": "bowl"
@@ -31575,6 +31611,9 @@
         "station": "crafting_shapeless"
       },
       {
+        "effects": [
+          "night_vision"
+        ],
         "ingredients": [
           {
             "item": "bowl"
@@ -31592,6 +31631,9 @@
         "station": "crafting_shapeless"
       },
       {
+        "effects": [
+          "weakness"
+        ],
         "ingredients": [
           {
             "item": "bowl"
@@ -31609,6 +31651,9 @@
         "station": "crafting_shapeless"
       },
       {
+        "effects": [
+          "night_vision"
+        ],
         "ingredients": [
           {
             "item": "bowl"
@@ -31626,6 +31671,9 @@
         "station": "crafting_shapeless"
       },
       {
+        "effects": [
+          "weakness"
+        ],
         "ingredients": [
           {
             "item": "bowl"
@@ -31643,6 +31691,9 @@
         "station": "crafting_shapeless"
       },
       {
+        "effects": [
+          "wither"
+        ],
         "ingredients": [
           {
             "item": "bowl"

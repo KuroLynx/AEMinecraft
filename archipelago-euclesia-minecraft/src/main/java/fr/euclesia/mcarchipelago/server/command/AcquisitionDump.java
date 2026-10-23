@@ -169,6 +169,19 @@ final class AcquisitionDump {
         JsonArray array = new JsonArray();
         ingredients.forEach(array::add);
         JsonObject record = new JsonObject();
+        // A suspicious stew's effect comes from its flower, and only the recipe's result says which.
+        JsonArray effects = new JsonArray();
+        if (result != null && result.isJsonObject() && result.getAsJsonObject().get("components") instanceof JsonObject components
+                && components.get("minecraft:suspicious_stew_effects") instanceof JsonArray stew) {
+            for (JsonElement effect : stew) {
+                if (effect.isJsonObject()) {
+                    effects.add(stripNs(string(effect.getAsJsonObject().get("id"), "")));
+                }
+            }
+        }
+        if (!effects.isEmpty()) {
+            record.add("effects", effects);                         // alphabetical: effects < ingredients
+        }
         record.add("ingredients", array);                          // alphabetical: ingredients < station
         record.addProperty("station", stripNs(string(recipe.get("type"), "")));
         for (String product : made) {
@@ -855,6 +868,9 @@ final class AcquisitionDump {
                 JsonArray array = new JsonArray();
                 for (JsonObject recipe : recipes.get(item)) {
                     JsonObject expanded = new JsonObject();
+                    if (recipe.has("effects")) {
+                        expanded.add("effects", recipe.get("effects"));
+                    }
                     JsonArray ingredients = new JsonArray();
                     for (JsonElement ing : recipe.getAsJsonArray("ingredients")) {
                         ingredients.add(expandIngredient(ing.getAsJsonObject()));
