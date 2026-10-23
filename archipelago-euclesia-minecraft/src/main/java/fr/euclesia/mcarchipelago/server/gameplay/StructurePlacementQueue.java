@@ -5,6 +5,7 @@ import fr.euclesia.mcarchipelago.AEMDebug;
 import fr.euclesia.mcarchipelago.server.gameplay.StructureCaptureData.CapturedPlacement;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
@@ -12,6 +13,7 @@ import net.minecraft.world.level.levelgen.structure.StructureStart;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,6 +31,12 @@ import java.util.Optional;
  * <p>So placements queue here and drain under a per-tick budget. The world fills in over a few
  * seconds instead of the server stopping dead.
  *
+ * <p>A rebuild only places chunks that are loaded (with their neighbours). Placing into an unloaded
+ * chunk would load or generate it synchronously on the server thread — a mass mineshaft unlock maxed
+ * the CPU that way — and a piece reading an unloaded chunk's ground puts buried treasure, shipwrecks
+ * or ruins at the world bottom. A rebuild with nothing loaded waits aside and is rechecked every
+ * second, so a far-away structure is built when someone gets there.
+ *
  * <p>The queue holds placements that have already been removed from their saved data, so anything
  * still pending at shutdown is written back rather than lost — a structure half-restored across a
  * restart would be unrecoverable, and this is exactly the mass case where a restart is most likely.
@@ -36,6 +44,9 @@ import java.util.Optional;
 public final class StructurePlacementQueue {
     /** Time per tick spent placing (~2 ms). Deliberately below the finder's budget: this runs in bursts. */
     private static final long TICK_BUDGET_NANOS = 2_000_000L;
+
+    /** Ticks between rechecks of the rebuilds waiting for their chunks to load. */
+    private static final int WAITING_RECHECK_TICKS = 20;
 
     /**
      * One unit of work. Two kinds share the queue and the budget:
@@ -64,6 +75,7 @@ public final class StructurePlacementQueue {
         private final ChunkPos origin;
         private StructureStart start;          // null until this job's first turn
         private List<ChunkPos> remaining;      // chunks still to place
+        private final List<BlockPos> shapes = new ArrayList<>();   // placed, awaiting their shape update
         private boolean dead;                  // the start no longer generates here
 
         Rebuild(ServerLevel level, String structureId, ChunkPos origin) {
@@ -76,7 +88,10 @@ public final class StructurePlacementQueue {
         @Override public String structureId() { return structureId; }
         ChunkPos origin() { return origin; }
 
-        /** Places the next chunk; true while this job still has work. */
+        /**
+         * Places the next loaded chunk; true when one was placed and more remain. False when it's
+         * finished, dead, or none of its remaining chunks is loaded ({@link #waiting()}).
+         */
         boolean step() {
             if (start == null) {
                 Optional<StructureStart> generated =
@@ -88,17 +103,42 @@ public final class StructurePlacementQueue {
                 start = generated.get();
                 remaining = new ArrayList<>(StructureReplayService.chunksOf(start));
             }
-            if (remaining.isEmpty()) {
-                return false;
+            for (Iterator<ChunkPos> chunks = remaining.iterator(); chunks.hasNext(); ) {
+                ChunkPos chunk = chunks.next();
+                if (StructureReplayService.isLoaded(level, chunk)) {
+                    chunks.remove();
+                    StructureReplayService.placeChunk(level, start, chunk, shapes);
+                    if (!remaining.isEmpty()) {
+                        return true;
+                    }
+                    break;
+                }
             }
-            StructureReplayService.placeChunk(level, start, remaining.remove(0));
-            return !remaining.isEmpty();
+            // Out of loaded chunks: shape-update the batch just placed, all at once so the pieces
+            // across its chunk seams see each other.
+            // ponytail: a seam between this batch and a later one stays unconnected; keep the shapes
+            // of the edge chunks for the next batch if that shows.
+            StructureReplayService.updateShapes(level, shapes);
+            shapes.clear();
+            return false;
         }
 
         boolean isDead() { return dead; }
+
+        /** Chunks remain, none loaded yet. */
+        boolean waiting() { return !dead && remaining != null && !remaining.isEmpty(); }
+
+        boolean anyLoaded() {
+            return remaining.stream().anyMatch(chunk -> StructureReplayService.isLoaded(level, chunk));
+        }
     }
 
     private static final Deque<Pending> QUEUE = new ArrayDeque<>();
+
+    /** Rebuilds whose remaining chunks are all unloaded, rechecked every {@link #WAITING_RECHECK_TICKS}. */
+    private static final List<Rebuild> WAITING = new ArrayList<>();
+
+    private static int ticks;
 
     private StructurePlacementQueue() {}
 
@@ -119,10 +159,19 @@ public final class StructurePlacementQueue {
     }
 
     public static int pending() {
-        return QUEUE.size();
+        return QUEUE.size() + WAITING.size();
     }
 
     private static void drain() {
+        if (++ticks % WAITING_RECHECK_TICKS == 0 && !WAITING.isEmpty()) {
+            for (Iterator<Rebuild> waiting = WAITING.iterator(); waiting.hasNext(); ) {
+                Rebuild rebuild = waiting.next();
+                if (rebuild.anyLoaded()) {
+                    waiting.remove();
+                    QUEUE.add(rebuild);
+                }
+            }
+        }
         if (QUEUE.isEmpty()) {
             return;
         }
@@ -136,21 +185,28 @@ public final class StructurePlacementQueue {
             }
             if (next instanceof Legacy legacy) {
                 StructureCaptureService.applyPlacementNow(legacy.level(), legacy.placement());
-            } else if (next instanceof Rebuild rebuild && rebuild.step()) {
-                // More chunks to go: back to the front, so one structure finishes before the next
-                // starts and a half-built one is never left sitting behind a queue of others.
-                QUEUE.addFirst(rebuild);
+            } else if (next instanceof Rebuild rebuild) {
+                if (rebuild.step()) {
+                    // More chunks to go: back to the front, so one structure finishes before the next
+                    // starts and a half-built one is never left sitting behind a queue of others.
+                    QUEUE.addFirst(rebuild);
+                } else if (rebuild.waiting()) {
+                    WAITING.add(rebuild);
+                }
             }
             placed++;
         } while (!QUEUE.isEmpty() && System.nanoTime() < deadline);
 
         if (QUEUE.isEmpty()) {
-            AEMDebug.log("structurePlacementQueue drained (last batch {} placements)", placed);
+            AEMDebug.log("structurePlacementQueue drained (last batch {} placements, {} waiting for chunks)",
+                    placed, WAITING.size());
         }
     }
 
     /** Puts everything still queued back where it came from. */
     private static void returnToStore() {
+        QUEUE.addAll(WAITING);
+        WAITING.clear();
         if (QUEUE.isEmpty()) {
             return;
         }

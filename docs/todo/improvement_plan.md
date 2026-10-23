@@ -463,7 +463,7 @@ plants/fans), and the dump listed only coral blocks for the coral features.
 The Bad Omen hold is silent. When `BadOmenMobEffectMixin` holds a raid, tell the player once per Bad
 Omen (throttled): "A raid can't start until these are unlocked: Ravager, Evoker, …", naming the ones
 still locked.
-- [ ] D1 done. **Check (in-game):** drink an ominous bottle in a village with a raid mob locked → one
+- [ ] D1 done. Built on `fix/raid-feedback`; in-game check pending. **Check (in-game):** drink an ominous bottle in a village with a raid mob locked → one
   chat line listing exactly the locked raid mobs, with no spam each tick.
 
 ### D2. Dispensers equip armor into locked armor slots
@@ -471,14 +471,14 @@ The inventory-lock mixins cover the ArmorSlot, `Equippable.swapWithEquipmentSlot
 offhand. They don't cover `EquipmentDispenseItemBehavior.dispenseEquipment` → `setItemSlot` on a
 player. Block it when the target is a player and the slot is locked (the item stays in the
 dispenser / drops as normal).
-- [ ] D2 done. **Check (in-game):** a locked armor slot plus a dispenser firing a helmet at you leaves
+- [ ] D2 done. Built on `fix/dispenser-armor-lock` (`canDispenserEquipIntoSlot`); in-game check pending. **Check (in-game):** a locked armor slot plus a dispenser firing a helmet at you leaves
   the slot empty. Unlocked, it equips. `tools/check_mixin_targets.py` passes on all 3 versions.
 
 ### D3. XP still drops with keep inventory
 `KeepInventoryService` deliberately leaves XP alone. Make XP follow the kept share: 100%
 (active/progressive at max) keeps all XP like the gamerule does, and partial keeps the same share
 (the rest drops).
-- [ ] D3 done. **Check (in-game):** `keep_inventory: active` → die with levels, respawn with the same
+- [ ] D3 done. Built on `fix/keep-inventory-xp`, with F33; in-game check pending. **Check (in-game):** `keep_inventory: active` → die with levels, respawn with the same
   levels, and no orbs dropped. Progressive at 50% → about half kept.
 
 ### D4. Mineshaft unlock lagged the server
@@ -499,7 +499,7 @@ Fix:
 2. Measure the budget against the real per-chunk cost.
 3. Route post-processing marks to the chunk, or apply the shape update directly, so the WARN is gone.
 
-- [ ] D4 done.
+- [ ] D4 done. Built on `fix/structure-rebuild-on-load` (wait for loaded chunks, covers F35); in-game check pending.
   - **Check (in-game, dedicated server):** pre-generate a large area before connecting, then
     `/send` Structure Unlock: Mineshaft. MSPT stays under 50 (use `/tick query`), and the log has no
     post-processing WARN.
@@ -510,7 +510,7 @@ Fix:
 Add a server-side setting: an incoming DeathLink kills **one random** living player (current
 behaviour, `DeathLinkService.applyRemote`) or **all** of them. It's a `/aem deathlink` sub-command persisted like the other server preferences
 (see `DeathLinkPreference`).
-- [ ] D5 done. **Check (in-game, 2 clients):** in `random` mode a bounce kills exactly one player;
+- [ ] D5 done. Built on `feat/deathlink-mode` (`/aem deathlink mode random|all`); in-game check pending. **Check (in-game, 2 clients):** in `random` mode a bounce kills exactly one player;
   in `all` mode it kills both. The setting survives a restart.
 
 ---
@@ -631,14 +631,14 @@ read of the mod code. **Done** = already behaves as the report asks. **Open** = 
   9-17 before 18-26 (hotbar, row 3, row 1, row 2). Should be hotbar, row 3, row 2, row 1.
 - [ ] F30 **Inventory Shuffle only between unlocked slots.** Open: `TrapEffects.inventoryShuffle`
   permutes all 36, hiding items in locked slots.
-- [ ] F31 **Dispensers into locked armor slots** = D2 (open).
-- [ ] F32 **keep_inventory keeps XP** = D3 (open).
-- [ ] F33 **Totem with keep_inventory.** Open: nothing in the mod checks for a totem, so kept items are
+- [ ] F31 **Dispensers into locked armor slots** = D2 (built).
+- [ ] F32 **keep_inventory keeps XP** = D3 (built).
+- [ ] F33 **Totem with keep_inventory.** Built with D3 (hook moved to `dropAllDeathLoot`). Was: nothing in the mod checks for a totem, so kept items are
   set aside before the totem fires and the player dies. Skip when a held totem will save them.
 - [ ] F34 **Owed structures after a restart.** Partly: `SERVER_STARTED` releases unlocked content only
   on an offline start. Verify an online restart with owed structures (and held mobs) places them
   without `/aem structures release`.
-- [ ] F35 **Rebuilt far from the player.** Open: the placement queue never loads the target area, and
+- [ ] F35 **Rebuilt far from the player.** Built with D4 (defer to loaded chunks). Was: the placement queue never loads the target area, and
   buried treasure (sea floor) / shipwrecks / ruins / igloos / ruined portals / pyramids / huts read an
   unloaded chunk's ground as the world bottom. Load the area first. Overlaps D4 (which defers to
   chunk load instead): pick one approach.
