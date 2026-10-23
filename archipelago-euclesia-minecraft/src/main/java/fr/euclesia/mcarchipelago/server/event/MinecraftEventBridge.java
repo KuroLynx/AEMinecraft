@@ -13,6 +13,7 @@ import fr.euclesia.mcarchipelago.server.gameplay.BiomeFinderService;
 import fr.euclesia.mcarchipelago.server.gameplay.FillerTrapService;
 import fr.euclesia.mcarchipelago.server.gameplay.KeepInventoryService;
 import fr.euclesia.mcarchipelago.server.gameplay.KnowledgeUseGate;
+import fr.euclesia.mcarchipelago.server.gameplay.OminousBottleGate;
 import fr.euclesia.mcarchipelago.server.gameplay.MobKillBridge;
 import fr.euclesia.mcarchipelago.server.gameplay.RootAdvancementService;
 import fr.euclesia.mcarchipelago.server.gameplay.SharedAdvancementService;
@@ -51,6 +52,7 @@ public final class MinecraftEventBridge {
         // Station/container Knowledge gates: refuse right-clicking a block whose Knowledge is
         // still missing (see KnowledgeUseGate).
         KnowledgeUseGate.register();
+        OminousBottleGate.register();
 
         // Trap pacing: one at a time, half a minute or so apart.
         TrapScheduler.register();

@@ -206,11 +206,14 @@ _NATURAL_SELF_MINED = frozenset({
 #     as free to mine: a heavy core (ominous vault loot only) put 'Core Keeper' in sphere 2 with no
 #     Trial Chambers. An empty structure list drops the route; the item's own loot route stands.
 #     The dragon egg appears when the dragon dies, the dragon head hangs on an End City ship.
-# Trial Chambers loot only the ominous challenge hands out: the heavy core (ominous vault,
-# chests/trial_chambers/reward_ominous*) and the ominous trial key (ominous spawners). Its route is a
-# hard fight for combat_logic. The dump folds every Trial Chambers table into one, hence the list.
-# ponytail: curated; derive from the ominous loot tables if it grows.
-_OMINOUS_VAULT_ONLY = frozenset({"heavy_core", "ominous_trial_key"})
+# Trial Chambers loot only an ominous trial hands out: what only the ominous vault
+# (chests/trial_chambers/reward_ominous*) and the ominous spawners (spawners/ominous/*) hold, read off
+# the 26.1.2 / 26.2 / 26.3 loot tables (identical). Its route is ominous_trial(). Ordinary vault loot is
+# not listed: a trial key also comes from the entrance chests and the decorated pots. The dump folds
+# every Trial Chambers table into one, hence the list.
+# ponytail: curated from the jar; derive in the dump if a version changes the ominous tables.
+_OMINOUS_VAULT_ONLY = frozenset({"cooked_beef", "enchanted_golden_apple", "flow_armor_trim_smithing_template",
+                                 "flow_banner_pattern", "heavy_core", "music_disc_creator", "ominous_trial_key"})
 
 _BLOCK_ONLY_FROM = {
     "heavy_core": ("structures", ()),
@@ -826,6 +829,17 @@ class RuleHelper:
             *[self.mob_unlocked(mob) for mob in MOBS_RAID],
             self.combat_ready(),
         )
+
+    def ominous_trial(self):
+        """An ominous trial can be run: the Trial Chambers, Bad Omen carried in (an ominous bottle) and
+        one of its spawner mobs unlocked, since a spawner whose mob is locked never finishes and
+        never drops its ominous key. A hard fight for combat_logic. None when the bottle can't be
+        priced here (it is part of the loot being priced)."""
+        bottle = self.acquire("minecraft:ominous_bottle")
+        if bottle is None:
+            return None
+        return self.all_of(self.structure(S_TRIAL_CHAMBERS), bottle,
+                           self.any_of(*[self.mob_unlocked(mob) for mob in MOBS_TRIAL]), self.combat_ready())
 
     def combat_ready(self):
         """combat_logic: what strict logic wants before a hard fight (a raid, the ominous Trial
@@ -1927,7 +1941,10 @@ class RuleHelper:
                 # safe direction for logic. Folds away entirely when the gate is off.
                 route = self.all_of(self.structure(structure_name), self._loot_container_node())
                 if structure_name == S_TRIAL_CHAMBERS and base in _OMINOUS_VAULT_ONLY:
-                    route = self.all_of(route, self.combat_ready())
+                    trial = self.ominous_trial()
+                    if trial is None:
+                        continue
+                    route = self.all_of(route, trial)
                 add(route, unreliable("structures", structure_name), runs_dry=True,
                     chance=chance("structures", structure_name))
         for structure_name in record.get("archaeology", ()):

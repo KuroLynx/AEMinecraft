@@ -335,6 +335,10 @@ E_ZOMBIE_VILLAGER = "Zombie Villager"
 # Raid Omen until all of them are unlocked (see MobSpawnLockService#isAnyRaidMobLocked), and
 # can_win_raid mirrors that gate.
 MOBS_RAID = (E_PILLAGER, E_VINDICATOR, E_EVOKER, E_WITCH, E_RAVAGER)
+# What the trial spawners can spawn (data/minecraft/trial_spawner/*, the same on 26.1.2 / 26.2 / 26.3);
+# mirrors TRIAL_MOB_IDS in the mod's OminousBottleGate.
+MOBS_TRIAL = (E_BOGGED, E_BREEZE, E_CAVE_SPIDER, E_HUSK, E_SILVERFISH, E_SKELETON, E_SLIME, E_SPIDER, E_STRAY,
+              E_ZOMBIE)
 
 # -----------------------------------------------------------------------
 # Mobs — Bosses
