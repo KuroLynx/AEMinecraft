@@ -47,6 +47,13 @@ public final class LogicEvaluation {
     private final ItemAvailability items;
     private final CheckedLocations checked;
     private final Map<String, Boolean> regionReach = new HashMap<>();
+    /**
+     * Glitch evaluation (isGlitchable) reads regions through the glitch entrances too, a cast Nether
+     * portal, and its refs see that snapshot, so they keep their own cache. Filled lazily, like prices.
+     */
+    private boolean glitchMode;
+    private Set<String> glitchRegionReach;
+    private final Map<Integer, Boolean> glitchRefCache = new HashMap<>();
     private final Map<String, Boolean> locationReach = new HashMap<>();
     /** Glitch item prices solved reachable; filled by {@link #solvePrices} on the first glitch query. */
     private final Set<String> priceReach = new HashSet<>();
@@ -68,6 +75,9 @@ public final class LogicEvaluation {
 
     /** Reads the solved snapshot; {@link RuleNode.Region} calls this during {@link #solve}. */
     public boolean canReachRegion(String region) {
+        if (glitchMode) {
+            return glitchRegionReach.contains(region);
+        }
         return Boolean.TRUE.equals(regionReach.get(region));
     }
 
@@ -96,21 +106,65 @@ public final class LogicEvaluation {
      * the checked set and {@link #solve} seeds it as fact. Sequence is handled by time, not prediction.
      */
     public boolean isGlitchable(String name) {
-        RuleNode rule = graph.glitchRule(name);
-        if (rule == null) {
-            return false;
-        }
-        // Same two conditions solve() uses for a location, region included. Testing the rule alone
-        // would paint a Nether advancement yellow while the player has no way into the Nether at all,
-        // since a rule need not repeat the region its location already sits in.
         LogicGraph.LocationEntry entry = graph.location(name);
-        if (entry == null || !canReachRegion(entry.region())) {
+        if (entry == null) {
             return false;
         }
-        if (!pricesSolved) {
-            solvePrices();
+        RuleNode rule = graph.glitchRule(name);
+        if (rule == null && canReachRegion(entry.region())) {
+            return false;   // the two graphs agree here, and strict logic already said no
         }
-        return rule.eval(this);
+        glitchMode = true;
+        try {
+            if (glitchRegionReach == null) {
+                solveGlitchRegions();
+            }
+            if (!pricesSolved) {
+                solvePrices();
+            }
+            // Same two conditions solve() uses for a location, region included. Testing the rule alone
+            // would paint a Nether advancement yellow while the player has no way into the Nether at
+            // all, since a rule need not repeat the region its location already sits in.
+            if (!canReachRegion(entry.region())) {
+                return false;
+            }
+            // No glitch rule means it equals the strict one, which only a glitch-only region can now
+            // satisfy (a Nether advancement behind a cast portal).
+            return (rule != null ? rule : entry.rule()).eval(this);
+        } finally {
+            glitchMode = false;
+        }
+    }
+
+    /**
+     * Regions reachable once glitch entrances count too: the strict snapshot, then a fixed point over
+     * the strict and glitch edges, evaluated in glitch mode. Mirrors _solve_glitch_regions in
+     * tools/logic_selfcheck.py.
+     */
+    private void solveGlitchRegions() {
+        glitchRegionReach = new HashSet<>();
+        regionReach.forEach((region, reached) -> {
+            if (reached) {
+                glitchRegionReach.add(region);
+            }
+        });
+        boolean changed = true;
+        while (changed) { // monotone, so this terminates
+            changed = false;
+            for (Map<String, List<LogicGraph.Edge>> edges : List.of(graph.regions(), graph.glitchRegions())) {
+                for (Map.Entry<String, List<LogicGraph.Edge>> entry : edges.entrySet()) {
+                    for (LogicGraph.Edge edge : entry.getValue()) {
+                        if (!glitchRegionReach.contains(edge.to())
+                                && glitchRegionReach.contains(entry.getKey())
+                                && edge.rule().eval(this)) {
+                            glitchRegionReach.add(edge.to());
+                            glitchRefCache.clear();
+                            changed = true;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -129,7 +183,8 @@ public final class LogicEvaluation {
         if (definition == null) {
             return false;
         }
-        Boolean cached = refCache.get(id);
+        Map<Integer, Boolean> cache = glitchMode ? glitchRefCache : refCache;
+        Boolean cached = cache.get(id);
         if (cached != null) {
             return cached;
         }
@@ -138,7 +193,7 @@ public final class LogicEvaluation {
         }
         try {
             boolean result = definition.eval(this);
-            refCache.put(id, result);
+            cache.put(id, result);
             return result;
         } finally {
             resolvingRefs.remove(id);
@@ -160,6 +215,7 @@ public final class LogicEvaluation {
                 if (!priceReach.contains(entry.getKey()) && entry.getValue().eval(this)) {
                     priceReach.add(entry.getKey());
                     refCache.clear();
+                    glitchRefCache.clear();
                     changed = true;
                 }
             }

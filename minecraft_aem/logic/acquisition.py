@@ -299,6 +299,11 @@ _EXTRA_DROP_KNOWLEDGE = {
     # that version's containers.json gate for it, looked up where this table is read.
     ("composter", "bone_meal"): "minecraft:composter",
 }
+# Getting a block's drop without breaking it at all: water poured over a cobweb washes it away and drops
+# its string, which takes a water bucket and no tool. A source of its own beside mining (_acquire_from_sources).
+_EXTRA_DROP_INSTEAD = {
+    ("cobweb", "string"): "minecraft:water_bucket",
+}
 # Blocks the jar places in CODE rather than in a structure's template palette, so build_structures
 # cannot see them: a dried ghast generates in the Nether fossils of a soul sand valley, but the only
 # mentions of it anywhere in the jar data are its own loot table and piglin bartering. Merged into
@@ -1340,7 +1345,7 @@ class RuleHelper:
         emeralds = self.acquire("minecraft:emerald")
         return emeralds if emeralds is not None else Const(True)
 
-    def can_sell_to_villager(self, tier: int = 1):
+    def can_sell_to_villager(self, tier: int = 1, cured: bool = False):
         """Sell TO a profession villager at trade level ``tier`` — the way emeralds enter a world.
 
         The same villager, village and trust tier a buy offer needs, minus the currency: a sell
@@ -1348,16 +1353,43 @@ class RuleHelper:
         acquire("emerald") wants this shape; everything else trades in the other direction and
         should use ``can_trade_villager``."""
         base = self.all_of(self.entity(E_VILLAGER), self.any_village())
+        if cured:
+            base = self.any_of(base, self.cured_villager())
         if self.villager_trust:
             return self.all_of(base, self.has(ITEM_VILLAGER_TRUST, tier))
         return base
 
-    def can_trade_villager(self, tier: int = 1):
+    def cured_villager(self):
+        """A villager made by curing a zombie villager, which needs no village: a splash potion of
+        Weakness (brewed: stand, Brewing, blaze powder, a fermented spider eye, gunpowder) and a golden
+        apple on a zombie villager. The converted villager is a spawn the mob lock refuses until the
+        Villager is unlocked. It takes a job from any job block you place (the trade itself is
+        profession-agnostic, see can_trade_villager).
+
+        Only a check that IS a trade takes this route (can_trade_villager(cured=True), the
+        villager_trade trigger), never an item's price. A strict price is a minimal DNF
+        (fixed_point.canonical), and this branch is a long leaf set that absorbs into nothing: inside
+        every trade-priced item it multiplied through recipes (a harness is three of them) past 20 GB
+        on an all-locks BACAP slot. An item bought from a villager still asks for a village, which is
+        stricter than the game, never looser."""
+        parts = [self.acquire(f"minecraft:{item}") for item in
+                 ("brewing_stand", "blaze_powder", "fermented_spider_eye", "gunpowder", "golden_apple")]
+        if any(part is None for part in parts):
+            return Const(False)
+        return self.all_of(self.entity(E_ZOMBIE_VILLAGER), self.mob_unlocked(E_VILLAGER),
+                           self.knowledge(K_BREWING), *parts)
+
+    def can_trade_villager(self, tier: int = 1, cured: bool = False):
         """Trade with a profession villager in a village at trade level ``tier``
         (novice = 1 … master = 5), holding the emeralds it costs. When the
         villager_trust option is on, the level is gated behind that many
-        Progressive Villager Trust items."""
-        return self.all_of(self.can_sell_to_villager(tier), self._trade_currency())
+        Progressive Villager Trust items. ``cured`` also takes a cured zombie villager (cured_villager)."""
+        trade = self.all_of(self.can_sell_to_villager(tier), self._trade_currency())
+        if not cured:
+            return trade
+        # A cured villager pays its own way: sell to it for the emeralds it then charges. Emeralds are
+        # priced as selling to a VILLAGE villager, so _trade_currency would bring the village back.
+        return self.any_of(trade, self.can_sell_to_villager(tier, cured=True))
 
     def can_trade_wandering_trader(self):
         """Trade with a Wandering Trader — GLITCH GRAPH ONLY. Strict logic never sees this route.
@@ -1920,6 +1952,13 @@ class RuleHelper:
                     # Craftable AND aged (an exposed copper bulb): place the plain one, wait, break it.
                     add(self._route(self.acquire(aged), mine))
                 continue
+            instead = _EXTRA_DROP_INSTEAD.get((block, base))
+            if instead is not None:
+                with self.bulk_mode(False):   # one bucket washes every web
+                    tool = self.acquire(instead)
+                origin = self._block_origin_node(block)
+                if origin is not None and tool is not None:
+                    add(self.all_of(self.access_region(_block_region(block)), origin, tool))
             node = self._mining_node(block, base)
             if node is not None:
                 origin = self._block_origin_node(block)
@@ -2285,6 +2324,11 @@ class RuleHelper:
         ``None`` when neither origin exists this seed — the caller then drops the route."""
         if block in _NATURAL_SELF_MINED:
             return self._natural_origin(block)  # curated: it really is lying around out there
+        if block in _pack_json(self.content, "block_biomes.json", missing_ok=True):
+            # Biome worldgen places it (badlands terracotta, crimson forest wart blocks, geode smooth
+            # basalt), recipe or not: it is lying around where it grows. _natural_origin asks for the
+            # Biome Finder when that biome is rare.
+            return self._natural_origin(block)
         record = _acquisition_table(self.content).get(block)
         if not record or not record.get("recipes"):
             return self._natural_origin(block)

@@ -26,6 +26,8 @@ public final class LogicGraph {
 
     private final String origin;
     private final Map<String, List<Edge>> regions;
+    /** Entrances only a glitch route opens (a cast Nether portal); empty without glitch logic. */
+    private final Map<String, List<Edge>> glitchRegions;
     private final Map<String, LocationEntry> locations;
     private final Map<String, String> locationNameByGameId;
     /** Permissive rule per location, for the ones whose two graphs disagree (may be empty). */
@@ -36,6 +38,7 @@ public final class LogicGraph {
 
     private LogicGraph(String origin,
                        Map<String, List<Edge>> regions,
+                       Map<String, List<Edge>> glitchRegions,
                        Map<String, LocationEntry> locations,
                        Map<String, String> locationNameByGameId,
                        Map<String, RuleNode> glitchRules,
@@ -43,6 +46,7 @@ public final class LogicGraph {
                        Map<String, RuleNode> prices) {
         this.origin = origin;
         this.regions = regions;
+        this.glitchRegions = glitchRegions;
         this.locations = locations;
         this.locationNameByGameId = locationNameByGameId;
         this.glitchRules = glitchRules;
@@ -62,16 +66,10 @@ public final class LogicGraph {
             }
         }
 
-        Map<String, List<Edge>> regions = new HashMap<>();
-        JsonObject regionsJson = root.getAsJsonObject("regions");
-        for (Map.Entry<String, JsonElement> entry : regionsJson.entrySet()) {
-            List<Edge> edges = new ArrayList<>();
-            for (JsonElement element : entry.getValue().getAsJsonArray()) {
-                JsonObject edge = element.getAsJsonObject();
-                edges.add(new Edge(edge.get("to").getAsString(), RuleNode.parse(edge.get("rule"))));
-            }
-            regions.put(entry.getKey(), edges);
-        }
+        Map<String, List<Edge>> regions = parseEdges(root.getAsJsonObject("regions"));
+        // Glitch-only entrances (logic_export: glitch_regions); absent on older seeds / glitch_logic off.
+        Map<String, List<Edge>> glitchRegions = root.has("glitch_regions") && root.get("glitch_regions").isJsonObject()
+                ? parseEdges(root.getAsJsonObject("glitch_regions")) : Map.of();
 
         Map<String, LocationEntry> locations = new HashMap<>();
         Map<String, String> locationNameByGameId = new HashMap<>();
@@ -102,8 +100,21 @@ public final class LogicGraph {
             }
         }
 
-        return new LogicGraph(origin, regions, locations, locationNameByGameId, glitchRules,
+        return new LogicGraph(origin, regions, glitchRegions, locations, locationNameByGameId, glitchRules,
                 definitions, prices);
+    }
+
+    private static Map<String, List<Edge>> parseEdges(JsonObject regionsJson) {
+        Map<String, List<Edge>> regions = new HashMap<>();
+        for (Map.Entry<String, JsonElement> entry : regionsJson.entrySet()) {
+            List<Edge> edges = new ArrayList<>();
+            for (JsonElement element : entry.getValue().getAsJsonArray()) {
+                JsonObject edge = element.getAsJsonObject();
+                edges.add(new Edge(edge.get("to").getAsString(), RuleNode.parse(edge.get("rule"))));
+            }
+            regions.put(entry.getKey(), edges);
+        }
+        return regions;
     }
 
     /**
@@ -139,6 +150,10 @@ public final class LogicGraph {
 
     Map<String, List<Edge>> regions() {
         return regions;
+    }
+
+    Map<String, List<Edge>> glitchRegions() {
+        return glitchRegions;
     }
 
     LocationEntry location(String name) {
