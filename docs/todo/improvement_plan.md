@@ -568,7 +568,7 @@ read of the mod code. **Done** = already behaves as the report asks. **Open** = 
 - [x] F8 **Such a poser** Done (A16): strict needs the Copper Golem; the camp statue is glitch.
 
 ### F-logic: routes that should not count
-- [ ] F9 **Mining takes the pickaxe itself.** Open: Seeing Red strict = Pickaxe Handling + Material
+- [x] F9 **Mining takes the pickaxe itself.** Done: a tiered block asks for a pickaxe of exactly that tier (iron: Crafting Table + Furnace or iron loot/golem), every route kept; `why_rule` now runs with `knowledge_gates: All`. The extra routes made rule building 3x slower, so `fixed_point._minimal` files kept alternatives by their rarest leaf and `_and` skips a row an alternative already covers (same output, spoiler and logic export identical; BACAP 26.1.2 rule build 47 s -> 51 s with F9, 24 s without). Was: Seeing Red strict = Pickaxe Handling + Material
   Handling x3, no Furnace / iron. Mining must also acquire the cheapest pickaxe that works (an iron
   one needs iron, so a furnace or iron loot); the Nether's obsidian likewise a diamond pickaxe.
 - [ ] F10 **Silk Touch from random books.** Partly done: Thin Ice! strict now goes through Knowledge:
