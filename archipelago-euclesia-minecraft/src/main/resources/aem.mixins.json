@@ -14,6 +14,7 @@
     "EntityMixin",
     "GiveCommandMixin",
     "InventoryLockAddMixin",
+    "InventoryLockDispenserMixin",
     "InventoryLockEquipMixin",
     "InventoryLockArmorSlotMixin",
     "InventoryLockOffhandKeyMixin",
