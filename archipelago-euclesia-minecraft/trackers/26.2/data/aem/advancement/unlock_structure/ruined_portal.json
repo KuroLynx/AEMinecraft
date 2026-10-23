@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_structure/pillager_outpost",
+  "parent": "aem:unlock_structure/group/ruined_portal",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

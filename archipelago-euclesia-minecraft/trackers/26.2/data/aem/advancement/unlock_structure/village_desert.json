@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_structure/trial_chambers",
+  "parent": "aem:unlock_structure/group/village",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

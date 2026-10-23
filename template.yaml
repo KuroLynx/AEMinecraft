@@ -222,7 +222,7 @@ AEMinecraft:
     #         - All
     ["Stronghold"]
 
-  structure_variant:
+  split_structure_variants:
     # Give every biome variant of a structure its own Structure Unlock.
     #
     # Some structures come in one version per biome: five villages, seven ruined portals, two ocean

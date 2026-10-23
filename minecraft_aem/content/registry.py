@@ -31,7 +31,7 @@ from ..logic.constants import (
 BASE_ID_ITEMS           = 0xEC0000
 BASE_ID_ENTITY_UNLOCK   = 0xEC0100
 BASE_ID_STRUCT_UNLOCK   = 0xEC0200
-# A structure group's own unlock item (structure_variant off), for a group with no structure of its
+# A structure group's own unlock item (split_structure_variants off), for a group with no structure of its
 # name: + the lowest member's structure id, so it is stable and no two groups share one.
 BASE_ID_STRUCT_GROUP    = 0xEC0300
 BASE_ID_LOC_ADVANCEMENT = 0xEC1000

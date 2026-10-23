@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_structure/mansion",
+  "parent": "aem:unlock_structure/group/mineshaft",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

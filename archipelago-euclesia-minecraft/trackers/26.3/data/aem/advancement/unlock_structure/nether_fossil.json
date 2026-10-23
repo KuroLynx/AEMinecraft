@@ -1,5 +1,5 @@
 {
-  "parent": "aem:category/structure_unlocks",
+  "parent": "aem:unlock_structure/monument",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"

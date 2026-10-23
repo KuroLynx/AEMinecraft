@@ -1,5 +1,5 @@
 {
-  "parent": "aem:unlock_structure/ruined_portal_swamp",
+  "parent": "aem:unlock_structure/group/shipwreck",
   "criteria": {
     "never": {
       "trigger": "minecraft:impossible"
