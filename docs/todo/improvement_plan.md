@@ -571,7 +571,7 @@ read of the mod code. **Done** = already behaves as the report asks. **Open** = 
 - [x] F9 **Mining takes the pickaxe itself.** Done: a tiered block asks for a pickaxe of exactly that tier (iron: Crafting Table + Furnace or iron loot/golem), every route kept; `why_rule` now runs with `knowledge_gates: All`. The extra routes made rule building 3x slower, so `fixed_point._minimal` files kept alternatives by their rarest leaf and `_and` skips a row an alternative already covers (same output, spoiler and logic export identical; BACAP 26.1.2 rule build 47 s -> 51 s with F9, 24 s without). Was: Seeing Red strict = Pickaxe Handling + Material
   Handling x3, no Furnace / iron. Mining must also acquire the cheapest pickaxe that works (an iron
   one needs iron, so a furnace or iron loot); the Nether's obsidian likewise a diamond pickaxe.
-- [ ] F10 **Silk Touch from random books.** Partly done: Thin Ice! strict now goes through Knowledge:
+- [x] F10 **Silk Touch from random books.** Done: a named enchantment's book is a librarian (novice trade + book + lectern to reroll); a random book is glitch only, for Silk Touch and every named enchantment. Thin Ice! strict stays `--without` Knowledge: Enchanting (librarian) and is out without the Villager too. Was partly done: Thin Ice! strict now goes through Knowledge:
   Enchanting and the chest books are glitch only, but `can_silk_touch` still takes ANY
   `enchanted_book` + anvil. Make it a librarian (rerollable) for a specific enchantment; random
   chest/fishing books stay a glitch route. An advancement asking for any book is unchanged.

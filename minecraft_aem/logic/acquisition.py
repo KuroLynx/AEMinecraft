@@ -2321,11 +2321,20 @@ class RuleHelper:
         tag = self._TOOL_KIND_TAG.get(kind)
         return self._any_item(f"minecraft:{tag}") if tag else Const(False)
 
+    def librarian_book(self):
+        """An enchanted book of the one enchantment you want: a librarian's novice offer, rerolled by
+        breaking and replacing its lectern until it is that one. Any enchantment a librarian trades
+        (all but the loot-only three, see _ENCHANT_LOOT_SOURCE in tables.py). None when unpriced."""
+        book, lectern = self.acquire("minecraft:book"), self.acquire("minecraft:lectern")
+        if book is None or lectern is None:
+            return None
+        return self.all_of(self.can_trade_villager(1), book, lectern)
+
     def can_silk_touch(self):
-        """The capability to wield a Silk-Touch tool. Two routes, mirroring the enchant gate in
-        ``tables.py``: enchant one yourself (``acquire(enchanting_table)`` gates Knowledge:
-        Enchanting + its tier), OR apply a Silk-Touch enchanted book with an anvil (a librarian's
-        book is a no-Knowledge trade path).
+        """The capability to wield a Silk-Touch tool, mirroring the enchant gate in ``criteria.py``:
+        enchant one yourself (``acquire(enchanting_table)`` gates Knowledge: Enchanting + its tier),
+        OR a librarian's Silk-Touch book on an anvil. A random book (chest, fishing, bartering) is
+        Silk Touch only by luck: glitch only.
 
         A silk-only block drop asks for silk, silk asks for an enchanting table, and its ingredients
         can lead back to a silk-only block (deepslate gold ore -> silk -> obsidian -> ... -> deepslate
@@ -2334,10 +2343,14 @@ class RuleHelper:
         table = self.acquire("minecraft:enchanting_table")
         if table is not None:
             routes.append(table)
-        book = self.acquire("minecraft:enchanted_book")
-        anvil = self.acquire("minecraft:anvil") if book is not None else None
-        if book is not None and anvil is not None:
-            routes.append(self.all_of(book, anvil))
+        anvil = self.acquire("minecraft:anvil")
+        if anvil is not None:
+            librarian = self.librarian_book()
+            if librarian is not None:
+                routes.append(self.all_of(librarian, anvil))
+            book = self.acquire("minecraft:enchanted_book")
+            if book is not None:
+                routes.append(self.glitch_only(self.all_of(book, anvil)))
         return self.any_of(*routes) if routes else None
 
     def _gameplay_node(self, table: str):
