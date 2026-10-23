@@ -1081,7 +1081,7 @@ class CriteriaCompiler:
             node = self._all_req(self.h.acquire("minecraft:flower_pot"), plant_node)
         if node is None:
             # Only ever placed by worldgen (a vault): reach a structure whose template has one.
-            node = self._any_opt(*[self.h.structure(s) for s in _block_structures(self.content).get(key, ())
+            node = self._any_opt(*[self.h.palette_structure(s, key) for s in _block_structures(self.content).get(key, ())
                                    if s in self.h.active_structures])
         return node
 
@@ -1183,6 +1183,9 @@ class CriteriaCompiler:
 
     def _price_loot_table(self, table):
         segments = _path(table).split("/")
+        if segments[0] == "archaeology":
+            # Archaeology loot only rolls when you brush a suspicious block in that structure.
+            return self._all_req(self._price_loot_table("/".join(segments[1:])), self.h.has_brush())
         for seg in reversed(segments):
             node = self._struct_gid(_LOOT_TABLE_STRUCT.get(seg, seg))
             if node is not None:

@@ -586,9 +586,11 @@ public final class PackDump {
             "minecraft:pale_moss", "pale_hanging_moss",
             "minecraft:creaking_heart", "creaking_heart");
 
-    /** Feature types that place blocks in code, with no block state in their config. */
-    private static final List<String> CORAL_BLOCKS = List.of("tube_coral_block", "brain_coral_block",
-            "bubble_coral_block", "fire_coral_block", "horn_coral_block");
+    /** Feature types that place blocks in code, with no block state in their config. A coral feature
+     *  lays the blocks and puts a plant or fan (#corals) on top and wall fans on the sides (CoralFeature). */
+    private static final List<String> CORAL_BLOCKS = java.util.stream.Stream.of("tube", "brain", "bubble", "fire", "horn")
+            .flatMap(c -> java.util.stream.Stream.of(c + "_coral_block", c + "_coral", c + "_coral_fan", c + "_coral_wall_fan"))
+            .toList();
 
     private static final Map<String, List<String>> FEATURE_TYPE_BLOCKS = Map.ofEntries(
             Map.entry("minecraft:bamboo", List.of("bamboo", "podzol")),
@@ -1098,10 +1100,11 @@ public final class PackDump {
         // game_id -> record, so the worldgen structures and the curated feature-structures emit in one
         // stable game_id-sorted order (the Structure-Unlock id order, which the apworld keys on).
         Map<String, JsonObject> records = new TreeMap<>();
+        JigsawChances chances = new JigsawChances(rm);
         for (Map.Entry<String, JsonObject> entry : structDefs.entrySet()) {
             String gameId = entry.getKey();
             records.put(gameId, structureRecord(prettifyId(gameId), gameId, entry.getValue(),
-                    biomeTags, structurePalette.get(gameId)));
+                    biomeTags, structurePalette.get(gameId), chances.of(entry.getValue())));
         }
         // Curated feature-structures only when THIS pack actually defines the placed feature, so the
         // vanilla pack (worldgen/placed_feature/monster_room|desert_well) gets them but a structure-less
@@ -1148,7 +1151,8 @@ public final class PackDump {
     }
 
     private static JsonObject structureRecord(String name, String gameId, JsonObject def,
-                                              Map<String, JsonArray> biomeTags, TreeSet<String> palette) {
+                                              Map<String, JsonArray> biomeTags, TreeSet<String> palette,
+                                              Map<String, Double> chances) {
         JsonObject record = new JsonObject();
         record.addProperty("name", name);
         record.addProperty("game_id", gameId);
@@ -1158,6 +1162,19 @@ public final class PackDump {
             palette.forEach(blocks::add);
         }
         record.add("blocks", blocks);
+        // A jigsaw structure's blocks that aren't in every one generated (JigsawChances); the rest are.
+        if (chances != null && !chances.isEmpty() && palette != null) {
+            JsonObject rare = new JsonObject();
+            for (String block : palette) {
+                double chance = chances.getOrDefault(block, 0.0);
+                if (chance < 0.995) {
+                    rare.addProperty(block, Math.round(chance * 10000) / 10000.0);
+                }
+            }
+            if (!rare.isEmpty()) {
+                record.add("block_chances", rare);
+            }
+        }
         return record;
     }
 
@@ -1397,7 +1414,7 @@ public final class PackDump {
         return token;
     }
 
-    private static TreeSet<String> paletteBlocks(Resource resource) {
+    static TreeSet<String> paletteBlocks(Resource resource) {
         TreeSet<String> blocks = new TreeSet<>();
         try (InputStream stream = resource.open()) {
             CompoundTag root = NbtIo.readCompressed(stream, NbtAccounter.unlimitedHeap());

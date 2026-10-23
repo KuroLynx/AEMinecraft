@@ -330,7 +330,16 @@
   "blue_orchid": [
     "swamp"
   ],
+  "brain_coral": [
+    "warm_ocean"
+  ],
   "brain_coral_block": [
+    "warm_ocean"
+  ],
+  "brain_coral_fan": [
+    "warm_ocean"
+  ],
+  "brain_coral_wall_fan": [
     "warm_ocean"
   ],
   "brown_mushroom": [
@@ -387,7 +396,16 @@
     "dark_forest",
     "mushroom_fields"
   ],
+  "bubble_coral": [
+    "warm_ocean"
+  ],
   "bubble_coral_block": [
+    "warm_ocean"
+  ],
+  "bubble_coral_fan": [
+    "warm_ocean"
+  ],
+  "bubble_coral_wall_fan": [
     "warm_ocean"
   ],
   "budding_amethyst": [
@@ -1570,7 +1588,16 @@
     "soul_sand_valley",
     "warped_forest"
   ],
+  "fire_coral": [
+    "warm_ocean"
+  ],
   "fire_coral_block": [
+    "warm_ocean"
+  ],
+  "fire_coral_fan": [
+    "warm_ocean"
+  ],
+  "fire_coral_wall_fan": [
     "warm_ocean"
   ],
   "firefly_bush": [
@@ -1884,7 +1911,16 @@
   "hanging_roots": [
     "lush_caves"
   ],
+  "horn_coral": [
+    "warm_ocean"
+  ],
   "horn_coral_block": [
+    "warm_ocean"
+  ],
+  "horn_coral_fan": [
+    "warm_ocean"
+  ],
+  "horn_coral_wall_fan": [
     "warm_ocean"
   ],
   "ice": [
@@ -3404,7 +3440,16 @@
     "eroded_badlands",
     "wooded_badlands"
   ],
+  "tube_coral": [
+    "warm_ocean"
+  ],
   "tube_coral_block": [
+    "warm_ocean"
+  ],
+  "tube_coral_fan": [
+    "warm_ocean"
+  ],
+  "tube_coral_wall_fan": [
     "warm_ocean"
   ],
   "tuff": [

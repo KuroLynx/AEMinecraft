@@ -58,16 +58,20 @@ _GAMEPLAY_VILLAGER_GIFTS = frozenset({
     "shepherd_gift", "toolsmith_gift", "unemployed_gift", "weaponsmith_gift",
 })
 
-# Block-harvest 'gameplay' tables: pick/shear a block for its yield. (region, needs_shears) — the
-# block's dimension, plus shears when the table is a shear interaction (honeycomb, pumpkin seeds).
+# Block-harvest 'gameplay' tables: pick/shear a block for its yield. (region, tool) — the block's
+# dimension, plus the item used on it, if any (shears for honeycomb / pumpkin seeds).
 _GAMEPLAY_HARVEST: dict[str, tuple] = {
-    "beehive": (REGION_OVERWORLD, True), "pumpkin": (REGION_OVERWORLD, True),
-    "cave_vine": (REGION_OVERWORLD, False), "sweet_berry_bush": (REGION_OVERWORLD, False),
+    "beehive": (REGION_OVERWORLD, "minecraft:shears"), "pumpkin": (REGION_OVERWORLD, "minecraft:shears"),
+    "cave_vine": (REGION_OVERWORLD, None), "sweet_berry_bush": (REGION_OVERWORLD, None),
+    "beehive_bottle": (REGION_OVERWORLD, "minecraft:glass_bottle"),
 }
 # A harvest table named differently from the block it is picked off.
-_HARVEST_BLOCK = {"cave_vine": "cave_vines"}
+_HARVEST_BLOCK = {"cave_vine": "cave_vines", "beehive_bottle": "beehive"}
 # A harvest that only grows back while a mob works the block: a hive fills with honey from its bees.
-_HARVEST_MOB = {"beehive": E_BEE}
+_HARVEST_MOB = {"beehive": E_BEE, "beehive_bottle": E_BEE}
+# Harvests the game hard-codes instead of giving them a loot table, so the dump can't see them: a
+# glass bottle on a full hive is a honey bottle (BeehiveBlock#useItemOn).
+_EXTRA_GAMEPLAY = {"honey_bottle": ("beehive_bottle",)}
 
 # Lazily-loaded acquisition table (tools/build_acquisition.py) + reverse id lookups. Cached because
 # they are read once per generation but queried thousands of times by the trigger compiler; cached per
@@ -371,7 +375,11 @@ _STRUCTURE_POT_SHERDS: dict[str, str] = {
 def _aged_source(content, block: str) -> str | None:
     """The plain item an aged copper block weathered FROM (``exposed_copper_bars`` ->
     ``minecraft:copper_bars``), or ``None`` when the block is not an aged form of something the
-    acquisition table knows. See ``_AGING_PREFIXES``."""
+    acquisition table knows. See ``_AGING_PREFIXES``. Dead coral is aged the same way: living coral
+    dies out of water, and no dead coral generates (``dead_tube_coral_block`` -> ``tube_coral_block``)."""
+    if block.startswith("dead_") and "coral" in block:
+        plain = block.removeprefix("dead_")
+        return f"minecraft:{plain}" if plain in _acquisition_table(content) else None
     for prefix in _AGING_PREFIXES:
         if block.startswith(prefix):
             plain = block[len(prefix):]
@@ -411,6 +419,13 @@ def _block_structures(content) -> dict:
         known = mapping.setdefault(block, [])
         known += [name for name in extra if name in content.STRUCTURES and name not in known]
     return mapping
+
+
+@cache
+def _palette_chances(content) -> dict:
+    """(structure, block) -> chance that one generated structure has the block; absent = always."""
+    return {(name, block): chance for name, data in content.STRUCTURES.items()
+            for block, chance in data.block_chances}
 
 
 def _block_region(block: str) -> str:
@@ -852,6 +867,14 @@ class RuleHelper:
         boat and an afternoon can walk. Waived in the glitch graph, so the tile reads yellow —
         possible now if you are willing, never something fill leans on."""
         return Const(True) if self.glitch else node
+
+    def palette_structure(self, name: str, block: str):
+        """Reach structure ``name`` to find ``block`` in its palette. A block most of them don't have
+        (a camp's copper golem statue, 2-14%) is a glitch route: AP can't plan on the one you find."""
+        node = self.structure(name)
+        if _palette_chances(self.content).get((name, block), 1.0) < self._GLITCH_CHANCE:
+            return self.glitch_only(node)
+        return node
 
     def glitch_only(self, node):
         """The inverse of ``strict_only``: a ROUTE that exists only in the permissive graph.
@@ -1814,7 +1837,9 @@ class RuleHelper:
                     continue
                 for struct_name in _block_structures(self.content).get(base, ()):
                     if struct_name in self.active_structures:
-                        add(self.all_of(self.structure(struct_name), mine), False, runs_dry=True, chance=1.0)
+                        found = _palette_chances(self.content).get((struct_name, base), 1.0)
+                        add(self.all_of(self.structure(struct_name), mine), found < self._GLITCH_CHANCE,
+                            runs_dry=True, chance=found)
                 aged = _aged_source(self.content, block) if block == base else None
                 if aged is not None:
                     # Craftable AND aged (an exposed copper bulb): place the plain one, wait, break it.
@@ -1833,6 +1858,12 @@ class RuleHelper:
             # region/tier as a normal mine PLUS the capability to silk-touch (enchant). Always behind
             # the silk gate, so it is never a free path even when the block is placed-only.
             node = self._mining_node(block, base, silk=True)
+            if node is not None:
+                # Where the block is: a rare-biome one (coral) takes finding its biome, and a dead coral
+                # fan only exists once a living one died, so it takes the living one.
+                origin = (self._block_origin_node(block) if _aged_source(self.content, block) is not None
+                          else self._natural_origin(block))
+                node = None if origin is None else self._route(origin, node)
             if node is not None:
                 add(node, unreliable("silk_mining", block), chance=chance("silk_mining", block))
         trades = record.get("trades", ())
@@ -1871,7 +1902,7 @@ class RuleHelper:
                 add(self.all_of(self.structure(structure_name), self.has_brush()),
                     unreliable("archaeology", structure_name), runs_dry=True,
                     chance=chance("archaeology", structure_name))
-        for table in record.get("gameplay", ()):
+        for table in (*record.get("gameplay", ()), *_EXTRA_GAMEPLAY.get(base, ())):
             # A trial-chamber vault opens once per player and its spawners go quiet: finite, like a chest.
             # Counted renewable, its 0.3% diamond block was 'Diamond Miner' (64 diamonds) without a pickaxe.
             add(self._gameplay_node(table), unreliable("gameplay", table), chance=chance("gameplay", table),
@@ -2108,7 +2139,7 @@ class RuleHelper:
             # The plain item, weathered — plus mining one that generated already aged, which only the
             # structure palettes know about (and which _unique_or collapses when it is redundant).
             routes = [route for route in (self.acquire(aged),) if route is not None]
-            routes += [self.structure(name) for name in _block_structures(self.content).get(block, ())
+            routes += [self.palette_structure(name, block) for name in _block_structures(self.content).get(block, ())
                        if name in self.active_structures]
             return self.any_of(*routes) if routes else None
         entry = _BLOCK_ONLY_FROM.get(block)
@@ -2138,7 +2169,7 @@ class RuleHelper:
         if not _rare_biome_block(self.content, block):
             return self.all_of()
         return self.any_of(self.strict_only(self.needs_biome_finder()),
-                           *[self.structure(name) for name in _block_structures(self.content).get(block, ())])
+                           *[self.palette_structure(name, block) for name in _block_structures(self.content).get(block, ())])
 
     def _placed_block_origin(self, block: str):
         """Origin of a block nobody finds lying around, derived rather than curated: one whose record
@@ -2169,7 +2200,7 @@ class RuleHelper:
             return self._natural_origin(block)
         if any(mined != block for mined in record.get("mining", ())):
             return self._natural_origin(block)
-        routes = [self.structure(name) for name in _block_structures(self.content).get(block, ())
+        routes = [self.palette_structure(name, block) for name in _block_structures(self.content).get(block, ())
                   if name in self.active_structures]
         crafted = self.acquire(f"minecraft:{block}")
         if crafted is not None:
@@ -2262,15 +2293,15 @@ class RuleHelper:
             return self.can_win_raid()  # villagers throw gifts after a won raid
         harvest = _GAMEPLAY_HARVEST.get(table)
         if harvest is not None:
-            region, needs_shears = harvest
+            region, tool = harvest
             grows = self.all_of(self.access_region(region), self._natural_origin(_HARVEST_BLOCK.get(table, table)))
             if table in _HARVEST_MOB:
                 grows = self.all_of(grows, self.entity(_HARVEST_MOB[table]))
-            if needs_shears:
-                shears = self.acquire("minecraft:shears")
-                if shears is None:
-                    return None  # can't shear-harvest without shears (circular here)
-                return self.all_of(grows, shears)
+            if tool:
+                held = self.acquire(tool)
+                if held is None:
+                    return None  # can't harvest without the tool (circular here)
+                return self.all_of(grows, held)
             return grows
         if table in ("corridor", "trial_chamber_melee", "trial_chamber_ranged"):
             return self.structure(S_TRIAL_CHAMBERS)
