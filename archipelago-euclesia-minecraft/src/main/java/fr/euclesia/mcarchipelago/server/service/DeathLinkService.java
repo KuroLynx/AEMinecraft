@@ -55,6 +55,9 @@ public final class DeathLinkService {
      */
     private static final Map<UUID, Integer> linkKilled = new ConcurrentHashMap<>();
 
+    /** {@code /aem deathlink mode}: an incoming link kills every living player instead of one. */
+    private static volatile boolean killAll;
+
     private DeathLinkService() {}
 
     public static void onLocalPlayerDeath(ServerPlayer player, DamageSource source) {
@@ -80,6 +83,14 @@ public final class DeathLinkService {
         }
     }
 
+    public static boolean killAll() {
+        return killAll;
+    }
+
+    public static void setKillAll(boolean all) {
+        killAll = all;
+    }
+
     /** Handles an incoming DeathLink bounce. {@code data} is the bounce's payload object. */
     public static void applyRemote(JsonObject data) {
         MinecraftServer server = AEMServerRuntime.server();
@@ -97,8 +108,8 @@ public final class DeathLinkService {
         Component message = Component.translatable("message.aem.deathlink", describe(source, cause));
 
         server.execute(() -> {
-            // ONE player per incoming link, not the whole server. Killing everyone turns a single
-            // remote death into a server-wide wipe, wildly out of proportion to what caused it.
+            // ONE player per incoming link by default: killing everyone turns a single remote death
+            // into a server-wide wipe. The operator can still ask for that (/aem deathlink mode all).
             List<ServerPlayer> living = server.getPlayerList().getPlayers().stream()
                     .filter(ServerPlayer::isAlive)
                     .toList();
@@ -106,17 +117,19 @@ public final class DeathLinkService {
                 AEMDebug.log("deathLink.remote no living player online; dropped");
                 return;
             }
-            ServerPlayer victim = living.get(RANDOM.nextInt(living.size()));
-            AEMDebug.log("deathLink.remote killing {} (1 of {} living)",
-                    victim.getGameProfile().name(), living.size());
+            List<ServerPlayer> victims = killAll ? living : List.of(living.get(RANDOM.nextInt(living.size())));
+            for (ServerPlayer victim : victims) {
+                AEMDebug.log("deathLink.remote killing {} ({} of {} living)",
+                        victim.getGameProfile().name(), victims.size(), living.size());
 
-            // Marked BEFORE the kill and left marked: onLocalPlayerDeath consumes it whenever the
-            // death event actually lands, which is not necessarily within this call.
-            linkKilled.put(victim.getUUID(), victim.getStats().getValue(insomniaStat()));
-            server.getPlayerList().broadcastSystemMessage(
-                    Component.translatable("message.aem.deathlink.victim",
-                            victim.getDisplayName(), message), false);
-            victim.kill(victim.level());
+                // Marked BEFORE the kill and left marked: onLocalPlayerDeath consumes it whenever the
+                // death event actually lands, which is not necessarily within this call.
+                linkKilled.put(victim.getUUID(), victim.getStats().getValue(insomniaStat()));
+                server.getPlayerList().broadcastSystemMessage(
+                        Component.translatable("message.aem.deathlink.victim",
+                                victim.getDisplayName(), message), false);
+                victim.kill(victim.level());
+            }
         });
     }
 
