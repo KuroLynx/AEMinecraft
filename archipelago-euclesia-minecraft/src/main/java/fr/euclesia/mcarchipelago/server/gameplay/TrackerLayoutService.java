@@ -155,6 +155,9 @@ public final class TrackerLayoutService {
             if (next == null) {
                 return null;
             }
+            if (next.value().parent().isEmpty()) {
+                return id;  // the tab root: shown whenever a check sits below it (AdvancementVisibilityEvaluatorMixin)
+            }
             parent = next.value().parent();
         }
         return null;
