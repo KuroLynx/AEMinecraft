@@ -830,7 +830,11 @@ class RuleHelper:
     def can_use_ominous_bottle(self):
         """The mod only lets you drink an ominous bottle inside a structure where its Bad Omen has a
         use: a village with every raid mob unlocked (a raid), or the Trial Chambers with one of their
-        spawner mobs unlocked (an ominous trial). Mirrors OminousBottleGate."""
+        spawner mobs unlocked (an ominous trial). Mirrors OminousBottleGate, which gates the bottle
+        only when the seed locks a village or the Trial Chambers."""
+        villages = (S_VILLAGE_DESERT, S_VILLAGE_PLAINS, S_VILLAGE_SAVANNA, S_VILLAGE_SNOWY, S_VILLAGE_TAIGA)
+        if not any(gid in self.locked_structures for gid in (*villages, S_TRIAL_CHAMBERS)):
+            return Const(True)
         return self.any_of(
             self.all_of(self.any_village(), *[self.mob_unlocked(mob) for mob in MOBS_RAID]),
             self.all_of(self.structure(S_TRIAL_CHAMBERS), self.any_of(*[self.mob_unlocked(mob) for mob in MOBS_TRIAL])),

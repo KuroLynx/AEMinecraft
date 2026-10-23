@@ -148,7 +148,6 @@
   "message.aem.ominous_bottle.where": "You need to drink this at a village or trial chamber",
   "message.aem.ominous_bottle.missing_raid": "You're missing %s to start a raid",
   "message.aem.ominous_bottle.missing_trial": "You're missing %s to start a trial",
-  "message.aem.raid.held": "A raid can't start until these are unlocked: %s",
 
   "message.aem.biome_finder.none": "No %s nearby.",
   "message.aem.biome_finder.arrived": "You reached %s; the Biome Finder stopped tracking.",

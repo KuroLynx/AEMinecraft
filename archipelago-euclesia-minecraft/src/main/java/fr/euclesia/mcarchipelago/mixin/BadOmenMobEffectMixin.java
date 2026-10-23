@@ -1,24 +1,21 @@
 package fr.euclesia.mcarchipelago.mixin;
 
 import fr.euclesia.mcarchipelago.server.gameplay.MobSpawnLockService;
-import net.minecraft.ChatFormatting;
-import net.minecraft.core.registries.BuiltInRegistries;
+import fr.euclesia.mcarchipelago.server.gameplay.OminousBottleGate;
+import fr.euclesia.mcarchipelago.server.gameplay.OminousBottleGate.Event;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.ComponentUtils;
-import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Difficulty;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.List;
+import java.util.EnumSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -41,32 +38,36 @@ import java.util.concurrent.ConcurrentHashMap;
  * arrive the very next tick in a village converts it and the raid starts as usual. The player loses
  * nothing but time.
  *
- * <p>The hold isn't silent: where vanilla would have started the raid (a player, not spectating, in a
- * village, off peaceful), the player is told once per Bad Omen which raid mobs are still locked.
+ * <p>The hold isn't silent: a player who walks into a village or the Trial Chambers with Bad Omen
+ * while that structure's event can't start is told once per entry which mobs are missing
+ * ({@link OminousBottleGate#missing}). A Trial Chambers is not held here (its spawners convert the
+ * omen), only reported.
  */
 // Targeted by name: BadOmenMobEffect is package-private, so it cannot be imported from here.
 @Mixin(targets = "net.minecraft.world.effect.BadOmenMobEffect")
 public abstract class BadOmenMobEffectMixin {
-    // The Bad Omen each player was last told about; drinking another bottle makes a new instance.
-    private static final Map<UUID, MobEffectInstance> aem$warned = new ConcurrentHashMap<>();
+    // The structures each player has already been told about, until they walk out of them.
+    private static final Map<UUID, Set<Event>> aem$told = new ConcurrentHashMap<>();
 
     @Inject(method = "applyEffectTick", at = @At("HEAD"), cancellable = true)
     private void aem$holdRaidWhileRaidersLocked(ServerLevel level, LivingEntity entity, int amplifier,
                                                 CallbackInfoReturnable<Boolean> cir) {
-        List<String> locked = MobSpawnLockService.lockedRaidMobs();
-        if (locked.isEmpty()) {
-            return;
-        }
-        cir.setReturnValue(true);
         if (entity instanceof ServerPlayer player && !player.isSpectator()
-                && level.getDifficulty() != Difficulty.PEACEFUL && level.isVillage(player.blockPosition())) {
-            MobEffectInstance omen = player.getEffect(MobEffects.BAD_OMEN);
-            if (omen != null && aem$warned.put(player.getUUID(), omen) != omen) {
-                player.sendSystemMessage(Component.translatable("message.aem.raid.held",
-                        ComponentUtils.formatList(locked, id ->
-                                BuiltInRegistries.ENTITY_TYPE.getValue(Identifier.parse(id)).getDescription()))
-                        .withStyle(ChatFormatting.RED));
+                && level.getDifficulty() != Difficulty.PEACEFUL) {
+            Set<Event> stalled = EnumSet.noneOf(Event.class);
+            for (Event event : OminousBottleGate.inside(level, player.blockPosition())) {
+                Component missing = OminousBottleGate.missing(event);
+                if (missing != null) {
+                    stalled.add(event);
+                    if (!aem$told.getOrDefault(player.getUUID(), Set.of()).contains(event)) {
+                        player.sendSystemMessage(missing);
+                    }
+                }
             }
+            aem$told.put(player.getUUID(), stalled);
+        }
+        if (!MobSpawnLockService.lockedRaidMobs().isEmpty()) {
+            cir.setReturnValue(true);
         }
     }
 }
