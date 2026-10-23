@@ -145,6 +145,7 @@
 
   "message.aem.lock.requires": "Requires %s",
   "message.aem.lock.requires_tier": "Requires %s (%s)",
+  "message.aem.ominous_bottle.no_use": "The Ominous Bottle can only be drunk inside a village with every raid mob unlocked, or inside the Trial Chambers with one of their mobs unlocked",
   "message.aem.raid.held": "A raid can't start until these are unlocked: %s",
 
   "message.aem.biome_finder.none": "No %s nearby.",

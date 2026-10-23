@@ -827,6 +827,15 @@ class RuleHelper:
             self.combat_ready(),
         )
 
+    def can_use_ominous_bottle(self):
+        """The mod only lets you drink an ominous bottle inside a structure where its Bad Omen has a
+        use: a village with every raid mob unlocked (a raid), or the Trial Chambers with one of their
+        spawner mobs unlocked (an ominous trial). Mirrors OminousBottleGate."""
+        return self.any_of(
+            self.all_of(self.any_village(), *[self.mob_unlocked(mob) for mob in MOBS_RAID]),
+            self.all_of(self.structure(S_TRIAL_CHAMBERS), self.any_of(*[self.mob_unlocked(mob) for mob in MOBS_TRIAL])),
+        )
+
     def combat_ready(self):
         """combat_logic: what strict logic wants before a hard fight (a raid, the ominous Trial
         Chambers, a boss) — a melee weapon, iron-tier gear, food to last it and, under inventory_lock,

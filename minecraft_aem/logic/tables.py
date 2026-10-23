@@ -29,6 +29,7 @@ from .constants import (
     K_HOE,
     K_PICKAXE,
     MAT_IRON,
+    MOBS_TRIAL,
     REGION_END,
     REGION_NETHER,
     REGION_OVERWORLD,
@@ -227,7 +228,7 @@ def _tamed(c, mob):
 # advancement names in this table or the brewing table.
 _EFFECT_SOURCE = {
     "minecraft:absorption": lambda c: _get(c, "golden_apple", "enchanted_golden_apple"),
-    "minecraft:bad_omen": lambda c: _get(c, "ominous_bottle"),
+    "minecraft:bad_omen": lambda c: c._all_req(_get(c, "ominous_bottle"), c.h.can_use_ominous_bottle()),
     "minecraft:blindness": lambda c: _stew(c, "azure_bluet"),
     # Riding a tamed nautilus is what lets you breathe on its back.
     "minecraft:breath_of_the_nautilus": lambda c: _tamed(c, "nautilus"),
@@ -258,6 +259,7 @@ _EFFECT_SOURCE = {
     "minecraft:speed": lambda c: _get(c, "beacon"),
     "minecraft:strength": lambda c: _get(c, "beacon"),
     "minecraft:trial_omen": lambda c: c._all_req(c._struct_gid("minecraft:trial_chambers"), _get(c, "ominous_bottle"),
+                                                 c.h.any_of(*[c.h.mob_unlocked(m) for m in MOBS_TRIAL]),
                                                  c.h.combat_ready()),
     "minecraft:water_breathing": lambda c: _get(c, "turtle_helmet", "conduit"),
     "minecraft:weakness": lambda c: _stew(c, "white_tulip"),
