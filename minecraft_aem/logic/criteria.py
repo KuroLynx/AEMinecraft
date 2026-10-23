@@ -827,7 +827,8 @@ class CriteriaCompiler:
             for entry in self._as_list(components.get(key)):
                 names = entry.get("enchantments") if isinstance(entry, dict) else entry
                 names = names if isinstance(names, list) else [names]
-                gates.append(any_(*[need("enchant", None if n.startswith("#") else _path(n), on_item)
+                gates.append(any_(*[all_(need("enchant", None if n.startswith("#") else _path(n), on_item),
+                                         self._enchantable(n) if on_item and not ids else None)
                                     for n in names if isinstance(n, str)]) or need("enchant", None, on_item))
         trim = components.get("trim")
         material = trim.get("material") if isinstance(trim, dict) else None
@@ -853,6 +854,14 @@ class CriteriaCompiler:
             gates.append(_item(f"minecraft:{dye}_dye") if dye else
                          any_(*[_item(f"minecraft:{d}_dye") for d in _DYE_OF_COLOUR.values()]))
         return all_(*gates)
+
+    def _enchantable(self, name: str):
+        """Holding something ``name`` can be put on, for a predicate that names the enchantment but no
+        item ("an item with Wind Burst" is a mace). None for a tag or an enchantment the pack doesn't list."""
+        if name.startswith("#"):
+            return None
+        items = _tags(self.content).get("enchantment_items", {}).get(_ns(name), ())
+        return any_(*[_item(item) for item in items]) if items else None
 
     def _damage(self, dmg, attacker_role: str, path: str):
         if dmg is None:

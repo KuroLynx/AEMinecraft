@@ -1020,6 +1020,42 @@ public final class PackDump {
         // #minecraft:shipwreck); the compiler refuses a tag it can't resolve.
         out.add("biome", tagRegistry(rm, "worldgen/biome"));
         out.add("structure", tagRegistry(rm, "worldgen/structure"));
+        // Not a tag: what each enchantment can be put on (its supported_items, resolved). A criterion
+        // that asks for "an item with Wind Burst" means a mace, which the predicate never names.
+        out.add("enchantment_items", enchantmentItems(rm, out.getAsJsonObject("item")));
+        return out;
+    }
+
+    /** Enchantment id -> the items it can be applied to: its {@code supported_items}, tags resolved. */
+    private static JsonObject enchantmentItems(ResourceManager rm, JsonObject itemTags) {
+        Map<String, JsonArray> resolved = new TreeMap<>();
+        for (Map.Entry<Identifier, JsonObject> entry : jsonResources(rm, "enchantment")) {
+            JsonElement supported = entry.getValue().get("supported_items");
+            List<JsonElement> values = new ArrayList<>();
+            if (supported != null && supported.isJsonArray()) {
+                supported.getAsJsonArray().forEach(values::add);
+            } else if (supported != null) {
+                values.add(supported);
+            }
+            TreeSet<String> items = new TreeSet<>();
+            for (JsonElement value : values) {
+                String id = value.isJsonPrimitive() ? value.getAsString() : "";
+                if (id.startsWith("#")) {
+                    JsonElement members = itemTags.get(namespaced(id.substring(1)));
+                    if (members != null) {
+                        members.getAsJsonArray().forEach(member -> items.add(member.getAsString()));
+                    }
+                } else if (!id.isEmpty()) {
+                    items.add(namespaced(id));
+                }
+            }
+            String path = stripExt(entry.getKey().getPath().substring("enchantment/".length()));
+            JsonArray array = new JsonArray();
+            items.forEach(array::add);
+            resolved.put(entry.getKey().getNamespace() + ":" + path, array);
+        }
+        JsonObject out = new JsonObject();
+        resolved.forEach(out::add);
         return out;
     }
 
