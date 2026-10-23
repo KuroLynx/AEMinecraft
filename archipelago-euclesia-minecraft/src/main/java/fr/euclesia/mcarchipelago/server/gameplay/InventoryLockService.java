@@ -141,9 +141,16 @@ public final class InventoryLockService {
                 order.add(i);
             }
         }
-        for (int i = 0; i < restLocked; i++) {
-            order.add(REST_START + i);
+        // The two remaining rows open from the hotbar up: row 2 (18-26) before the top row (9-17).
+        // Only the last restLocked of that sequence are locked, so a partial lock still sits on top.
+        List<Integer> rest = new ArrayList<>(REST_END - REST_START);
+        for (int i = REST_START + 9; i < REST_END; i++) {
+            rest.add(i);
         }
+        for (int i = REST_START; i < REST_START + 9; i++) {
+            rest.add(i);
+        }
+        order.addAll(rest.subList(rest.size() - restLocked, rest.size()));
         return order;
     }
 }
