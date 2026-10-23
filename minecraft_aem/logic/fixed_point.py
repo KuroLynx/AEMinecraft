@@ -24,7 +24,7 @@ glitch graph.
 """
 from __future__ import annotations
 
-from collections import defaultdict, deque
+from collections import Counter, defaultdict, deque
 from itertools import combinations
 
 from .ast import And, AtLeast, Const, Has, Or, PriceRef, ReachLocation, ReachRegion, and_, or_
@@ -45,40 +45,68 @@ def _alt(atoms) -> frozenset:
     return frozenset((kind, name, n) for (kind, name), n in best.items())
 
 
-_SIG: dict = {}   # alternative -> (its (kind, name) set, its leaves needing a count above 1); pure
+_SIG: dict = {}   # alternative -> (its (kind, name) set, its leaves needing a count above 1, its order); pure
 
 
 def _sig(alt: frozenset) -> tuple:
     sig = _SIG.get(alt)
     if sig is None:
         sig = _SIG[alt] = (frozenset((kind, name) for kind, name, _ in alt),
-                           tuple(((kind, name), n) for kind, name, n in alt if n > 1))
+                           tuple(((kind, name), n) for kind, name, n in alt if n > 1),
+                           (len(alt), sum(n for _, _, n in alt)))
     return sig
+
+
+def _order(alt: frozenset) -> tuple:
+    return _sig(alt)[2]
+
+
+# Below this many alternatives the plain scan is cheaper than filing them (see _minimal).
+_FILE_FROM = 24
 
 
 def _minimal(alts) -> frozenset:
     """Drop every alternative that a kept one subsumes (each of its leaves present with at least its count).
 
-    The name-set test is a C-level subset check; counts are compared only for the few leaves above 1."""
-    keep: list = []
-    kept: list = []
+    The name-set test is a C-level subset check; counts are compared only for the few leaves above 1.
+    Each kept alternative is filed under its rarest leaf, and one can only subsume an alternative that
+    holds that leaf, so an alternative is tested against the kept ones filed under its own leaves rather
+    than against all of them: the scan was quadratic in the kept list, which a big AND's product makes
+    long (every mined item carrying every route to its pickaxe)."""
     # By size, then total count: whatever subsumes an alternative is then always looked at first. By
     # size alone, {Material 3, X} could come before {Material 2, X} and survive it, and which came
     # first was set order — the string hash — so the logic changed from one process to the next.
-    for alt in sorted(set(alts), key=lambda alt: (len(alt), sum(n for _, _, n in alt))):
+    alts = sorted(set(alts), key=_order)
+    if len(alts) < 2 or not alts[0]:
+        return frozenset(alts[:1])   # nothing, one, or "always true", which subsumes everything
+    big = len(alts) >= _FILE_FROM
+    rarity = Counter(name for alt in alts for name in _sig(alt)[0]) if big else None
+    filed: dict = defaultdict(list)   # leaf -> sigs of kept alternatives filed under it
+    kept: list = []                   # every kept sig, for the plain scan
+    keep: list = []
+    for alt in alts:
         names = _sig(alt)[0]
         have = None
-        for k_names, k_counts in kept:
-            if k_names <= names:
-                if not k_counts:
-                    break
-                if have is None:
-                    have = {(kind, name): n for kind, name, n in alt}
-                if all(have[leaf] >= n for leaf, n in k_counts):
-                    break
-        else:
+        subsumed = False
+        for leaf in (names if big else (None,)):
+            for k_names, k_counts, _ in (filed.get(leaf, ()) if big else kept):
+                if k_names <= names:
+                    if not k_counts:
+                        subsumed = True
+                        break
+                    if have is None:
+                        have = {(kind, name): n for kind, name, n in alt}
+                    if all(have[leaf_] >= n for leaf_, n in k_counts):
+                        subsumed = True
+                        break
+            if subsumed:
+                break
+        if not subsumed:
             keep.append(alt)
-            kept.append(_sig(alt))
+            if big:
+                filed[min(names, key=lambda name: (rarity[name], name))].append(_sig(alt))
+            else:
+                kept.append(_sig(alt))
     return frozenset(keep)
 
 
@@ -90,10 +118,32 @@ def _join(a: frozenset, b: frozenset) -> frozenset:
     return _alt(union)
 
 
+def _covers(a: frozenset, b: frozenset) -> bool:
+    """Whether ``a`` holds every leaf of ``b`` with at least its count, i.e. ``a | b`` is just ``a``."""
+    a_names, _, _ = _sig(a)
+    b_names, b_counts, _ = _sig(b)
+    if not b_names <= a_names:
+        return False
+    if not b_counts:
+        return True
+    have = {(kind, name): n for kind, name, n in a}
+    return all(have[leaf] >= n for leaf, n in b_counts)
+
+
 def _and(*dnfs) -> frozenset:
     out = {frozenset()}
     for dnf in dnfs:
-        out = _minimal(_join(a, b) for a in out for b in dnf)
+        joined = []
+        for a in out:
+            for b in dnf:
+                if _covers(a, b):
+                    # a | b is a, and a subsumes every other a | b' of this row: the row is a alone.
+                    # Ingredients priced through the same tool share their routes, so this is common.
+                    joined.append(a)
+                    break
+            else:
+                joined.extend(_join(a, b) for b in dnf)
+        out = _minimal(joined)
         if not out:
             break
     return frozenset(out)
