@@ -827,7 +827,8 @@ class CriteriaCompiler:
             for entry in self._as_list(components.get(key)):
                 names = entry.get("enchantments") if isinstance(entry, dict) else entry
                 names = names if isinstance(names, list) else [names]
-                gates.append(any_(*[all_(need("enchant", None if n.startswith("#") else _path(n), on_item),
+                gates.append(any_(*[all_(need("enchant", None if n.startswith("#") else _path(n), on_item,
+                                              tuple(ids) if on_item else ()),
                                          self._enchantable(n) if on_item and not ids else None)
                                     for n in names if isinstance(n, str)]) or need("enchant", None, on_item))
         trim = components.get("trim")
@@ -854,6 +855,13 @@ class CriteriaCompiler:
             gates.append(_item(f"minecraft:{dye}_dye") if dye else
                          any_(*[_item(f"minecraft:{d}_dye") for d in _DYE_OF_COLOUR.values()]))
         return all_(*gates)
+
+    def _table_offers(self, name, items) -> bool:
+        """Whether the enchanting table can put ``name`` on one of ``items`` (the predicate's, empty for
+        any): its primary_items, which can be narrower than what an anvil puts it on (Sharpness on an
+        axe, Thorns on boots). True when the pack doesn't list it."""
+        table = _tags(self.content).get("enchantment_table_items", {}).get(_ns(name)) if name else None
+        return not items or table is None or any(item in table for item in items)
 
     def _enchantable(self, name: str):
         """Holding something ``name`` can be put on, for a predicate that names the enchantment but no
@@ -1167,19 +1175,19 @@ class CriteriaCompiler:
         priced = [node for node in priced if node is not None]
         return or_(*priced) if priced else None
 
-    def _price_enchant(self, name, on_item):
+    def _price_enchant(self, name, on_item, items=()):
         # An enchantment is on something you hold: a book or the enchanted item.
-        rule = self._price_enchant_source(name, on_item)
+        rule = self._price_enchant_source(name, on_item, items)
         return None if rule is None else and_(self.h.slot_group("carry"), rule)
 
-    def _price_enchant_source(self, name, on_item):
+    def _price_enchant_source(self, name, on_item, items=()):
         anvil = self.h.acquire("minecraft:anvil")
         book = self.h.acquire("minecraft:enchanted_book")
         if name in _ENCHANT_LOOT_SOURCE:
             found = _ENCHANT_LOOT_SOURCE[name](self)
             return found if found is None or not on_item else self._all_req(found, anvil)
         routes = []
-        if name is None or name not in _NOT_IN_ENCHANTING_TABLE:
+        if (name is None or name not in _NOT_IN_ENCHANTING_TABLE) and self._table_offers(name, items):
             routes.append(self.h.acquire("minecraft:enchanting_table"))
         if book is not None:
             found = self._all_req(book, anvil) if on_item else book

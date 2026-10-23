@@ -1022,15 +1022,22 @@ public final class PackDump {
         out.add("structure", tagRegistry(rm, "worldgen/structure"));
         // Not a tag: what each enchantment can be put on (its supported_items, resolved). A criterion
         // that asks for "an item with Wind Burst" means a mace, which the predicate never names.
-        out.add("enchantment_items", enchantmentItems(rm, out.getAsJsonObject("item")));
+        out.add("enchantment_items", enchantmentItems(rm, out.getAsJsonObject("item"), "supported_items"));
+        // And what the enchanting table offers it on (primary_items, else the same): Sharpness goes on an
+        // axe, but only an anvil puts it there.
+        out.add("enchantment_table_items", enchantmentItems(rm, out.getAsJsonObject("item"), "primary_items"));
         return out;
     }
 
-    /** Enchantment id -> the items it can be applied to: its {@code supported_items}, tags resolved. */
-    private static JsonObject enchantmentItems(ResourceManager rm, JsonObject itemTags) {
+    /**
+     * Enchantment id -> the items its {@code field} names ({@code supported_items} or
+     * {@code primary_items}, the latter falling back to the former), tags resolved.
+     */
+    private static JsonObject enchantmentItems(ResourceManager rm, JsonObject itemTags, String field) {
         Map<String, JsonArray> resolved = new TreeMap<>();
         for (Map.Entry<Identifier, JsonObject> entry : jsonResources(rm, "enchantment")) {
-            JsonElement supported = entry.getValue().get("supported_items");
+            JsonElement supported = entry.getValue().has(field)
+                    ? entry.getValue().get(field) : entry.getValue().get("supported_items");
             List<JsonElement> values = new ArrayList<>();
             if (supported != null && supported.isJsonArray()) {
                 supported.getAsJsonArray().forEach(values::add);

@@ -576,6 +576,7 @@ read of the mod code. **Done** = already behaves as the report asks. **Open** = 
   `enchanted_book` + anvil. Make it a librarian (rerollable) for a specific enchantment; random
   chest/fishing books stay a glitch route. An advancement asking for any book is unchanged.
 - [x] F10b **Enchanted item with no item named** (Mace Windu). Done: an enchantment asked for on an unnamed item also asks for an item it can go on (`supported_items`, dumped into tags.json `enchantment_items`, 3 vanilla packs patched from the jars). Mace Windu now needs the Breeze + Mace Handling.
+- [x] F10c **Enchanting table only on its primary items.** Done: audited all 43 enchantments vs the jars (table / librarian `#tradeable` / the 3 loot-only sources all match on 26.1.2, 26.2, 26.3). The table route now needs a named item in the enchantment's `primary_items` (tags.json `enchantment_table_items`): Sharpness/Smite/Bane on an axe, Smite/Bane/Fire Aspect on a mace, Thorns off a chestplate need an anvil. No BACAP advancement changed (the Master ones also ask for Mending).
 - [ ] F11 **Fossils.** To verify: `bone_block` self-mines as a natural block (fossils), while a fossil is
   a few blocks buried per dozens of chunks. Boned is fine today (Skeleton or Composter), so check
   which other rules ride `bone_block`, then make the fossil route unreliable.
