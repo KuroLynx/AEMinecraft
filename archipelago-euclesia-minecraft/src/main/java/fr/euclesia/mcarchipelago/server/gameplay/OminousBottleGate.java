@@ -1,7 +1,5 @@
 package fr.euclesia.mcarchipelago.server.gameplay;
 
-import fr.euclesia.mcarchipelago.AEM;
-import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -27,20 +25,15 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Keeps an ominous bottle's Bad Omen from being spent on nothing. Two rules:
+ * Keeps an ominous bottle's Bad Omen from being spent on nothing: within {@link #NEARBY_BLOCKS}
+ * (height included) of an unlocked village or Trial Chambers whose raid / ominous trial can't start
+ * yet (a raid needs every raid mob, a trial one of its spawner mobs), the drink is refused and the
+ * player is told which mobs are missing. Anywhere else it is drunk as in vanilla, so Bad Omen stays as
+ * easy to get as any other effect.
  *
- * <ul>
- *   <li>Near an unlocked village or Trial Chambers whose raid / ominous trial can't start yet (a raid
- *       needs every raid mob, a trial one of its spawner mobs), the drink is refused and the player
- *       is told which mobs are missing.
- *   <li>When the seed locks a village or the Trial Chambers, the bottle is drunk only inside one whose
- *       event can start. With neither locked it is drunk anywhere else, as in vanilla, so Bad Omen
- *       stays as easy to get as any other effect.
- * </ul>
- *
- * A locked structure counts as absent: {@code StructureManagerMixin} hides it from the "inside"
+ * <p>A locked structure counts as absent: {@code StructureManagerMixin} hides it from the "inside"
  * lookup, and the nearby scan skips it. {@code BadOmenMobEffectMixin} sends the same "missing" line
- * when a player walks in with Bad Omen. Logic asks for the same ({@code can_use_ominous_bottle}).
+ * when a player walks in with Bad Omen.
  */
 public final class OminousBottleGate {
     /** What a Bad Omen can start, and where. */
@@ -89,9 +82,7 @@ public final class OminousBottleGate {
                 return missing;
             }
         }
-        return gated(level)
-                ? Component.translatable("message.aem.ominous_bottle.where").withStyle(ChatFormatting.GOLD)
-                : null;
+        return null;
     }
 
     /** "You're missing … to start a raid/trial" in red, or {@code null} when the event can start. */
@@ -156,21 +147,6 @@ public final class OminousBottleGate {
             }
         }
         return events;
-    }
-
-    /** Whether this seed locks any village or the Trial Chambers. */
-    private static boolean gated(ServerLevel level) {
-        if (!AEMServerRuntime.isArchipelagoReady()) {
-            return false;
-        }
-        var structures = AEM.ARCHIPELAGO.client().registries().apStructures();
-        if (structures.isLockable(TRIAL_CHAMBERS.toString())) {
-            return true;
-        }
-        return level.registryAccess().lookupOrThrow(Registries.STRUCTURE).get(StructureTags.VILLAGE)
-                .map(villages -> villages.stream().anyMatch(holder -> holder.unwrapKey()
-                        .map(key -> structures.isLockable(key.identifier().toString())).orElse(false)))
-                .orElse(false);
     }
 
     private static Component mobName(String id) {

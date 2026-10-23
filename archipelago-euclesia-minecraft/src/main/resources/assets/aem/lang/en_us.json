@@ -145,7 +145,6 @@
 
   "message.aem.lock.requires": "Requires %s",
   "message.aem.lock.requires_tier": "Requires %s (%s)",
-  "message.aem.ominous_bottle.where": "You need to drink this at a village or trial chamber",
   "message.aem.ominous_bottle.missing_raid": "You're missing %s to start a raid",
   "message.aem.ominous_bottle.missing_trial": "You're missing %s to start a trial",
 

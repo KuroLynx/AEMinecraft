@@ -96,8 +96,7 @@ _ENCHANT_LOOT_SOURCE = {
     "swift_sneak": lambda c: c._struct_gid("minecraft:ancient_city"),        # chests/ancient_city
     "soul_speed": lambda c: c._any_opt(                                      # chests/bastion_other
         c._struct_gid("minecraft:bastion_remnant"), c.h.can_barter()),       # + gameplay/piglin_bartering
-    "wind_burst": lambda c: c._all_req(c._struct_gid("minecraft:trial_chambers"),  # trial_chambers/reward_ominous_rare
-                                       c.h.combat_ready()),
+    "wind_burst": lambda c: c.h.ominous_trial(),  # trial_chambers/reward_ominous_rare
 }
 
 # Damage-type #tags, as gates. BACAP reaches for one of these whenever it wants "kill it WITH
@@ -227,7 +226,7 @@ def _tamed(c, mob):
 # advancement names in this table or the brewing table.
 _EFFECT_SOURCE = {
     "minecraft:absorption": lambda c: _get(c, "golden_apple", "enchanted_golden_apple"),
-    "minecraft:bad_omen": lambda c: c._all_req(_get(c, "ominous_bottle"), c.h.can_use_ominous_bottle()),
+    "minecraft:bad_omen": lambda c: _get(c, "ominous_bottle"),
     "minecraft:blindness": lambda c: _stew(c, "azure_bluet"),
     # Riding a tamed nautilus is what lets you breathe on its back.
     "minecraft:breath_of_the_nautilus": lambda c: _tamed(c, "nautilus"),
@@ -257,9 +256,7 @@ _EFFECT_SOURCE = {
     "minecraft:slowness": lambda c: _mob(c, "stray"),
     "minecraft:speed": lambda c: _get(c, "beacon"),
     "minecraft:strength": lambda c: _get(c, "beacon"),
-    "minecraft:trial_omen": lambda c: c._all_req(c._struct_gid("minecraft:trial_chambers"), _get(c, "ominous_bottle"),
-                                                 c.h.can_use_ominous_bottle(),
-                                                 c.h.combat_ready()),
+    "minecraft:trial_omen": lambda c: c.h.ominous_trial(),
     "minecraft:water_breathing": lambda c: _get(c, "turtle_helmet", "conduit"),
     "minecraft:weakness": lambda c: _stew(c, "white_tulip"),
     "minecraft:wither": lambda c: c._any_opt(_mob(c, "wither_skeleton", "wither"), _get(c, "wither_rose")),

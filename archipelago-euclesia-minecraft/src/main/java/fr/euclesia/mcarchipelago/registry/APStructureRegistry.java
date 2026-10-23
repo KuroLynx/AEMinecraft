@@ -32,11 +32,6 @@ public final class APStructureRegistry {
         return lockItemIds.containsKey(structureGameId) && !unlocked.contains(structureGameId);
     }
 
-    /** Whether this seed locks the structure at all, received or not. */
-    public boolean isLockable(String structureGameId) {
-        return lockItemIds.containsKey(structureGameId);
-    }
-
     /** Cheap guard so worldgen can skip the per-placement id lookup when nothing is locked at all. */
     public boolean hasLocks() {
         return !lockItemIds.isEmpty();
