@@ -535,7 +535,7 @@ class CriteriaCompiler:
         """A trade happens whatever the villager predicate pins; a Wandering Trader is its own route."""
         trader = _predicate_value(cond.get("villager"), "type")
         wandering = isinstance(trader, str) and _path(trader) == "wandering_trader"
-        return _call("meet_wandering_trader" if wandering else "can_trade_villager")
+        return _call("meet_wandering_trader") if wandering else _call("can_trade_villager", 1, True)
 
     def _custom_bucket(self, cond):
         """A bucket, plus the mob it scoops up. Priced as the empty bucket at the top level rather than

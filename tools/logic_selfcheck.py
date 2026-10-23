@@ -50,6 +50,7 @@ class ExportEvaluator:
         self.locations = export["locations"]
         self.definitions = export.get("definitions", {})  # shared subtrees behind {"k":"ref"}
         self.glitch = export.get("glitch", {})
+        self.glitch_regions = export.get("glitch_regions", {})  # entrances only a glitch route opens
         self.prices = export.get("prices", {})            # item prices behind {"k":"price"}
         self.items = item_counts
         self._resolving: set[int] = set()
@@ -59,6 +60,11 @@ class ExportEvaluator:
         self._price_reach: dict[str, bool] | None = None
         self._region_reach: dict[str, bool] = {}
         self._loc_reach: dict[str, bool] = {}
+        # Glitch evaluation reads regions through the glitch edges too (mirrors Java's glitch mode); its
+        # refs see a different snapshot, so they keep their own cache.
+        self._glitch_mode = False
+        self._glitch_region_reach: dict[str, bool] | None = None
+        self._glitch_ref_cache: dict[int, bool] = {}
         self._solve()
 
     def has(self, item: str, n: int) -> bool:
@@ -72,7 +78,8 @@ class ExportEvaluator:
         if k == "has":
             return self.has(node["i"], node["n"])
         if k == "region":
-            return self._region_reach.get(node["r"], False)
+            reach = self._glitch_region_reach if self._glitch_mode else self._region_reach
+            return reach.get(node["r"], False)
         if k == "loc":
             return self._loc_reach.get(node["l"], False)
         if k == "price":
@@ -85,7 +92,8 @@ class ExportEvaluator:
             return sum(1 for c in node["c"] if self._eval(c)) >= node["n"]
         if k == "ref":
             ref_id = node["id"]
-            cached = self._ref_cache.get(ref_id)
+            cache = self._glitch_ref_cache if self._glitch_mode else self._ref_cache
+            cached = cache.get(ref_id)
             if cached is not None:
                 return cached
             definition = self.definitions.get(str(ref_id))
@@ -93,7 +101,7 @@ class ExportEvaluator:
                 return False  # acyclic by construction; guard is defensive (mirrors Java)
             self._resolving.add(ref_id)
             try:
-                result = self._ref_cache[ref_id] = self._eval(definition)
+                result = cache[ref_id] = self._eval(definition)
                 return result
             finally:
                 self._resolving.discard(ref_id)
@@ -128,6 +136,22 @@ class ExportEvaluator:
     def can_reach_location(self, name: str) -> bool:
         return self._loc_reach.get(name, False)
 
+    def _solve_glitch_regions(self) -> None:
+        """Regions reachable once glitch entrances count too: the strict snapshot, then a fixed point over
+        the strict and glitch edges, read in glitch mode (mirrors Java's solveGlitchRegions)."""
+        self._glitch_region_reach = dict(self._region_reach)
+        edges = [(f, e) for f, es in self.regions.items() for e in es]
+        edges += [(f, e) for f, es in self.glitch_regions.items() for e in es]
+        changed = True
+        while changed:
+            changed = False
+            for from_region, entrance in edges:
+                to = entrance["to"]
+                if not self._glitch_region_reach.get(to, False)                         and self._glitch_region_reach.get(from_region, False)                         and self._eval(entrance["rule"]):
+                    self._glitch_region_reach[to] = True
+                    self._glitch_ref_cache.clear()
+                    changed = True
+
     def _solve_prices(self) -> None:
         """Least fixed point of the glitch price table over the solved strict snapshot (mirrors Java's
         solvePrices): prices name each other in cycles, so they start False and flip until stable."""
@@ -139,17 +163,30 @@ class ExportEvaluator:
                 if not self._price_reach.get(name, False) and self._eval(price["rule"]):
                     self._price_reach[name] = True
                     self._ref_cache.clear()
+                    self._glitch_ref_cache.clear()
                     changed = True
 
     def is_glitchable(self, name: str) -> bool:
         """The mod's yellow: the location's region is reachable and its glitch rule (if it ships one)
         holds against the strict snapshot (LogicEvaluation.isGlitchable)."""
-        glitch = self.glitch.get(name)
-        if glitch is None or not self._region_reach.get(self.locations[name]["region"], False):
-            return False
-        if self._price_reach is None:
-            self._solve_prices()
-        return self._eval(glitch["rule"])
+        region = self.locations[name]["region"]
+        self._glitch_mode = True
+        try:
+            if self._glitch_region_reach is None:
+                self._solve_glitch_regions()
+            if self._price_reach is None:
+                self._solve_prices()
+            if not self._glitch_region_reach.get(region, False):
+                return False
+            glitch = self.glitch.get(name)
+            if glitch is None:
+                # No glitch rule: it equals the strict one, which only a glitch-only region can now satisfy.
+                if self._region_reach.get(region, False):
+                    return False
+                glitch = self.locations[name]
+            return self._eval(glitch["rule"])
+        finally:
+            self._glitch_mode = False
 
 
 def make_state(world, item_names_with_counts: dict[str, int]) -> CollectionState:

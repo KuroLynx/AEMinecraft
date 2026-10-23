@@ -421,6 +421,19 @@ class MCWorld(World):
             ),
         ))
 
+        # Glitch-only entrances (logic_export ships them; the mod's yellow walks them, fill never does).
+        # A Nether portal can be CAST without obsidian: water poured over lava in the frame's shape sets
+        # it block by block, which takes a water bucket and patience, not a pickaxe. Still behind the
+        # Dimension Unlock. Only on the way in: water evaporates in the Nether, so the way back (a
+        # Nether start's return portal) still needs real obsidian.
+        self.logic_glitch_region_rules = {}
+        if start_region != MCRegion.NETHER:
+            self.logic_glitch_region_rules[MCRegion.OVERWORLD.value] = [{
+                "to": MCRegion.NETHER.value,
+                "rule": helper.all_of(helper.has(ITEM_DIMENSION_NETHER),
+                                      helper.acquire("minecraft:water_bucket") or Const(False)),
+            }]
+
         # Menu → start dimension is always free; the rest are the gated portal edges.
         added_regions[MCRegion.MENU].connect(added_regions[start_region])
         self.logic_region_rules = {

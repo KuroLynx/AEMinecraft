@@ -594,16 +594,16 @@ read of the mod code. **Done** = already behaves as the report asks. **Open** = 
   armor. All three need a tamed wolf; Shear Brilliance also the wolf armor.
 
 ### F-logic: routes that were missing
-- [ ] F18 **Nether portal from water + lava.** Open: entering the Nether needs obsidian (Ruined Portal /
+- [x] F18 **Nether portal from water + lava.** Done: glitch-only entrance Overworld -> Nether (Nether unlock + water bucket), shipped as export `glitch_regions` and walked by the mod's yellow; fill never sees it. Was: entering the Nether needs obsidian (Ruined Portal /
   Village loot, or mining). A water bucket over lava in the frame's shape also builds a portal. The
   way back still needs obsidian (water evaporates in the Nether).
-- [ ] F19 **Cobweb string with water.** Open: Fishy Business strict needs Sword Handling (or a Strider).
+- [x] F19 **Cobweb string with water.** Done: water bucket + a found cobweb is a string source of its own (`_EXTRA_DROP_INSTEAD`). Was: Fishy Business strict needs Sword Handling (or a Strider).
   Water washes a cobweb away and drops string: a water bucket is a route.
 - [x] F20 **Copper bulbs** Done (A10): Lighten Up has the axe-scrape route from Trial Chambers.
-- [ ] F21 **Naturally generated blocks with a recipe.** Partly done: Resinance needs the Biome Finder,
+- [x] F21 **Naturally generated blocks with a recipe.** Done: a block in block_biomes.json reads as natural (`_block_origin_node`), Biome Finder when rare. Was partly done: Resinance needs the Biome Finder,
   not the camp. Still to check: terracotta, coarse dirt, moss carpet, nether wart block, smooth
   basalt (block_biomes says they generate; `_placed_block_origin` may still read them as crafted).
-- [ ] F22 **Cured zombie villagers.** Open: What a Deal! needs `Structure Unlock: Village`. Curing a
+- [x] F22 **Cured zombie villagers.** Done for trade checks only: the villager_trade trigger takes `can_trade_villager(1, cured=True)` (zombie villager + Villager unlock + Brewing + the brew and golden apple, selling to it pays the currency). NOT in item prices: a multi-item AND in every trade-priced item blew strict DNFs past 20 GB (black_harness). Items bought from villagers still ask for a village; an event leaf would lift that (and could carry the igloo). Was: What a Deal! needs `Structure Unlock: Village`. Curing a
   zombie villager (weakness potion + golden apple) is another villager, and trading shouldn't ask for
   a village on top of the villager (`can_sell_to_villager` ANDs `any_village()`).
 - [x] F23 **Crafting criteria cost only the recipe.** Done: Boned strict is Skeleton alone (or

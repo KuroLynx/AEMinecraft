@@ -115,6 +115,13 @@ def build_logic_export(world) -> dict:
         "locations": locations,
     }
     export["glitch"], export["prices"] = _glitch_rules(world, locations)
+    if world.options.glitch_logic:
+        # Entrances only a glitch route opens (a cast Nether portal): the mod's yellow walks these on
+        # top of "regions" when it asks whether a location's region is reachable.
+        export["glitch_regions"] = {
+            from_region: [{"to": entrance["to"], "rule": entrance["rule"].to_dict()} for entrance in entrances]
+            for from_region, entrances in getattr(world, "logic_glitch_region_rules", {}).items()
+        }
     _dedup_rules(export)
     return export
 
@@ -191,7 +198,7 @@ def _dedup_rules(export: dict) -> None:
     holders = list(export["locations"].values())
     holders.extend(export.get("glitch", {}).values())
     holders.extend(export.get("prices", {}).values())
-    for edges in export["regions"].values():
+    for edges in [*export["regions"].values(), *export.get("glitch_regions", {}).values()]:
         holders.extend(edges)
 
     # Canonical key of a subtree (commutative children sorted so reordered ANDs/ORs still share).
