@@ -28,8 +28,9 @@ import java.util.UUID;
  * player argument on {@link #percent()}).
  *
  * <p>Scope is the vanilla gamerule's: main inventory, armor and offhand — every slot the player's
- * {@link Inventory} container addresses. Experience is deliberately left alone; you drop your XP on
- * death whatever this option says.
+ * {@link Inventory} container addresses. Experience follows the same share: that part of the
+ * player's XP points comes back at respawn, and only the rest is left on the dying player for vanilla
+ * to drop as orbs (none at 100%, like the gamerule).
  *
  * <p>The kept slots are cleared from the live inventory in {@link #onDeath} rather than filtered out
  * of the drops afterwards, because there is nothing to filter afterwards: by the time the death has
@@ -43,6 +44,9 @@ public final class KeepInventoryService {
 
     /** Slot index -> stack, set aside at death and handed back on the next respawn, per player. */
     private static final Map<UUID, Map<Integer, ItemStack>> savedOnDeath = new HashMap<>();
+
+    /** XP points set aside at death and handed back on the next respawn, per player. */
+    private static final Map<UUID, Integer> savedXp = new HashMap<>();
 
     private KeepInventoryService() {}
 
@@ -77,8 +81,8 @@ public final class KeepInventoryService {
 
     /**
      * Death handler: pick the slots this death keeps, remember them, and empty them so the death loop
-     * that follows drops only the rest. Runs before the drops are computed (ALLOW_DEATH), and is a
-     * no-op at 0% — a disabled seed never touches the inventory at all.
+     * that follows drops only the rest. Runs at the top of {@code dropAllDeathLoot} (so a totem
+     * that saves the player never gets here), and is a no-op at 0% — a disabled seed never touches the inventory at all.
      *
      * <p>Which slots are kept is drawn from the OCCUPIED ones, not from all 41: keeping "half your
      * slots" has to mean half of what you are actually carrying, or a nearly-empty inventory would
@@ -89,6 +93,13 @@ public final class KeepInventoryService {
         double percent = percent();
         if (percent <= 0.0) {
             return;
+        }
+
+        int points = experiencePoints(player);
+        int keptPoints = (int) Math.round(points * percent / 100.0);
+        if (keptPoints > 0) {
+            savedXp.put(player.getUUID(), keptPoints);
+            setExperiencePoints(player, points - keptPoints);
         }
 
         Inventory inventory = player.getInventory();
@@ -129,6 +140,10 @@ public final class KeepInventoryService {
      * respawn registration in {@code MinecraftEventBridge}.
      */
     public static void restoreOnRespawn(ServerPlayer player) {
+        Integer xp = savedXp.remove(player.getUUID());
+        if (xp != null) {
+            setExperiencePoints(player, xp);
+        }
         Map<Integer, ItemStack> kept = savedOnDeath.remove(player.getUUID());
         if (kept == null) {
             return;
@@ -140,5 +155,42 @@ public final class KeepInventoryService {
                 inventory.setItem(slot, entry.getValue());
             }
         }
+    }
+
+    /** The player's XP as a points total: every finished level plus the progress into the current one. */
+    private static int experiencePoints(ServerPlayer player) {
+        return experiencePointsBefore(player.experienceLevel)
+                + Math.round(player.experienceProgress * xpNeeded(player.experienceLevel));
+    }
+
+    /**
+     * Sets the player's XP to {@code points}, as levels plus progress. Written directly rather than
+     * through {@code giveExperiencePoints}, which also adds to the death-screen score.
+     */
+    private static void setExperiencePoints(ServerPlayer player, int points) {
+        int level = 0;
+        while (points >= xpNeeded(level)) {
+            points -= xpNeeded(level);
+            level++;
+        }
+        player.totalExperience = experiencePointsBefore(level) + points;
+        player.experienceProgress = (float) points / xpNeeded(level);
+        player.setExperienceLevels(level);   // last: it also makes the server resend the XP bar
+    }
+
+    private static int experiencePointsBefore(int level) {
+        int points = 0;
+        for (int below = 0; below < level; below++) {
+            points += xpNeeded(below);
+        }
+        return points;
+    }
+
+    /** Vanilla's {@code Player.getXpNeededForNextLevel}, for any level. */
+    private static int xpNeeded(int level) {
+        if (level >= 30) {
+            return 112 + (level - 30) * 9;
+        }
+        return level >= 15 ? 37 + (level - 15) * 5 : 7 + level * 2;
     }
 }

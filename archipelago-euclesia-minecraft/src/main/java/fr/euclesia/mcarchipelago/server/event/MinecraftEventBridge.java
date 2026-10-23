@@ -222,21 +222,12 @@ public final class MinecraftEventBridge {
             StructureFinderDriver.onPlayerLeave(player);
         });
 
-        // Hand back what death took: the share of slots the keep_inventory option saved, each to the
+        // Hand back what death took (set aside in LivingEntityMixin, before the drops): the share of slots the keep_inventory option saved, each to the
         // exact index it came from (which is why they must land in an inventory death has emptied).
         // The Biome Finder no longer takes part — it is access, not an item, since it moved to a
         // keybind and an inventory-screen button, so there is nothing of it to drop or restore.
         ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) ->
                 KeepInventoryService.restoreOnRespawn(newPlayer));
-
-        // Before death drops are computed, strip the kept share out of the inventory so vanilla only
-        // drops the rest; AFTER_RESPAWN puts it back. Always allow the death itself.
-        ServerLivingEntityEvents.ALLOW_DEATH.register((entity, damageSource, damageAmount) -> {
-            if (entity instanceof ServerPlayer player) {
-                KeepInventoryService.onDeath(player);
-            }
-            return true;
-        });
 
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, damageSource) -> {
             if (entity instanceof ServerPlayer player) {
