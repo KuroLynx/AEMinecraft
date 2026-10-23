@@ -2,12 +2,13 @@ package fr.euclesia.mcarchipelago.server.gameplay;
 
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.archipelago.slot.APSlotData;
-import fr.euclesia.mcarchipelago.server.connect.APWorldPaths;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.level.storage.LevelResource;
 
 import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * Applies the Archipelago BlazeandCave's Advancements Pack (BACAP) configuration once per world, the
@@ -21,8 +22,10 @@ import java.nio.file.Files;
  *       {@code bacap_rewards} option is off (the default).</li>
  * </ul>
  * These BACAP functions persist their state (scoreboard) in the world, so this runs only once: a
- * marker file in the world folder records that it has been applied, and a player who later re-enables
- * rewards through BACAP's own menu is left alone. No-op unless the {@code blazeandcave} option is on
+ * marker file in the world's {@code data/} folder records that it has been applied, and a player who
+ * later re-enables rewards through BACAP's own menu is left alone. The marker sits beside the scoreboard
+ * those functions write, not in {@code archipelago/}: players copy that folder (connection details) to
+ * a new map, which then read as configured and kept BACAP's rewards on. No-op unless the {@code blazeandcave} option is on
  * (the functions only exist when the BACAP datapack is installed).
  */
 public final class BacapConfigService {
@@ -49,7 +52,7 @@ public final class BacapConfigService {
             return; // BACAP not in play -> its config functions don't exist.
         }
 
-        if (Files.exists(APWorldPaths.readPath(server, APPLIED_FILE))) {
+        if (Files.exists(markerPath(server))) {
             return; // Already applied for this world.
         }
 
@@ -79,9 +82,15 @@ public final class BacapConfigService {
         server.getCommands().performPrefixedCommand(source, command);
     }
 
+    private static Path markerPath(MinecraftServer server) {
+        return server.getWorldPath(LevelResource.ROOT).resolve("data").resolve(APPLIED_FILE);
+    }
+
     private static boolean writeMarker(MinecraftServer server) {
         try {
-            Files.writeString(APWorldPaths.writePath(server, APPLIED_FILE), "");
+            Path marker = markerPath(server);
+            Files.createDirectories(marker.getParent());
+            Files.writeString(marker, "");
             return true;
         } catch (Exception exception) {
             AEM.LOGGER.warn("Failed to write {}", APPLIED_FILE, exception);

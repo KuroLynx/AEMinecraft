@@ -57,8 +57,8 @@ public final class DataLogicProvider implements LogicProvider {
         }
 
         // Goal tiles: coloured by how many of their targets are reachable / reached vs required —
-        // red while fewer than required can be reached, green once enough are reachable, gray once
-        // enough have been reached. Driven by the same logic evaluation as the per-location tiles.
+        // red while fewer than required can be reached, green once enough are reachable, blue once
+        // enough are checked, gray once enough are earned. Same logic evaluation as the per-location tiles.
         if (gameId.equals(APTrackerRegistry.GOAL_ADVANCEMENTS_ID)) {
             return goalAdvancementsState(client);
         }
@@ -156,6 +156,12 @@ public final class DataLogicProvider implements LogicProvider {
         return progress != null && progress.isDone(); // the server sends no progress for one never started
     }
 
+    /** {@link #isEarned(Identifier)} by game id (an advancement's game id is its identifier). */
+    private static boolean isEarned(String gameId) {
+        Identifier id = Identifier.tryParse(gameId);
+        return id == null || isEarned(id);
+    }
+
     private static boolean isCategoryRoot(String gameId) {
         return gameId.equals(APTrackerRegistry.CATEGORY_KILLS)
                 || gameId.equals(APTrackerRegistry.CATEGORY_ENTITY_UNLOCKS)
@@ -165,15 +171,19 @@ public final class DataLogicProvider implements LogicProvider {
 
     /**
      * Colour for a goal tile from its counts. {@code required <= 0} means there is nothing to do for
-     * this goal, so it stays neutral (no tint). Otherwise: gray once enough targets are reached,
-     * green once enough are reachable, red while fewer than required can be reached.
+     * this goal, so it stays neutral (no tint). Otherwise: gray once enough targets are EARNED here,
+     * blue once enough are checked (a release / collect / another client checks without earning, like
+     * a per-location tile), green once enough are reachable, red while fewer than required can be reached.
      */
-    private static LogicState goalState(int reachable, int reached, int required) {
+    private static LogicState goalState(int reachable, int checked, int earned, int required) {
         if (required <= 0) {
             return LogicState.UNKNOWN;
         }
-        if (reached >= required) {
+        if (earned >= required) {
             return LogicState.CHECKED;
+        }
+        if (checked >= required) {
+            return LogicState.COLLECTED;
         }
         return reachable >= required ? LogicState.IN_LOGIC : LogicState.OUT_OF_LOGIC;
     }
@@ -188,6 +198,7 @@ public final class DataLogicProvider implements LogicProvider {
         APLocationRegistry locations = client.registries().apLocations();
         int reachable = 0;
         int reached = 0;
+        int earned = 0;
         int total = 0;
         for (Map.Entry<String, LogicGraph.LocationEntry> entry : graph.locations().entrySet()) {
             if (!entry.getKey().startsWith("Advancement: ")) {
@@ -199,11 +210,14 @@ public final class DataLogicProvider implements LogicProvider {
             }
             if (isChecked(locations, entry.getValue().gameId())) {
                 reached++;
+                if (isEarned(entry.getValue().gameId())) {
+                    earned++;
+                }
             }
         }
         // The goal can never need more advancements than exist this seed (mirrors the apworld clamp).
         int required = Math.min(intFromSlotData(client, "advancements_required"), total);
-        return goalState(reachable, reached, required);
+        return goalState(reachable, reached, earned, required);
     }
 
     /** Counts over the slot's {@code boss_list}: how many goal bosses are reachable and killed. */
@@ -221,6 +235,7 @@ public final class DataLogicProvider implements LogicProvider {
         APLocationRegistry locations = client.registries().apLocations();
         int reachable = 0;
         int reached = 0;
+        int earned = 0;
         for (JsonElement element : bossList) {
             String bossGameId = element.getAsString();
             String locationName = graph.locationNameForGameId(bossGameId);
@@ -229,9 +244,12 @@ public final class DataLogicProvider implements LogicProvider {
             }
             if (isChecked(locations, bossGameId)) {
                 reached++;
+                if (isEarned(bossGameId)) {
+                    earned++;
+                }
             }
         }
-        return goalState(reachable, reached, bossList.size());
+        return goalState(reachable, reached, earned, bossList.size());
     }
 
     private static boolean isChecked(APLocationRegistry locations, String gameId) {

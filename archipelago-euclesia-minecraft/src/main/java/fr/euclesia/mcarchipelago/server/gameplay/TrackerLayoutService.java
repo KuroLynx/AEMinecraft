@@ -2,6 +2,7 @@ package fr.euclesia.mcarchipelago.server.gameplay;
 
 import fr.euclesia.mcarchipelago.AEM;
 import fr.euclesia.mcarchipelago.mixin.ServerAdvancementManagerAccessor;
+import fr.euclesia.mcarchipelago.registry.APLocationRegistry;
 import fr.euclesia.mcarchipelago.registry.APTrackerRegistry;
 import net.minecraft.advancements.Advancement;
 import net.minecraft.advancements.AdvancementHolder;
@@ -40,6 +41,10 @@ import java.util.Optional;
  * up; a row with nothing active disappears entirely, which is what it should do. Inactive tiles are
  * left exactly as they are: nothing visible hangs off them any more, and they are never sent.
  *
+ * <p>Advancement checks get the same treatment: a check only shows when it is an active location, so
+ * one under a non-check (with BACAP + challenge_sanity frames, How Did We Get Here? sits under the
+ * hidden Global Vaccination) showed nowhere. It hangs off its nearest visible ancestor instead.
+ *
  * <p>The Structure Unlocks tab goes one step further and is laid out again as a full grid of the
  * active tiles: whether a structure is locked, and whether its biome variants share one group tile,
  * are both per seed, so closing up rows alone leaves a handful of short rows (a grouped seed hides
@@ -64,6 +69,7 @@ public final class TrackerLayoutService {
      */
     public static void compact(MinecraftServer server) {
         APTrackerRegistry trackers = AEM.ARCHIPELAGO.client().registries().apTrackers();
+        APLocationRegistry locations = AEM.ARCHIPELAGO.client().registries().apLocations();
         if (!trackers.hasAny()) {
             return;  // no slot data yet: everything is revealed, so no chain can be broken
         }
@@ -71,12 +77,13 @@ public final class TrackerLayoutService {
         Map<Identifier, AdvancementHolder> changed = new HashMap<>();
         Map<Identifier, Identifier> gridParents = structureGrid(manager, trackers);
         for (AdvancementHolder holder : manager.getAllAdvancements()) {
-            if (!trackers.isTracker(holder.id().toString())) {
+            String id = holder.id().toString();
+            if (!trackers.isTracker(id) && !locations.isActiveLocation(id)) {
                 continue;  // roots keep their place; hidden tiles are nobody's parent once we are done
             }
             Identifier parent = gridParents.containsKey(holder.id())
                     ? gridParents.get(holder.id())
-                    : nearestVisible(manager, trackers, holder);
+                    : nearestVisible(manager, trackers, locations, holder);
             if (parent == null || parent.equals(holder.value().parent().orElse(null))) {
                 continue;
             }
@@ -87,7 +94,7 @@ public final class TrackerLayoutService {
         }
 
         install(manager, changed);
-        AEM.LOGGER.info("Compacted {} tracker tiles onto visible parents", changed.size());
+        AEM.LOGGER.info("Compacted {} tracker / check tiles onto visible parents", changed.size());
     }
 
     /**
@@ -137,11 +144,11 @@ public final class TrackerLayoutService {
      * chain runs out (a parent missing from the pack), leaving that tile alone.
      */
     private static Identifier nearestVisible(ServerAdvancementManager manager, APTrackerRegistry trackers,
-                                             AdvancementHolder holder) {
+                                             APLocationRegistry locations, AdvancementHolder holder) {
         Optional<Identifier> parent = holder.value().parent();
         while (parent.isPresent()) {
             Identifier id = parent.get();
-            if (isVisible(trackers, id.toString())) {
+            if (isVisible(trackers, locations, id.toString())) {
                 return id;
             }
             AdvancementHolder next = manager.get(id);
@@ -154,8 +161,9 @@ public final class TrackerLayoutService {
     }
 
     /** Mirrors what {@code AdvancementVisibilityEvaluatorMixin} shows of the tracker tabs. */
-    private static boolean isVisible(APTrackerRegistry trackers, String id) {
-        return trackers.isTracker(id)
+    private static boolean isVisible(APTrackerRegistry trackers, APLocationRegistry locations, String id) {
+        return locations.isActiveLocation(id)
+                || trackers.isTracker(id)
                 || trackers.isActiveCategory(id)
                 || id.equals(APTrackerRegistry.TAB_ROOT_ID)
                 || id.equals(APTrackerRegistry.GOAL_ADVANCEMENTS_ID)

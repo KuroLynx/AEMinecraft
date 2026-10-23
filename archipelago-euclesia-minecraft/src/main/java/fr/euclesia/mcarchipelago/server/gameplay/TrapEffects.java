@@ -20,6 +20,7 @@ import net.minecraft.world.entity.item.PrimedTnt;
 import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.item.ItemStack;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -90,17 +91,27 @@ public final class TrapEffects {
                 SoundSource.PLAYERS, 1.0f, 1.0f);
     }
 
-    /** Randomly permutes the player's main inventory, then swaps the hotbar with the first storage row. */
+    /** Randomly permutes the player's unlocked main-inventory slots, then swaps the hotbar with the first
+     * storage row where both are unlocked. A locked slot is never touched: an item shuffled into one
+     * would be hidden in a slot the player can't take it out of. */
     private static void inventoryShuffle(ServerPlayer player) {
         NonNullList<ItemStack> items = player.getInventory().getNonEquipmentItems();
         RandomSource rng = player.level().getRandom();
-        for (int i = items.size() - 1; i > 0; i--) {
+        List<Integer> open = new ArrayList<>(items.size());
+        for (int i = 0; i < items.size(); i++) {
+            if (!InventoryLockService.isLocked(i)) {
+                open.add(i);
+            }
+        }
+        for (int i = open.size() - 1; i > 0; i--) {
             int j = rng.nextInt(i + 1);
-            swap(items, i, j);
+            swap(items, open.get(i), open.get(j));
         }
         // Then guarantee the hotbar (0-8) is jumbled with the first storage row (9-17).
         for (int i = 0; i < 9; i++) {
-            swap(items, i, i + 9);
+            if (!InventoryLockService.isLocked(i) && !InventoryLockService.isLocked(i + 9)) {
+                swap(items, i, i + 9);
+            }
         }
         player.containerMenu.sendAllDataToRemote();
     }

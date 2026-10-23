@@ -629,9 +629,9 @@ read of the mod code. **Done** = already behaves as the report asks. **Open** = 
   construct_beacon). No visible change today (the beacon already costs the Wither + iron tools).
 
 ### F-mod
-- [ ] F29 **Inventory rows unlock from the hotbar up.** Open: `InventoryLockService` opens the rest rows
+- [x] F29 **Inventory rows unlock from the hotbar up.** Done (untested in-game): rest rows open row 2 (18-26) then row 1 (9-17); a partial lock still sits on the top row. Was: `InventoryLockService` opens the rest rows
   9-17 before 18-26 (hotbar, row 3, row 1, row 2). Should be hotbar, row 3, row 2, row 1.
-- [ ] F30 **Inventory Shuffle only between unlocked slots.** Open: `TrapEffects.inventoryShuffle`
+- [x] F30 **Inventory Shuffle only between unlocked slots.** Done (untested in-game): permutes unlocked slots only, hotbar/row swap only where both are open. Was: `TrapEffects.inventoryShuffle`
   permutes all 36, hiding items in locked slots.
 - [x] F31 **Dispensers into locked armor slots** = D2 (done).
 - [x] F32 **keep_inventory keeps XP** = D3 (done).
@@ -640,15 +640,15 @@ read of the mod code. **Done** = already behaves as the report asks. **Open** = 
 - [ ] F34 **Owed structures after a restart.** Partly: `SERVER_STARTED` releases unlocked content only
   on an offline start. Verify an online restart with owed structures (and held mobs) places them
   without `/aem structures release`.
-- [ ] F35 **Rebuilt far from the player.** Built with D4 (defer to loaded chunks). Was: the placement queue never loads the target area, and
+- [x] F35 **Rebuilt far from the player.** Closed by D4 (defer to loaded chunks), the approach kept. Built with D4 (defer to loaded chunks). Was: the placement queue never loads the target area, and
   buried treasure (sea floor) / shipwrecks / ruins / igloos / ruined portals / pyramids / huts read an
   unloaded chunk's ground as the world bottom. Load the area first. Overlaps D4 (which defers to
   chunk load instead): pick one approach.
-- [ ] F36 **Checks under a hidden advancement.** Open: only tracker tiles are re-parented
+- [x] F36 **Checks under a hidden advancement.** Done (untested in-game): `TrackerLayoutService.compact` re-parents active location tiles too, onto the nearest visible ancestor. Was: only tracker tiles are re-parented
   (`TrackerLayoutService`). With BACAP + challenge_sanity frames, How Did We Get Here? sits under
   Global Vaccination (hidden) and shows nowhere. Re-parent any visible check onto its nearest visible
   ancestor.
-- [ ] F37 **Goal tiles gray only on their own count.** Open: `DataLogicProvider` grays a goal tile once
+- [x] F37 **Goal tiles gray only on their own count.** Done (untested in-game): gray on earned >= required, blue on checked >= required. Was: `DataLogicProvider` grays a goal tile once
   enough targets are *reached* (checked), so a release / collect / another client checks without
   earning ("Advancements" read done at 325/350). Gray only when the tile's own (earned) count is
   complete; enough checked but not enough earned is **blue** (COLLECTED), like a per-location tile
@@ -656,7 +656,7 @@ read of the mod code. **Done** = already behaves as the report asks. **Open** = 
 - [ ] F38 **Inventory buttons.** To verify in-game: with the Biome Finder the third button sticks out of
   the window, and the recipe book moves the window but not the buttons. Fix: a row along the top
   edge that follows the window.
-- [ ] F39 **BACAP rewards marker in the world.** Open: `BacapConfigService` keeps its "already
+- [x] F39 **BACAP rewards marker in the world.** Done (untested in-game): marker in the world's `data/` folder beside the scoreboard; a world configured before re-runs the disable functions once. Was: `BacapConfigService` keeps its "already
   configured" marker through `APWorldPaths` (the `archipelago/` folder), which players copy to a new
   map, so the new world never gets bacap_rewards applied. Keep it in the world's own data.
 - [x] F40 **Replacement item for links / plando / start_inventory_from_pool.** Done: `get_filler_item_name` draws a filler buff by pool count (create_items uses it too, same draws). Was: the world has no
