@@ -101,7 +101,11 @@ def _minimal(alts) -> frozenset:
                         break
             if subsumed:
                 break
-        if not subsumed:
+        if subsumed:
+            # A big AND's product makes hundreds of thousands of candidates and keeps a few hundred;
+            # cached sigs of the dropped ones were most of a BACAP slot's 11 GB. (Pure, so recomputable.)
+            _SIG.pop(alt, None)
+        else:
             keep.append(alt)
             if big:
                 filed[min(names, key=lambda name: (rarity[name], name))].append(_sig(alt))
@@ -130,6 +134,9 @@ def _covers(a: frozenset, b: frozenset) -> bool:
     return all(have[leaf] >= n for leaf, n in b_counts)
 
 
+_COMPACT_AT = 50_000   # candidates an AND row may pile up before they are minimised
+
+
 def _and(*dnfs) -> frozenset:
     out = {frozenset()}
     for dnf in dnfs:
@@ -143,6 +150,10 @@ def _and(*dnfs) -> frozenset:
                     break
             else:
                 joined.extend(_join(a, b) for b in dnf)
+                if len(joined) > _COMPACT_AT:
+                    # The minimal antichain is unique, so compacting early changes nothing but the peak:
+                    # lingering_potion's 1749 x 577 product held 4 GB of candidates at once.
+                    joined = list(_minimal(joined))
         out = _minimal(joined)
         if not out:
             break
@@ -234,6 +245,10 @@ def acquire(h, item_id: str):
     st = h.__dict__.get("_fp")
     if st is None:
         st = h._fp = _State()
+        # Leaves carry the player, so nothing cached for an earlier slot can hit again: keeping it
+        # stacked every AEM slot of a multiworld on top of the next.
+        _DNF.clear()
+        _SIG.clear()
     key = (base, h._bulk)
     if st.current is not None:
         # Inside a computation an unpriced item is "no route yet": Const(False) folds out of every
