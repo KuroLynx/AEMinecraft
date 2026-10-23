@@ -403,8 +403,10 @@ def _aged_source(content, block: str) -> str | None:
     for prefix in _AGING_PREFIXES:
         if block.startswith(prefix):
             plain = block[len(prefix):]
-            if plain in _acquisition_table(content):
-                return f"minecraft:{plain}"
+            # The full block drops its suffix when it ages: exposed_copper is an aged copper_block.
+            for name in (plain, f"{plain}_block"):
+                if name in _acquisition_table(content):
+                    return f"minecraft:{name}"
     return None
 
 
@@ -656,6 +658,7 @@ class RuleHelper:
             E_TRADER_LLAMA   : lambda: self.entity(E_WANDERING_TRADER),       # spawns leashed to a Wandering Trader
             E_ZOMBIE_NAUTILUS: lambda: self.entity(E_DROWNED),                # drowned-converted variant
             E_ZOGLIN         : lambda: self.entity(E_HOGLIN),                 # a Hoglin that left the Nether
+            E_CAMEL_HUSK     : lambda: self.entity(E_HUSK),                   # spawns under a desert Husk (Husk.finalizeSpawn)
         }
         # Player-constructed mobs: gated by their build materials (snow / copper / iron blocks) +
         # a carved pumpkin, on top of reaching their region (see entity). The material helpers are
@@ -1510,7 +1513,16 @@ class RuleHelper:
         if wood_region is not None:
             species = base.removeprefix("stripped_").rsplit("_", 1)[0]
             # Jungle wood grows only in jungles — see _natural_origin.
-            return self.all_of(self.access_region(wood_region), self._natural_origin(f"{species}_log"))
+            grown = self.all_of(self.access_region(wood_region), self._natural_origin(f"{species}_log"))
+            if not base.startswith("stripped_"):
+                return grown
+            # Nothing grows stripped: an axe strips the log in place, or a village / camp palette
+            # placed it ready-stripped (_block_origin_node does the same for a placed stripped block).
+            with self.bulk_mode(False):   # one axe strips the whole stack
+                axe = self._tool_kind("axe")
+            return self.any_of(self.all_of(grown, axe),
+                               *[self.palette_structure(name, base) for name in _block_structures(self.content).get(base, ())
+                                 if name in self.active_structures])
 
         # Dragon's breath has no recipe or loot table — you bottle it from the Ender Dragon's breath
         # mid-fight — so it is modeled here: the dragon must be reachable (and unlocked, when the
@@ -2215,6 +2227,16 @@ class RuleHelper:
             routes = [route for route in (self.acquire(aged),) if route is not None]
             routes += [self.palette_structure(name, block) for name in _block_structures(self.content).get(block, ())
                        if name in self.active_structures]
+            return self.any_of(*routes) if routes else None
+        if block.startswith("stripped_") and block.removeprefix("stripped_") in _acquisition_table(self.content):
+            # Nothing generates stripped: an axe strips the log (or wood, stem, hyphae, bamboo block) in
+            # place. A village or camp palette places some ready-stripped.
+            routes = [self.palette_structure(name, block) for name in _block_structures(self.content).get(block, ())
+                      if name in self.active_structures]
+            log = self.acquire(f"minecraft:{block.removeprefix('stripped_')}")
+            if log is not None:
+                with self.bulk_mode(False):   # one axe strips the whole stack
+                    routes.append(self.all_of(log, self._tool_kind("axe")))
             return self.any_of(*routes) if routes else None
         entry = _BLOCK_ONLY_FROM.get(block)
         if entry is None:

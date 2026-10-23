@@ -31,7 +31,7 @@ from dataclasses import dataclass
 
 from .acquisition import RuleHelper, _acquisition_table, _block_structures
 from .ast import Const, Rule, and_, or_
-from .constants import K_ARMOR, K_BREWING, K_HOE, K_PICKAXE, MAT_IRON, REGION_END, REGION_NETHER, REGION_OVERWORLD
+from .constants import E_WOLF, K_ARMOR, K_BREWING, K_HOE, K_PICKAXE, MAT_IRON, REGION_END, REGION_NETHER, REGION_OVERWORLD
 from .tables import (
     _BLOCK_EXTRA_GATE,
     _BLOCK_GATE,
@@ -251,7 +251,7 @@ TRIGGERS: dict[str, dict] = {
     "item_durability_changed": {"fields": {"item": "item"}, "empty": _item("minecraft:shears"),
                                 "unpinned": _item("minecraft:shears"), "ignore": {"delta", "durability"}},
     "player_sheared_equipment": {"implied": [_item("minecraft:shears")],   # shearing takes shears
-                                 "fields": {"item": "item", "entity": "entity:entity"}},
+                                 "fields": {"item": "item", "entity": "entity:entity"}, "custom": "wolf_armor"},
     "thrown_item_picked_up_by_player": {"implied": [HOLD], "fields": {"item": "item", "entity": "entity:entity"}},
     "thrown_item_picked_up_by_entity": {"implied": [HOLD], "fields": {"item": "item", "entity": "entity:entity"}},
     "filled_bucket": {"custom": "bucket", "ignore": {"item"}},
@@ -563,8 +563,28 @@ class CriteriaCompiler:
         piercing = (len(cond.get("victims") or ()) >= 2 or (cond.get("unique_entity_types") or 0) >= 2)
         return all_(weapon, need("enchant", "piercing", True) if piercing else None)
 
+    def _custom_wolf_armor(self, cond):
+        """Wolf armor only goes on a tamed wolf: putting it on, repairing it, shearing it off. Shears on a
+        wolf (BACAP's Shear Brilliance) do something only when it wears the armor, so that also needs it."""
+        entity = cond.get("entity")
+        if _predicate_value(entity, "type") not in ("minecraft:wolf", "wolf"):
+            return None
+        used = _ids((cond.get("item") or {}).get("items"), "item.items") if isinstance(cond.get("item"), dict) else []
+        worn = (_predicate_value(entity, "equipment") or {}).get("body") or {}
+        worn = _ids(worn.get("items"), "equipment.body.items") if isinstance(worn, dict) else []
+        armor = "minecraft:wolf_armor"
+        if armor in used or armor in worn:
+            return need("tame", E_WOLF)
+        if "minecraft:shears" in used:
+            return all_(need("tame", E_WOLF), _item(armor))
+        return None
+
     def _custom_lead(self, cond):
-        """"Any entity except …" (an inverted predicate, no type): any leashable mob not excluded."""
+        """"Any entity except …" (an inverted predicate, no type): any leashable mob not excluded.
+        Also the wolf armor interactions (_custom_wolf_armor)."""
+        armor = self._custom_wolf_armor(cond)
+        if armor is not None:
+            return armor
         entity = cond.get("entity")
         if not entity or _predicate_value(entity, "type") is not None:
             return None

@@ -580,16 +580,16 @@ read of the mod code. **Done** = already behaves as the report asks. **Open** = 
 - [x] F11 **Fossils.** Done: an Overworld fossil's bone blocks (a feature nothing points at) are glitch only; crafting, the Nether Fossil and Trial Chambers stand. 5 strict rules changed (Boned, Paleontologist, Moss Maker, One-course meal, Combine Harvester: bone meal now comes from a skeleton-family mob or the Composter). Was: `bone_block` self-mines as a natural block (fossils), while a fossil is
   a few blocks buried per dozens of chunks. Boned is fine today (Skeleton or Composter), so check
   which other rules ride `bone_block`, then make the fossil route unreliable.
-- [ ] F12 **Aged copper blocks** (Grate Expectations, Don't Come a Copper!). Open: strict route
+- [x] F12 **Aged copper blocks** (Grate Expectations, Don't Come a Copper!). Done: `_aged_source` tries `<plain>_block` (exposed_copper ages from copper_block); Grate Expectations needs a furnace or the Trial Chambers. Was: strict route
   Pickaxe Handling + Material Handling x1. `_aged_source("exposed_copper")` strips to `copper`, which
   isn't an item, so the block reads as natural. Full blocks age from `copper_block`.
-- [ ] F13 **Stripped logs** (Shelfception). Open: strict = Knowledge: Shelf, no axe. `stripped_*_log`
+- [x] F13 **Stripped logs** (Shelfception). Done: the free-wood shortcut no longer covers stripped logs/stems: log + an axe, or a village/camp palette (Shelfception without Axe Handling stays in only through a village). Was: strict = Knowledge: Shelf, no axe. `stripped_*_log`
   self-mines as natural. It needs a log + an axe, or a structure that places it.
 - [x] F14 **Coral** Done (A17).
 - [x] F15 **Happy ghast needs the Nether** Done (A7): Lead Zeppelin needs @Nether on every route.
-- [ ] F16 **Camel husk** (Kill Entity: Camel Husk). Open: strict = its own unlock only. It only comes
+- [x] F16 **Camel husk** (Kill Entity: Camel Husk). Done: parent-bound to the Husk (Husk.finalizeSpawn spawns it): its unlock + Husk + Biome Finder. Was: strict = its own unlock only. It only comes
   ridden by a husk in a desert: Husk unlock + desert (Biome Finder).
-- [ ] F17 **Wolf armor** (Armadoggo, Good as New, Shear Brilliance). Open: Armadoggo / Good as New ask
+- [x] F17 **Wolf armor** (Armadoggo, Good as New, Shear Brilliance). Done: wolf armor used on / worn by / sheared off a wolf needs a tamed wolf; shears on a wolf also the wolf armor. All three out `--without` Wolf. Was: Armadoggo / Good as New ask
   Wolf + Armadillo but no taming (bones); Shear Brilliance asks Wolf + shears, no Armadillo and no
   armor. All three need a tamed wolf; Shear Brilliance also the wolf armor.
 
