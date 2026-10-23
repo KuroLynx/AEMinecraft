@@ -608,15 +608,15 @@ read of the mod code. **Done** = already behaves as the report asks. **Open** = 
   a village on top of the villager (`can_sell_to_villager` ANDs `any_village()`).
 - [x] F23 **Crafting criteria cost only the recipe.** Done: Boned strict is Skeleton alone (or
   Composter); no extra composter on the bone route.
-- [ ] F24 **Armor slots one at a time.** To verify: with `inventory_lock` armor on, does each armor
+- [x] F24 **Armor slots one at a time.** Done: it waited for all four; each equipment slot now asks for its own (`armor_feet` 1 … `armor_head` 4, the mod's order). Was to verify: with `inventory_lock` armor on, does each armor
   piece need its own slot (boots first), or does logic wait for all four? `why_rule --opt` only takes
   ints, so check with a YAML (Living Like Kings, golden boots).
 
 ### F-logic: unreliable routes
-- [ ] F25 **Raid gifts.** Open in code: `*_gift` gameplay tables carry no chance, so they read as 1.0
+- [x] F25 **Raid gifts.** Done: `*_gift` tables are flimsy with unknown odds, so a drop ranks above them. Was: `*_gift` gameplay tables carry no chance, so they read as 1.0
   (reliable) behind `can_win_raid`. Make them as unreliable as mob drops, with a drop winning over
   them. (Cow Tipper / Salmonella Poisoning / Humble Bundle are fine today only because a drop exists.)
-- [ ] F26 **Villager trades when villages aren't progression.** Open: `can_trade_villager` is always
+- [x] F26 **Villager trades when villages aren't progression.** Done: an item's trade route is flimsy unless a village is in `locked_structures`. Trade CHECKS (What a Deal!) are unchanged. Was: `can_trade_villager` is always
   reliable. When the seed doesn't make villages progression, trades should be unreliable (leather
   gear, arrows, cooked food and Help! I've been framed! fall back to their mob routes).
 
@@ -624,7 +624,7 @@ read of the mod code. **Done** = already behaves as the report asks. **Open** = 
 - [x] F27 **Stew effects.** Done with F5: effect -> flowers is read off the stew recipes (the dump now records their `effects`; the 3 vanilla packs patched from the jars, `/aem dump acquisition` must reproduce them). Was: `tables.py` lists one flower per effect (weakness = white tulip, night
   vision = poppy, blindness = azure bluet without eyeblossom, nausea = pufferfish only, no stew). Use
   the full flower -> effect table (shared with F5).
-- [ ] F28 **Beacon effects need a pyramid.** Open: haste / speed / strength / resistance /
+- [x] F28 **Beacon effects need a pyramid.** Done: `_beacon` = beacon + `can_get_beacon_base()` for all six. Was: haste / speed / strength / resistance /
   regeneration / jump boost ask `beacon` only. Add `can_get_beacon_base()` (it exists, used by
   construct_beacon). No visible change today (the beacon already costs the Wither + iron tools).
 
@@ -659,7 +659,7 @@ read of the mod code. **Done** = already behaves as the report asks. **Open** = 
 - [ ] F39 **BACAP rewards marker in the world.** Open: `BacapConfigService` keeps its "already
   configured" marker through `APWorldPaths` (the `archipelago/` folder), which players copy to a new
   map, so the new world never gets bacap_rewards applied. Keep it in the world's own data.
-- [ ] F40 **Replacement item for links / plando / start_inventory_from_pool.** Open: the world has no
+- [x] F40 **Replacement item for links / plando / start_inventory_from_pool.** Done: `get_filler_item_name` draws a filler buff by pool count (create_items uses it too, same draws). Was: the world has no
   `get_filler_item_name`, so AP's default picks any item (a Knowledge, an unlock not in the pool, or
   one the seed's MC version lacks, which crashed: "Abandoned Camp"). Draw from the normal filler pool.
 

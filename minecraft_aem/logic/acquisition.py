@@ -530,7 +530,8 @@ class RuleHelper:
         # used (see InventoryLock.unlock_items / self.slot_group). 0 when the group isn't locked this
         # seed, same "no requirement" shape as self.knowledge.
         self.slot_unlock_items = {group: world.options.inventory_lock.unlock_items(group)
-                                  for group in ("carry", "offhand", "armor", "armor_pair")}
+                                  for group in ("carry", "offhand", "armor", "armor_pair",
+                                                "armor_feet", "armor_legs", "armor_chest", "armor_head")}
         self.combat_logic = bool(world.options.combat_logic)
         # BACAP advancement rewards: base item -> the active location names that grant it (empty
         # unless bacap_rewards is on). Consumed by _with_reward, glitch graph only.
@@ -814,9 +815,10 @@ class RuleHelper:
             return self.all_of(self.has(self.world._structure_unlock_name(struct_gid)), region, prereq, located)
         return self.all_of(region, prereq, located)
 
+    _VILLAGES = (S_VILLAGE_DESERT, S_VILLAGE_PLAINS, S_VILLAGE_SAVANNA, S_VILLAGE_SNOWY, S_VILLAGE_TAIGA)
+
     def any_village(self):
-        return self.any_of(*[self.structure(gid) for gid in
-                             (S_VILLAGE_DESERT, S_VILLAGE_PLAINS, S_VILLAGE_SAVANNA, S_VILLAGE_SNOWY, S_VILLAGE_TAIGA)])
+        return self.any_of(*[self.structure(gid) for gid in self._VILLAGES])
 
     def mob_unlocked(self, entity_name: str):
         """Just the spawn-lock gate for a mob — 'its unlock item is held' — with none of the
@@ -1989,7 +1991,11 @@ class RuleHelper:
             # The entry's "<level>/<offer>" says which trade level unlocks it; the cheapest wins.
             level = min(int(entry[1].split("/", 1)[0]) if len(entry) > 1 and entry[1][:1].isdigit() else 1
                         for entry in trades if entry and entry[0] != "wandering_trader")
-            add(self.can_trade_villager(level))
+            # Dependable only when the seed makes villages progression (a Village unlock to receive,
+            # the Structure Finder to point at it). Otherwise finding a village is wandering, and the
+            # item's mob routes (leather, arrows, cooked food) should win in _demote.
+            add(self.can_trade_villager(level),
+                not any(village in self.locked_structures for village in self._VILLAGES))
         if "wandering_trader" in professions:
             # The Wandering Trader is glitch: it has to spawn near you AND roll the offer you want,
             # and you can't make either happen — the definition of a route AP shouldn't plan around.
@@ -2024,7 +2030,12 @@ class RuleHelper:
         for table in (*record.get("gameplay", ()), *_EXTRA_GAMEPLAY.get(base, ())):
             # A trial-chamber vault opens once per player and its spawners go quiet: finite, like a chest.
             # Counted renewable, its 0.3% diamond block was 'Diamond Miner' (64 diamonds) without a pickaxe.
-            add(self._gameplay_node(table), unreliable("gameplay", table), chance=chance("gameplay", table),
+            # A raid gift is one random throw from the profession's table per won raid: the dump carries
+            # no odds for it, which read as 1.0 (dependable). Flimsy with unknown odds instead, so a mob
+            # drop, whose odds are known, ranks above it in _demote.
+            gift = table in _GAMEPLAY_VILLAGER_GIFTS
+            add(self._gameplay_node(table), gift or unreliable("gameplay", table),
+                chance=None if gift else chance("gameplay", table),
                 runs_dry=table in ("corridor", "trial_chamber_melee", "trial_chamber_ranged"))
         if self._bulk and not all(dry_options + dry_loose):
             options = [node for node, dry in zip(options, dry_options) if not dry]

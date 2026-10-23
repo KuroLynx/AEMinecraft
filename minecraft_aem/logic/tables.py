@@ -205,6 +205,11 @@ def _get(c, *items):
     return c._any_opt(*[c.h.acquire(f"minecraft:{i}") for i in items])
 
 
+def _beacon(c):
+    """A beacon's power: the beacon and a pyramid to stand it on (a bare beacon grants nothing)."""
+    return c._all_req(_get(c, "beacon"), c.h.can_get_beacon_base())
+
+
 def _stew(c, flower):
     """A suspicious stew made with this flower — the flower picks the effect."""
     return c._all_req(c.h.acquire("minecraft:suspicious_stew"), c.h.acquire(f"minecraft:{flower}"))
@@ -258,20 +263,20 @@ _EFFECT_SOURCE = {
     "minecraft:dolphins_grace": lambda c: _mob(c, "dolphin"),
     "minecraft:fire_resistance": lambda c: _get(c, "enchanted_golden_apple"),
     "minecraft:glowing": lambda c: c._all_req(_get(c, "spectral_arrow"), _get(c, "bow", "crossbow")),
-    "minecraft:haste": lambda c: _get(c, "beacon"),
+    "minecraft:haste": lambda c: _beacon(c),
     "minecraft:hero_of_the_village": lambda c: c.h.can_win_raid(),
     "minecraft:hunger": lambda c: c._any_opt(_get(c, "rotten_flesh"), _mob(c, "husk")),
-    "minecraft:jump_boost": lambda c: _get(c, "beacon"),
+    "minecraft:jump_boost": lambda c: _beacon(c),
     "minecraft:levitation": lambda c: _mob(c, "shulker"),
     "minecraft:mining_fatigue": lambda c: _mob(c, "elder_guardian"),
     "minecraft:nausea": lambda c: _get(c, "pufferfish"),
     "minecraft:poison": lambda c: c._any_opt(_get(c, "spider_eye", "pufferfish"), _mob(c, "cave_spider", "bee")),
     "minecraft:raid_omen": lambda c: c.h.can_raid(),
-    "minecraft:regeneration": lambda c: _get(c, "golden_apple", "beacon"),
-    "minecraft:resistance": lambda c: _get(c, "enchanted_golden_apple", "beacon", "totem_of_undying"),
+    "minecraft:regeneration": lambda c: c._any_opt(_get(c, "golden_apple"), _beacon(c)),
+    "minecraft:resistance": lambda c: c._any_opt(_get(c, "enchanted_golden_apple", "totem_of_undying"), _beacon(c)),
     "minecraft:slowness": lambda c: _mob(c, "stray"),
-    "minecraft:speed": lambda c: _get(c, "beacon"),
-    "minecraft:strength": lambda c: _get(c, "beacon"),
+    "minecraft:speed": lambda c: _beacon(c),
+    "minecraft:strength": lambda c: _beacon(c),
     "minecraft:trial_omen": lambda c: c.h.ominous_trial(),
     "minecraft:water_breathing": lambda c: _get(c, "turtle_helmet", "conduit"),
     "minecraft:wither": lambda c: c._any_opt(_mob(c, "wither_skeleton", "wither"), _get(c, "wither_rose")),
