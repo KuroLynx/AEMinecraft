@@ -603,7 +603,7 @@ read of the mod code. **Done** = already behaves as the report asks. **Open** = 
 - [x] F21 **Naturally generated blocks with a recipe.** Done: a block in block_biomes.json reads as natural (`_block_origin_node`), Biome Finder when rare. Was partly done: Resinance needs the Biome Finder,
   not the camp. Still to check: terracotta, coarse dirt, moss carpet, nether wart block, smooth
   basalt (block_biomes says they generate; `_placed_block_origin` may still read them as crafted).
-- [x] F22 **Cured zombie villagers.** Done for trade checks only: the villager_trade trigger takes `can_trade_villager(1, cured=True)` (zombie villager + Villager unlock + Brewing + the brew and golden apple, selling to it pays the currency). NOT in item prices: a multi-item AND in every trade-priced item blew strict DNFs past 20 GB (black_harness). Items bought from villagers still ask for a village; an event leaf would lift that (and could carry the igloo). Was: What a Deal! needs `Structure Unlock: Village`. Curing a
+- [x] F22 **Cured zombie villagers.** Done: `villager_without_village` = (Zombie Villager + Brewing, or an Igloo) + Villager unlock, as leaves (no potion / golden apple prices). It is the second origin in `structure_bound_mobs[E_VILLAGER]`, and every trade (items, emeralds, What a Deal!) reads `entity(E_VILLAGER)`. Was: What a Deal! needs `Structure Unlock: Village`. Curing a
   zombie villager (weakness potion + golden apple) is another villager, and trading shouldn't ask for
   a village on top of the villager (`can_sell_to_villager` ANDs `any_village()`).
 - [x] F23 **Crafting criteria cost only the recipe.** Done: Boned strict is Skeleton alone (or

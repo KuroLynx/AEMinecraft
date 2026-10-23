@@ -578,21 +578,13 @@ class RuleHelper:
             # Overworld — structure-locked
             E_CAT            : lambda: self.any_of(self.any_village(), self.structure(S_SWAMP_HUT)),
             E_ALLAY          : lambda: self.any_of(self.structure(S_PILLAGER_OUTPOST), self.structure(S_MANSION)),
-            # A villager is only ever IN a village — nothing spawns one in the open world. Without
-            # this, 'Entity Unlock: Villager' alone was the whole price: 'Kill Entity: Villager' (and
-            # every rule that just wants a villager nearby) read in logic with all five villages
-            # still locked.
-            #
-            # Curing a zombie villager is the one route that needs no village, and it is deliberately
-            # NOT modelled here. Naming it — either rebuilt through acquire() or as
-            # reached('Zombie Doctor') — puts a villager back inside its own price: the golden apple
-            # and the weakness potion resolve through ingredients that list villager trades, so
-            # can_trade_villager leads back to this thunk. As a rule tree that is a location cycle,
-            # and AP's can_reach_location has no cycle guard — it recursed until the interpreter's
-            # stack gave out, mid-fill (a full-pool reachability check never notices; only a real
-            # Generate.py run does). Ignoring the route only makes logic stricter than the game, which
-            # is the safe direction.
-            E_VILLAGER       : lambda: self.any_village(),
+            # Nothing spawns a villager in the open world: it lives in a village, or you have one without
+            # (villager_without_village: cured, or an igloo's). Without this, 'Entity Unlock: Villager'
+            # alone was the whole price: 'Kill Entity: Villager' read in logic with every village locked.
+            # The cure is stated as leaves (no potion or golden apple prices), so no villager trade can
+            # lead back here: as acquire() routes it was a location cycle AP's can_reach_location
+            # recursed on until the stack gave out.
+            E_VILLAGER       : lambda: self.any_of(self.any_village(), self.villager_without_village()),
             E_SILVERFISH     : lambda: self.structure(S_STRONGHOLD),
             E_WARDEN         : lambda: self.structure(S_ANCIENT_CITY),
             E_ENDERMITE      : lambda: self.entity(E_ENDERMAN),  # spawns from Ender Pearl throws
@@ -1347,51 +1339,37 @@ class RuleHelper:
         emeralds = self.acquire("minecraft:emerald")
         return emeralds if emeralds is not None else Const(True)
 
-    def can_sell_to_villager(self, tier: int = 1, cured: bool = False):
+    def can_sell_to_villager(self, tier: int = 1):
         """Sell TO a profession villager at trade level ``tier`` — the way emeralds enter a world.
 
         The same villager, village and trust tier a buy offer needs, minus the currency: a sell
         offer is what *pays* you, so it must not ask for the emeralds it is how you get. Only
         acquire("emerald") wants this shape; everything else trades in the other direction and
-        should use ``can_trade_villager``."""
-        base = self.all_of(self.entity(E_VILLAGER), self.any_village())
-        if cured:
-            base = self.any_of(base, self.cured_villager())
+        should use ``can_trade_villager``. entity(E_VILLAGER) says where the villager comes from."""
+        base = self.entity(E_VILLAGER)
         if self.villager_trust:
             return self.all_of(base, self.has(ITEM_VILLAGER_TRUST, tier))
         return base
 
-    def cured_villager(self):
-        """A villager made by curing a zombie villager, which needs no village: a splash potion of
-        Weakness (brewed: stand, Brewing, blaze powder, a fermented spider eye, gunpowder) and a golden
-        apple on a zombie villager. The converted villager is a spawn the mob lock refuses until the
-        Villager is unlocked. It takes a job from any job block you place (the trade itself is
-        profession-agnostic, see can_trade_villager).
+    def villager_without_village(self):
+        """A villager you have without finding a village. It takes a job from any job block you place
+        (the trade itself is profession-agnostic, see can_trade_villager).
 
-        Only a check that IS a trade takes this route (can_trade_villager(cured=True), the
-        villager_trade trigger), never an item's price. A strict price is a minimal DNF
-        (fixed_point.canonical), and this branch is a long leaf set that absorbs into nothing: inside
-        every trade-priced item it multiplied through recipes (a harness is three of them) past 20 GB
-        on an all-locks BACAP slot. An item bought from a villager still asks for a village, which is
-        stricter than the game, never looser."""
-        parts = [self.acquire(f"minecraft:{item}") for item in
-                 ("brewing_stand", "blaze_powder", "fermented_spider_eye", "gunpowder", "golden_apple")]
-        if any(part is None for part in parts):
-            return Const(False)
-        return self.all_of(self.entity(E_ZOMBIE_VILLAGER), self.mob_unlocked(E_VILLAGER),
-                           self.knowledge(K_BREWING), *parts)
+        Cured: a zombie villager (they spawn anywhere, so the one in an igloo's basement adds nothing),
+        Brewing for the weakness potion, and the Villager unlocked, since the converted villager is a
+        spawn the mob lock refuses otherwise. Or the igloo's own villager. Read through
+        structure_bound_mobs[E_VILLAGER], so it must not call entity(E_VILLAGER).
+        The potion's and golden apple's prices are left out on purpose: short leaves absorb, five full
+        prices in every trade-priced item multiplied strict DNFs past 20 GB."""
+        cured = self.all_of(self.entity(E_ZOMBIE_VILLAGER), self.knowledge(K_BREWING))
+        return self.all_of(self.any_of(cured, self.structure(S_IGLOO)), self.mob_unlocked(E_VILLAGER))
 
-    def can_trade_villager(self, tier: int = 1, cured: bool = False):
-        """Trade with a profession villager in a village at trade level ``tier``
+    def can_trade_villager(self, tier: int = 1):
+        """Trade with a profession villager at trade level ``tier``
         (novice = 1 … master = 5), holding the emeralds it costs. When the
         villager_trust option is on, the level is gated behind that many
-        Progressive Villager Trust items. ``cured`` also takes a cured zombie villager (cured_villager)."""
-        trade = self.all_of(self.can_sell_to_villager(tier), self._trade_currency())
-        if not cured:
-            return trade
-        # A cured villager pays its own way: sell to it for the emeralds it then charges. Emeralds are
-        # priced as selling to a VILLAGE villager, so _trade_currency would bring the village back.
-        return self.any_of(trade, self.can_sell_to_villager(tier, cured=True))
+        Progressive Villager Trust items."""
+        return self.all_of(self.can_sell_to_villager(tier), self._trade_currency())
 
     def can_trade_wandering_trader(self):
         """Trade with a Wandering Trader — GLITCH GRAPH ONLY. Strict logic never sees this route.
