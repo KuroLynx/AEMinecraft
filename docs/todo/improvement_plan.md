@@ -561,7 +561,7 @@ read of the mod code. **Done** = already behaves as the report asks. **Open** = 
 - [x] F5 **Suspicious stew effects** (I'm gonna be sick!). Done: `suspicious_stew_effects` item components ask for a stew of that effect; strict is out `--without` Biome Finder or Wither. Was: in logic `--without "Biome Finder"`
   (eyeblossom = Pale Garden) and `--without "Entity Unlock: Wither"` (wither rose). Each effect must
   ask for one of its flowers. Shares the flower table with F27.
-- [ ] F6 **Ominous banner** (Superhero of the Village). Open: in logic `--without "Entity Unlock:
+- [x] F6 **Ominous banner** (Superhero of the Village). Done: a banner with more layers than a loom applies is a raid captain's kill; strict is out `--without` Pillager. Was: in logic `--without "Entity Unlock:
   Pillager"`; routes are Sword Handling or Spider (string -> wool). The ominous banner can't be
   crafted (8 patterns, the loom does 6): it needs a pillager (a patrol captain, no village or raid).
 - [x] F7 **Trick or Treat!** Done (A9): needs a zombie/skeleton-family mob.

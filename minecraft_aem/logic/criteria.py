@@ -314,7 +314,11 @@ _LOCATION_KEYS = {"position", "biomes", "structures", "dimension", "block", "smo
 _LOCATION_FREE = {"fluid", "light", "can_see_sky"}   # a threshold you can just go and stand in
 _ITEM_KEYS = {"items", "count", "components", "predicates"}
 _COMPONENTS = {"potion_contents", "enchantments", "stored_enchantments", "trim", "container",
-               "bundle_contents", "jukebox_playable", "dyed_color", "suspicious_stew_effects"}
+               "bundle_contents", "jukebox_playable", "dyed_color", "suspicious_stew_effects",
+               "banner_patterns"}
+# A loom applies at most this many layers; a banner with more is the ominous banner, which only a raid
+# captain carries.
+_LOOM_LAYERS = 6
 # Vanilla DyeColor.textureDiffuseColor: one dye on undyed leather gives exactly this colour, which is how
 # packs name a colour (BACAP Colorful Cavalry). A fixed enum in the game, not data.
 _DYE_OF_COLOUR = {
@@ -811,6 +815,13 @@ class CriteriaCompiler:
             if "water" in potions and "minecraft:potion" in ids:
                 base = any_(base, need("potion", "water"))   # or fill a glass bottle yourself
 
+        layers = components.get("banner_patterns")
+        if isinstance(layers, list) and len(layers) > _LOOM_LAYERS:
+            base = all_(_call("raid_captain"), _call("can_kill"))
+        elif layers:
+            # ponytail: the loom alone; a layer from a pattern item (flower, creeper, flow…) also needs
+            # that item. Add when an advancement asks for one.
+            base = all_(base, _item("minecraft:loom"))
         gates = [base]
         for key, on_item in (("enchantments", True), ("stored_enchantments", False)):
             for entry in self._as_list(components.get(key)):
