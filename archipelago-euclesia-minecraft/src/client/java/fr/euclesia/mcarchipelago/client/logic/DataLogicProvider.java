@@ -79,7 +79,9 @@ public final class DataLogicProvider implements LogicProvider {
 
         String locationName = graph.locationNameForGameId(gameId);
         if (locationName == null) {
-            return LogicState.UNKNOWN; // not an Archipelago location for this slot
+            // A tab root that is no check, shown only because a check sits below it: gray, like a done
+            // tile, since there is nothing to do on it. Anything else here is not ours to colour.
+            return isTabRoot(advancementId) ? LogicState.CHECKED : LogicState.UNKNOWN;
         }
 
         APLocationRegistry locations = client.registries().apLocations();
@@ -154,6 +156,12 @@ public final class DataLogicProvider implements LogicProvider {
         AdvancementProgress progress = ((ClientAdvancementsAccessor) connection.getAdvancements())
                 .archipelago_euclesia$getProgress().get(holder);
         return progress != null && progress.isDone(); // the server sends no progress for one never started
+    }
+
+    private static boolean isTabRoot(Identifier advancementId) {
+        ClientPacketListener connection = Minecraft.getInstance().getConnection();
+        AdvancementHolder holder = connection == null ? null : connection.getAdvancements().get(advancementId);
+        return holder != null && holder.value().parent().isEmpty();
     }
 
     /** {@link #isEarned(Identifier)} by game id (an advancement's game id is its identifier). */

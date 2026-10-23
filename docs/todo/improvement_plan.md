@@ -629,9 +629,9 @@ read of the mod code. **Done** = already behaves as the report asks. **Open** = 
   construct_beacon). No visible change today (the beacon already costs the Wither + iron tools).
 
 ### F-mod
-- [x] F29 **Inventory rows unlock from the hotbar up.** Done (untested in-game): rest rows open row 2 (18-26) then row 1 (9-17); a partial lock still sits on the top row. Was: `InventoryLockService` opens the rest rows
+- [x] F29 **Inventory rows unlock from the hotbar up.** Done, checked in-game: rest rows open row 2 (18-26) then row 1 (9-17); a partial lock still sits on the top row. Was: `InventoryLockService` opens the rest rows
   9-17 before 18-26 (hotbar, row 3, row 1, row 2). Should be hotbar, row 3, row 2, row 1.
-- [x] F30 **Inventory Shuffle only between unlocked slots.** Done (untested in-game): permutes unlocked slots only, hotbar/row swap only where both are open. Was: `TrapEffects.inventoryShuffle`
+- [x] F30 **Inventory Shuffle only between unlocked slots.** Done, checked in-game (6 shuffles): permutes unlocked slots only, hotbar/row swap only where both are open. Was: `TrapEffects.inventoryShuffle`
   permutes all 36, hiding items in locked slots.
 - [x] F31 **Dispensers into locked armor slots** = D2 (done).
 - [x] F32 **keep_inventory keeps XP** = D3 (done).
@@ -644,7 +644,7 @@ read of the mod code. **Done** = already behaves as the report asks. **Open** = 
   buried treasure (sea floor) / shipwrecks / ruins / igloos / ruined portals / pyramids / huts read an
   unloaded chunk's ground as the world bottom. Load the area first. Overlaps D4 (which defers to
   chunk load instead): pick one approach.
-- [x] F36 **Checks under a hidden advancement.** Done (untested in-game): `TrackerLayoutService.compact` re-parents active location tiles too, onto the nearest visible ancestor. Was: only tracker tiles are re-parented
+- [x] F36 **Checks under a hidden advancement.** Done, checked in-game: `TrackerLayoutService.compact` re-parents active location tiles too, onto the nearest visible ancestor; a tab root with a check below it is shown (gray) even when it is no check itself, and is the fallback parent (BACAP Super Challenges: root, Stockbroker and Global Vaccination are no checks). Was: only tracker tiles are re-parented
   (`TrackerLayoutService`). With BACAP + challenge_sanity frames, How Did We Get Here? sits under
   Global Vaccination (hidden) and shows nowhere. Re-parent any visible check onto its nearest visible
   ancestor.
@@ -656,7 +656,7 @@ read of the mod code. **Done** = already behaves as the report asks. **Open** = 
 - [x] F38 **Inventory buttons.** Done, checked in-game: the Biome Finder button re-anchors to the recipe-book button every frame, so it follows the panel when the recipe book opens. Was to verify in-game: with the Biome Finder the third button sticks out of
   the window, and the recipe book moves the window but not the buttons. Fix: a row along the top
   edge that follows the window.
-- [x] F39 **BACAP rewards marker in the world.** Done (untested in-game): marker in the world's `data/` folder beside the scoreboard; a world configured before re-runs the disable functions once. Was: `BacapConfigService` keeps its "already
+- [x] F39 **BACAP rewards marker in the world.** Done, checked on a server (marker written to `data/` on first join): marker in the world's `data/` folder beside the scoreboard; a world configured before re-runs the disable functions once. Was: `BacapConfigService` keeps its "already
   configured" marker through `APWorldPaths` (the `archipelago/` folder), which players copy to a new
   map, so the new world never gets bacap_rewards applied. Keep it in the world's own data.
 - [x] F40 **Replacement item for links / plando / start_inventory_from_pool.** Done: `get_filler_item_name` draws a filler buff by pool count (create_items uses it too, same draws). Was: the world has no

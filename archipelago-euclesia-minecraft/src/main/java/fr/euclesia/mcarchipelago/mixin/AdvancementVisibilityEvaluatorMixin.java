@@ -38,6 +38,17 @@ public class AdvancementVisibilityEvaluatorMixin {
     }
 
     @Unique
+    private static boolean archipelago_euclesia$hasActiveDescendant(AdvancementNode node) {
+        for (AdvancementNode child : node.children()) {
+            if (AEM.ARCHIPELAGO.client().registries().apLocations().isActiveLocation(child.holder().id().toString())
+                    || archipelago_euclesia$hasActiveDescendant(child)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Unique
     private static boolean archipelago_euclesia$shouldShow(AdvancementNode node) {
         ArchipelagoClient client = AEM.ARCHIPELAGO.client();
         if (!client.registries().apLocations().hasLocations()) {
@@ -49,6 +60,13 @@ public class AdvancementVisibilityEvaluatorMixin {
         String id = node.holder().id().toString();
         // Real advancement checks this seed.
         if (client.registries().apLocations().isActiveLocation(id)) {
+            return true;
+        }
+        // A tab root that is not a check itself, but has one somewhere below it: shown (uncoloured) so the
+        // tab exists. TrackerLayoutService hangs such a check off the root when nothing between is shown
+        // (BACAP's Super Challenges: How Did We Get Here? under Global Vaccination, neither root nor
+        // parent a check, showed nowhere).
+        if (node.parent() == null && archipelago_euclesia$hasActiveDescendant(node)) {
             return true;
         }
         // Tracker tabs: each active tracker tile and the non-empty category tab-roots.
