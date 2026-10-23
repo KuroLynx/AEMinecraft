@@ -1,6 +1,7 @@
 package fr.euclesia.mcarchipelago.server.gameplay;
 
 import fr.euclesia.mcarchipelago.AEM;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.core.SectionPos;
@@ -9,6 +10,8 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.Structure;
@@ -48,7 +51,52 @@ import java.util.Set;
  */
 public final class StructureReplayService {
 
+    /**
+     * Blocks a piece asked to shape-update while {@link #placeChunk} runs (fences, rails, walls…).
+     * Worldgen keeps those on the proto-chunk and updates them when it turns full; a loaded chunk
+     * can't take them ({@code ChunkAccess.markPosForPostProcessing} only logs a WARN), so
+     * {@code ChunkPostProcessMixin} hands them here and {@link #updateShapes} applies them.
+     * {@code null} outside a placement. Server thread only.
+     */
+    private static List<BlockPos> postProcessing;
+
     private StructureReplayService() {}
+
+    /** Takes a post-processing mark during {@link #placeChunk}; false outside one. */
+    public static boolean takePostProcessing(BlockPos pos) {
+        if (postProcessing == null) {
+            return false;
+        }
+        postProcessing.add(pos.immutable());
+        return true;
+    }
+
+    /** Whether the chunk and its 8 neighbours are loaded, so a piece reads real ground, not void. */
+    public static boolean isLoaded(ServerLevel level, ChunkPos chunk) {
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                if (!level.getChunkSource().hasChunk(chunk.x() + dx, chunk.z() + dz)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Vanilla's post-processing shape update ({@code LevelChunk.postProcessGeneration}) for blocks
+     * {@link #placeChunk} collected. Run after a batch of chunks, so pieces across a chunk seam see
+     * each other.
+     */
+    public static void updateShapes(ServerLevel level, List<BlockPos> positions) {
+        for (BlockPos pos : positions) {
+            BlockState state = level.getBlockState(pos);
+            BlockState updated = Block.updateFromNeighbourShapes(state, level, pos);
+            if (updated != state) {
+                level.setBlock(pos, updated, Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
+            }
+        }
+    }
 
     /** Records that this structure's placement was skipped. Server thread (hopped by the caller). */
     public static void recordSuppressed(ServerLevel level, String structureId, ChunkPos origin) {
@@ -148,14 +196,20 @@ public final class StructureReplayService {
 
     /**
      * Places one chunk's worth of a start. The bounding box is that chunk's full column, exactly as
-     * {@code /place structure} builds it, so a piece is written only where it belongs.
+     * {@code /place structure} builds it, so a piece is written only where it belongs. Blocks that
+     * want a shape update are added to {@code shapes}, for {@link #updateShapes}.
      */
-    public static void placeChunk(ServerLevel level, StructureStart start, ChunkPos chunkPos) {
+    public static void placeChunk(ServerLevel level, StructureStart start, ChunkPos chunkPos, List<BlockPos> shapes) {
         ChunkGenerator generator = level.getChunkSource().getGenerator();
         BoundingBox column = new BoundingBox(
                 chunkPos.getMinBlockX(), level.getMinY(), chunkPos.getMinBlockZ(),
                 chunkPos.getMaxBlockX(), level.getMaxY(), chunkPos.getMaxBlockZ());
-        start.placeInChunk(level, level.structureManager(), generator, level.getRandom(), column, chunkPos);
+        postProcessing = shapes;
+        try {
+            start.placeInChunk(level, level.structureManager(), generator, level.getRandom(), column, chunkPos);
+        } finally {
+            postProcessing = null;
+        }
     }
 
     private static SuppressedStructureData suppressedData(ServerLevel level) {
