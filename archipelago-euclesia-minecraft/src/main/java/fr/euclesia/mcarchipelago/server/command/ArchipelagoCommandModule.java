@@ -11,6 +11,7 @@ import fr.euclesia.mcarchipelago.server.connect.APWorldConnector;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
 import fr.euclesia.mcarchipelago.server.runtime.APSlotGate;
 import fr.euclesia.mcarchipelago.server.session.PendingChecks;
+import fr.euclesia.mcarchipelago.server.service.DeathLinkService;
 import fr.euclesia.mcarchipelago.server.service.DeathLinkSetting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -78,7 +79,14 @@ public final class ArchipelagoCommandModule implements AEMCommandModule {
                         .executes(context -> setDeathLink(context.getSource(), false)))
                 // The way back out, so an override is not a one-way door for the rest of the run.
                 .then(Commands.literal("default")
-                        .executes(context -> clearDeathLink(context.getSource()))));
+                        .executes(context -> clearDeathLink(context.getSource())))
+                // Who an incoming link kills: one random living player, or all of them.
+                .then(Commands.literal("mode")
+                        .executes(context -> deathLinkStatus(context.getSource()))
+                        .then(Commands.literal("random")
+                                .executes(context -> setDeathLinkMode(context.getSource(), false)))
+                        .then(Commands.literal("all")
+                                .executes(context -> setDeathLinkMode(context.getSource(), true)))));
     }
 
     private static int connect(CommandSourceStack source, String uriText, String slot, String password) {
@@ -181,9 +189,20 @@ public final class ArchipelagoCommandModule implements AEMCommandModule {
                     ? "saved in this world; /aem deathlink default to undo"
                     : "set for this session only";
         }
+        String mode = DeathLinkService.killAll() ? "all" : "random";
         source.sendSuccess(() -> Component.literal(
-                "DeathLink: " + (enabled ? "ON" : "OFF") + " (" + origin + ")"), false);
+                "DeathLink: " + (enabled ? "ON" : "OFF") + " (" + origin + "), mode " + mode), false);
         return enabled ? 1 : 0;
+    }
+
+    /** Sets who an incoming link kills, saved in the world like the on/off switch. */
+    private static int setDeathLinkMode(CommandSourceStack source, boolean all) {
+        DeathLinkService.setKillAll(all);
+        DeathLinkSetting.saveKillAll(source.getServer(), all);
+        source.sendSuccess(() -> Component.literal(all
+                ? "DeathLink mode all: an incoming link kills every living player (saved)"
+                : "DeathLink mode random: an incoming link kills one living player (saved)"), true);
+        return 1;
     }
 
     /**
