@@ -463,7 +463,7 @@ plants/fans), and the dump listed only coral blocks for the coral features.
 The Bad Omen hold is silent. When `BadOmenMobEffectMixin` holds a raid, tell the player once per Bad
 Omen (throttled): "A raid can't start until these are unlocked: Ravager, Evoker, …", naming the ones
 still locked.
-- [ ] D1 done. Built on `fix/raid-feedback`; in-game check pending. **Check (in-game):** drink an ominous bottle in a village with a raid mob locked → one
+- [x] D1 done. Built on `fix/raid-feedback`; checked in-game 2026-10-23. **Check (in-game):** drink an ominous bottle in a village with a raid mob locked → one
   chat line listing exactly the locked raid mobs, with no spam each tick.
 
 ### D2. Dispensers equip armor into locked armor slots
@@ -499,7 +499,7 @@ Fix:
 2. Measure the budget against the real per-chunk cost.
 3. Route post-processing marks to the chunk, or apply the shape update directly, so the WARN is gone.
 
-- [ ] D4 done. Built on `fix/structure-rebuild-on-load` (wait for loaded chunks, covers F35); in-game check pending.
+- [x] D4 done. Built on `fix/structure-rebuild-on-load` (wait for loaded chunks, covers F35); checked in-game 2026-10-23.
   - **Check (in-game, dedicated server):** pre-generate a large area before connecting, then
     `/send` Structure Unlock: Mineshaft. MSPT stays under 50 (use `/tick query`), and the log has no
     post-processing WARN.
@@ -510,7 +510,7 @@ Fix:
 Add a server-side setting: an incoming DeathLink kills **one random** living player (current
 behaviour, `DeathLinkService.applyRemote`) or **all** of them. It's a `/aem deathlink` sub-command persisted like the other server preferences
 (see `DeathLinkPreference`).
-- [ ] D5 done. Built on `feat/deathlink-mode` (`/aem deathlink mode random|all`); in-game check pending. **Check (in-game, 2 clients):** in `random` mode a bounce kills exactly one player;
+- [x] D5 done. Built on `feat/deathlink-mode` (`/aem deathlink mode random|all`); checked in-game 2026-10-23. **Check (in-game, 2 clients):** in `random` mode a bounce kills exactly one player;
   in `all` mode it kills both. The setting survives a restart.
 
 ---
@@ -671,7 +671,7 @@ read of the mod code. **Done** = already behaves as the report asks. **Open** = 
 - [ ] Deferred from A8–A11 (each only ran its own Check): selfcheck, reachability, all-options and
       full Generate x3 × both starts, once, on `release/v0.7.0` after section A. Run them one at a
       time: six parallel fills nearly took the machine down.
-- [ ] Mod jar rebuilt for the glitch price refs and checked in-game: yellow tiles still appear on a
+- [x] Mod jar rebuilt for the glitch price refs and checked in-game (2026-10-23): yellow tiles still appear on a
       glitch-logic seed.
 - [ ] `python tools/logic_selfcheck.py` passes.
 - [ ] `python tools/verify_all_options.py` passes (no dead locks).
