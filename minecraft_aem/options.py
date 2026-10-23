@@ -337,8 +337,8 @@ class KeepInventory(Choice):
     """How much of your inventory survives your death.
 
     Vanilla drops everything you carry when you die. This option lets you keep some or all of it —
-    main inventory, armor and offhand, exactly the scope the keepInventory gamerule covers. Dropped
-    experience is never affected: you lose your XP on death whatever this is set to.
+    main inventory, armor and offhand, exactly the scope the keepInventory gamerule covers. Your XP
+    follows the same share: what you keep of it comes back at respawn, and the rest drops as orbs.
 
     - disabled (default): vanilla. Everything drops.
     - active: you always keep your whole inventory, from the first death onwards. No item needed.
