@@ -734,5 +734,7 @@
   },
   "structure": {
     "blazeandcave:village": []
-  }
+  },
+  "enchantment_items": {},
+  "enchantment_table_items": {}
 }
