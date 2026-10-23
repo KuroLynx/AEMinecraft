@@ -20,6 +20,58 @@ def _manifest(pack_name: str) -> dict:
         return json.load(f)
 
 
+# exploration_logic: what counts as "going somewhere". A location criterion names a place (biome,
+# structure, dimension, position) and nothing else; changed_dimension / nether_travel are trips by
+# definition. Standing on a block or in the light is not exploring. BACAP adds "not in spectator" to
+# every location criterion, which is allowed alongside.
+_PLACE_KEYS = frozenset({"biomes", "biome", "structures", "structure", "dimension", "position"})
+
+
+def _places(cond) -> bool | None:
+    """True: the conditions name a place and nothing else. False: they ask for something that isn't a
+    place. None: they say nothing about where the player is."""
+    if isinstance(cond, list):
+        found = [_places(c) for c in cond]
+        return False if False in found else (True if True in found else None)
+    if not isinstance(cond, dict):
+        return False
+    kind = cond.get("condition", "").removeprefix("minecraft:")
+    if kind in ("any_of", "all_of", "alternative"):
+        return _places(cond.get("terms", []))
+    if kind == "inverted":
+        return None if _places(cond.get("term")) is not False else False   # "not spectator"
+    if kind == "location_check":
+        return _location_places(cond.get("predicate", {}))
+    predicate = cond.get("predicate", {}) if kind == "entity_properties" else cond
+    if "condition" in cond and kind != "entity_properties":
+        return False
+    specific = predicate.get("type_specific", {})
+    if set(predicate) - {"location", "type_specific"} or set(specific) - {"type", "gamemode"}:
+        return False
+    return _location_places(predicate["location"]) if "location" in predicate else None
+
+
+def _location_places(location: dict) -> bool:
+    return bool(location) and set(location) <= _PLACE_KEYS
+
+
+def is_exploration(record: dict) -> bool:
+    """Every criterion of the advancement is a trip (exploration_logic): a biome, structure,
+    dimension or distance, with nothing to hold, wear or kill on the way."""
+    criteria = record.get("criteria") or {}
+    if not criteria:
+        return False
+    for criterion in criteria.values():
+        trigger = (criterion.get("trigger") or "").removeprefix("minecraft:")
+        player = (criterion.get("conditions") or {}).get("player")
+        if trigger in ("changed_dimension", "nether_travel"):
+            if player is not None and _places(player) is False:
+                return False
+        elif trigger != "location" or player is None or _places(player) is not True:
+            return False
+    return True
+
+
 def build_location_rules(world, glitch: bool = False) -> dict:
     """The final reachability rule for every active location this seed (advancements + mob/boss kills),
     keyed by location name. Advancement logic is derived from the criteria (CriteriaCompiler), with the
@@ -39,6 +91,9 @@ def build_location_rules(world, glitch: bool = False) -> dict:
     _bacap = overlay_packs(content.version).get("blazeandcave")
     manifest = _manifest(_bacap if (world.options.blazeandcave and _bacap) else content.BASE_PACK)
     compiler = CriteriaCompiler(helper, frozenset(existing), records=manifest)
+    # exploration_logic: a trip is planned only with food to last it (strict graph only).
+    supplies = (helper.strict_only(helper.all_of(helper.has_food_supply(), helper.slot_group("carry")))
+                if world.options.exploration_logic else None)
 
     rules: dict = {}
     for location_name, loc_data in content.ADVANCEMENT_LOCATIONS.items():
@@ -53,6 +108,8 @@ def build_location_rules(world, glitch: bool = False) -> dict:
             condition = compiler.parent_rule(record, loc_data.game_id)
         if condition is None:
             condition = Const(True)
+        if supplies is not None and record is not None and is_exploration(record):
+            condition = helper.all_of(condition, supplies)
         rules[location_name] = condition
 
     for mob_name, condition in collect_entity_rules(helper).items():

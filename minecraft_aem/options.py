@@ -412,6 +412,42 @@ class BacapRewards(Toggle):
     default = 0
 
 
+class CombatLogic(DefaultOnToggle):
+    """Expect a weapon, food and armor before sending you into a hard fight.
+
+    A hard fight is a raid, the Trial Chambers' ominous challenge (Trial Omen, the ominous vault) or a
+    boss: the Wither, the Warden, the Elder Guardian, the Ender Dragon and any other boss. Anything
+    that leads through one inherits it, e.g. the gifts villagers throw after a won raid.
+
+    - true (default): a hard fight is in logic only once you have Sword or Axe Handling, Material
+      Handling up to iron, a reliable food supply (see exploration_logic) and, when inventory_lock
+      locks your armor slots, the first two of them.
+    - false: a hard fight needs only what it needs today.
+
+    Only changes where items are placed. The tracker still shows such a check yellow when you could
+    already try it.
+    """
+    display_name = "Combat Logic"
+
+
+class ExplorationLogic(DefaultOnToggle):
+    """Expect a food supply before sending you exploring.
+
+    An exploration advancement is one that only asks you to go somewhere: a biome, a structure, a
+    dimension or a distance (Adventuring Time, Atlantis?, Subspace Bubble...). One that also needs an
+    item or a kill is not one.
+
+    - true (default): an exploration advancement is in logic only once you have a reliable food
+      supply, Hoe Handling (crops) or one of Cow, Pig, Chicken, Sheep, Rabbit, Mooshroom, Cod or
+      Salmon, and, when inventory_lock is on, an inventory slot to carry it in.
+    - false: exploring needs nothing beyond getting there.
+
+    Only changes where items are placed. The tracker still shows such a check yellow when you could
+    already make the trip.
+    """
+    display_name = "Exploration Logic"
+
+
 class GlitchLogic(DefaultOnToggle):
     """Show, in the advancement tracker, the checks you can only reach by an unreliable route.
 
@@ -599,6 +635,7 @@ class InventoryLock(OptionDict):
                        a hotbar slot stays free below that).
           - "offhand": the offhand slot, when 'offhand' is included.
           - "armor":   all four armor slots, when 'armor' is included.
+          - "armor_pair": the first two armor slots (boots, then leggings), for combat_logic.
 
         Ranks follow the unlock order hotbar -> offhand -> the row closest to the hotbar -> armor ->
         the rest, which mirrors InventoryLockService.progressiveOrder on the mod side exactly: the two
@@ -613,8 +650,9 @@ class InventoryLock(OptionDict):
             rank = 1 if hotbar_locked == 9 else 0
         elif group == "offhand":
             rank = hotbar_locked + 1 if self.offhand else 0
-        elif group == "armor":
-            rank = hotbar_locked + offhand + nearest_row_locked + 4 if self.armor else 0
+        elif group in ("armor", "armor_pair"):
+            worn = 4 if group == "armor" else 2
+            rank = hotbar_locked + offhand + nearest_row_locked + worn if self.armor else 0
         else:
             raise ValueError(f"unknown inventory slot group {group!r}")
         return -(-rank // self.slots_per_item)  # ceil division
@@ -642,5 +680,7 @@ class MCOptions(PerGameCommonOptions):
     blazeandcave: BlazeAndCave
     bacap_rewards: BacapRewards
     item_gate_behavior: ItemGateBehavior
+    combat_logic: CombatLogic
+    exploration_logic: ExplorationLogic
     glitch_logic: GlitchLogic
     inventory_lock: InventoryLock

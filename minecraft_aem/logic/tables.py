@@ -96,7 +96,8 @@ _ENCHANT_LOOT_SOURCE = {
     "swift_sneak": lambda c: c._struct_gid("minecraft:ancient_city"),        # chests/ancient_city
     "soul_speed": lambda c: c._any_opt(                                      # chests/bastion_other
         c._struct_gid("minecraft:bastion_remnant"), c.h.can_barter()),       # + gameplay/piglin_bartering
-    "wind_burst": lambda c: c._struct_gid("minecraft:trial_chambers"),       # trial_chambers/reward_ominous_rare
+    "wind_burst": lambda c: c._all_req(c._struct_gid("minecraft:trial_chambers"),  # trial_chambers/reward_ominous_rare
+                                       c.h.combat_ready()),
 }
 
 # Damage-type #tags, as gates. BACAP reaches for one of these whenever it wants "kill it WITH
@@ -256,7 +257,8 @@ _EFFECT_SOURCE = {
     "minecraft:slowness": lambda c: _mob(c, "stray"),
     "minecraft:speed": lambda c: _get(c, "beacon"),
     "minecraft:strength": lambda c: _get(c, "beacon"),
-    "minecraft:trial_omen": lambda c: c._all_req(c._struct_gid("minecraft:trial_chambers"), _get(c, "ominous_bottle")),
+    "minecraft:trial_omen": lambda c: c._all_req(c._struct_gid("minecraft:trial_chambers"), _get(c, "ominous_bottle"),
+                                                 c.h.combat_ready()),
     "minecraft:water_breathing": lambda c: _get(c, "turtle_helmet", "conduit"),
     "minecraft:weakness": lambda c: _stew(c, "white_tulip"),
     "minecraft:wither": lambda c: c._any_opt(_mob(c, "wither_skeleton", "wither"), _get(c, "wither_rose")),

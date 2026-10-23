@@ -399,6 +399,14 @@ plants/fans), and the dump listed only coral blocks for the coral features.
 
 ## C. New logic options (decided 2026-10-22)
 
+- [x] C1 done (feat/exploration-logic, 2026-10-23). `combat_ready()` (strict only) = Sword/Axe Handling +
+  Material Handling iron + `has_food_supply()` + slot group `armor_pair`. It sits on `can_raid` (so
+  `can_win_raid`, raid captains in a raid and raid gifts), `can_defeat` for every BOSS-category mob, the
+  Trial Omen effect, the Wind Burst book and the ominous-only Trial Chambers items (heavy core, ominous
+  trial key: Revaulting, Core Keeper). Under Lock and Key is the normal vault and stays ungated.
+  **Deviation:** the mod opens armor slots boots first, so the 2 slots are boots + leggings, not
+  helmet + chestplate. Off -> routes as before. selfcheck, reachability, all-options, compile x3, BACAP
+  Generate x6 + seeds 111/2222 on 26.1.2/26.3 + an inventory_lock seed PASS.
 - [ ] C1 **New option `combat_logic`** (decided 2026-10-22). A `Toggle` written
   `combat_logic: 'true' / 'false'`, the twin of `exploration_logic` (C2). Default `true` (`false` keeps today's behaviour); add it to
   `template.yaml`. The reporter believed it was already handled: raids, Trial Chambers and hard kills
@@ -421,6 +429,13 @@ plants/fans), and the dump listed only coral blocks for the coral features.
   - **Check:** `verify_all_options.py` with both C1 and C2 on passes, on both starts.
   - **Check:** a BACAP `Generate.py` with both on passes on 26.1.2 and 26.3. The gate moves progression
     earlier, so watch for fill failures.
+- [x] C2 done (feat/exploration-logic, 2026-10-23). The food helper is `has_food_supply()` (`can_get_food()`
+  already meant "anything edible once", for the Husbandry root) and also takes the Hoglin, so a Nether
+  start's Nether trips don't wait for the Overworld. "Exploration" = every criterion is
+  `changed_dimension` / `nether_travel`, or a `location` whose location names only a biome / structure
+  / dimension / position (standing on a block, light, an empty location: no). 12 vanilla and 62 BACAP
+  advancements. selfcheck, reachability, all-options, compile x3, BACAP Generate x6 (3 versions x both
+  starts) and one with every inventory slot locked PASS.
 - [ ] C2 **New option `exploration_logic`** (decided 2026-10-22). It's a `Toggle` in `options.py`,
   written `exploration_logic: 'true' / 'false'` in the YAML like `glitch_logic`. Default `true`
   (`false` keeps today's behaviour). Add it to `template.yaml` too.
