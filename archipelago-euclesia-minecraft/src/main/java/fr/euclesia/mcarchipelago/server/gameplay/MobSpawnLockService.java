@@ -37,15 +37,16 @@ public final class MobSpawnLockService {
     private MobSpawnLockService() {}
 
     /**
-     * Whether any raid mob is still spawn-locked, i.e. a raid could not play out if it started.
+     * The raid mobs still spawn-locked, in wave-table order; any at all means a raid could not play
+     * out if it started.
      *
      * <p>A raid wave only clears once its raiders are dead, so a single locked member leaves a wave
      * that can never be completed and a raid that can never be won — the village siege just hangs.
      * {@code BadOmenMobEffectMixin} uses this to hold the Bad Omen -> Raid Omen conversion back
-     * until every raider is unlocked.
+     * until every raider is unlocked, and names them to the player.
      */
-    public static boolean isAnyRaidMobLocked() {
-        return RAID_MOB_IDS.stream().anyMatch(MobSpawnLockService::isMobLocked);
+    public static List<String> lockedRaidMobs() {
+        return RAID_MOB_IDS.stream().filter(MobSpawnLockService::isMobLocked).toList();
     }
 
     public static boolean shouldBlockSpawn(Entity entity) {
