@@ -332,7 +332,7 @@ New option **`split_structure_variants`** (`split_structure_variants: 'true' / '
     Camp` (grouped) and `--without` it → strict=False.
   - **Check:** pool size: the item count drops by the grouped members, and `verify_all_options.py`
     + full Generate pass with both values on all 3 versions.
-  - **Check (in-game):** receiving the grouped item places camps in two different biomes.
+  - **Check (in-game):** receiving the grouped item places camps in two different biomes. Passed 2026-10-23 (26.3 server): one `Structure Unlock: Abandoned Camp` unlocked all 18 variants and placed the captured forest and savanna camps.
 - [x] A13 follow-up (feat/structure-group-tracker, 2026-10-23): option renamed `structure_variant` ->
   `split_structure_variants` (same meaning, reads the way it behaves). Grouped, the Structure Unlocks
   tab shows one `aem:unlock_structure/group/<name>` tile per group instead of its members, and
