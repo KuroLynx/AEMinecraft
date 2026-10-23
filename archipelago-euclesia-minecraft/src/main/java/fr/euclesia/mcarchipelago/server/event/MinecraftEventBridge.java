@@ -164,13 +164,12 @@ public final class MinecraftEventBridge {
             AEMServerRuntime.setServer(server);
             // The run's shared advancement book, before any player can join and be caught up on it.
             SharedAdvancementService.load(server);
-            // An offline start knows the slot without ever firing onConnected, which is where the
-            // release normally hangs. Anything captured during an earlier blind window would
-            // otherwise stay captured until the next real session — the fail-closed gate has to
-            // stay a door, not become a one-way one, whichever way the data arrived.
-            if (APSlotGate.isOffline()) {
-                SlotReleaseService.releaseUnlockedContent();
-            }
+            // Place whatever is owed: captured content this slot no longer locks. Every start, not just
+            // an offline one. An online start connects at SERVER_STARTING, before setServer above, so
+            // the connect-time release and the received-items unlocks both found no server and did
+            // nothing: an unlock received while the server was down stayed owed until someone ran
+            // /aem structures release. Idempotent, and a no-op while the slot is still unknown.
+            SlotReleaseService.releaseUnlockedContent();
         });
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
             SharedAdvancementService.save();
