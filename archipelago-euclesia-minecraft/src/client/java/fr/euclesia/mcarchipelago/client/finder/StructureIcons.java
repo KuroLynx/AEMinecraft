@@ -20,6 +20,10 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class StructureIcons {
     private static final String FALLBACK = "minecraft:chest";
+    // 26.3's Abandoned Camp is one structure per biome (abandoned_camp_<biome>): a campfire like its
+    // tracker tile (gen_tracker_advancements structure_icon), told apart by the badge.
+    private static final String CAMP_PREFIX = "abandoned_camp_";
+    private static final String CAMP_ICON = "minecraft:campfire";
 
     private static final Map<String, String> ITEM_BY_SLUG = Map.ofEntries(
             Map.entry("ancient_city", "minecraft:sculk_catalyst"),
@@ -77,7 +81,25 @@ public final class StructureIcons {
             Map.entry("ruined_portal_swamp", "minecraft:lily_pad"),
             Map.entry("shipwreck_beached", "minecraft:sand"),
             Map.entry("ocean_ruin_cold", "minecraft:packed_ice"),
-            Map.entry("ocean_ruin_warm", "minecraft:sand")
+            Map.entry("ocean_ruin_warm", "minecraft:sand"),
+            Map.entry("abandoned_camp_bamboo_jungle", "minecraft:bamboo"),
+            Map.entry("abandoned_camp_birch_forest", "minecraft:birch_sapling"),
+            Map.entry("abandoned_camp_cherry_grove", "minecraft:cherry_sapling"),
+            Map.entry("abandoned_camp_dappled_forest", "minecraft:azalea"),
+            Map.entry("abandoned_camp_flower_forest", "minecraft:allium"),
+            Map.entry("abandoned_camp_forest", "minecraft:oak_sapling"),
+            Map.entry("abandoned_camp_meadow", "minecraft:cornflower"),
+            Map.entry("abandoned_camp_old_growth_birch_forest", "minecraft:birch_log"),
+            Map.entry("abandoned_camp_old_growth_pine_taiga", "minecraft:podzol"),
+            Map.entry("abandoned_camp_old_growth_spruce_taiga", "minecraft:spruce_log"),
+            Map.entry("abandoned_camp_pale_garden", "minecraft:pale_oak_sapling"),
+            Map.entry("abandoned_camp_savanna", "minecraft:acacia_sapling"),
+            Map.entry("abandoned_camp_snowy_taiga", "minecraft:snow_block"),
+            Map.entry("abandoned_camp_sparse_jungle", "minecraft:jungle_sapling"),
+            Map.entry("abandoned_camp_swamp", "minecraft:lily_pad"),
+            Map.entry("abandoned_camp_taiga", "minecraft:spruce_sapling"),
+            Map.entry("abandoned_camp_windswept_forest", "minecraft:gravel"),
+            Map.entry("abandoned_camp_wooded_badlands", "minecraft:red_sand")
     );
 
     private static final Map<String, ItemStack> ICON_CACHE = new ConcurrentHashMap<>();
@@ -87,8 +109,10 @@ public final class StructureIcons {
 
     /** A (cached, render-only) icon stack for the structure game id, e.g. {@code minecraft:stronghold}. */
     public static ItemStack iconFor(String structureGameId) {
-        return ICON_CACHE.computeIfAbsent(structureGameId,
-                id -> stack(ITEM_BY_SLUG.getOrDefault(slug(id), FALLBACK)));
+        return ICON_CACHE.computeIfAbsent(structureGameId, id -> {
+            String slug = slug(id);
+            return stack(slug.startsWith(CAMP_PREFIX) ? CAMP_ICON : ITEM_BY_SLUG.getOrDefault(slug, FALLBACK));
+        });
     }
 
     /** The biome-badge stack for a structure, or {@link ItemStack#EMPTY} when the variant needs none. */
