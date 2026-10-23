@@ -44,6 +44,7 @@ from .tables import (
     _DIMENSION_REGION,
     _EFFECT_POTIONS,
     _EFFECT_SOURCE,
+    stew_source,
     _ENCHANT_LOOT_SOURCE,
     _EQUIPMENT_SLOTS,
     _EXPLOSION_ITEM,
@@ -313,7 +314,7 @@ _LOCATION_KEYS = {"position", "biomes", "structures", "dimension", "block", "smo
 _LOCATION_FREE = {"fluid", "light", "can_see_sky"}   # a threshold you can just go and stand in
 _ITEM_KEYS = {"items", "count", "components", "predicates"}
 _COMPONENTS = {"potion_contents", "enchantments", "stored_enchantments", "trim", "container",
-               "bundle_contents", "jukebox_playable", "dyed_color"}
+               "bundle_contents", "jukebox_playable", "dyed_color", "suspicious_stew_effects"}
 # Vanilla DyeColor.textureDiffuseColor: one dye on undyed leather gives exactly this colour, which is how
 # packs name a colour (BACAP Colorful Cavalry). A fixed enum in the game, not data.
 _DYE_OF_COLOUR = {
@@ -830,6 +831,9 @@ class CriteriaCompiler:
         gates += [self._item(entry, f"{path}.bundle") or UNKNOWN for entry in contains]
         if "jukebox_playable" in components:
             gates.append(_call("can_get_disc"))
+        for entry in self._as_list(components.get("suspicious_stew_effects")):
+            effect = entry.get("id") if isinstance(entry, dict) else None
+            gates.append(need("stew", _ns(effect)) if isinstance(effect, str) else None)
         colour = components.get("dyed_color")
         colour = colour.get("rgb") if isinstance(colour, dict) else colour
         if colour is not None:
@@ -1022,6 +1026,10 @@ class CriteriaCompiler:
         with self.h.bulk_mode(count >= _BULK_COUNT):
             return self.h.acquire(gid)
 
+    def _price_stew(self, effect):
+        # A stew no flower makes (a mod's effect) is only found: the stew item's own sources decide.
+        return stew_source(self, effect) or Const(True)
+
     def _price_item_tag(self, tag):
         return self._any_opt(*[self.h.acquire(i) for i in self._expand_items(tag)])
 
@@ -1113,7 +1121,7 @@ class CriteriaCompiler:
         effect = _ns(effect)
         source = _EFFECT_SOURCE.get(effect)
         potions = _EFFECT_POTIONS.get(_path(effect), (_path(effect),))
-        node = self._any_opt(source(self) if source is not None else None,
+        node = self._any_opt(source(self) if source is not None else None, stew_source(self, effect),
                              *[self._price_potion(p) for p in potions
                                if _reagent_routes(self.content, p) is not None])
         if node is None and source is None:

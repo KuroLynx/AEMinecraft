@@ -210,6 +210,25 @@ def _stew(c, flower):
     return c._all_req(c.h.acquire("minecraft:suspicious_stew"), c.h.acquire(f"minecraft:{flower}"))
 
 
+@cache
+def _stew_flowers(content) -> dict:
+    """Effect id -> the flowers whose suspicious stew gives it, read off the stew recipes' results
+    (acquisition.json ``suspicious_stew.recipes[].effects``)."""
+    flowers = {}
+    for recipe in _pack_json("acquisition.json", content.BASE_PACK).get("suspicious_stew", {}).get("recipes", ()):
+        # The flower is the one plain item that isn't the bowl or a mushroom (26.3 lists those as any_of).
+        named = [i["item"] for i in recipe.get("ingredients", ())
+                 if i.get("item") not in (None, "bowl", "brown_mushroom", "red_mushroom")]
+        for effect in recipe.get("effects", ()):
+            flowers.setdefault(f"minecraft:{effect}", []).extend(named)
+    return flowers
+
+
+def stew_source(c, effect):
+    """Any suspicious stew that gives this effect."""
+    return c._any_opt(*[_stew(c, flower) for flower in _stew_flowers(c.content).get(effect, ())])
+
+
 def _mob(c, *mobs):
     return c._any_opt(*[c._entity_gid(f"minecraft:{m}") for m in mobs])
 
@@ -219,15 +238,15 @@ def _tamed(c, mob):
     return c.h.can_tame(name) if name in c.content.MOBS_TAMEABLE else None
 
 
-# Status effects from something other than a potion. _price_effect ORs each with the effect's potions
-# (_EFFECT_POTIONS / brewing.json), so a builder lists only the non-brewing sources. An effect missing
+# Status effects from something other than a potion or a suspicious stew. _price_effect ORs each with
+# the effect's potions (_EFFECT_POTIONS / brewing.json) and stews (stew_source), so a builder lists only
+# the other sources. An effect missing
 # from here AND from the brewing table falls back to "a brewing stand", which is what used to hand
 # Hero of the Village and water breathing out for a brewing stand alone: keep every effect an
 # advancement names in this table or the brewing table.
 _EFFECT_SOURCE = {
     "minecraft:absorption": lambda c: _get(c, "golden_apple", "enchanted_golden_apple"),
     "minecraft:bad_omen": lambda c: _get(c, "ominous_bottle"),
-    "minecraft:blindness": lambda c: _stew(c, "azure_bluet"),
     # Riding a tamed nautilus is what lets you breathe on its back.
     "minecraft:breath_of_the_nautilus": lambda c: _tamed(c, "nautilus"),
     "minecraft:conduit_power": lambda c: _get(c, "conduit"),
@@ -237,28 +256,24 @@ _EFFECT_SOURCE = {
         c._struct_gid("minecraft:ancient_city"), _mob(c, "warden"),
         and_(c.h.access_region(REGION_OVERWORLD), c.h.strict_only(c.h.needs_biome_finder()))),
     "minecraft:dolphins_grace": lambda c: _mob(c, "dolphin"),
-    "minecraft:fire_resistance": lambda c: c._any_opt(_get(c, "enchanted_golden_apple"), _stew(c, "allium")),
+    "minecraft:fire_resistance": lambda c: _get(c, "enchanted_golden_apple"),
     "minecraft:glowing": lambda c: c._all_req(_get(c, "spectral_arrow"), _get(c, "bow", "crossbow")),
     "minecraft:haste": lambda c: _get(c, "beacon"),
     "minecraft:hero_of_the_village": lambda c: c.h.can_win_raid(),
     "minecraft:hunger": lambda c: c._any_opt(_get(c, "rotten_flesh"), _mob(c, "husk")),
-    "minecraft:jump_boost": lambda c: c._any_opt(_get(c, "beacon"), _stew(c, "cornflower")),
+    "minecraft:jump_boost": lambda c: _get(c, "beacon"),
     "minecraft:levitation": lambda c: _mob(c, "shulker"),
     "minecraft:mining_fatigue": lambda c: _mob(c, "elder_guardian"),
     "minecraft:nausea": lambda c: _get(c, "pufferfish"),
-    "minecraft:night_vision": lambda c: _stew(c, "poppy"),
-    "minecraft:poison": lambda c: c._any_opt(_get(c, "spider_eye", "pufferfish"), _mob(c, "cave_spider", "bee"),
-                                             _stew(c, "lily_of_the_valley")),
+    "minecraft:poison": lambda c: c._any_opt(_get(c, "spider_eye", "pufferfish"), _mob(c, "cave_spider", "bee")),
     "minecraft:raid_omen": lambda c: c.h.can_raid(),
-    "minecraft:regeneration": lambda c: c._any_opt(_get(c, "golden_apple", "beacon"), _stew(c, "oxeye_daisy")),
+    "minecraft:regeneration": lambda c: _get(c, "golden_apple", "beacon"),
     "minecraft:resistance": lambda c: _get(c, "enchanted_golden_apple", "beacon", "totem_of_undying"),
-    "minecraft:saturation": lambda c: c._any_opt(_stew(c, "dandelion"), _stew(c, "blue_orchid")),
     "minecraft:slowness": lambda c: _mob(c, "stray"),
     "minecraft:speed": lambda c: _get(c, "beacon"),
     "minecraft:strength": lambda c: _get(c, "beacon"),
     "minecraft:trial_omen": lambda c: c.h.ominous_trial(),
     "minecraft:water_breathing": lambda c: _get(c, "turtle_helmet", "conduit"),
-    "minecraft:weakness": lambda c: _stew(c, "white_tulip"),
     "minecraft:wither": lambda c: c._any_opt(_mob(c, "wither_skeleton", "wither"), _get(c, "wither_rose")),
 }
 
