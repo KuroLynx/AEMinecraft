@@ -313,7 +313,15 @@ _LOCATION_KEYS = {"position", "biomes", "structures", "dimension", "block", "smo
 _LOCATION_FREE = {"fluid", "light", "can_see_sky"}   # a threshold you can just go and stand in
 _ITEM_KEYS = {"items", "count", "components", "predicates"}
 _COMPONENTS = {"potion_contents", "enchantments", "stored_enchantments", "trim", "container",
-               "bundle_contents", "jukebox_playable"}
+               "bundle_contents", "jukebox_playable", "dyed_color"}
+# Vanilla DyeColor.textureDiffuseColor: one dye on undyed leather gives exactly this colour, which is how
+# packs name a colour (BACAP Colorful Cavalry). A fixed enum in the game, not data.
+_DYE_OF_COLOUR = {
+    16383998: "white", 16351261: "orange", 13061821: "magenta", 3847130: "light_blue",
+    16701501: "yellow", 8439583: "lime", 15961002: "pink", 4673362: "gray",
+    10329495: "light_gray", 1481884: "cyan", 8991416: "purple", 3949738: "blue",
+    8606770: "brown", 6192150: "green", 11546150: "red", 1908001: "black",
+}
 _TYPE_SPECIFIC_KEYS = {"type", "advancements", "stats", "has_raid", "is_captain", "looking_at"}
 _TYPE_SPECIFIC_SKIP = {"gamemode", "level", "recipes", "input", "food"}
 
@@ -822,6 +830,13 @@ class CriteriaCompiler:
         gates += [self._item(entry, f"{path}.bundle") or UNKNOWN for entry in contains]
         if "jukebox_playable" in components:
             gates.append(_call("can_get_disc"))
+        colour = components.get("dyed_color")
+        colour = colour.get("rgb") if isinstance(colour, dict) else colour
+        if colour is not None:
+            # A colour no single dye makes is a mix: some dye, at least.
+            dye = _DYE_OF_COLOUR.get(colour)
+            gates.append(_item(f"minecraft:{dye}_dye") if dye else
+                         any_(*[_item(f"minecraft:{d}_dye") for d in _DYE_OF_COLOUR.values()]))
         return all_(*gates)
 
     def _damage(self, dmg, attacker_role: str, path: str):

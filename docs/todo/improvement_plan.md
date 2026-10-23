@@ -556,7 +556,7 @@ read of the mod code. **Done** = already behaves as the report asks. **Open** = 
   needs the Nether (or an Ancient City's soul sand), Ahoy! a Shipwreck, Portals a Ruined Portal.
 - [x] F3 **Worn items, falling blocks** (Stink Bomb, Classic Cartoon Comedy). Done (26.3): Stink Bomb
   prices the TNT (Creeper / Ghast), Classic Cartoon Comedy needs the Anvil.
-- [ ] F4 **Item colours** (Colorful Cavalry). Open: still in logic `--without` Squid, Glow Squid and
+- [x] F4 **Item colours** (Colorful Cavalry). Done: the compiler reads `dyed_color` (a vanilla dye colour asks for that dye); strict is out `--without` Squid + Glow Squid + Wither. Was: still in logic `--without` Squid, Glow Squid and
   Wither, so the 16 dyes aren't asked for. Each colour must ask for its dye.
 - [ ] F5 **Suspicious stew effects** (I'm gonna be sick!). Open: in logic `--without "Biome Finder"`
   (eyeblossom = Pale Garden) and `--without "Entity Unlock: Wither"` (wither rose). Each effect must
