@@ -206,6 +206,12 @@ _NATURAL_SELF_MINED = frozenset({
 #     as free to mine: a heavy core (ominous vault loot only) put 'Core Keeper' in sphere 2 with no
 #     Trial Chambers. An empty structure list drops the route; the item's own loot route stands.
 #     The dragon egg appears when the dragon dies, the dragon head hangs on an End City ship.
+# Trial Chambers loot only the ominous challenge hands out: the heavy core (ominous vault,
+# chests/trial_chambers/reward_ominous*) and the ominous trial key (ominous spawners). Its route is a
+# hard fight for combat_logic. The dump folds every Trial Chambers table into one, hence the list.
+# ponytail: curated; derive from the ominous loot tables if it grows.
+_OMINOUS_VAULT_ONLY = frozenset({"heavy_core", "ominous_trial_key"})
+
 _BLOCK_ONLY_FROM = {
     "heavy_core": ("structures", ()),
     "player_head": ("structures", ()),
@@ -503,7 +509,8 @@ class RuleHelper:
         # used (see InventoryLock.unlock_items / self.slot_group). 0 when the group isn't locked this
         # seed, same "no requirement" shape as self.knowledge.
         self.slot_unlock_items = {group: world.options.inventory_lock.unlock_items(group)
-                                  for group in ("carry", "offhand", "armor")}
+                                  for group in ("carry", "offhand", "armor", "armor_pair")}
+        self.combat_logic = bool(world.options.combat_logic)
         # BACAP advancement rewards: base item -> the active location names that grant it (empty
         # unless bacap_rewards is on). Consumed by _with_reward, glitch graph only.
         self.reward_sources = reward_sources(world)
@@ -817,7 +824,21 @@ class RuleHelper:
             self.entity(E_PILLAGER),
             self.any_village(),
             *[self.mob_unlocked(mob) for mob in MOBS_RAID],
+            self.combat_ready(),
         )
+
+    def combat_ready(self):
+        """combat_logic: what strict logic wants before a hard fight (a raid, the ominous Trial
+        Chambers, a boss) — a melee weapon, iron-tier gear, food to last it and, under inventory_lock,
+        two armor slots to wear something in. Waived in the glitch graph; nothing when the option is off."""
+        if not self.combat_logic:
+            return Const(True)
+        return self.strict_only(self.all_of(
+            self.any_of(self.knowledge(K_SWORD), self.knowledge(K_AXE)),
+            self.material(MAT_IRON),
+            self.has_food_supply(),
+            self.slot_group("armor_pair"),
+        ))
 
     def raid_captain(self):
         """A raider wearing the ominous banner. Outside a raid only pillagers lead (patrols and
@@ -1195,7 +1216,7 @@ class RuleHelper:
             unlock_node,
         )
 
-    def can_defeat(self, entity_name: str):
+    def _defeat(self, entity_name: str):
         """Gate for *killing* a mob — its drops and any kill goal. Ordinary mobs reduce to plain
         reachability (beatable bare-handed via the boat trap); the four bosses require the gear,
         knowledge and environment their fight demands. Single source of truth, shared by the
@@ -1225,6 +1246,13 @@ class RuleHelper:
                 self.can_breath_underwater(),  # survive the fight underwater
             )
         return self.entity(entity_name)
+
+    def can_defeat(self, entity_name: str):
+        """_defeat, plus combat_ready() for a boss (combat_logic)."""
+        fight = self._defeat(entity_name)
+        if self.content.MOBS_ALL[entity_name].category == MCEntityCategory.BOSS:
+            return self.all_of(fight, self.combat_ready())
+        return fight
 
     def can_tame(self, entity_name: str):
         """Reach the mob *and* hold its taming item (bones, fish, seeds…). Mobs with no taming
@@ -1897,8 +1925,10 @@ class RuleHelper:
                 # family here: a few tables put their loot in barrels or pots instead, and demanding the
                 # chest Knowledge for those is stricter than reality rather than looser, which is the
                 # safe direction for logic. Folds away entirely when the gate is off.
-                add(self.all_of(self.structure(structure_name), self._loot_container_node()),
-                    unreliable("structures", structure_name), runs_dry=True,
+                route = self.all_of(self.structure(structure_name), self._loot_container_node())
+                if structure_name == S_TRIAL_CHAMBERS and base in _OMINOUS_VAULT_ONLY:
+                    route = self.all_of(route, self.combat_ready())
+                add(route, unreliable("structures", structure_name), runs_dry=True,
                     chance=chance("structures", structure_name))
         for structure_name in record.get("archaeology", ()):
             if structure_name in self.content.STRUCTURES:
