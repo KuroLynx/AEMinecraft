@@ -357,7 +357,8 @@ _SELF_EFFECTS = {"wandering_trader": {"minecraft:invisibility"}}
 _DIFFICULTY_EFFECTS = {"spider": _SPIDER_SPAWN_EFFECTS, "cave_spider": _SPIDER_SPAWN_EFFECTS}
 
 # Player equipment slots -> the inventory_lock slot group that has to be open to use them.
-_SLOT_GROUP = {"head": "armor", "chest": "armor", "legs": "armor", "feet": "armor", "offhand": "offhand"}
+_SLOT_GROUP = {"head": "armor_head", "chest": "armor_chest", "legs": "armor_legs", "feet": "armor_feet",
+               "offhand": "offhand"}
 
 # Coordinate thresholds that stop being "walk there" .
 _DIMPEN_REGION = {"overworld": REGION_OVERWORLD, "nether": REGION_NETHER, "end": REGION_END}

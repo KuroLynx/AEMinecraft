@@ -636,6 +636,8 @@ class InventoryLock(OptionDict):
           - "offhand": the offhand slot, when 'offhand' is included.
           - "armor":   all four armor slots, when 'armor' is included.
           - "armor_pair": the first two armor slots (boots, then leggings), for combat_logic.
+          - "armor_feet" / "armor_legs" / "armor_chest" / "armor_head": one piece's own slot; the
+                       mod opens them in that order, so wearing boots waits for one slot, not four.
 
         Ranks follow the unlock order hotbar -> offhand -> the row closest to the hotbar -> armor ->
         the rest, which mirrors InventoryLockService.progressiveOrder on the mod side exactly: the two
@@ -650,12 +652,17 @@ class InventoryLock(OptionDict):
             rank = 1 if hotbar_locked == 9 else 0
         elif group == "offhand":
             rank = hotbar_locked + 1 if self.offhand else 0
-        elif group in ("armor", "armor_pair"):
-            worn = 4 if group == "armor" else 2
+        elif group in _ARMOR_SLOTS_OPEN:
+            worn = _ARMOR_SLOTS_OPEN[group]
             rank = hotbar_locked + offhand + nearest_row_locked + worn if self.armor else 0
         else:
             raise ValueError(f"unknown inventory slot group {group!r}")
         return -(-rank // self.slots_per_item)  # ceil division
+
+
+# Armor slots a group needs open, in the mod's order (InventoryLockService: feet, legs, chest, head).
+_ARMOR_SLOTS_OPEN = {"armor_feet": 1, "armor_legs": 2, "armor_pair": 2, "armor_chest": 3,
+                     "armor_head": 4, "armor": 4}
 
 
 @dataclass
