@@ -653,7 +653,7 @@ read of the mod code. **Done** = already behaves as the report asks. **Open** = 
   earning ("Advancements" read done at 325/350). Gray only when the tile's own (earned) count is
   complete; enough checked but not enough earned is **blue** (COLLECTED), like a per-location tile
   that was released/collected. Same for the Bosses tile.
-- [ ] F38 **Inventory buttons.** To verify in-game: with the Biome Finder the third button sticks out of
+- [x] F38 **Inventory buttons.** Done, checked in-game: the Biome Finder button re-anchors to the recipe-book button every frame, so it follows the panel when the recipe book opens. Was to verify in-game: with the Biome Finder the third button sticks out of
   the window, and the recipe book moves the window but not the buttons. Fix: a row along the top
   edge that follows the window.
 - [x] F39 **BACAP rewards marker in the world.** Done (untested in-game): marker in the world's `data/` folder beside the scoreboard; a world configured before re-runs the disable functions once. Was: `BacapConfigService` keeps its "already
