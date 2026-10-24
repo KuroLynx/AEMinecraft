@@ -10,9 +10,9 @@ an item it never priced (a stick at depth 4). Here:
 * when a price changes, only the items that read it are recomputed, until nothing changes.
 
 A cycle just reads the other item's current price: iron ingot from iron block from iron ingot adds
-an alternative the ingot already has, and the canonical form below absorbs it. That form is a minimal
-DNF (an antichain of alternatives, each a set of leaves with a count per item), rebuilt as an interned
-Rule, so an unchanged price is the same object and "did it change?" is an identity test.
+an alternative the ingot already has, and the canonical form below absorbs it. That form is the price's
+minimal alternatives held as a ZDD and rebuilt as an interned Rule, so an unchanged price is the same
+object and "did it change?" is an identity test.
 
 The glitch graph keeps every unreliable route, so that minimal form is far too big there (hundreds of
 alternatives per item with structures and mobs locked). It is never built: a glitch price keeps its
@@ -24,8 +24,7 @@ glitch graph.
 """
 from __future__ import annotations
 
-from collections import Counter, defaultdict, deque
-from itertools import combinations
+from collections import defaultdict, deque
 
 from .ast import And, AtLeast, Const, Has, Or, PriceRef, ReachLocation, ReachRegion, and_, or_
 
@@ -33,171 +32,213 @@ from .ast import And, AtLeast, Const, Has, Or, PriceRef, ReachLocation, ReachReg
 # oscillating (_demote is not monotone), which is a bug to look at, not a budget to raise.
 _MAX_RECOMPUTES = 200
 
-_DNF: dict = {}   # Rule -> frozenset of alternatives (nodes are interned, so this is pure)
+# --- the strict canonical form: a zero-suppressed decision diagram (ZDD) ----------------------------
+#
+# A price's minimal DNF as a ZDD: a node is (var, lo, hi), the alternatives without ``var`` and those
+# with it. Equal sub-families are one node, so the alternatives every mined item shares (its pickaxe's
+# routes) are stored and combined once. Spelling the DNF out did that per alternative and cost ~2 min
+# per BACAP slot once leather and string became dependable (c6bbea2); the idea and the speedup are
+# MissingNoShiny's. Node 0 is the empty family (false), node 1 is {∅} (true).
+#
+# A count is a ladder: has(x, 3) is the set {x>=3, x>=2, x>=1}, so the plain set operations get counts
+# right (a union of ladders is the higher count; a lower count is a subset). The rungs of one leaf are
+# adjacent in the variable order, highest first.
+
+_RUNGS = 64                     # ponytail: counts above 63 need a wider ladder; none come near it
+_TERMINAL = 1 << 62             # the terminals' var: below every real one
+_VAR, _LO, _HI = [_TERMINAL, _TERMINAL], [0, 1], [0, 1]
+_UNIQUE: dict = {}              # (var, lo, hi) -> node
+_LEAF_INDEX: dict = {}          # (kind, name) -> index, in first-seen order (deterministic)
+_ATOM: dict = {}                # var -> (kind, name, count)
+_UNION: dict = {}
+_JOIN: dict = {}
+_NONSUP: dict = {}
+_MINIMAL: dict = {}
+_OF_RULE: dict = {}             # Rule -> node
+_AS_RULE: dict = {}             # node -> Rule
 
 
-def _alt(atoms) -> frozenset:
-    """One alternative: leaves ANDed, a Has count collapsed to its maximum per item."""
-    best: dict = {}
-    for kind, name, n in atoms:
-        if n > best.get((kind, name), 0):
-            best[(kind, name)] = n
-    return frozenset((kind, name, n) for (kind, name), n in best.items())
+def _reset() -> None:
+    """Forget every node: leaves carry the player, so nothing from an earlier slot can hit again."""
+    del _VAR[2:], _LO[2:], _HI[2:]
+    for table in (_UNIQUE, _LEAF_INDEX, _ATOM, _UNION, _JOIN, _NONSUP, _MINIMAL, _OF_RULE, _AS_RULE):
+        table.clear()
 
 
-_SIG: dict = {}   # alternative -> (its (kind, name) set, its leaves needing a count above 1, its order); pure
+def _mk(var: int, lo: int, hi: int) -> int:
+    if hi == 0:
+        return lo   # zero suppression: no alternative holds var
+    key = (var, lo, hi)
+    node = _UNIQUE.get(key)
+    if node is None:
+        node = _UNIQUE[key] = len(_VAR)
+        _VAR.append(var)
+        _LO.append(lo)
+        _HI.append(hi)
+    return node
 
 
-def _sig(alt: frozenset) -> tuple:
-    sig = _SIG.get(alt)
-    if sig is None:
-        sig = _SIG[alt] = (frozenset((kind, name) for kind, name, _ in alt),
-                           tuple(((kind, name), n) for kind, name, n in alt if n > 1),
-                           (len(alt), sum(n for _, _, n in alt)))
-    return sig
-
-
-def _order(alt: frozenset) -> tuple:
-    return _sig(alt)[2]
-
-
-# Below this many alternatives the plain scan is cheaper than filing them (see _minimal).
-_FILE_FROM = 24
-
-
-def _minimal(alts) -> frozenset:
-    """Drop every alternative that a kept one subsumes (each of its leaves present with at least its count).
-
-    The name-set test is a C-level subset check; counts are compared only for the few leaves above 1.
-    Each kept alternative is filed under its rarest leaf, and one can only subsume an alternative that
-    holds that leaf, so an alternative is tested against the kept ones filed under its own leaves rather
-    than against all of them: the scan was quadratic in the kept list, which a big AND's product makes
-    long (every mined item carrying every route to its pickaxe)."""
-    # By size, then total count: whatever subsumes an alternative is then always looked at first. By
-    # size alone, {Material 3, X} could come before {Material 2, X} and survive it, and which came
-    # first was set order — the string hash — so the logic changed from one process to the next.
-    alts = sorted(set(alts), key=_order)
-    if len(alts) < 2 or not alts[0]:
-        return frozenset(alts[:1])   # nothing, one, or "always true", which subsumes everything
-    big = len(alts) >= _FILE_FROM
-    rarity = Counter(name for alt in alts for name in _sig(alt)[0]) if big else None
-    filed: dict = defaultdict(list)   # leaf -> sigs of kept alternatives filed under it
-    kept: list = []                   # every kept sig, for the plain scan
-    keep: list = []
-    for alt in alts:
-        names = _sig(alt)[0]
-        have = None
-        subsumed = False
-        for leaf in (names if big else (None,)):
-            for k_names, k_counts, _ in (filed.get(leaf, ()) if big else kept):
-                if k_names <= names:
-                    if not k_counts:
-                        subsumed = True
-                        break
-                    if have is None:
-                        have = {(kind, name): n for kind, name, n in alt}
-                    if all(have[leaf_] >= n for leaf_, n in k_counts):
-                        subsumed = True
-                        break
-            if subsumed:
-                break
-        if subsumed:
-            # A big AND's product makes hundreds of thousands of candidates and keeps a few hundred;
-            # cached sigs of the dropped ones were most of a BACAP slot's 11 GB. (Pure, so recomputable.)
-            _SIG.pop(alt, None)
+def _union(f: int, g: int) -> int:
+    if f == 0 or f == g:
+        return g
+    if g == 0:
+        return f
+    if f > g:
+        f, g = g, f
+    key = (f, g)
+    out = _UNION.get(key)
+    if out is None:
+        vf, vg = _VAR[f], _VAR[g]
+        if vf < vg:
+            out = _mk(vf, _union(_LO[f], g), _HI[f])
+        elif vf > vg:
+            out = _mk(vg, _union(f, _LO[g]), _HI[g])
         else:
-            keep.append(alt)
-            if big:
-                filed[min(names, key=lambda name: (rarity[name], name))].append(_sig(alt))
-            else:
-                kept.append(_sig(alt))
-    return frozenset(keep)
-
-
-def _join(a: frozenset, b: frozenset) -> frozenset:
-    """``_alt(a | b)``: the union is already an alternative unless an item appears in both at two counts."""
-    union = a | b
-    if len(_sig(a)[0] | _sig(b)[0]) == len(union):
-        return union
-    return _alt(union)
-
-
-def _covers(a: frozenset, b: frozenset) -> bool:
-    """Whether ``a`` holds every leaf of ``b`` with at least its count, i.e. ``a | b`` is just ``a``."""
-    a_names, _, _ = _sig(a)
-    b_names, b_counts, _ = _sig(b)
-    if not b_names <= a_names:
-        return False
-    if not b_counts:
-        return True
-    have = {(kind, name): n for kind, name, n in a}
-    return all(have[leaf] >= n for leaf, n in b_counts)
-
-
-_COMPACT_AT = 50_000   # candidates an AND row may pile up before they are minimised
-
-
-def _and(*dnfs) -> frozenset:
-    out = {frozenset()}
-    for dnf in dnfs:
-        joined = []
-        for a in out:
-            for b in dnf:
-                if _covers(a, b):
-                    # a | b is a, and a subsumes every other a | b' of this row: the row is a alone.
-                    # Ingredients priced through the same tool share their routes, so this is common.
-                    joined.append(a)
-                    break
-            else:
-                joined.extend(_join(a, b) for b in dnf)
-                if len(joined) > _COMPACT_AT:
-                    # The minimal antichain is unique, so compacting early changes nothing but the peak:
-                    # lingering_potion's 1749 x 577 product held 4 GB of candidates at once.
-                    joined = list(_minimal(joined))
-        out = _minimal(joined)
-        if not out:
-            break
-    return frozenset(out)
-
-
-def dnf(rule) -> frozenset:
-    """The rule as a minimal antichain of alternatives. Empty = unsatisfiable; {∅} = always true."""
-    if rule in _DNF:
-        return _DNF[rule]
-    if isinstance(rule, Const):
-        out = frozenset({frozenset()}) if rule.value else frozenset()
-    elif isinstance(rule, Has):
-        out = frozenset({frozenset({("h", rule.item, rule.count)})})
-    elif isinstance(rule, ReachRegion):
-        out = frozenset({frozenset({("r", rule.region, 1)})})
-    elif isinstance(rule, ReachLocation):
-        out = frozenset({frozenset({("l", rule.location, 1)})})
-    elif isinstance(rule, And):
-        out = _and(*(dnf(child) for child in rule.children))
-    elif isinstance(rule, Or):
-        out = _minimal(alt for child in rule.children for alt in dnf(child))
-    elif isinstance(rule, AtLeast):
-        out = _minimal(alt for combo in combinations(rule.children, rule.n)
-                       for alt in _and(*(dnf(child) for child in combo)))
-    else:
-        raise TypeError(f"no DNF for {type(rule).__name__}")
-    _DNF[rule] = out
+            out = _mk(vf, _union(_LO[f], _LO[g]), _union(_HI[f], _HI[g]))
+        _UNION[key] = out
     return out
 
 
-def _leaf(player: int, atom):
-    kind, name, n = atom
-    if kind == "h":
-        return Has(player, name, n)
-    if kind == "r":
-        return ReachRegion(player, name)
-    return ReachLocation(player, name)
+def _join(f: int, g: int) -> int:
+    """Every ``a | b``: the AND of two families."""
+    if f == 0 or g == 0:
+        return 0
+    if f == 1:
+        return g
+    if g == 1:
+        return f
+    if f > g:
+        f, g = g, f
+    key = (f, g)
+    out = _JOIN.get(key)
+    if out is None:
+        vf, vg = _VAR[f], _VAR[g]
+        if vf < vg:
+            out = _mk(vf, _join(_LO[f], g), _join(_HI[f], g))
+        elif vf > vg:
+            out = _mk(vg, _join(f, _LO[g]), _join(f, _HI[g]))
+        else:
+            lf, hf, lg, hg = _LO[f], _HI[f], _LO[g], _HI[g]
+            out = _mk(vf, _join(lf, lg), _union(_union(_join(hf, hg), _join(hf, lg)), _join(lf, hg)))
+        _JOIN[key] = out
+    return out
+
+
+def _has_empty(f: int) -> bool:
+    while f > 1:
+        f = _LO[f]
+    return f == 1
+
+
+def _nonsup(f: int, g: int) -> int:
+    """The alternatives of ``f`` holding no alternative of ``g`` (nothing ``g`` subsumes)."""
+    if f == 0 or g == 1 or f == g:
+        return 0
+    if g == 0:
+        return f
+    if f == 1:
+        return 0 if _has_empty(g) else 1
+    key = (f, g)
+    out = _NONSUP.get(key)
+    if out is None:
+        vf, vg = _VAR[f], _VAR[g]
+        if vf < vg:
+            out = _mk(vf, _nonsup(_LO[f], g), _nonsup(_HI[f], g))
+        elif vf > vg:
+            out = _nonsup(f, _LO[g])   # g's alternatives with vg can't fit in f's, which never hold it
+        else:
+            out = _mk(vf, _nonsup(_LO[f], _LO[g]), _nonsup(_nonsup(_HI[f], _LO[g]), _HI[g]))
+        _NONSUP[key] = out
+    return out
+
+
+def _minimal(f: int) -> int:
+    """Drop every alternative another one subsumes."""
+    if f <= 1:
+        return f
+    out = _MINIMAL.get(f)
+    if out is None:
+        lo = _minimal(_LO[f])
+        out = _MINIMAL[f] = _mk(_VAR[f], lo, _nonsup(_minimal(_HI[f]), lo))
+    return out
+
+
+def _leaf_zdd(kind: str, name: str, count: int) -> int:
+    if count >= _RUNGS:
+        raise ValueError(f"has({name}, {count}): past the {_RUNGS}-rung ladder")
+    base = _LEAF_INDEX.setdefault((kind, name), len(_LEAF_INDEX)) * _RUNGS + _RUNGS
+    node = 1
+    for k in range(1, count + 1):   # bottom up: the lowest rung has the largest var
+        var = base - k
+        _ATOM[var] = (kind, name, k)
+        node = _mk(var, 0, node)
+    return node
+
+
+def _zdd(rule) -> int:
+    """The rule as a ZDD of its minimal alternatives."""
+    out = _OF_RULE.get(rule)
+    if out is not None:
+        return out
+    kind = type(rule)
+    if kind is Const:
+        out = 1 if rule.value else 0
+    elif kind is Has:
+        out = _leaf_zdd("h", rule.item, rule.count)
+    elif kind is ReachRegion:
+        out = _leaf_zdd("r", rule.region, 1)
+    elif kind is ReachLocation:
+        out = _leaf_zdd("l", rule.location, 1)
+    elif kind is And:
+        out = 1
+        for child in rule.children:
+            out = _minimal(_join(out, _zdd(child)))
+            if out == 0:
+                break
+    elif kind is Or:
+        out = 0
+        for child in rule.children:
+            out = _union(out, _zdd(child))
+        out = _minimal(out)
+    elif kind is AtLeast:
+        kids = [_zdd(child) for child in rule.children]
+        # row[i] = "at least n of kids[i:]", one n at a time: n of kids[i:] = kids[i] AND n-1 of the
+        # rest, OR n of the rest.
+        row = [1] * (len(kids) + 1)
+        for n in range(1, rule.n + 1):
+            new = [0] * (len(kids) + 1)
+            for i in range(len(kids) - 1, -1, -1):
+                new[i] = _minimal(_union(_join(kids[i], row[i + 1]), new[i + 1]))
+            row = new
+        out = row[0]
+    else:
+        raise TypeError(f"no ZDD for {kind.__name__}")
+    _OF_RULE[rule] = out
+    return out
+
+
+def _as_rule(player: int, node: int):
+    """The interned Rule for a node: OR over its var (without it | with it), so shared nodes are shared
+    Rule subtrees."""
+    if node <= 1:
+        return Const(node == 1)
+    out = _AS_RULE.get(node)
+    if out is None:
+        var = _VAR[node]
+        kind, name, count = _ATOM[var]
+        hi = _HI[node]
+        while hi > 1 and _VAR[hi] // _RUNGS == var // _RUNGS:
+            hi = _HI[hi]   # the lower rungs under a higher one: every alternative here holds them
+        leaf = Has(player, name, count) if kind == "h" else (
+            ReachRegion(player, name) if kind == "r" else ReachLocation(player, name))
+        out = _AS_RULE[node] = or_(_as_rule(player, _LO[node]), and_(leaf, _as_rule(player, hi)))
+        _OF_RULE.setdefault(out, node)   # re-reading this price later costs nothing
+    return out
 
 
 def canonical(player: int, rule):
-    """The interned Rule for ``rule``'s minimal DNF, in a stable order."""
-    alts = sorted(dnf(rule), key=lambda alt: (len(alt), sorted(alt)))
-    return or_(*(and_(*(_leaf(player, atom) for atom in sorted(alt))) for alt in alts))
+    """The interned Rule for ``rule``'s minimal alternatives: the same object for the same logic."""
+    return _as_rule(player, _zdd(rule))
 
 
 def _cycle(st, key) -> set:
@@ -247,8 +288,7 @@ def acquire(h, item_id: str):
         st = h._fp = _State()
         # Leaves carry the player, so nothing cached for an earlier slot can hit again: keeping it
         # stacked every AEM slot of a multiworld on top of the next.
-        _DNF.clear()
-        _SIG.clear()
+        _reset()
     key = (base, h._bulk)
     if st.current is not None:
         # Inside a computation an unpriced item is "no route yet": Const(False) folds out of every
@@ -269,6 +309,13 @@ def acquire(h, item_id: str):
         # flimsy item priced "Overworld" IS the Overworld node). So the marks live for one
         # computation and are set by the item being read, never left on the node for everyone.
         loose, dry = st.flags.get(key, (False, False))
+        if (loose or dry) and not h.glitch:
+            # A strict price is factored, so a route that ANDs on something the price already holds
+            # (a crop's farm, around its seed) folds back into the price's own node, and the mark
+            # meant for the read lands on the route. A one-child Or is a node no and_/or_ builds;
+            # canonical() takes it out again, so it never reaches a rule. (Glitch prices aren't
+            # factored: left as they were.)
+            price = Or([price])
         if loose:
             h._loose_nodes.add(id(price))
         if dry:
