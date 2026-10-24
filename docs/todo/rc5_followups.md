@@ -70,7 +70,8 @@ python tools/why_rule.py [--mc 26.3] [--without "<item>"] "<advancement name pre
   Handling Knowledge and Material Handling tier, a gated block's Knowledge, a raw material's
   Material Handling), not `acquire(item)`.
 
-- [ ] **3. A block with a recipe that worldgen places is never a source of itself (F21, half done)**
+- [x] **3. A block with a recipe that worldgen places is never a source of itself (F21, half done)**
+  (fixed 2026-10-25, `fix/worldgen-self-source`: gate reads block_biomes.json, `_NATURAL_SELF_MINED` down to 4 blocks; 8-10 BACAP checks looser, none stricter)
 
   Where: `acquisition._acquire_from_sources`, the placed-only self-mine gate
   (`... and placed_only and base not in _NATURAL_SELF_MINED`).
