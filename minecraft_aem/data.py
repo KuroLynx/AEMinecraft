@@ -379,10 +379,25 @@ class MinecraftContent:
         # Vanilla advancements BACAP DELETES outright (its rewrite strips the display — see
         # load_manifest_removed). While blazeandcave is on these cannot be earned at all, so they must
         # not be created as checks: "Serious Dedication" (vanilla's netherite hoe) is the one, and BACAP
-        # replaces it with a same-titled advancement of its own under a different id.
+        # replaces it with a same-titled advancement of its own under a different id. Plus BACAP's own
+        # advancements nothing awards (_BACAP_UNEARNABLE).
         self.BACAP_REMOVED: frozenset[str] = (
             load_manifest_removed(self.BACAP_PACK) & self._vanilla_advancement_game_ids
+            | _BACAP_UNEARNABLE["all"] | _BACAP_UNEARNABLE.get(self.BACAP_PACK, frozenset())
         ) if self.BACAP_PACK else frozenset()
+
+
+# BACAP's own advancements that nothing can award, so they are no checks either. Not derivable from the
+# manifest: 63 BACAP advancements are impossible-only and still earned (the datapack grants them by
+# command), and these two are told apart only by what the datapack does NOT do.
+#   * Edge of the Jungle: impossible-only and never granted; its biome (Modified Jungle Edge) went in
+#     1.18, and BACAP keeps the advancement for old worlds.
+#   * Captain Etho (1_21_1 only): checks for a vex holding a trident and a nautilus shell instead of a
+#     drowned. A vex spawns with an iron sword and never picks anything up.
+_BACAP_UNEARNABLE: dict[str, frozenset[str]] = {
+    "all": frozenset({"blazeandcave:biomes/edge_of_the_jungle"}),
+    "blazeandcave_1_21_1": frozenset({"blazeandcave:monsters/captain_etho"}),
+}
 
 
 def _canonical_ids(tables: list[dict[str, int]]) -> dict[str, int]:
