@@ -167,22 +167,9 @@ _GENERATED_ONCE_MOBS = frozenset({E_ELDER_GUARDIAN, E_PIGLIN_BRUTE})
 # the wet one. Game behaviour, not a recipe, so the packs don't carry it.
 _DRIED_IN_NETHER = {"sponge": "minecraft:wet_sponge"}
 
-_NATURAL_SELF_MINED = frozenset({
-    "stone", "cobblestone", "granite", "diorite", "andesite", "tuff", "calcite", "deepslate",
-    "cobbled_deepslate", "dripstone_block", "amethyst_block", "sandstone", "red_sandstone",
-    "clay", "snow_block", "packed_ice", "blue_ice", "glowstone", "magma_block", "obsidian",
-    "mossy_cobblestone", "mud", "packed_mud",
-    # Also here for _placed_block_origin rather than for self-mining: both are craftable from what
-    # they drop (a melon from 9 slices, a snow block from 4 snowballs) and neither has a recipe-free
-    # source in the packs, so without this a jungle melon and a snowy-biome snow layer would read as
-    # "someone must have placed that" and cost their own craft — a cycle, which would take
-    # melon_slice's and snowball's honest routes with it.
-    "melon", "snow",
-    # Generates in every Pale Garden: Silk Touch digs it up whole (block_mining's drop gate) and any
-    # tool breaks it for resin. As placed-only, the heart and resin only came from each other's
-    # recipes, a cycle nothing grounded, so they read obtainable only by accident of fixed-point order.
-    "creaking_heart",
-})
+# Blocks that count as generating on their own though block_biomes.json (biome worldgen only) doesn't
+# list them. Everything else that generates is read off block_biomes.json (see _generates).
+_NATURAL_SELF_MINED = frozenset({"cobblestone", "cobbled_deepslate", "obsidian", "packed_mud"})
 # Blocks that do generate on their own, but only as a few buried blocks per dozens of chunks with no way to
 # find them: an Overworld fossil's bone blocks (a worldgen feature, so no structure or Finder points at
 # one). Finding one is luck, so that route is glitch only; crafting and the structures that place the
@@ -361,6 +348,12 @@ def _ore_like(content, block: str) -> bool:
     variant a free natural source of cauldrons."""
     info = _block_mining(content).get(block) or {}
     return "needs" in info or "drops" in info
+
+
+def _generates(content, block: str) -> bool:
+    """Whether ``block`` is lying around in the world, recipe or not: listed in block_biomes.json
+    (smooth basalt lining every geode, badlands terracotta, melons, snow layers…) or curated."""
+    return block in _NATURAL_SELF_MINED or block in _pack_json(content, "block_biomes.json", missing_ok=True)
 
 
 def _rare_biome_block(content, block: str) -> bool:
@@ -1908,7 +1901,7 @@ class RuleHelper:
             natural_block = (_ore_like(self.content, block)
                              and not _acquisition_table(self.content).get(block, {}).get("recipes"))
             is_variant = block != base and base in block and not natural_block
-            if (block == base or (is_variant and placed_only))                     and placed_only and base not in _NATURAL_SELF_MINED:
+            if (block == base or (is_variant and placed_only)) and placed_only and not _generates(self.content, base):
                 # The self-mine is circular (placed-only), but the block may still generate naturally
                 # inside a structure's template (structures.json palette) — reaching that structure
                 # and mining it there is a genuine source recipes/loot don't capture (e.g. a
@@ -2311,12 +2304,9 @@ class RuleHelper:
         Blocks that really do generate keep costing nothing: stone, clay, glowstone, deepslate and
         the rest carry their own mining/loot sources in the record, so they never reach the test.
         ``None`` when neither origin exists this seed — the caller then drops the route."""
-        if block in _NATURAL_SELF_MINED:
-            return self._natural_origin(block)  # curated: it really is lying around out there
-        if block in _pack_json(self.content, "block_biomes.json", missing_ok=True):
-            # Biome worldgen places it (badlands terracotta, crimson forest wart blocks, geode smooth
-            # basalt), recipe or not: it is lying around where it grows. _natural_origin asks for the
-            # Biome Finder when that biome is rare.
+        if _generates(self.content, block):
+            # Lying around where it grows, recipe or not. _natural_origin asks for the Biome Finder
+            # when that biome is rare.
             return self._natural_origin(block)
         record = _acquisition_table(self.content).get(block)
         if not record or not record.get("recipes"):
