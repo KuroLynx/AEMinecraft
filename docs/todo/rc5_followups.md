@@ -43,7 +43,8 @@ python tools/why_rule.py [--mc 26.3] [--without "<item>"] "<advancement name pre
 
 ## B. Bugs
 
-- [ ] **1. Bosses goal tile turns gray instead of blue on a released / collected boss kill (F37)**
+- [x] **1. Bosses goal tile turns gray instead of blue on a released / collected boss kill (F37)**
+  (fixed 2026-10-24, `fix/bosses-tile-gray`: compiles on all 3 versions, NOT tested in-game)
 
   Where: `DataLogicProvider.goalBossesState` / `goalState`, `isEarned(String gameId)`.
   A target counts as "earned" when the client holds the advancement named by its game id, and an id

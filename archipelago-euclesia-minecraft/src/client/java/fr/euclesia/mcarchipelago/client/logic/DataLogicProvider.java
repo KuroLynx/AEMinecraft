@@ -243,7 +243,6 @@ public final class DataLogicProvider implements LogicProvider {
         APLocationRegistry locations = client.registries().apLocations();
         int reachable = 0;
         int reached = 0;
-        int earned = 0;
         for (JsonElement element : bossList) {
             String bossGameId = element.getAsString();
             String locationName = graph.locationNameForGameId(bossGameId);
@@ -252,11 +251,12 @@ public final class DataLogicProvider implements LogicProvider {
             }
             if (isChecked(locations, bossGameId)) {
                 reached++;
-                if (isEarned(bossGameId)) {
-                    earned++;
-                }
             }
         }
+        // A boss's game id is the mob's, never an advancement, so isEarned can't tell a kill made here
+        // from a release or collect. The tile itself can: the server awards its per-boss criterion only
+        // on a kill in this run (RootAdvancementService.recordBossKill), so it is done once all are.
+        int earned = isEarned(Identifier.parse(APTrackerRegistry.GOAL_BOSSES_ID)) ? bossList.size() : 0;
         return goalState(reachable, reached, earned, bossList.size());
     }
 
