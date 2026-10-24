@@ -1252,12 +1252,17 @@ class CriteriaCompiler:
         return self.compile(record, gid)
 
     def _price_recipe(self, rid):
-        obtain = self.h.acquire(rid)
+        """Crafting it: the recipe, plus whatever the mod demands before the result can be taken out
+        of that station (the take is what fires the trigger). Not acquire(rid): that keeps only the
+        item's dependable routes, so a recipe through a flimsy ingredient asked for the recipe AND
+        some other whole route to the item ('The Lie' wanted a Trial Chambers on top of the cake)."""
         recipes = _acquisition_table(self.content).get(_path(rid), {}).get("recipes")
-        if obtain is None or not recipes:
-            return obtain
-        made = self._any_opt(*[self.h._recipe_node(r) for r in recipes])
-        return self._all_req(made, obtain)
+        if not recipes:
+            return self.h.acquire(rid)
+        return self._any_opt(*[
+            self._all_req(self.h._recipe_node(r), self.h.take_lock(
+                rid, "crafting" if (r.get("station") or "").startswith("crafting") else "station"))
+            for r in recipes])
 
     def _price_loot_table(self, table):
         segments = _path(table).split("/")

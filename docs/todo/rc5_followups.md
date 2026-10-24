@@ -55,7 +55,8 @@ python tools/why_rule.py [--mc 26.3] [--without "<item>"] "<advancement name pre
   Fix: gray when the goal tile's own advancement is done on the client (its progress is what the
   server grants from the earned count), blue when enough targets are only checked.
 
-- [ ] **2. A crafting criterion costs the recipe AND the item's full price (F23)**
+- [x] **2. A crafting criterion costs the recipe AND the item's full price (F23)**
+  (fixed 2026-10-24, `fix/recipe-criterion-price`: recipe + `take_lock` on its route; only The Lie moves, looser, on all 3 versions)
 
   Where: `criteria._price_recipe` returns recipe AND `acquire(item)`.
   `acquire()` keeps only an item's dependable routes. A recipe route through an ingredient only
