@@ -7,6 +7,7 @@ from .data import (
     ALL_VERSIONS_ADVANCEMENTS,
     ALL_VERSIONS_BOSSES,
     ALL_VERSIONS_MOBS,
+    ALL_VERSIONS_STRUCTURE_GROUPS,
     ALL_VERSIONS_STRUCTURES,
     DEFAULT_MINECRAFT_VERSION,
     KNOWLEDGES,
@@ -154,6 +155,10 @@ class StructureUnlock(OptionSet):
           dimension.
         - "All" — lock every structure.
         - Any structure name (e.g. "Ancient City", "Village Plains", "Fortress").
+        - A group of biome variants (e.g. "Village", "Abandoned Camp"): every structure in it.
+
+    With split_structure_variants off, one item unlocks a whole group, so naming any member of a group
+    ("Village Plains") locks the whole group.
 
     Examples:
         Lock everything in the Nether plus the Ancient City:
@@ -164,7 +169,8 @@ class StructureUnlock(OptionSet):
             - All
     """
     display_name = "Structure Unlock"
-    valid_keys = {"All", "Overworld", "Nether", "The End"} | {data.label for data in ALL_VERSIONS_STRUCTURES.values()}
+    valid_keys = ({"All", "Overworld", "Nether", "The End"} | {data.label for data in ALL_VERSIONS_STRUCTURES.values()}
+                  | set(ALL_VERSIONS_STRUCTURE_GROUPS))
     default = frozenset({"Stronghold"})
 
 

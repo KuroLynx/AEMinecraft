@@ -99,7 +99,8 @@ python tools/why_rule.py [--mc 26.3] [--without "<item>"] "<advancement name pre
   Fix: leave them out of the locations in those packs. Consider detecting `minecraft:impossible`-only
   advancements generically instead of listing names.
 
-- [ ] **5. `structure_unlock` does not accept the group names the unlock items use**
+- [x] **5. `structure_unlock` does not accept the group names the unlock items use**
+  (fixed 2026-10-25, `fix/structure-unlock-groups`: group names accepted; with groups on, any locked member locks its whole group, presets included)
 
   Where: `StructureUnlock.valid_keys` (options.py), `MCWorld._get_locked_structures` (`__init__.py`).
   With `split_structure_variants` off, the pool holds one "Structure Unlock: Village" /
