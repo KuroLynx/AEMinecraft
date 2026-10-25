@@ -176,7 +176,8 @@ python tools/why_rule.py [--mc 26.3] [--without "<item>"] "<advancement name pre
 
 ## M. Mod suggestion: `/aem structures` pending list
 
-- [ ] **M1. Separate "waiting for a player to load the chunk" from "being written"**
+- [x] **M1. Separate "waiting for a player to load the chunk" from "being written"**
+  (done 2026-10-25, `feat/structures-pending-list`: counted apart per type, `/aem structures waiting` lists the 10 nearest; compiles on 3 versions, NOT tested in-game)
 
   Structures that need a player to load their chunk before they can be built are listed in
   `/aem structures` as "placement still being written". That reads as "generation is stuck".
