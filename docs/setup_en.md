@@ -164,7 +164,7 @@ has done — half-finished advancements included — instead of starting from th
 
 > **DeathLink on a server:** your deaths go to the room once each, however many of you are online, and
 > a death arriving from another world takes **one** random living player rather than wiping the
-> server.
+> server. An operator can switch that with `/aem deathlink mode all`.
 
 ### Server commands
 
@@ -175,6 +175,7 @@ has done — half-finished advancements included — instead of starting from th
 | `/aem connect "<uri>" "<slot>" ["<password>"]` | anyone | Opens a session on a server that started idle |
 | `/aem reconnect` | operators | Retries this world's saved slot and flushes everything earned offline |
 | `/aem deathlink [on\|off\|default]` | operators | DeathLink for the whole run, saved in the world. On a dedicated server this is the only way to change it — the client screen's toggle has no session to talk to |
+| `/aem deathlink mode [random\|all]` | operators | Who a death from another world kills: one random living player (`random`, the default) or everyone (`all`). Saved in the world; with no argument it shows the current mode |
 
 ## Playing offline
 
