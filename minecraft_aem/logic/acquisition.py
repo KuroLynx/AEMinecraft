@@ -220,6 +220,9 @@ _BLOCK_ONLY_FROM = {
     "wet_sponge": ("structures", (S_OCEAN_MONUMENT,)),
     "decorated_pot": ("structures", (S_TRIAL_CHAMBERS,)),
     "copper_golem_statue": ("entity", E_COPPER_GOLEM),
+    # No recipe, so it read as natural, and water washing a "free" web made string cost a bucket.
+    # It is only where a structure put it ("palette": every structure _block_structures knows).
+    "cobweb": ("palette", None),
 }
 # Blocks that are the PLACED FORM of the item they drop, under a different name — so mining one back
 # is circular the way mining a potted plant is, and reading it as a natural source makes the item
@@ -298,6 +301,8 @@ _EXTRA_DROP_INSTEAD = {
 # gate anything.
 _EXTRA_BLOCK_STRUCTURES = {
     "dried_ghast": ("nether_fossil",),
+    # A mineshaft's corridors and a stronghold's library are code-built pieces, cobwebs and all.
+    "cobweb": (S_MINESHAFT, S_MINESHAFT_MESA, S_STRONGHOLD),
 }
 # What has to be standing in front of you before an empty bucket becomes a FULL one. Filling a bucket
 # is a use-interaction, which appears in no recipe, loot table or trade, so the dump has no record of
@@ -1939,7 +1944,7 @@ class RuleHelper:
                     continue          # the block cannot exist for this seed — not a source at all
                 # A block only a structure placed (a monument's wet sponge) runs dry like its chest.
                 add(self.all_of(node, origin), unreliable("mining", block), chance=chance("mining", block),
-                    runs_dry=_BLOCK_ONLY_FROM.get(block, ("",))[0] == "structures")
+                    runs_dry=_BLOCK_ONLY_FROM.get(block, ("",))[0] in ("structures", "palette"))
         for block in record.get("silk_mining", ()):
             # The block yields itself only to a Silk-Touch tool (bee_nest, ice, coral, …): same
             # region/tier as a normal mine PLUS the capability to silk-touch (enchant). Always behind
@@ -2273,6 +2278,10 @@ class RuleHelper:
             tool, source = self.acquire(tool_id), self.acquire(source_id)
             if tool is not None and source is not None:
                 routes.append(self.all_of(tool, source))
+            return self.any_of(*routes) if routes else None
+        if kind == "palette":
+            routes = [self.palette_structure(name, block) for name in _block_structures(self.content).get(block, ())
+                      if name in self.active_structures]
             return self.any_of(*routes) if routes else None
         active = [name for name in value if name in self.active_structures]
         return self.any_of(*[self.structure(name) for name in active]) if active else None
