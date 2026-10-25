@@ -312,7 +312,7 @@ _ENTITY_SKIP = {"distance", "flags", "team", "movement", "movement_affected_by",
                 "slots", "periodic_tick"}
 _LOCATION_KEYS = {"position", "biomes", "structures", "dimension", "block", "smokey"}
 _LOCATION_FREE = {"fluid", "light", "can_see_sky"}   # a threshold you can just go and stand in
-_ITEM_KEYS = {"items", "count", "components", "predicates"}
+_ITEM_KEYS = {"items", "id", "count", "components", "predicates"}   # "id": one item, as BACAP writes equipment
 _COMPONENTS = {"potion_contents", "enchantments", "stored_enchantments", "trim", "container",
                "bundle_contents", "jukebox_playable", "dyed_color", "suspicious_stew_effects",
                "banner_patterns"}
@@ -670,6 +670,13 @@ class CriteriaCompiler:
                         for holder in ("components", "predicates") if isinstance(pred.get(holder), dict)
                         for k in pred[holder] if str(k).endswith("/variant")), None)
         gid = pred.get("type") or (f"minecraft:{species}" if species else None)
+        if isinstance(gid, str) and _path(gid) == "falling_block":
+            # No item and no mob: the block it is, spelled in its NBT (Name or id), is what you need.
+            blocks = re.findall(r'BlockState:\{(?:Name|id):"([a-z0-9_:]+)"', nbt)
+            if not blocks:
+                _fail(f"{path}.nbt", nbt, "a falling_block's BlockState")
+            carried += [_item(_ns(b)) for b in blocks]
+            gid = None
         mount = _MOUNT_NEED.get(_path(gid)) if path.endswith(".vehicle") and isinstance(gid, str) else None
         # Someone else wearing a head item (a pumpkin, a skull) can only be a mob a dispenser equips:
         # nobody puts one on a cow. The ominous banner is the raid captain's, priced below instead.
@@ -825,7 +832,8 @@ class CriteriaCompiler:
             if not key.endswith("/variant"):
                 self.unread[f"{path}.component.{key}"] += 1
 
-        ids = [i for raw in _ids(pred.get("items"), f"{path}.items") for i in self._expand_items(raw)]
+        key = "items" if "items" in pred else "id"
+        ids = [i for raw in _ids(pred.get(key), f"{path}.{key}") for i in self._expand_items(raw)]
         potions = self._potion_types(components.get("potion_contents"))
         if potions and any(i in _POTION_ITEMS for i in ids) and all(p in _brewing(self.content) for p in potions):
             base = any_(*[need("potion", p) for p in potions])
