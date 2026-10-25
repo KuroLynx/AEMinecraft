@@ -29,7 +29,7 @@ import re
 from collections import Counter
 from dataclasses import dataclass
 
-from .acquisition import RuleHelper, _acquisition_table, _block_structures
+from .acquisition import RuleHelper, _acquisition_table, _block_structures, _enchanted_books
 from .ast import Const, Rule, and_, or_
 from .constants import E_WOLF, K_ARMOR, K_BREWING, K_HOE, K_PICKAXE, MAT_IRON, REGION_END, REGION_NETHER, REGION_OVERWORLD
 from .tables import (
@@ -45,18 +45,15 @@ from .tables import (
     _EFFECT_POTIONS,
     _EFFECT_SOURCE,
     stew_source,
-    _ENCHANT_LOOT_SOURCE,
     _EQUIPMENT_SLOTS,
     _EXPLOSION_ITEM,
     _EXTRA_REQUIREMENT,
     _FARMLAND_CROPS,
     _NEEDS_A_MOB,
-    _NOT_IN_ENCHANTING_TABLE,
     _POTION_ITEMS,
     _PROJECTILE_SHOOTERS,
     _SMITHING_STATION,
     _SPIDER_SPAWN_EFFECTS,
-    _LOOT_TABLE_STRUCT,
     _PLANT_ITEM,
     _TRIM_MATERIAL_ITEM,
     _brewing,
@@ -1217,19 +1214,16 @@ class CriteriaCompiler:
 
     def _price_enchant_source(self, name, on_item, items=()):
         anvil = self.h.acquire("minecraft:anvil")
-        book = self.h.acquire("minecraft:enchanted_book")
-        if name in _ENCHANT_LOOT_SOURCE:
-            found = _ENCHANT_LOOT_SOURCE[name](self)
-            return found if found is None or not on_item else self._all_req(found, anvil)
+        tags = _enchanted_books(self.content)
         routes = []
-        if (name is None or name not in _NOT_IN_ENCHANTING_TABLE) and self._table_offers(name, items):
+        if (name is None or name in tags.get("in_enchanting_table", ())) and self._table_offers(name, items):
             routes.append(self.h.acquire("minecraft:enchanting_table"))
+        # Any book does for "some enchantment"; a named one comes from the loot that can roll it (sure
+        # or luck, see RuleHelper.enchanted_book), or a librarian rerolled until it offers it.
+        book = self.h.acquire("minecraft:enchanted_book") if name is None else self.h.enchanted_book(name)
         if book is not None:
-            found = self._all_req(book, anvil) if on_item else book
-            # Any book will do for "some enchantment"; one named enchantment is a random book's luck
-            # (glitch), or a librarian rerolled until it offers it.
-            routes.append(found if name is None or found is None else self.h.glitch_only(found))
-        if name is not None:
+            routes.append(self._all_req(book, anvil) if on_item else book)
+        if name is not None and name in tags.get("tradeable", ()):
             librarian = self.h.librarian_book()
             routes.append(self._all_req(librarian, anvil) if on_item else librarian)
         return self._any_opt(*routes)
@@ -1283,13 +1277,8 @@ class CriteriaCompiler:
         if segments[0] == "archaeology":
             # Archaeology loot only rolls when you brush a suspicious block in that structure.
             return self._all_req(self._price_loot_table("/".join(segments[1:])), self.h.has_brush())
-        for seg in reversed(segments):
-            node = self._struct_gid(_LOOT_TABLE_STRUCT.get(seg, seg))
-            if node is not None:
-                return node
-        head = segments[-1].split("_")[0]
-        match = next((p for p in self._struct_by_path if p.split("_")[0] == head), None)
-        return self._struct_gid(match) if match else None
+        name = self.h.loot_table_structure(table)
+        return self.h.structure(name) if name is not None else None
 
     def _is_back_reference(self, gid: str) -> bool:
         """Would depending on ``gid`` close a loop back onto an advancement being compiled?

@@ -79,26 +79,6 @@ _TRIM_MATERIAL_ITEM = {
     "resin": "resin_brick",
 }
 
-# Enchantments an enchanting table cannot produce. Derived from the 26.1.2 jar's enchantment tags:
-# of 43 enchantments, #minecraft:in_enchanting_table holds 36 and #minecraft:tradeable holds 40, so
-# these seven are the ones "go enchant something" is the wrong price for. Four remain tradeable, i.e.
-# a librarian's enchanted book is the entire route.
-_NOT_IN_ENCHANTING_TABLE = frozenset({
-    "mending", "frost_walker", "binding_curse", "vanishing_curse",   # tradeable / loot only
-    "swift_sneak", "soul_speed", "wind_burst",                       # in neither tag — see below
-})
-
-# The three in neither tag: exactly one place in the world generates each, so no amount of enchanting
-# or trading substitutes. Loot tables verified in the same jar (paths under data/minecraft/loot_table).
-# Each value takes the compiler so the gate builds lazily through _struct_gid (which yields None when
-# the active packs lack that structure, rather than inventing a gate).
-_ENCHANT_LOOT_SOURCE = {
-    "swift_sneak": lambda c: c._struct_gid("minecraft:ancient_city"),        # chests/ancient_city
-    "soul_speed": lambda c: c._any_opt(                                      # chests/bastion_other
-        c._struct_gid("minecraft:bastion_remnant"), c.h.can_barter()),       # + gameplay/piglin_bartering
-    "wind_burst": lambda c: c.h.ominous_trial(),  # trial_chambers/reward_ominous_rare
-}
-
 # Damage-type #tags, as gates. BACAP reaches for one of these whenever it wants "kill it WITH
 # something" without naming the item — the tag is then the only thing the criterion says about how
 # the blow must land, so it IS the requirement. Six occur across the pack; they are tried in this
@@ -462,17 +442,6 @@ _PLANT_ITEM = {
     "minecraft:fire": ["minecraft:flint_and_steel", "minecraft:fire_charge"],
     "minecraft:soul_fire": ["minecraft:flint_and_steel", "minecraft:fire_charge"],
 }
-
-# Loot tables whose name isn't a structure id: a chest that belongs to a feature the registry
-# names differently (a dungeon's monster_room, an underwater ruin's ocean_ruin).
-_LOOT_TABLE_STRUCT = {
-    "simple_dungeon": "minecraft:monster_room",
-    "abandoned_mineshaft": "minecraft:mineshaft",
-    "woodland_mansion": "minecraft:mansion",
-    "underwater_ruin_big": "minecraft:ocean_ruin_warm",
-    "underwater_ruin_small": "minecraft:ocean_ruin_warm",
-}
-
 
 def _path(gid):
     """The bare path of an id (namespace dropped): ``minecraft:end_city`` / ``end_city`` /
