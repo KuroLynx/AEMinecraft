@@ -144,7 +144,8 @@ python tools/why_rule.py [--mc 26.3] [--without "<item>"] "<advancement name pre
   Fix: cobweb's origin should be the structures that place it (palette_structure, or a
   `_BLOCK_ONLY_FROM` "structures" entry). Check every string/wool user with the old-vs-new diff.
 
-- [ ] **8. With Silk Touch, glass, stained glass and panes read as natural blocks**
+- [x] **8. With Silk Touch, glass, stained glass and panes read as natural blocks**
+  (fixed 2026-10-25, `fix/silk-crafted-blocks`: crafted silk blocks take their palette structures; 55-56 checks stricter, none looser)
 
   Where: `acquisition._acquire_from_sources`, the silk_mining loop: a non-aged block takes
   `_natural_origin(block)` as origin (free unless rare-biome), never `_block_origin_node`, so neither
