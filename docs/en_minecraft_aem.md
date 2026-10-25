@@ -73,12 +73,13 @@ Optional systems expand or reshape the game:
 - **Structure Finder / Biome Finder** — navigation aids (see below) that can be shuffled into the
   pool, granted at start, or disabled.
 - **Keep Inventory** — the `keep_inventory` option decides how much of your inventory (main slots,
-  armor and offhand — never your XP) survives a death: `disabled` drops everything as in vanilla,
+  armor and offhand) and of your XP survives a death: `disabled` drops everything as in vanilla,
   `active` keeps all of it from the start, and `progressive` puts **Progressive Keep Inventory**
   items in the pool and scales you from 0% to 100% as you find them, keeping that share of your
-  filled slots picked at random. `keep_inventory_pool_size` (default 10) sets how many copies exist:
-  that is granularity, not a cap — collecting them all always reaches 100%, so a small pool means a
-  few big jumps and a large one many small steps.
+  filled slots picked at random and that share of your XP points (the rest is lost as in vanilla).
+  `keep_inventory_pool_size` (default 10) sets how many copies exist: that is granularity, not a
+  cap — collecting them all always reaches 100%, so a small pool means a few big jumps and a large
+  one many small steps.
 
 ## What is the goal of AEMinecraft when randomized?
 

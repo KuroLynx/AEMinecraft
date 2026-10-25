@@ -489,8 +489,8 @@ class MCWorld(World):
                 + "\n".join(lines) + f"\n{hint}.")
 
     def get_filler_item_name(self) -> str:
-        """A filler buff, weighted by its pool count. AP calls this for every replacement item (item
-        links, plando, start_inventory_from_pool); its default picks ANY item, which handed out
+        """Any item classified as filler, weighted by its pool count. AP calls this for every replacement
+        item (item links, plando, start_inventory_from_pool); its default picks ANY item, which handed out
         Knowledges, unlocks outside the pool, or one this seed's MC version lacks ("Abandoned Camp"
         crashed the mod)."""
         return self.random.choice([item_name for item_name, item_data in ITEMS.items()

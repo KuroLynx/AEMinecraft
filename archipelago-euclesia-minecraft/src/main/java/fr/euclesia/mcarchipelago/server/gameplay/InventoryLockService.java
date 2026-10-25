@@ -109,11 +109,11 @@ public final class InventoryLockService {
 
     /**
      * The full progressive unlock order for this seed: hotbar, then offhand (if included), then
-     * the row closest to the hotbar, then armor (if included), then the two remaining rows — per
-     * the priority the user specified. Length is {@link InventoryLock#totalLocked()}.
+     * the row closest to the hotbar (27-35), then armor (if included), then the middle row (18-26),
+     * then the top row (9-17) — per the priority the user specified. Length is {@link InventoryLock#totalLocked()}.
      *
      * <p>Only {@code slots} worth of the 36-slot hotbar+main pool is ever locked, counted from the
-     * LOW-priority end: the two remaining rows lock first, then (only once {@code slots} exceeds
+     * LOW-priority end: the top row locks first, then the middle row, then (only once {@code slots} exceeds
      * 18) the row closest to the hotbar, then (only past 27) the hotbar itself. So the hotbar, and
      * the row next to it, are protected by construction under any ordinary configuration — a
      * player is never left with an unusable hotbar just because {@code slots} is small. Mirrors

@@ -562,7 +562,7 @@ class InventoryLock(OptionDict):
 
     Locked slots open in a fixed order: the hotbar first, then the offhand slot (if 'offhand' is
     included), then the main-inventory row closest to the hotbar, then your armor slots (if
-    'armor' is included), then the two remaining main-inventory rows.
+    'armor' is included), then the middle row of the main inventory, then its top row.
 
     'offhand' and 'armor' add that slot group to what starts locked (offhand adds 1, armor adds 4)
     and give it its own share of the unlock items. false leaves it alone, always usable.

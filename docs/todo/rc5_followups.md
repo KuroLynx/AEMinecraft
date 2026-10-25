@@ -188,13 +188,15 @@ python tools/why_rule.py [--mc 26.3] [--without "<item>"] "<advancement name pre
 
 ## D. Docs and comments
 
-- [ ] **10.** `docs/en_minecraft_aem.md` still says keep_inventory never keeps your XP; since D3 it
+All four fixed 2026-10-25 on `docs/rc5-followups`.
+
+- [x] **10.** `docs/en_minecraft_aem.md` still says keep_inventory never keeps your XP; since D3 it
   keeps its share of XP points.
-- [ ] **11.** `docs/setup_en.md` does not list `/aem deathlink mode random|all` (D5).
-- [ ] **12.** The doc comment of `InventoryLockService.progressiveOrder` and the `inventory_lock`
+- [x] **11.** `docs/setup_en.md` does not list `/aem deathlink mode random|all` (D5).
+- [x] **12.** The doc comment of `InventoryLockService.progressiveOrder` and the `inventory_lock`
   option text (options.py:559) end with "then the two remaining rows" without the order. Since F29
   it matters: middle row (slots 18-26) first, then the top row (9-17).
-- [ ] **13.** The `MCWorld.get_filler_item_name` docstring says it draws "a filler buff"; it draws
+- [x] **13.** The `MCWorld.get_filler_item_name` docstring says it draws "a filler buff"; it draws
   any item classified as filler, weighted by its count.
 
 ---
