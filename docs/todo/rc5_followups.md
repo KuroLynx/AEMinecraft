@@ -122,13 +122,26 @@ python tools/why_rule.py [--mc 26.3] [--without "<item>"] "<advancement name pre
   Fix: read `"id"` as an item key, parse BlockState for `falling_block` (ask for that block), or at
   least raise like the other unreadable predicates.
 
-- [ ] **7. `base_color` is never read**
+- [x] **7. `base_color` is never read**
+  (fixed 2026-10-25, `fix/criteria-base-color`: base_color asks for that colour's banner; Flying Colors stricter, nothing else moves)
 
   Where: `criteria._COMPONENTS`.
   BACAP "Flying Colors" (1_21 and 1_21_1) asks for a shield with one of 16 `base_color` values, all in
   one requirement group; with the component unread the rule is just "a shield". In game it takes a
   shield plus a banner of that colour (wool, plus a dye unless white).
   Fix: price `base_color` as a banner of that colour applied to the shield, not as a dye.
+
+- [ ] **7b. A cobweb is free, so a water bucket is free string (found checking 7, 2026-10-25)**
+
+  Where: `acquisition._placed_block_origin`: a block with no recipe that `block_biomes.json` doesn't
+  list is read as natural, so cobweb's origin is `Const(True)`. The hand-written cobweb entry in
+  `tables._BLOCK_GATE` (mineshaft / village / stronghold / mansion) is only read by criteria that
+  stand on a block, never by acquisition.
+  Effect: `_EXTRA_DROP_INSTEAD` (water washes a cobweb into string) prices string at a water bucket
+  (iron + furnace + pickaxe), with no structure. Wool, every banner, candles and Flying Colors follow.
+  (Shears were not it: the cobweb-item route does ask for Shear Handling.)
+  Fix: cobweb's origin should be the structures that place it (palette_structure, or a
+  `_BLOCK_ONLY_FROM` "structures" entry). Check every string/wool user with the old-vs-new diff.
 
 - [ ] **8. With Silk Touch, glass, stained glass and panes read as natural blocks**
 
