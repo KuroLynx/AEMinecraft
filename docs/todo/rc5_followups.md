@@ -131,7 +131,8 @@ python tools/why_rule.py [--mc 26.3] [--without "<item>"] "<advancement name pre
   shield plus a banner of that colour (wool, plus a dye unless white).
   Fix: price `base_color` as a banner of that colour applied to the shield, not as a dye.
 
-- [ ] **7b. A cobweb is free, so a water bucket is free string (found checking 7, 2026-10-25)**
+- [x] **7b. A cobweb is free, so a water bucket is free string (found checking 7, 2026-10-25)**
+  (fixed 2026-10-25, `fix/cobweb-origin`: origin = structures that place it; 94-99 checks stricter, none looser)
 
   Where: `acquisition._placed_block_origin`: a block with no recipe that `block_biomes.json` doesn't
   list is read as natural, so cobweb's origin is `Const(True)`. The hand-written cobweb entry in
