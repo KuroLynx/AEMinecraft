@@ -299,6 +299,15 @@ _EXTRA_DROP_INSTEAD = {
 # mentions of it anywhere in the jar data are its own loot table and piglin bartering. Merged into
 # _block_structures so the block keeps that route — this widens logic (one more way in), it does not
 # gate anything.
+# Loot tables whose name isn't a structure id: a chest that belongs to a feature the registry
+# names differently (a dungeon's monster_room, an underwater ruin's ocean_ruin).
+_LOOT_TABLE_STRUCT = {
+    "simple_dungeon": "minecraft:monster_room",
+    "abandoned_mineshaft": "minecraft:mineshaft",
+    "woodland_mansion": "minecraft:mansion",
+    "underwater_ruin_big": "minecraft:ocean_ruin_warm",
+    "underwater_ruin_small": "minecraft:ocean_ruin_warm",
+}
 _EXTRA_BLOCK_STRUCTURES = {
     "dried_ghast": ("nether_fossil",),
     # A mineshaft's corridors and a stronghold's library are code-built pieces, cobwebs and all.
@@ -334,6 +343,12 @@ def _pack_json(content, filename: str, missing_ok: bool = False) -> dict:
         return {}
     with path.open(encoding="utf-8") as handle:
         return json.load(handle)
+
+
+def _enchanted_books(content) -> dict:
+    """Which loot tables hand out a book of each enchantment, plus the enchantment tags
+    (tools/build_enchanted_books.py)."""
+    return _pack_json(content, "enchanted_books.json", missing_ok=True)
 
 
 def _block_mining(content) -> dict:
@@ -2393,10 +2408,41 @@ class RuleHelper:
         tag = self._TOOL_KIND_TAG.get(kind)
         return self._any_item(f"minecraft:{tag}") if tag else Const(False)
 
+    def loot_table_structure(self, table: str):
+        """The structure whose chests (vaults, spawners) a loot table fills, read off its path
+        (``chests/abandoned_mineshaft`` -> mineshaft), or None."""
+        by_path = {d.game_id.rsplit(":", 1)[-1]: n for n, d in self.content.STRUCTURES.items()}
+        segments = table.rsplit(":", 1)[-1].split("/")
+        for seg in reversed(segments):
+            name = by_path.get(_LOOT_TABLE_STRUCT.get(seg, seg).rsplit(":", 1)[-1])
+            if name is not None:
+                return name
+        head = segments[-1].split("_")[0]
+        return next((by_path[p] for p in by_path if p.split("_")[0] == head), None)
+
+    def enchanted_book(self, enchantment: str):
+        """A book of this one enchantment from loot (enchanted_books.json, read off the jar). A table
+        that can only roll this one (a bastion's Soul Speed) is a sure source; one that rolls it out
+        of several (a mineshaft's ~40, a vault's 6) is luck: glitch only. None when nothing has it."""
+        sure, luck = [], []
+        for table, options in _enchanted_books(self.content).get("books", {}).get(enchantment, {}).items():
+            segments = table.split("/")
+            if segments[0] == "gameplay":
+                node = self._gameplay_node(segments[-1])          # fishing treasure, bartering
+            elif "ominous" in segments[-1]:
+                node = self.ominous_trial()                       # the ominous vault
+            else:
+                name = self.loot_table_structure(table)
+                node = None if name is None else self.all_of(self.structure(name), self._loot_container_node())
+            if node is not None:
+                (sure if options == 1 else luck).append(node)
+        routes = sure + ([self.glitch_only(self.any_of(*luck))] if luck else [])
+        return self.any_of(*routes) if routes else None
+
     def librarian_book(self):
         """An enchanted book of the one enchantment you want: a librarian's novice offer, rerolled by
-        breaking and replacing its lectern until it is that one. Any enchantment a librarian trades
-        (all but the loot-only three, see _ENCHANT_LOOT_SOURCE in tables.py). None when unpriced."""
+        breaking and replacing its lectern until it is that one. Only for what a librarian trades
+        (enchanted_books.json "tradeable"; the caller checks). None when unpriced."""
         book, lectern = self.acquire("minecraft:book"), self.acquire("minecraft:lectern")
         if book is None or lectern is None:
             return None
@@ -2405,8 +2451,8 @@ class RuleHelper:
     def can_silk_touch(self):
         """The capability to wield a Silk-Touch tool, mirroring the enchant gate in ``criteria.py``:
         enchant one yourself (``acquire(enchanting_table)`` gates Knowledge: Enchanting + its tier),
-        OR a librarian's Silk-Touch book on an anvil. A random book (chest, fishing, bartering) is
-        Silk Touch only by luck: glitch only.
+        OR a librarian's Silk-Touch book on an anvil. A found book (chest, vault, fishing) is Silk Touch
+        only by luck: glitch only (see enchanted_book).
 
         A silk-only block drop asks for silk, silk asks for an enchanting table, and its ingredients
         can lead back to a silk-only block (deepslate gold ore -> silk -> obsidian -> ... -> deepslate
@@ -2420,9 +2466,9 @@ class RuleHelper:
             librarian = self.librarian_book()
             if librarian is not None:
                 routes.append(self.all_of(librarian, anvil))
-            book = self.acquire("minecraft:enchanted_book")
+            book = self.enchanted_book("silk_touch")
             if book is not None:
-                routes.append(self.glitch_only(self.all_of(book, anvil)))
+                routes.append(self.all_of(book, anvil))
         return self.any_of(*routes) if routes else None
 
     def _gameplay_node(self, table: str):

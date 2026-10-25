@@ -165,7 +165,8 @@ python tools/why_rule.py [--mc 26.3] [--without "<item>"] "<advancement name pre
   instead of `_natural_origin`. Village panes / mansion glass stay strict; Trial Chambers stained
   glass goes glitch through the existing A16 rule.
 
-- [ ] **9. The Silk Touch glitch route still includes piglin bartering**
+- [x] **9. The Silk Touch glitch route still includes piglin bartering**
+  (fixed 2026-10-25, `feat/enchanted-book-sources`: book sources per enchantment read off the jar (enchanted_books.json); supersedes the random_book() fix on `fix/silk-glitch-bartering`)
 
   Where: `can_silk_touch`, glitch-only random-book branch uses `acquire("minecraft:enchanted_book")`.
   Bartering only ever gives Soul Speed books. Only affects yellow tiles.
