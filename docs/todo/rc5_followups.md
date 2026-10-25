@@ -110,7 +110,8 @@ python tools/why_rule.py [--mc 26.3] [--without "<item>"] "<advancement name pre
   four villages are free from the start. Only matters for hand-listed YAMLs.
   Fix: accept the group names, and lock a whole group when any member is named.
 
-- [ ] **6. Two criterion spellings are not read, and nothing fails loudly (against A11b)**
+- [x] **6. Two criterion spellings are not read, and nothing fails loudly (against A11b)**
+  (fixed 2026-10-25, `fix/criteria-id-falling-block`: item `id` read; falling_block prices its BlockState block, raises without one)
 
   Where: `criteria.py`: `_ITEM_KEYS` has no `"id"`; `_entity` / `_entity_type` have no BlockState
   parsing.
