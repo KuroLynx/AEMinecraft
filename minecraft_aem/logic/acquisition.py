@@ -1953,8 +1953,18 @@ class RuleHelper:
             if node is not None:
                 # Where the block is: a rare-biome one (coral) takes finding its biome, and a dead coral
                 # fan only exists once a living one died, so it takes the living one.
-                origin = (self._block_origin_node(block) if _aged_source(self.content, block) is not None
-                          else self._natural_origin(block))
+                if _aged_source(self.content, block) is not None:
+                    origin = self._block_origin_node(block)
+                elif (_acquisition_table(self.content).get(block, {}).get("recipes")
+                      and not _generates(self.content, block)):
+                    # Crafted (glass, stained glass, panes): it stands only where a structure put it.
+                    # Crafting it to silk-mine it back gives nothing new.
+                    routes = [self.palette_structure(name, block)
+                              for name in _block_structures(self.content).get(block, ())
+                              if name in self.active_structures]
+                    origin = self.any_of(*routes) if routes else None
+                else:
+                    origin = self._natural_origin(block)
                 node = None if origin is None else self._route(origin, node)
             if node is not None:
                 add(node, unreliable("silk_mining", block), chance=chance("silk_mining", block))
@@ -2299,7 +2309,7 @@ class RuleHelper:
 
     def _placed_block_origin(self, block: str):
         """Origin of a block nobody finds lying around, derived rather than curated: one whose record
-        has a recipe and nothing that generates it — no gameplay or silk-mining source, and nothing
+        has a recipe and nothing that generates it — no gameplay source, and nothing
         mined but itself (a chest, a drop or a trade gives you the item, not a placed block). Such a block is where it is because a player crafted it or a
         structure's palette placed it, so mining it for what it drops costs one of those two.
 
@@ -2324,7 +2334,8 @@ class RuleHelper:
         # archaeology and trades hand you the item, which still has to be placed — and that is what
         # the crafted route below prices, since acquire() already includes them. Counting a trade as
         # "lying around" made a fisherman's campfire free to break, and so charcoal free with it.
-        if any(record.get(key) for key in ("gameplay", "silk_mining")):
+        # (A silk_mining source says Silk Touch drops it, not that anything put it there.)
+        if record.get("gameplay"):
             return self._natural_origin(block)
         if any(mined != block for mined in record.get("mining", ())):
             return self._natural_origin(block)
