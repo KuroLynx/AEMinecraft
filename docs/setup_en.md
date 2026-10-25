@@ -176,6 +176,9 @@ has done — half-finished advancements included — instead of starting from th
 | `/aem reconnect` | operators | Retries this world's saved slot and flushes everything earned offline |
 | `/aem deathlink [on\|off\|default]` | operators | DeathLink for the whole run, saved in the world. On a dedicated server this is the only way to change it — the client screen's toggle has no session to talk to |
 | `/aem deathlink mode [random\|all]` | operators | Who a death from another world kills: one random living player (`random`, the default) or everyone (`all`). Saved in the world; with no argument it shows the current mode |
+| `/aem structures` | operators | Locked structures held in the save, placements being written, and unlocked structures waiting for a player to come near (each is built when its area loads) |
+| `/aem structures waiting` | operators | Where those waiting structures are, nearest to you first (the 10 nearest) |
+| `/aem structures release` | operators | Places every held structure the slot no longer locks, the same as its unlock item would |
 
 ## Playing offline
 

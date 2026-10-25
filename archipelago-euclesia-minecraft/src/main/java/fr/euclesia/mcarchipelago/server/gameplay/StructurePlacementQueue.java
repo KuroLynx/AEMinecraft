@@ -162,6 +162,23 @@ public final class StructurePlacementQueue {
         return QUEUE.size() + WAITING.size();
     }
 
+    /** Placements being written right now, a few per tick. */
+    public static int writing() {
+        return QUEUE.size();
+    }
+
+    /** A rebuild set aside until a player loads one of its chunks. */
+    public record Waiting(ServerLevel level, String structureId, ChunkPos origin) {}
+
+    /** The rebuilds waiting for their chunks to load: nothing is stuck, nobody has been there yet. */
+    public static List<Waiting> waitingForChunks() {
+        List<Waiting> out = new ArrayList<>(WAITING.size());
+        for (Rebuild rebuild : WAITING) {
+            out.add(new Waiting(rebuild.level(), rebuild.structureId(), rebuild.origin()));
+        }
+        return out;
+    }
+
     private static void drain() {
         if (++ticks % WAITING_RECHECK_TICKS == 0 && !WAITING.isEmpty()) {
             for (Iterator<Rebuild> waiting = WAITING.iterator(); waiting.hasNext(); ) {
