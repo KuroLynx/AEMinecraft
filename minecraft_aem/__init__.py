@@ -208,10 +208,18 @@ class MCWorld(World):
         for entry in selected:
             if entry in ("Overworld", "Nether", "The End"):
                 locked |= {gid for gid in active if self.content.STRUCTURES[gid].region == entry}
+            elif entry in self.content.STRUCTURE_GROUPS:
+                locked |= set(self.content.STRUCTURE_GROUPS[entry]) & active
             else:
                 gid = self.content.STRUCTURE_BY_LABEL.get(entry)  # the option lists display labels
                 if gid in active:
                     locked.add(gid)
+        # One item unlocks a whole group: lock them all, or the item would open the named one while
+        # the rest were free from the start.
+        for gid in list(locked):
+            group = self._structure_group(gid)
+            if group is not None:
+                locked |= set(self.content.STRUCTURE_GROUPS[group]) & active
         return locked
 
     def _structure_group(self, struct_gid: str) -> str | None:

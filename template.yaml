@@ -211,7 +211,11 @@ AEMinecraft:
     #     - Dimension presets: "Overworld", "Nether", "The End" — lock every structure of that
     #       dimension.
     #     - "All" — lock every structure.
-    #     - Any structure name (e.g. "Ancient City", "Village (Plains)", "Nether Fortress").
+    #     - Any structure name (e.g. "Ancient City", "Village Plains", "Fortress").
+    #     - A group of biome variants (e.g. "Village", "Abandoned Camp"): every structure in it.
+    #
+    # With split_structure_variants off, one item unlocks a whole group, so naming any member of a group
+    # ("Village Plains") locks the whole group.
     #
     # Examples:
     #     Lock everything in the Nether plus the Ancient City:
