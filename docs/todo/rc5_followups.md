@@ -85,7 +85,8 @@ python tools/why_rule.py [--mc 26.3] [--without "<item>"] "<advancement name pre
   Fix: the gate asks "in `_NATURAL_SELF_MINED` **or** listed in `block_biomes.json`". Only adds
   routes; nothing gets stricter. Then see whether `_NATURAL_SELF_MINED` can be deleted.
 
-- [ ] **4. Two BACAP advancements nobody can earn are still checks**
+- [x] **4. Two BACAP advancements nobody can earn are still checks**
+  (fixed 2026-10-25, `fix/bacap-impossible-checks`: curated `_BACAP_UNEARNABLE` in data.py, merged into BACAP_REMOVED; can't be derived, the datapacks' functions aren't in the repo)
 
   Where: the BACAP location lists (`data.py` / `__init__.py`), next to the vanilla advancements BACAP
   deletes, which are already left out.
