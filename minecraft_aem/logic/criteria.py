@@ -315,7 +315,7 @@ _LOCATION_FREE = {"fluid", "light", "can_see_sky"}   # a threshold you can just 
 _ITEM_KEYS = {"items", "id", "count", "components", "predicates"}   # "id": one item, as BACAP writes equipment
 _COMPONENTS = {"potion_contents", "enchantments", "stored_enchantments", "trim", "container",
                "bundle_contents", "jukebox_playable", "dyed_color", "suspicious_stew_effects",
-               "banner_patterns"}
+               "banner_patterns", "base_color"}
 # A loom applies at most this many layers; a banner with more is the ominous banner, which only a raid
 # captain carries.
 _LOOM_LAYERS = 6
@@ -871,6 +871,12 @@ class CriteriaCompiler:
         bundle = components.get("bundle_contents")
         contains = ((bundle.get("items") or {}).get("contains") if isinstance(bundle, dict) else None) or ()
         gates += [self._item(entry, f"{path}.bundle") or UNKNOWN for entry in contains]
+        color = components.get("base_color")
+        if color is not None:
+            # A shield's colour is a banner of that colour put on it in the crafting grid.
+            if not isinstance(color, str):
+                _fail(f"{path}.base_color", color, "a dye colour")
+            gates.append(_item(f"minecraft:{_path(color)}_banner"))
         if "jukebox_playable" in components:
             gates.append(_call("can_get_disc"))
         for entry in self._as_list(components.get("suspicious_stew_effects")):
