@@ -6,6 +6,7 @@ import fr.euclesia.mcarchipelago.server.gameplay.MaterialLockService;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -40,7 +41,12 @@ public abstract class ItemEntityMixin {
         Component reason = MaterialLockService.blockReason(getItem(), MaterialLockService.Channel.PICKUP);
         if (reason != null) {
             ci.cancel();
-            if (player instanceof ServerPlayer serverPlayer) {
+            // Only say why when the pickup would otherwise have happened: with no room for it (both
+            // lookups already skip inventory-locked slots) the item stays down anyway, and walking
+            // over loot with a full bag shouldn't spam the action bar.
+            Inventory inventory = player.getInventory();
+            boolean hasRoom = inventory.getFreeSlot() >= 0 || inventory.getSlotWithRemainingSpace(getItem()) >= 0;
+            if (hasRoom && player instanceof ServerPlayer serverPlayer) {
                 LockFeedback.notify(serverPlayer, reason);
             }
         }
