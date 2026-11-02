@@ -1,9 +1,10 @@
 package fr.euclesia.mcarchipelago.server.command;
 
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import fr.euclesia.mcarchipelago.AEM;
-import fr.euclesia.mcarchipelago.archipelago.APConnectionOptions;
 import fr.euclesia.mcarchipelago.archipelago.ArchipelagoClient;
 import fr.euclesia.mcarchipelago.archipelago.DeathLinkPreference;
 import fr.euclesia.mcarchipelago.server.connect.APWorldConnection;
@@ -18,8 +19,6 @@ import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.storage.LevelResource;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 
 public final class ArchipelagoCommandModule implements AEMCommandModule {
     /** Matches the server-start timeout; long enough for a slow room, short enough to answer. */
@@ -27,28 +26,19 @@ public final class ArchipelagoCommandModule implements AEMCommandModule {
 
     @Override
     public void register(LiteralArgumentBuilder<CommandSourceStack> root) {
+        // Address and port apart: Brigadier's unquoted strings stop at ':', so a single
+        // "host:port" argument only ever parsed when quoted, and then java.net.URI read the host as
+        // a scheme. A scheme or port typed into <address> anyway ("wss://host:1234") is stripped.
+        // Operator-only: it points the whole run at a room, and is saved as the world's slot.
         root.then(Commands.literal("connect")
-                .then(Commands.argument("uri", StringArgumentType.string())
-                        .executes(context -> connect(
-                                context.getSource(),
-                                StringArgumentType.getString(context, "uri"),
-                                AEMServerRuntime.defaultSlotName(context.getSource()),
-                                ""
-                        ))
-                        .then(Commands.argument("slot", StringArgumentType.string())
-                                .executes(context -> connect(
-                                        context.getSource(),
-                                        StringArgumentType.getString(context, "uri"),
-                                        StringArgumentType.getString(context, "slot"),
-                                        ""
-                                ))
-                                .then(Commands.argument("password", StringArgumentType.string())
-                                        .executes(context -> connect(
-                                                context.getSource(),
-                                                StringArgumentType.getString(context, "uri"),
-                                                StringArgumentType.getString(context, "slot"),
-                                                StringArgumentType.getString(context, "password")
-                                        ))))));
+                .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                .then(Commands.argument("address", StringArgumentType.string())
+                        .then(Commands.argument("port", IntegerArgumentType.integer(1, 65535))
+                                .then(Commands.argument("slot", StringArgumentType.string())
+                                        .executes(context -> connect(context, ""))
+                                        .then(Commands.argument("password", StringArgumentType.string())
+                                                .executes(context -> connect(context,
+                                                        StringArgumentType.getString(context, "password"))))))));
 
         // Reconnecting is an operator action on the whole run (it settles the offline queue with the
         // room), so it takes no arguments: the world already knows its slot, and asking for the
@@ -89,22 +79,34 @@ public final class ArchipelagoCommandModule implements AEMCommandModule {
                                 .executes(context -> setDeathLinkMode(context.getSource(), true)))));
     }
 
-    private static int connect(CommandSourceStack source, String uriText, String slot, String password) {
-        URI uri;
-        try {
-            uri = new URI(uriText);
-        } catch (URISyntaxException exception) {
-            source.sendFailure(Component.literal("Invalid Archipelago URI: " + uriText));
+    private static int connect(CommandContext<CommandSourceStack> context, String password) {
+        CommandSourceStack source = context.getSource();
+        if (AEM.ARCHIPELAGO.client().state().isConnected()) {
+            source.sendFailure(Component.literal("Archipelago is already connected."));
             return 0;
         }
+        APWorldConnection connection = new APWorldConnection();
+        connection.address = StringArgumentType.getString(context, "address");
+        connection.port = Integer.toString(IntegerArgumentType.getInteger(context, "port"));
+        connection.slot = StringArgumentType.getString(context, "slot");
+        connection.password = password;
 
-        APConnectionOptions options = APConnectionOptions.minecraft(slot, password);
-        AEM.ARCHIPELAGO.connect(uri, options)
-                .thenRun(() -> source.sendSuccess(() -> Component.literal("Connecting to Archipelago as " + slot), false))
-                .exceptionally(throwable -> {
-                    source.sendFailure(Component.literal("Archipelago connection failed: " + throwable.getMessage()));
-                    return null;
-                });
+        source.sendSuccess(() -> Component.literal("Connecting to " + connection.address + ":"
+                + connection.port + " as " + connection.slot + "..."), true);
+        boolean started = APWorldConnector.connectAsync(source.getServer(), connection, RECONNECT_TIMEOUT_MS, ok -> {
+            if (ok) {
+                // Saved only once it worked, so a typo never replaces the world's good slot.
+                connection.write(source.getServer().getWorldPath(LevelResource.ROOT));
+                source.sendSuccess(() -> Component.literal("Archipelago connected as " + connection.slot + "."), true);
+            } else {
+                source.sendFailure(Component.literal("Archipelago connection failed for "
+                        + connection.address + ":" + connection.port + " (slot " + connection.slot + ")."));
+            }
+        });
+        if (!started) {
+            source.sendFailure(Component.literal("A connection attempt is already running."));
+            return 0;
+        }
         return 1;
     }
 
@@ -125,7 +127,7 @@ public final class ArchipelagoCommandModule implements AEMCommandModule {
                 source.getServer().getWorldPath(LevelResource.ROOT));
         if (connection == null || !connection.hasSlot()) {
             source.sendFailure(Component.literal(
-                    "This world has no saved Archipelago slot; use /aem connect <uri> <slot>."));
+                    "This world has no saved Archipelago slot; use /aem connect <address> <port> <slot>."));
             return 0;
         }
 
@@ -133,22 +135,20 @@ public final class ArchipelagoCommandModule implements AEMCommandModule {
         source.sendSuccess(() -> Component.literal("Reconnecting to " + connection.address + ":"
                 + connection.port + " as " + connection.slot + "..."), true);
 
-        // Off the server thread: connectBlocking waits on the handshake, and a 20-second stall of the
-        // tick loop would look exactly like a crash to everyone in the world.
-        Thread attempt = new Thread(() -> {
-            boolean ok = APWorldConnector.connectBlocking(connection, RECONNECT_TIMEOUT_MS);
-            source.getServer().execute(() -> {
-                if (ok) {
-                    source.sendSuccess(() -> Component.literal("Archipelago reconnected."
-                            + (owed > 0 ? " Sending " + owed + " queued check(s)." : "")), true);
-                } else {
-                    source.sendFailure(Component.literal("Archipelago is still unreachable; "
-                            + "still playing offline" + (owed > 0 ? " with " + owed + " check(s) queued." : ".")));
-                }
-            });
-        }, "aem-reconnect");
-        attempt.setDaemon(true);
-        attempt.start();
+        // Off the server thread: a 20-second stall of the tick loop would look like a crash.
+        boolean started = APWorldConnector.connectAsync(source.getServer(), connection, RECONNECT_TIMEOUT_MS, ok -> {
+            if (ok) {
+                source.sendSuccess(() -> Component.literal("Archipelago reconnected."
+                        + (owed > 0 ? " Sending " + owed + " queued check(s)." : "")), true);
+            } else {
+                source.sendFailure(Component.literal("Archipelago is still unreachable; "
+                        + "still playing offline" + (owed > 0 ? " with " + owed + " check(s) queued." : ".")));
+            }
+        });
+        if (!started) {
+            source.sendFailure(Component.literal("A connection attempt is already running."));
+            return 0;
+        }
         return 1;
     }
 
