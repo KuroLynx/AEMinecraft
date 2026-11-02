@@ -1276,9 +1276,12 @@ class CriteriaCompiler:
         segments = _path(table).split("/")
         if segments[0] == "archaeology":
             # Archaeology loot only rolls when you brush a suspicious block in that structure.
-            return self._all_req(self._price_loot_table("/".join(segments[1:])), self.h.has_brush())
+            name = self.h.loot_table_structure("/".join(segments[1:]))
+            return None if name is None else self._all_req(self.h.structure(name), self.h.has_brush())
         name = self.h.loot_table_structure(table)
-        return self.h.structure(name) if name is not None else None
+        # Generating container loot means opening the container: the Chest gate, as for every other
+        # structure-loot route in acquisition.py (Dungeons and Spawners needs a dungeon chest opened).
+        return None if name is None else self.h.all_of(self.h.structure(name), self.h._loot_container_node())
 
     def _is_back_reference(self, gid: str) -> bool:
         """Would depending on ``gid`` close a loop back onto an advancement being compiled?
