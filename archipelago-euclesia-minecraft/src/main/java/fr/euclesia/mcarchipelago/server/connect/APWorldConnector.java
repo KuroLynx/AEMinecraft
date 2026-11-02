@@ -5,6 +5,7 @@ import fr.euclesia.mcarchipelago.archipelago.APConnectionOptions;
 import fr.euclesia.mcarchipelago.archipelago.APEventListener;
 import fr.euclesia.mcarchipelago.archipelago.ArchipelagoClient;
 import fr.euclesia.mcarchipelago.protocol.APReceivedPacket;
+import net.minecraft.server.MinecraftServer;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -12,6 +13,8 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 /**
  * Establishes the Archipelago session for a world as it starts, blocking the caller until the
@@ -20,7 +23,46 @@ import java.util.concurrent.TimeUnit;
  * {@code ws://} fallback).
  */
 public final class APWorldConnector {
+    /** One attempt at a time: two sockets racing would overwrite each other in the transport. */
+    private static final AtomicBoolean IN_FLIGHT = new AtomicBoolean();
+    /** The join-time retry fires once per lost session; a successful connect re-arms it. */
+    private static final AtomicBoolean JOIN_RETRY_ARMED = new AtomicBoolean(true);
+
     private APWorldConnector() {}
+
+    /**
+     * {@link #connectBlocking} on its own thread, so a 20-second handshake never stalls the tick
+     * loop; {@code onResult} runs back on the server thread. Returns false, without calling
+     * {@code onResult}, when another attempt is already running.
+     */
+    public static boolean connectAsync(MinecraftServer server, APWorldConnection connection,
+                                       long timeoutMs, Consumer<Boolean> onResult) {
+        if (!IN_FLIGHT.compareAndSet(false, true)) {
+            return false;
+        }
+        Thread attempt = new Thread(() -> {
+            boolean ok;
+            try {
+                ok = connectBlocking(connection, timeoutMs);
+            } finally {
+                IN_FLIGHT.set(false);
+            }
+            server.execute(() -> onResult.accept(ok));
+        }, "aem-connect");
+        attempt.setDaemon(true);
+        attempt.start();
+        return true;
+    }
+
+    /** True once per lost session: the first join after a drop gets to try the saved slot again. */
+    public static boolean takeJoinRetry() {
+        return JOIN_RETRY_ARMED.getAndSet(false);
+    }
+
+    /** Called when a session goes live (and when a world closes), so the next drop can retry again. */
+    public static void armJoinRetry() {
+        JOIN_RETRY_ARMED.set(true);
+    }
 
     /**
      * Connects using the world's saved details, waiting up to {@code timeoutMs} for the handshake.

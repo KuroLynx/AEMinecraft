@@ -8,7 +8,9 @@ import fr.euclesia.mcarchipelago.protocol.APClientStatus;
 import fr.euclesia.mcarchipelago.protocol.packet.inbound.ReceivedItemsPacket;
 import fr.euclesia.mcarchipelago.protocol.packet.outbound.LocationChecksPacket;
 import fr.euclesia.mcarchipelago.protocol.packet.outbound.StatusUpdatePacket;
+import fr.euclesia.mcarchipelago.server.connect.APWorldConnector;
 import fr.euclesia.mcarchipelago.server.runtime.AEMServerRuntime;
+import fr.euclesia.mcarchipelago.server.runtime.APSlotGate;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 
@@ -36,6 +38,12 @@ public final class APOfflineSyncListener implements APEventListener {
         // follows rewrites progress anyway.
         APSessionCache.saveSlot(AEMServerRuntime.server());
         APSessionCache.saveProgress(AEMServerRuntime.server());
+        // The slot data is in memory now and stays there when the socket drops, so a later drop is
+        // an offline run, not a blind one. Without this only an OFFLINE start trusted it: a server
+        // that started online kicked everyone when its room went to sleep, then held them out
+        // ("an operator must run /aem connect") until a restart.
+        APSlotGate.trustCache();
+        APWorldConnector.armJoinRetry();
     }
 
     @Override

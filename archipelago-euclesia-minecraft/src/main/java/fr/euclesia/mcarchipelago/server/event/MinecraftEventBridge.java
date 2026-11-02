@@ -179,9 +179,14 @@ public final class MinecraftEventBridge {
             APSlotGate.clear();
             AEMServerRuntime.clearServer(server);
             AEM.ARCHIPELAGO.client().close();
+            APWorldConnector.armJoinRetry();
         });
 
         ServerPlayerEvents.JOIN.register(player -> {
+            // A room that went to sleep comes back when someone visits it, but nothing told the
+            // server: the first join after a drop tries the saved slot once more. Before the gate
+            // below, so a held-out player's join still starts the attempt for the next one.
+            retryConnectOnJoin();
             // A server told to start idle has no slot data, so it cannot tell locked content from
             // free. Letting someone in would have them load chunks and generate the world blind,
             // which is exactly the damage the gate exists to prevent — so they wait outside.
@@ -262,6 +267,27 @@ public final class MinecraftEventBridge {
             String said = text.startsWith("!") ? text : sender.getGameProfile().name() + ": " + text;
             AEM.ARCHIPELAGO.client().send(new SayPacket(said));
             return false;
+        });
+    }
+
+    /** One reconnect attempt with the world's saved slot, if the link is down (see JOIN above). */
+    private static void retryConnectOnJoin() {
+        var server = AEMServerRuntime.server();
+        if (server == null || AEM.ARCHIPELAGO.client().state().isConnected()) {
+            return;
+        }
+        APWorldConnection connection = APWorldConnection.read(server.getWorldPath(LevelResource.ROOT));
+        if (connection == null || !connection.hasSlot() || !APWorldConnector.takeJoinRetry()) {
+            return;
+        }
+        AEM.LOGGER.info("A player joined while Archipelago is down; retrying slot {} once.", connection.slot);
+        APWorldConnector.connectAsync(server, connection, CONNECT_TIMEOUT_MS, ok -> {
+            if (ok) {
+                server.getPlayerList().broadcastSystemMessage(
+                        Component.literal("Archipelago reconnected."), false);
+            } else {
+                AEM.LOGGER.warn("Join-time reconnect failed; use /aem reconnect once the room is up.");
+            }
         });
     }
 }

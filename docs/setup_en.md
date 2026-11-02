@@ -146,8 +146,8 @@ own slot along instead of quietly adopting the new host's. To point a world at a
 > **Until the server has its slot data, players are held at the door** with *"This server has not
 > connected to Archipelago yet."* That is deliberate: a server that cannot tell locked content from
 > unlocked would generate locked structures for real, permanently. Connect from the console with
-> `/aem connect "wss://archipelago.gg:38281" "YourSlotName"` (a third argument is the room password;
-> the `wss://` scheme is required here), and everyone can come in. A world that has already cached its
+> `/aem connect archipelago.gg 38281 YourSlotName` (a fourth argument is the room password; quote
+> anything with spaces), and everyone can come in. A successful connect is saved as the world's slot. A world that has already cached its
 > slot data holds nobody out — it simply plays [offline](#playing-offline).
 
 ### What the run shares, and what stays yours
@@ -172,7 +172,7 @@ has done — half-finished advancements included — instead of starting from th
 | --- | --- | --- |
 | `/aem status` | anyone | Online or offline, the slot, and how many checks are queued |
 | `/aem say <message>` | anyone | Sends a message to Archipelago chat (needs a live link) |
-| `/aem connect "<uri>" "<slot>" ["<password>"]` | anyone | Opens a session on a server that started idle |
+| `/aem connect <address> <port> <slot> [<password>]` | operators | Opens a session (e.g. on a server that started idle) and, once it connects, saves it as this world's slot |
 | `/aem reconnect` | operators | Retries this world's saved slot and flushes everything earned offline |
 | `/aem deathlink [on\|off\|default]` | operators | DeathLink for the whole run, saved in the world. On a dedicated server this is the only way to change it — the client screen's toggle has no session to talk to |
 | `/aem deathlink mode [random\|all]` | operators | Who a death from another world kills: one random living player (`random`, the default) or everyone (`all`). Saved in the world; with no argument it shows the current mode |
@@ -207,6 +207,10 @@ reported the next time you connect.
 Run **`/aem reconnect`** (operator/gamemaster level). It retries the world's own saved slot, and on
 success everything you earned offline is sent to the room. Nothing is lost if it fails — the queue is
 saved in the world, so it survives restarts and crashes and goes out whenever the link next returns.
+
+A server also tries once by itself: the first player to join after the link dropped (say, a room that
+went to sleep and was woken up again) triggers one reconnect with the saved slot. If that fails, it
+waits for `/aem reconnect`.
 
 Run **`/aem status`** to see whether you are online or offline and how many checks are waiting.
 

@@ -2,10 +2,8 @@ package fr.euclesia.mcarchipelago.server.runtime;
 
 import com.mojang.brigadier.Command;
 import fr.euclesia.mcarchipelago.AEM;
-import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 
 public final class AEMServerRuntime {
@@ -44,11 +42,6 @@ public final class AEMServerRuntime {
      */
     public static boolean isArchipelagoReady() {
         return APSlotGate.isReady();
-    }
-
-    public static String defaultSlotName(CommandSourceStack source) {
-        ServerPlayer player = source.getPlayer();
-        return player != null ? player.getGameProfile().name() : source.getTextName();
     }
 
     public static String entityGameId(Entity entity) {
