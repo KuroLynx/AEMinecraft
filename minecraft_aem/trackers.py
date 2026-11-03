@@ -225,15 +225,14 @@ SECTION_ORDER = ("passive", "hostile", "neutral", "boss",
 
 def _with_sections(world, trackers: dict[str, dict]) -> dict[str, dict]:
     """Tags each tab tile with its ``section`` and returns the trackers in display order: by section,
-    then the datapack's own order within it (mob table order, structure name, knowledge item order).
+    then alphabetically by the tile's name within it (a structure group sorts among its variants).
     The mod lays the tabs out in this order; the main tab's goal tiles get no section."""
     mobs = list(world.content.MOBS_ALL.values())
-    mob_rank = {mob.game_id: i for i, mob in enumerate(mobs)}
+    mob_name = {mob.game_id: name for name, mob in world.content.MOBS_ALL.items()}
     mob_of = {_slug(mob.game_id): mob for mob in mobs}
     struct_of = {_slug(s.game_id): s for s in world.content.STRUCTURES.values()}
     for label, gids in world.content.STRUCTURE_GROUPS.items():
         struct_of[structure_group_tracker_id(label).split("/", 1)[1]] = world.content.STRUCTURES[gids[0]]
-    knowledge_rank = {knowledge_tracker_id(name): i for i, name in enumerate(KNOWLEDGE_UTILITY_ITEMS)}
     knowledge_name = {knowledge_tracker_id(name): name for name in KNOWLEDGE_UTILITY_ITEMS}
     knowledge_category = {k.item_name: k.category for k in KNOWLEDGES.values()}  # tool / station / …
 
@@ -241,7 +240,7 @@ def _with_sections(world, trackers: dict[str, dict]) -> dict[str, dict]:
         kind, _, rest = tile_id.split(":", 1)[1].partition("/")
         if kind in (KIND_KILL, KIND_BOSS, KIND_UNLOCK_MOB) and rest in mob_of:
             mob = mob_of[rest]
-            return mob.category, mob_rank[mob.game_id]
+            return mob.category, mob_name[mob.game_id]
         if kind == KIND_UNLOCK_STRUCTURE:
             key = rest.removeprefix("group/")
             struct = struct_of.get(rest) or struct_of.get(key)
@@ -249,12 +248,12 @@ def _with_sections(world, trackers: dict[str, dict]) -> dict[str, dict]:
                 return None
             region = getattr(struct.region, "value", struct.region)  # never str() an MCRegion
             return region.lower().replace(" ", "_"), key
-        if tile_id in knowledge_rank:
+        if tile_id in knowledge_name:
             name = knowledge_name[tile_id]
             section = ("progressive" if name.startswith("Progressive ")
                        else "dimension" if name.startswith("Dimension Unlock: ")
                        else knowledge_category.get(name, "utility"))
-            return section, knowledge_rank[tile_id]
+            return section, name.split(": ", 1)[-1].removeprefix("Progressive ")
         return None
 
     placed = {tile_id: place(tile_id) for tile_id in trackers}
@@ -266,6 +265,6 @@ def _with_sections(world, trackers: dict[str, dict]) -> dict[str, dict]:
         where = placed[tile_id]
         if where is None:
             return len(SECTION_ORDER), ""
-        return SECTION_ORDER.index(where[0]), where[1]  # one section never mixes int and str ranks
+        return SECTION_ORDER.index(where[0]), where[1].lower()
 
     return {tile_id: trackers[tile_id] for tile_id in sorted(trackers, key=order)}
