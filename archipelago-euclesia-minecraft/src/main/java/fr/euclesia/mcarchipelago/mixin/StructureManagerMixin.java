@@ -16,6 +16,10 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 
+import it.unimi.dsi.fastutil.longs.LongSet;
+
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Predicate;
 
 /**
@@ -59,6 +63,37 @@ public abstract class StructureManagerMixin {
         return archipelago_euclesia$suppressIfLocked(original.call(pos, structure));
     }
     //?}
+
+    /**
+     * Spawning reads these two, not the piece queries above: {@code ChunkGenerator#getMobsAt} finds a
+     * structure's {@code spawn_overrides} (monument guardians, fortress blazes and wither skeletons)
+     * through {@code getAllStructuresAt}, and {@code NaturalSpawner#isInNetherFortressBounds} through
+     * {@code getStructureAt}. Unwrapped, a locked structure's mobs spawned in its empty bounding box.
+     */
+    @WrapMethod(method = "getAllStructuresAt")
+    private Map<Structure, LongSet> archipelago_euclesia$hideLockedFromAll(BlockPos pos,
+                                                                       Operation<Map<Structure, LongSet>> original) {
+        Map<Structure, LongSet> all = original.call(pos);
+        if (all.isEmpty() || !(this.level instanceof ServerLevel)) {
+            return all;
+        }
+        Map<Structure, LongSet> open = null;
+        for (Structure structure : all.keySet()) {
+            if (StructureLockService.isStructureLocked(registryAccess(), structure)) {
+                if (open == null) {
+                    open = new HashMap<>(all);
+                }
+                open.remove(structure);
+            }
+        }
+        return open == null ? all : open;
+    }
+
+    @WrapMethod(method = "getStructureAt(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/levelgen/structure/Structure;)Lnet/minecraft/world/level/levelgen/structure/StructureStart;")
+    private StructureStart archipelago_euclesia$hideLockedAt(BlockPos pos, Structure structure,
+                                                             Operation<StructureStart> original) {
+        return archipelago_euclesia$suppressIfLocked(original.call(pos, structure));
+    }
 
     @Unique
     private StructureStart archipelago_euclesia$suppressIfLocked(StructureStart start) {
