@@ -43,7 +43,9 @@ public final class StructureLockService {
         if (registry == null) {
             return id.toString();
         }
-        return registry.isLocked(id.toString()) ? id.toString() : null;
+        // Dungeons below y=0 are their own placed feature; they lock with the Dungeon unlock.
+        String structureId = id.toString().equals("minecraft:monster_room_deep") ? "minecraft:monster_room" : id.toString();
+        return registry.isLocked(structureId) ? structureId : null;
     }
 
     /**
@@ -72,7 +74,9 @@ public final class StructureLockService {
         if (registry == null) {
             return null;
         }
-        return registry.isLocked(id.toString()) ? id.toString() : null;
+        // Dungeons below y=0 are their own placed feature; they lock with the Dungeon unlock.
+        String structureId = id.toString().equals("minecraft:monster_room_deep") ? "minecraft:monster_room" : id.toString();
+        return registry.isLocked(structureId) ? structureId : null;
     }
 
     /**
