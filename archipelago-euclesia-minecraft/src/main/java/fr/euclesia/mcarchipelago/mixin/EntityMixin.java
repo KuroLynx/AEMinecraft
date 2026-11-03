@@ -3,6 +3,7 @@ package fr.euclesia.mcarchipelago.mixin;
 import fr.euclesia.mcarchipelago.server.gameplay.DimensionLockService;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.throwableitemprojectile.ThrownEnderpearl;
 import net.minecraft.world.level.Level;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -15,13 +16,19 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * destination-aware check the portal logic consults, so refusing here aborts the teleport and leaves
  * the player in the portal. Only restrictions are added on top of vanilla's own {@code false} cases
  * (e.g. the End→Overworld credits gate), never relaxed.
+ *
+ * <p>A player also crosses as a non-player: riding a boat or minecart (the vehicle teleports, carrying
+ * them), or by throwing an ender pearl through, which pulls its owner to where it lands.
  */
 @Mixin(Entity.class)
 public abstract class EntityMixin {
     @Inject(method = "canTeleport", at = @At("RETURN"), cancellable = true)
     private void archipelago_euclesia$gateDimensionTravel(Level from, Level to,
                                                           CallbackInfoReturnable<Boolean> cir) {
-        if (!cir.getReturnValueZ() || !(((Object) this) instanceof Player)) {
+        Entity self = (Entity) (Object) this;
+        boolean playerDriven = self instanceof Player || self.countPlayerPassengers() > 0
+                || self instanceof ThrownEnderpearl pearl && pearl.getOwner() instanceof Player;
+        if (!cir.getReturnValueZ() || !playerDriven) {
             return; // vanilla already blocking, or not a player-driven teleport
         }
         String destination = to.dimension().identifier().toString();
