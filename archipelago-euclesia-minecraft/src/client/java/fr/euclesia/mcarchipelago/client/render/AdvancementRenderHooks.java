@@ -58,6 +58,22 @@ public final class AdvancementRenderHooks {
         graphics.disableScissor();
     }
 
+    // Search match outline: the frame itself, repainted, peeking out 1-2 px around the real one, so
+    // the glow follows the frame's shape (task square, goal round, challenge spiky).
+    private static final int SEARCH_GLOW_RGB = 0xFFFF55;
+    private static final int[][] SEARCH_GLOW_OFFSETS = {
+            {-1, -1}, {0, -1}, {1, -1}, {-1, 0}, {1, 0}, {-1, 1}, {0, 1}, {1, 1},
+            {-2, 0}, {2, 0}, {0, -2}, {0, 2}};
+
+    /** Draws the search-match glow behind a tile's frame; call it just before the frame itself. */
+    public static void drawSearchGlow(GuiGraphicsExtractor graphics, RenderPipeline pipeline, Identifier sprite,
+                                      int x, int y, int width, int height) {
+        for (int[] offset : SEARCH_GLOW_OFFSETS) {
+            drawFrame(graphics, pipeline, sprite, x + offset[0], y + offset[1], width, height,
+                    (Integer) SEARCH_GLOW_RGB, NO_TINT);
+        }
+    }
+
     /** Received share of a progressive unlock tile's copies, 0 for any other tile. */
     private static float progress(Identifier id) {
         if (id == null) {

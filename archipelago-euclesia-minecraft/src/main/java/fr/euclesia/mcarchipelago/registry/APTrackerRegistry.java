@@ -118,6 +118,11 @@ public final class APTrackerRegistry {
         return byId.containsKey(advancementId);
     }
 
+    /** Whether the slot data tags its trackers with sections (the mod then lays the tabs out as grids). */
+    public boolean hasSections() {
+        return byId.values().stream().anyMatch(tracker -> tracker.section() != null);
+    }
+
     /** Whether the slot has any active tracker (i.e. the tracker tab should appear). */
     public boolean hasAny() {
         return !byId.isEmpty();

@@ -66,6 +66,9 @@ public abstract class AdvancementWidgetMixin {
                     target = MixinTargets.BLIT_SPRITE_BOX))
     private void archipelago_euclesia$colorFrame(GuiGraphicsExtractor graphics, RenderPipeline pipeline,
                                                  Identifier sprite, int x, int y, int width, int height) {
+        if (fr.euclesia.mcarchipelago.client.gui.TrackerSearch.matches(advancementNode)) {
+            AdvancementRenderHooks.drawSearchGlow(graphics, pipeline, sprite, x, y, width, height);
+        }
         AdvancementRenderHooks.drawFrame(graphics, pipeline, sprite, x, y, width, height,
                 advancementNode == null ? null : advancementNode.holder().id(),
                 AdvancementRenderHooks.NO_TINT);

@@ -29,7 +29,7 @@ import java.util.Map;
  * lays the tracker tabs out as a sectioned grid ({@link TrackerGrid}) instead of a tree.
  */
 @Mixin(AdvancementTab.class)
-public abstract class AdvancementTabMixin {
+public abstract class AdvancementTabMixin implements fr.euclesia.mcarchipelago.client.render.TrackerGridTab {
     // 26.3 hands the root out as its holder rather than its node.
     //? if >=26.3 {
     /*@Shadow
@@ -136,5 +136,10 @@ public abstract class AdvancementTabMixin {
         for (TrackerGrid.Header header : archipelago_euclesia$headers) {
             graphics.text(minecraft.font, header.label(), left, top + header.y(), 0xFFFFFFFF, true);
         }
+    }
+
+    @Override
+    public boolean archipelago_euclesia$isGrid() {
+        return archipelago_euclesia$headers != null;
     }
 }

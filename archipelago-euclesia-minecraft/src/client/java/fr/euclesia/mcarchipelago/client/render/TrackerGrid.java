@@ -33,7 +33,7 @@ public final class TrackerGrid {
     private static final int SECTION_GAP = 4;
     private static final int OFF_SCREEN = -10_000;
 
-    private static final Set<String> TABS = Set.of(
+    private static final Set<String> TABS = Set.of(APTrackerRegistry.TAB_ROOT_ID,
             APTrackerRegistry.CATEGORY_KILLS, APTrackerRegistry.CATEGORY_ENTITY_UNLOCKS,
             APTrackerRegistry.CATEGORY_STRUCTURE_UNLOCKS, APTrackerRegistry.CATEGORY_KNOWLEDGE);
 
@@ -49,7 +49,8 @@ public final class TrackerGrid {
      */
     public static int layout(AdvancementWidget root, Collection<AdvancementWidget> widgets, List<Header> headers) {
         headers.clear();
-        if (root == null || !TABS.contains(id(root))) {
+        APTrackerRegistry trackers = AEM.ARCHIPELAGO.client().registries().apTrackers();
+        if (root == null || !TABS.contains(id(root)) || !trackers.hasSections()) {
             return -1;
         }
         Map<String, AdvancementWidget> byId = new LinkedHashMap<>();
@@ -60,16 +61,21 @@ public final class TrackerGrid {
         }
         List<AdvancementWidget> order = new ArrayList<>();
         List<String> sections = new ArrayList<>();
-        AEM.ARCHIPELAGO.client().registries().apTrackers().forEach((id, tracker) -> {
+        // The main tab's two goal tiles are not trackers: they open it, under their own header.
+        for (String goal : List.of(APTrackerRegistry.GOAL_ADVANCEMENTS_ID, APTrackerRegistry.GOAL_BOSSES_ID)) {
+            AdvancementWidget widget = byId.remove(goal);
+            if (widget != null) {
+                order.add(widget);
+                sections.add("goal");
+            }
+        }
+        trackers.forEach((id, tracker) -> {
             AdvancementWidget widget = byId.remove(id);
             if (widget != null) {
                 order.add(widget);
                 sections.add(tracker.section());
             }
         });
-        if (sections.stream().allMatch(Objects::isNull)) {
-            return -1;
-        }
         for (AdvancementWidget rest : byId.values()) {  // a check re-parented here: last, no header
             order.add(rest);
             sections.add(null);

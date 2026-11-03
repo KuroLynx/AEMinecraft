@@ -218,7 +218,8 @@ def build_trackers_export(world) -> dict:
 
 # The tracker tabs' section headers, in display order (the mod draws a grid per tab, a header per
 # section; lang keys gui.aem.tracker_section.<key>). Per tab: mob category / dimension / item kind.
-SECTION_ORDER = ("passive", "hostile", "neutral", "boss",
+SECTION_ORDER = ("goal_bosses",
+                 "passive", "hostile", "neutral", "boss",
                  "overworld", "nether", "the_end",
                  "progressive", "dimension", "tool", "armor", "misc", "station", "container", "utility")
 
@@ -226,7 +227,8 @@ SECTION_ORDER = ("passive", "hostile", "neutral", "boss",
 def _with_sections(world, trackers: dict[str, dict]) -> dict[str, dict]:
     """Tags each tab tile with its ``section`` and returns the trackers in display order: by section,
     then alphabetically by the tile's name within it (a structure group sorts among its variants).
-    The mod lays the tabs out in this order; the main tab's goal tiles get no section."""
+    The mod lays the tabs out in this order; the main tab's two goal tiles (no trackers) are the
+    mod's own "goal" section."""
     mobs = list(world.content.MOBS_ALL.values())
     mob_name = {mob.game_id: name for name, mob in world.content.MOBS_ALL.items()}
     mob_of = {_slug(mob.game_id): mob for mob in mobs}
@@ -238,6 +240,8 @@ def _with_sections(world, trackers: dict[str, dict]) -> dict[str, dict]:
 
     def place(tile_id: str) -> tuple[str, object] | None:
         kind, _, rest = tile_id.split(":", 1)[1].partition("/")
+        if kind == "goal" and rest.startswith("bosses/") and rest[len("bosses/"):] in mob_of:
+            return "goal_bosses", mob_name[mob_of[rest[len("bosses/"):]].game_id]  # main-tab boss tiles
         if kind in (KIND_KILL, KIND_BOSS, KIND_UNLOCK_MOB) and rest in mob_of:
             mob = mob_of[rest]
             return mob.category, mob_name[mob.game_id]

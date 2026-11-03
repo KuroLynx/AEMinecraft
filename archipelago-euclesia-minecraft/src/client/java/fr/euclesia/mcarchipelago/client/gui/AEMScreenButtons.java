@@ -67,8 +67,9 @@ public final class AEMScreenButtons {
     public static void reopen(Screen screen) {
         MCClient.setScreen(screen);
         ((ScreenAccessor) screen).archipelago_euclesia$rebuildWidgets();
-        if (screen instanceof AdvancementsScreen) {
+        if (screen instanceof AdvancementsScreen advancements) {
             addReportButton(screen);
+            TrackerSearch.attach(advancements);
         }
     }
 
@@ -101,9 +102,10 @@ public final class AEMScreenButtons {
 
             // Logic report: arm, then click the advancement that is wrong (LogicReportMode). Vanilla
             // screen only; the compat adapters' screens still feed the hover, but get no button.
-            if (screen instanceof AdvancementsScreen) {
+            if (screen instanceof AdvancementsScreen advancements) {
                 LogicReportMode.disarm();
                 addReportButton(screen);
+                TrackerSearch.attach(advancements);
                 ScreenMouseEvents.allowMouseClick(screen).register(LogicReportMode::allowClick);
                 ScreenEvents.afterExtract(screen).register((s, graphics, mouseX, mouseY, tickDelta) -> {
                     if (LogicReportMode.armed()) {

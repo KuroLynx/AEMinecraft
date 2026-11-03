@@ -5,6 +5,7 @@
 	"client": [
 		"AdvancementsScreenMixin",
 		"AdvancementTabMixin",
+		"AdvancementsScreenAccessor",
 		"AdvancementTabTypeMixin",
 		"AdvancementWidgetAccessor",
 		"AdvancementWidgetMixin",
