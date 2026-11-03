@@ -189,6 +189,15 @@ def _item(gid):
     return need("item", gid, 1)
 
 
+def _instrument(block):
+    """A note block predicate's ``state.instrument``: the block that has to sit under it."""
+    state = block.get("state") if isinstance(block, dict) else None
+    instrument = state.get("instrument") if isinstance(state, dict) else None
+    if not isinstance(instrument, str):
+        return None
+    return any_(*[_item(f"minecraft:{b}") for b in _INSTRUMENT_BLOCKS.get(instrument, ())])
+
+
 def _call(method, *args):
     return need("call", method, *args)
 
@@ -312,7 +321,39 @@ _LOCATION_FREE = {"fluid", "light", "can_see_sky"}   # a threshold you can just 
 _ITEM_KEYS = {"items", "id", "count", "components", "predicates"}   # "id": one item, as BACAP writes equipment
 _COMPONENTS = {"potion_contents", "enchantments", "stored_enchantments", "trim", "container",
                "bundle_contents", "jukebox_playable", "dyed_color", "suspicious_stew_effects",
-               "banner_patterns", "base_color"}
+               "banner_patterns", "base_color", "custom_name", "fireworks"}
+# FireworkStarRecipe: what each explosion shape / effect adds to the star (a small ball needs nothing).
+_FIREWORK_SHAPE = {
+    "large_ball": ("fire_charge",),
+    "star": ("gold_nugget",),
+    "creeper": ("creeper_head", "zombie_head", "skeleton_skull", "wither_skeleton_skull", "piglin_head",
+                "dragon_head", "player_head"),
+    "burst": ("feather",),
+}
+_FIREWORK_EFFECT = {"has_twinkle": "glowstone_dust", "has_trail": "diamond"}
+# NoteBlockInstrument: the block under a note block picks its instrument (a few placeable examples
+# each; harp is any other block, so it needs nothing).
+_INSTRUMENT_BLOCKS = {
+    "basedrum": ("cobblestone", "stone", "netherrack"),
+    "snare": ("sand", "gravel"),
+    "hat": ("glass",),
+    "bass": ("oak_log", "spruce_log", "birch_log", "oak_planks"),
+    "flute": ("clay",),
+    "bell": ("gold_block",),
+    "guitar": ("white_wool",),
+    "chime": ("packed_ice",),
+    "xylophone": ("bone_block",),
+    "iron_xylophone": ("iron_block",),
+    "cow_bell": ("soul_sand",),
+    "didgeridoo": ("pumpkin",),
+    "bit": ("emerald_block",),
+    "banjo": ("hay_block",),
+    "pling": ("glowstone",),
+    "trumpet": ("copper_block",),
+    "trumpet_exposed": ("exposed_copper",),
+    "trumpet_weathered": ("weathered_copper",),
+    "trumpet_oxidized": ("oxidized_copper",),
+}
 # A loom applies at most this many layers; a banner with more is the ominous banner, which only a raid
 # captain carries.
 _LOOM_LAYERS = 6
@@ -786,6 +827,7 @@ class CriteriaCompiler:
                 _fail(f"{path}.position", loc["position"], "{x, y, z} ranges")
             parts.append(self._position(loc["position"], region) or FREE)
         parts += [any_(*[self._block(b) for b in _ids(loc.get("block"), f"{path}.block")])]
+        parts.append(_instrument(loc.get("block")))
         if loc.get("smokey") is True:
             # Vanilla's only use of smoke: harvesting a hive calmly. A campfire under it for the
             # smoke, and bees to have filled it with honey in the first place.
@@ -876,6 +918,17 @@ class CriteriaCompiler:
             gates.append(_item(f"minecraft:{_path(color)}_banner"))
         if "jukebox_playable" in components:
             gates.append(_call("can_get_disc"))
+        if "custom_name" in components:
+            gates.append(_item("minecraft:anvil"))   # only an anvil writes a name
+        fireworks = components.get("fireworks")
+        explosions = fireworks.get("explosions") if isinstance(fireworks, dict) else None
+        for star in self._as_list(explosions.get("contains") if isinstance(explosions, dict) else None):
+            if not isinstance(star, dict):
+                continue
+            gates.append(_item("minecraft:firework_star"))
+            extras = _FIREWORK_SHAPE.get(_path(star.get("shape") or ""), ())
+            gates.append(any_(*[_item(f"minecraft:{i}") for i in extras]))
+            gates += [_item(f"minecraft:{i}") for key, i in _FIREWORK_EFFECT.items() if star.get(key)]
         for entry in self._as_list(components.get("suspicious_stew_effects")):
             effect = entry.get("id") if isinstance(entry, dict) else None
             gates.append(need("stew", _ns(effect)) if isinstance(effect, str) else None)
@@ -1000,7 +1053,7 @@ class CriteriaCompiler:
         if not isinstance(props, dict):
             _fail(f"{path}.properties", props, "a map of block state -> value")
         water = self._block("minecraft:water") if str(props.get("waterlogged", "")).lower() == "true" else None
-        return all_(leaves, where, water)
+        return all_(leaves, where, water, _instrument(pred.get("block")))
 
     @staticmethod
     def _tag(table: dict, tag: str, path: str) -> list:

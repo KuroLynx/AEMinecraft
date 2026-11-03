@@ -402,7 +402,27 @@ _EXTRA_REQUIREMENT = {
     "blazeandcave:monsters/family_reunion": lambda h: h.entity(E_ZOMBIE),
     # Fill the inventory with Totems of Undying: an Evoker is the only source the game data lists.
     "blazeandcave:challenges/immortal": lambda h: h.acquire("minecraft:totem_of_undying"),
+    # Blow a goat horn with a raider of an active raid nearby (check/battle_of_the_bands).
+    "blazeandcave:animal/battle_of_the_bands":
+        lambda h: h.all_of(h.can_raid(), _got(h, "minecraft:goat_horn")),
+    # 1728 cobblestone in a chest, then stand on it (check/inventory_chestful_of_cobblestone).
+    "blazeandcave:mining/chestful_of_cobblestone": lambda h: _bulk_chest(h, "minecraft:cobblestone"),
+    # The criterion reads "just duplicated" from the allay's DuplicationCooldown nbt, which the
+    # compiler skips: without this it was "hand an allay an amethyst shard", no jukebox.
+    "blazeandcave:adventure/and_make_it_double": lambda h: h.can_duplicate_allay(),
 }
+
+
+def _got(h, item):
+    """An item's price; an item with none can't be had (acquire's None would poison and_)."""
+    node = h.acquire(item)
+    return Const(False) if node is None else node
+
+
+def _bulk_chest(h, item):
+    with h.bulk_mode():
+        stack = _got(h, item)
+    return h.all_of(_got(h, "minecraft:chest"), stack)
 
 # Crops that can only be planted in farmland, which only a hoe makes. (Cocoa goes on jungle logs,
 # nether wart in soul sand, bamboo/saplings/sweet berries on dirt — none of those need the tool.)

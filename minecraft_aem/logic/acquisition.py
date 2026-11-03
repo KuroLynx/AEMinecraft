@@ -19,7 +19,8 @@ from .. import *
 # takes "#planks" otherwise fans out into a dozen wood subtrees).
 # Only what you chop: planks, bark blocks and sticks are CRAFTED, so they go through their recipes and
 # pay the crafting Knowledge like any other (the 2x2 grid is gated too: item_gate_behavior.inventory_crafting).
-_WOOD_RE = re.compile(r"^(stripped_)?[a-z]+_(log|stem)$")
+# mushroom_stem is a huge mushroom's block, not wood: it grows from a mushroom, it is not chopped.
+_WOOD_RE = re.compile(r"^(stripped_)?(?!mushroom_)[a-z]+_(log|stem)$")
 _NETHER_WOODS = ("crimson", "warped")
 
 # Item -> required Progressive Material Handling tier (inverted from data.MATERIAL_HANDLING_ITEMS):
@@ -221,8 +222,8 @@ _BLOCK_ONLY_FROM = {
     "decorated_pot": ("structures", (S_TRIAL_CHAMBERS,)),
     "copper_golem_statue": ("entity", E_COPPER_GOLEM),
     # No recipe, so it read as natural, and water washing a "free" web made string cost a bucket.
-    # It is only where a structure put it ("palette": every structure _block_structures knows).
-    "cobweb": ("palette", None),
+    # Only where webs are abundant: a stray one in a camp, igloo or zombie village doesn't count.
+    "cobweb": ("structures", (S_MINESHAFT, S_MINESHAFT_MESA, S_STRONGHOLD, S_TRIAL_CHAMBERS)),
 }
 # Blocks that are the PLACED FORM of the item they drop, under a different name — so mining one back
 # is circular the way mining a potted plant is, and reading it as a natural source makes the item
@@ -1194,7 +1195,7 @@ class RuleHelper:
                 self.structure(S_ANCIENT_CITY),  # chest
                 self.reached(f"{ADVANCEMENT_PREFIX}{A_TRIAL_EDITION}"),  # Trial Chambers
             ),
-            self.material(MAT_DIAMOND),  # jukebox needs a diamond
+            self.acquire("minecraft:jukebox") or self.material(MAT_DIAMOND),
             self.can_get_disc(),         # disc to play
         )
 
