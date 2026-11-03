@@ -150,5 +150,15 @@
 
   "message.aem.biome_finder.none": "No %s nearby.",
   "message.aem.biome_finder.arrived": "You reached %s; the Biome Finder stopped tracking.",
-  "message.aem.biome_finder.tracking": "Biome Finder now points to %s (%s, %s)."
+  "message.aem.biome_finder.tracking": "Biome Finder now points to %s (%s, %s).",
+  "gui.aem.tracker_section.passive": "Passive",
+  "gui.aem.tracker_section.hostile": "Hostile",
+  "gui.aem.tracker_section.neutral": "Neutral",
+  "gui.aem.tracker_section.boss": "Bosses",
+  "gui.aem.tracker_section.overworld": "Overworld",
+  "gui.aem.tracker_section.nether": "Nether",
+  "gui.aem.tracker_section.the_end": "The End",
+  "gui.aem.tracker_section.progressive": "Progressive",
+  "gui.aem.tracker_section.dimension": "Dimensions",
+  "gui.aem.tracker_section.knowledge": "Knowledge & Utilities"
 }

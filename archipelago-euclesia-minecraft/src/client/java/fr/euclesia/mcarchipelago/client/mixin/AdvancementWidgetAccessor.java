@@ -3,6 +3,7 @@ package fr.euclesia.mcarchipelago.client.mixin;
 import net.minecraft.advancements.AdvancementNode;
 import net.minecraft.client.gui.screens.advancements.AdvancementWidget;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
 /**
@@ -16,4 +17,13 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 public interface AdvancementWidgetAccessor {
     @Accessor("advancementNode")
     AdvancementNode archipelago_euclesia$getAdvancementNode();
+
+    // The tile's offset in its tab; final in vanilla, moved by TrackerGrid.
+    @Mutable
+    @Accessor("x")
+    void archipelago_euclesia$setX(int x);
+
+    @Mutable
+    @Accessor("y")
+    void archipelago_euclesia$setY(int y);
 }

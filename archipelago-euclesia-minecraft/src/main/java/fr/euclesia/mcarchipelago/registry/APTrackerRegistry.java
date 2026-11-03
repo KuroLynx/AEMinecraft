@@ -3,8 +3,8 @@ package fr.euclesia.mcarchipelago.registry;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -45,11 +45,15 @@ public final class APTrackerRegistry {
      * (an AP location); {@code itemId} is set for unlocks (a received AP item). {@code count} is the
      * number of copies needed to finish an unlock tile — 1 for normal unlocks, every copy this seed for
      * a progressive item (e.g. Progressive Material Handling). {@code flags} is the unlock item's AP
-     * classification as network flags, or {@code null} when the slot data predates it.
+     * classification as network flags, or {@code null} when the slot data predates it. {@code section}
+     * is the tracker tab header the tile sits under ({@code "hostile"}, {@code "nether"}, …), or
+     * {@code null} on the main tab and in slot data that predates it (the tab then keeps its tree).
      */
-    public record Tracker(String kind, String locationName, Long locationId, Long itemId, int count, Integer flags) {}
+    public record Tracker(String kind, String locationName, Long locationId, Long itemId, int count, Integer flags,
+                          String section) {}
 
-    private final Map<String, Tracker> byId = new HashMap<>();
+    // Insertion order = slot_data order = the tabs' display order (trackers.py sorts it).
+    private final Map<String, Tracker> byId = new LinkedHashMap<>();
     // Category sub-root ids that have ≥1 active tracker this seed (so empty branches stay hidden).
     private final Set<String> activeCategories = new HashSet<>();
 
@@ -68,7 +72,8 @@ public final class APTrackerRegistry {
                     data.has("location_id") ? data.get("location_id").getAsLong() : null,
                     data.has("item_id") ? data.get("item_id").getAsLong() : null,
                     data.has("count") ? data.get("count").getAsInt() : 1,
-                    data.has("flags") ? data.get("flags").getAsInt() : null));
+                    data.has("flags") ? data.get("flags").getAsInt() : null,
+                    data.has("section") ? data.get("section").getAsString() : null));
             String category = categoryFor(entry.getKey());
             if (category != null) {
                 activeCategories.add(category);
@@ -103,7 +108,7 @@ public final class APTrackerRegistry {
         return byId.get(advancementId);
     }
 
-    /** Every active tracker this seed, by advancement id. */
+    /** Every active tracker this seed, by advancement id, in display order. */
     public void forEach(java.util.function.BiConsumer<String, Tracker> action) {
         byId.forEach(action);
     }

@@ -529,7 +529,12 @@ behaviour, `DeathLinkService.applyRemote`) or **all** of them. It's a `/aem deat
   map) moves to the next-nearest instance of the same biome, so the server search skips the previous
   targets. **Check:** with two Cherry Groves, "next" points at the second one.
 
-- [ ] E4 **Tracker tabs as a custom panel (hybrid).** All 4 tracker tabs (Kills, Entity Unlocks,
+- [x] E4 built (feat/tracker-grid, 2026-11-04; compiles + mixin check on 3 versions, NOT tested in-game).
+  Not a new panel: `TrackerGrid` moves the vanilla widgets onto an 8-wide grid (so frame repaint,
+  tooltips, glow, hint hold and X/N fill are untouched), headers per `section` that trackers.py now
+  writes into slot_data (in display order), no connector lines, the category root tile parked.
+  Old slot data / Better Advancements & co keep the tree, so the datapack + TrackerLayoutService stay.
+- [ ] E4 (original spec) **Tracker tabs as a custom panel (hybrid).** All 4 tracker tabs (Kills, Entity Unlocks,
   Structure Unlocks, Knowledge) keep their category root as a real advancement, so the tab buttons
   stay native and other mods still see ordinary tabs. When one of the `aem:category/*` tabs is
   selected, the mod draws its own grid in the content area from `slot_data["trackers"]`: section
