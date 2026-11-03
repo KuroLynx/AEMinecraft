@@ -20,6 +20,7 @@ from .data import (
     BOSS_KILL_PREFIX,
     ITEM_BIOME_FINDER,
     ITEMS,
+    KNOWLEDGES,
     MCLocationCategory,
 )
 
@@ -219,7 +220,7 @@ def build_trackers_export(world) -> dict:
 # section; lang keys gui.aem.tracker_section.<key>). Per tab: mob category / dimension / item kind.
 SECTION_ORDER = ("passive", "hostile", "neutral", "boss",
                  "overworld", "nether", "the_end",
-                 "progressive", "dimension", "knowledge")
+                 "progressive", "dimension", "tool", "armor", "misc", "station", "container", "utility")
 
 
 def _with_sections(world, trackers: dict[str, dict]) -> dict[str, dict]:
@@ -234,6 +235,7 @@ def _with_sections(world, trackers: dict[str, dict]) -> dict[str, dict]:
         struct_of[structure_group_tracker_id(label).split("/", 1)[1]] = world.content.STRUCTURES[gids[0]]
     knowledge_rank = {knowledge_tracker_id(name): i for i, name in enumerate(KNOWLEDGE_UTILITY_ITEMS)}
     knowledge_name = {knowledge_tracker_id(name): name for name in KNOWLEDGE_UTILITY_ITEMS}
+    knowledge_category = {k.item_name: k.category for k in KNOWLEDGES.values()}  # tool / station / …
 
     def place(tile_id: str) -> tuple[str, object] | None:
         kind, _, rest = tile_id.split(":", 1)[1].partition("/")
@@ -250,7 +252,8 @@ def _with_sections(world, trackers: dict[str, dict]) -> dict[str, dict]:
         if tile_id in knowledge_rank:
             name = knowledge_name[tile_id]
             section = ("progressive" if name.startswith("Progressive ")
-                       else "dimension" if name.startswith("Dimension Unlock: ") else "knowledge")
+                       else "dimension" if name.startswith("Dimension Unlock: ")
+                       else knowledge_category.get(name, "utility"))
             return section, knowledge_rank[tile_id]
         return None
 

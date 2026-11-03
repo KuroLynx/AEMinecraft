@@ -160,5 +160,10 @@
   "gui.aem.tracker_section.the_end": "The End",
   "gui.aem.tracker_section.progressive": "Progressive",
   "gui.aem.tracker_section.dimension": "Dimensions",
-  "gui.aem.tracker_section.knowledge": "Knowledge & Utilities"
+  "gui.aem.tracker_section.tool": "Tools",
+  "gui.aem.tracker_section.armor": "Armor",
+  "gui.aem.tracker_section.misc": "Misc",
+  "gui.aem.tracker_section.station": "Stations",
+  "gui.aem.tracker_section.container": "Containers",
+  "gui.aem.tracker_section.utility": "Utilities"
 }
