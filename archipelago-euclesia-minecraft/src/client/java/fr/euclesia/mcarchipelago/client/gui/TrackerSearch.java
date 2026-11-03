@@ -50,6 +50,14 @@ public final class TrackerSearch {
                 search.setFocused(false);
             }
         });
+        // Vanilla draws the screen's widgets first and the advancement window over them, which hides
+        // the box: draw it again on top. (Its covered first draw costs nothing visible.)
+        ScreenEvents.afterExtract(screen).register((s, graphics, mouseX, mouseY, delta) -> {
+            if (search.visible) {
+                graphics.nextStratum();
+                search.extractRenderState(graphics, mouseX, mouseY, delta);
+            }
+        });
         ScreenEvents.remove(screen).register(s -> {
             query = "";
             box = null;
