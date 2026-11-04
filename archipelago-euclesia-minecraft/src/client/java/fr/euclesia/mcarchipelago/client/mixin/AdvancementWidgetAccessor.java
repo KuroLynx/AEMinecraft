@@ -18,6 +18,12 @@ public interface AdvancementWidgetAccessor {
     @Accessor("advancementNode")
     AdvancementNode archipelago_euclesia$getAdvancementNode();
 
+    @Accessor("x")
+    int archipelago_euclesia$getX();
+
+    @Accessor("y")
+    int archipelago_euclesia$getY();
+
     // The tile's offset in its tab; final in vanilla, moved by TrackerGrid.
     @Mutable
     @Accessor("x")

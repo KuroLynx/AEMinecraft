@@ -17,7 +17,8 @@ import java.util.Locale;
 /**
  * A search box in the advancement window's title bar, shown on the tracker tabs laid out as grids
  * ({@link fr.euclesia.mcarchipelago.client.render.TrackerGrid}). Tiles whose name contains the text
- * get a glowing outline ({@code AdvancementRenderHooks.drawSearchGlow}). The text lasts while the
+ * stay lit, the rest are dimmed ({@code AdvancementRenderHooks.drawSearchDim}), and the grid scrolls to the
+ * first match. The text lasts while the
  * screen is open (across tabs and resizes) and is cleared when it closes.
  */
 public final class TrackerSearch {
@@ -41,7 +42,13 @@ public final class TrackerSearch {
         search.setHint(Component.translatable("gui.aem.tracker_search.hint"));
         search.setMaxLength(32);
         search.setValue(query);
-        search.setResponder(text -> query = text.trim().toLowerCase(Locale.ROOT));
+        search.setResponder(text -> {
+            query = text.trim().toLowerCase(Locale.ROOT);
+            if (!query.isEmpty()
+                    && ((AdvancementsScreenAccessor) screen).archipelago_euclesia$getSelectedTab() instanceof TrackerGridTab grid) {
+                grid.archipelago_euclesia$scrollTo(TrackerSearch::matches);
+            }
+        });
         box = search;
         Screens.getWidgets(screen).add(search);
         ScreenEvents.beforeExtract(screen).register((s, graphics, mouseX, mouseY, delta) -> {
@@ -74,6 +81,11 @@ public final class TrackerSearch {
 
     public static boolean keyPressed(KeyEvent event) {
         return box.keyPressed(event);
+    }
+
+    /** Whether {@code node}'s tile is dimmed: a search is active and it doesn't match. */
+    public static boolean dims(AdvancementNode node) {
+        return !query.isEmpty() && box != null && box.visible && node != null && !matches(node);
     }
 
     /** Whether {@code node}'s tile matches the search (only while the box is shown). */

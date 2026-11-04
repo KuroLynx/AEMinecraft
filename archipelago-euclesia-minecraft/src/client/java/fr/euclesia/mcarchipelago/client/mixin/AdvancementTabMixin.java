@@ -142,4 +142,30 @@ public abstract class AdvancementTabMixin implements fr.euclesia.mcarchipelago.c
     public boolean archipelago_euclesia$isGrid() {
         return archipelago_euclesia$headers != null;
     }
+
+    @Override
+    public void archipelago_euclesia$scrollTo(java.util.function.Predicate<AdvancementNode> match) {
+        if (archipelago_euclesia$headers == null) {
+            return;
+        }
+        AdvancementWidgetAccessor first = null;
+        for (AdvancementWidget widget : widgets.values()) {
+            AdvancementWidgetAccessor tile = (AdvancementWidgetAccessor) widget;
+            if (widget == root || !match.test(tile.archipelago_euclesia$getAdvancementNode())) {
+                continue;
+            }
+            if (first == null || tile.archipelago_euclesia$getY() < first.archipelago_euclesia$getY()
+                    || (tile.archipelago_euclesia$getY() == first.archipelago_euclesia$getY()
+                    && tile.archipelago_euclesia$getX() < first.archipelago_euclesia$getX())) {
+                first = tile;
+            }
+        }
+        if (first == null) {
+            return;
+        }
+        // Same bounds as vanilla's scroll(): 113 = content height; leave room for the section header.
+        int overflow = maxY - minY - 113;
+        scrollY = overflow <= 0 ? 0 : Mth.clamp(-(first.archipelago_euclesia$getY() - 12), -overflow, 0);
+        centered = true;
+    }
 }
