@@ -150,5 +150,23 @@
 
   "message.aem.biome_finder.none": "No %s nearby.",
   "message.aem.biome_finder.arrived": "You reached %s; the Biome Finder stopped tracking.",
-  "message.aem.biome_finder.tracking": "Biome Finder now points to %s (%s, %s)."
+  "message.aem.biome_finder.tracking": "Biome Finder now points to %s (%s, %s).",
+  "gui.aem.tracker_section.goal": "Goal",
+  "gui.aem.tracker_section.goal_bosses": "Bosses to Defeat",
+  "gui.aem.tracker_search.hint": "Search...",
+  "gui.aem.tracker_section.passive": "Passive",
+  "gui.aem.tracker_section.hostile": "Hostile",
+  "gui.aem.tracker_section.neutral": "Neutral",
+  "gui.aem.tracker_section.boss": "Bosses",
+  "gui.aem.tracker_section.overworld": "Overworld",
+  "gui.aem.tracker_section.nether": "Nether",
+  "gui.aem.tracker_section.the_end": "The End",
+  "gui.aem.tracker_section.progressive": "Progressive",
+  "gui.aem.tracker_section.dimension": "Dimensions",
+  "gui.aem.tracker_section.tool": "Tools",
+  "gui.aem.tracker_section.armor": "Armor",
+  "gui.aem.tracker_section.misc": "Misc",
+  "gui.aem.tracker_section.station": "Stations",
+  "gui.aem.tracker_section.container": "Containers",
+  "gui.aem.tracker_section.utility": "Utilities"
 }

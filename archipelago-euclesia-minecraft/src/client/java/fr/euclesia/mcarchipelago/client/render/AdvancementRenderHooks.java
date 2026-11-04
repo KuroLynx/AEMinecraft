@@ -58,6 +58,14 @@ public final class AdvancementRenderHooks {
         graphics.disableScissor();
     }
 
+    // Search: tiles that don't match are dimmed, frame and icon alike.
+    private static final int SEARCH_DIM_ARGB = 0xB0000000;
+
+    /** Dims a non-matching tile; call it after the tile (frame + icon) is drawn. */
+    public static void drawSearchDim(GuiGraphicsExtractor graphics, int x, int y, int width, int height) {
+        graphics.fill(x, y, x + width, y + height, SEARCH_DIM_ARGB);
+    }
+
     /** Received share of a progressive unlock tile's copies, 0 for any other tile. */
     private static float progress(Identifier id) {
         if (id == null) {

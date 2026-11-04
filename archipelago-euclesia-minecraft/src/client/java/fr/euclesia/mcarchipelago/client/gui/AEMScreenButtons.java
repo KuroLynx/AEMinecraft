@@ -67,16 +67,42 @@ public final class AEMScreenButtons {
     public static void reopen(Screen screen) {
         MCClient.setScreen(screen);
         ((ScreenAccessor) screen).archipelago_euclesia$rebuildWidgets();
-        if (screen instanceof AdvancementsScreen) {
+        if (isAdvancementScreen(screen)) {
             addReportButton(screen);
+        }
+        if (screen instanceof AdvancementsScreen advancements) {
+            TrackerSearch.attach(advancements);
         }
     }
 
+    // Screens that replace vanilla's advancement screen; the compat adapters feed their tile hovers
+    // to LogicReportMode (via HintHoldTracker), so the report button works there too.
+    private static final java.util.Set<String> COMPAT_ADVANCEMENT_SCREENS = java.util.Set.of(
+            "codes.atomys.advr.screens.AdvancementReloadedScreen",
+            "betteradvancements.common.gui.BetterAdvancementsScreen",
+            "de.dafuqs.paginatedadvancements.client.PaginatedAdvancementScreen");
+
+    private static boolean isAdvancementScreen(Screen screen) {
+        for (Class<?> type = screen.getClass(); type != null; type = type.getSuperclass()) {
+            if (type == AdvancementsScreen.class || COMPAT_ADVANCEMENT_SCREENS.contains(type.getName())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // The current screen's report button (re-made on every rebuild), for the redraw-on-top below.
+    private static ItemIconButton reportButton;
+
     private static void addReportButton(Screen screen) {
+        // A resize re-fires AFTER_INIT but vanilla's advancement screen keeps its widgets (its
+        // repositionElements only moves them): drop the old button or it stays behind at its old spot.
+        Screens.getWidgets(screen).remove(reportButton);
         ItemIconButton report = new ItemIconButton(MARGIN, screen.height - SIZE - MARGIN, SIZE, SIZE,
                 REPORT_LABEL, Items.WRITABLE_BOOK, ignored -> LogicReportMode.toggle());
         report.setTooltip(Tooltip.create(REPORT_LABEL));
         Screens.getWidgets(screen).add(report);
+        reportButton = report;
     }
 
     public static void register() {
@@ -100,10 +126,21 @@ public final class AEMScreenButtons {
             }
 
             // Logic report: arm, then click the advancement that is wrong (LogicReportMode). Vanilla
-            // screen only; the compat adapters' screens still feed the hover, but get no button.
-            if (screen instanceof AdvancementsScreen) {
+            // screen and the compat mods' screens alike; the tracker search is vanilla only (the grid is).
+            if (screen instanceof AdvancementsScreen advancements) {
+                TrackerSearch.attach(advancements);
+            }
+            if (isAdvancementScreen(screen)) {
                 LogicReportMode.disarm();
                 addReportButton(screen);
+                if (!(screen instanceof AdvancementsScreen)) {
+                    // A compat screen may draw its window over the screen's widgets (vanilla does,
+                    // inside its window): draw the button again on top.
+                    ScreenEvents.afterExtract(screen).register((s, graphics, mouseX, mouseY, tickDelta) -> {
+                        graphics.nextStratum();
+                        reportButton.extractRenderState(graphics, mouseX, mouseY, tickDelta);
+                    });
+                }
                 ScreenMouseEvents.allowMouseClick(screen).register(LogicReportMode::allowClick);
                 ScreenEvents.afterExtract(screen).register((s, graphics, mouseX, mouseY, tickDelta) -> {
                     if (LogicReportMode.armed()) {

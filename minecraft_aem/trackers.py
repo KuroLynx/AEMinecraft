@@ -20,6 +20,7 @@ from .data import (
     BOSS_KILL_PREFIX,
     ITEM_BIOME_FINDER,
     ITEMS,
+    KNOWLEDGES,
     MCLocationCategory,
 )
 
@@ -212,4 +213,62 @@ def build_trackers_export(world) -> dict:
         if descriptor["kind"] == "unlock" and descriptor["item_id"] in flags_by_id:
             descriptor["flags"] = flags_by_id[descriptor["item_id"]]
 
-    return trackers
+    return _with_sections(world, trackers)
+
+
+# The tracker tabs' section headers, in display order (the mod draws a grid per tab, a header per
+# section; lang keys gui.aem.tracker_section.<key>). Per tab: mob category / dimension / item kind.
+SECTION_ORDER = ("goal_bosses",
+                 "passive", "hostile", "neutral", "boss",
+                 "overworld", "nether", "the_end",
+                 "progressive", "dimension", "tool", "armor", "misc", "station", "container", "utility")
+
+
+def _with_sections(world, trackers: dict[str, dict]) -> dict[str, dict]:
+    """Tags each tab tile with its ``section`` and returns the trackers in display order: by section,
+    then alphabetically by the tile's name within it (a structure group sorts among its variants).
+    The mod lays the tabs out in this order; the main tab's two goal tiles (no trackers) are the
+    mod's own "goal" section."""
+    mobs = list(world.content.MOBS_ALL.values())
+    mob_name = {mob.game_id: name for name, mob in world.content.MOBS_ALL.items()}
+    mob_of = {_slug(mob.game_id): mob for mob in mobs}
+    struct_of = {_slug(s.game_id): s for s in world.content.STRUCTURES.values()}
+    for label, gids in world.content.STRUCTURE_GROUPS.items():
+        struct_of[structure_group_tracker_id(label).split("/", 1)[1]] = world.content.STRUCTURES[gids[0]]
+    knowledge_name = {knowledge_tracker_id(name): name for name in KNOWLEDGE_UTILITY_ITEMS}
+    knowledge_category = {k.item_name: k.category for k in KNOWLEDGES.values()}  # tool / station / …
+
+    def place(tile_id: str) -> tuple[str, object] | None:
+        kind, _, rest = tile_id.split(":", 1)[1].partition("/")
+        if kind == "goal" and rest.startswith("bosses/") and rest[len("bosses/"):] in mob_of:
+            return "goal_bosses", mob_name[mob_of[rest[len("bosses/"):]].game_id]  # main-tab boss tiles
+        if kind in (KIND_KILL, KIND_BOSS, KIND_UNLOCK_MOB) and rest in mob_of:
+            mob = mob_of[rest]
+            return mob.category, mob_name[mob.game_id]
+        if kind == KIND_UNLOCK_STRUCTURE:
+            key = rest.removeprefix("group/")
+            struct = struct_of.get(rest) or struct_of.get(key)
+            if struct is None:
+                return None
+            region = getattr(struct.region, "value", struct.region)  # never str() an MCRegion
+            return region.lower().replace(" ", "_"), key
+        if tile_id in knowledge_name:
+            name = knowledge_name[tile_id]
+            section = ("progressive" if name.startswith("Progressive ")
+                       else "dimension" if name.startswith("Dimension Unlock: ")
+                       else knowledge_category.get(name, "utility"))
+            return section, name.split(": ", 1)[-1].removeprefix("Progressive ")
+        return None
+
+    placed = {tile_id: place(tile_id) for tile_id in trackers}
+    for tile_id, where in placed.items():
+        if where is not None:
+            trackers[tile_id]["section"] = where[0]
+
+    def order(tile_id: str):
+        where = placed[tile_id]
+        if where is None:
+            return len(SECTION_ORDER), ""
+        return SECTION_ORDER.index(where[0]), where[1].lower()
+
+    return {tile_id: trackers[tile_id] for tile_id in sorted(trackers, key=order)}

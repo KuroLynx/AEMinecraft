@@ -71,6 +71,15 @@ public abstract class AdvancementWidgetMixin {
                 AdvancementRenderHooks.NO_TINT);
     }
 
+    /** Dims the tile when a tracker search is active and it doesn't match. Tile frame: 26x26 at (x+3, y). */
+    @Inject(method = "extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;II)V", at = @At("RETURN"))
+    private void archipelago_euclesia$searchDim(GuiGraphicsExtractor graphics, int originX, int originY,
+                                                CallbackInfo ci) {
+        if (fr.euclesia.mcarchipelago.client.gui.TrackerSearch.dims(advancementNode)) {
+            AdvancementRenderHooks.drawSearchDim(graphics, originX + x + 3, originY + y, 26, 26);
+        }
+    }
+
     /**
      * Draw a live mob as the icon for tracker-tab tiles (kill/boss/mob-unlock). The vanilla code
      * draws the JSON item icon via {@code fakeItem}; we redirect it and render the actual entity
