@@ -95,6 +95,9 @@ public final class AEMScreenButtons {
     private static ItemIconButton reportButton;
 
     private static void addReportButton(Screen screen) {
+        // A resize re-fires AFTER_INIT but vanilla's advancement screen keeps its widgets (its
+        // repositionElements only moves them): drop the old button or it stays behind at its old spot.
+        Screens.getWidgets(screen).remove(reportButton);
         ItemIconButton report = new ItemIconButton(MARGIN, screen.height - SIZE - MARGIN, SIZE, SIZE,
                 REPORT_LABEL, Items.WRITABLE_BOOK, ignored -> LogicReportMode.toggle());
         report.setTooltip(Tooltip.create(REPORT_LABEL));

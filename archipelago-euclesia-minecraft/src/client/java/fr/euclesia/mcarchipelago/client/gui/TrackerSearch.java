@@ -29,6 +29,7 @@ public final class TrackerSearch {
     private static final int BOX_HEIGHT = 12;
 
     private static EditBox box;
+    private static AdvancementTab lastTab;  // to scroll to the first match when the tab changes
     private static String query = "";
 
     private TrackerSearch() {}
@@ -44,17 +45,23 @@ public final class TrackerSearch {
         search.setValue(query);
         search.setResponder(text -> {
             query = text.trim().toLowerCase(Locale.ROOT);
-            if (!query.isEmpty()
-                    && ((AdvancementsScreenAccessor) screen).archipelago_euclesia$getSelectedTab() instanceof TrackerGridTab grid) {
-                grid.archipelago_euclesia$scrollTo(TrackerSearch::matches);
-            }
+            scrollToFirstMatch(screen);
         });
+        // A resize re-fires AFTER_INIT but vanilla's advancement screen keeps its widgets (its
+        // repositionElements only moves them): drop the old box or it stays behind at its old spot.
+        Screens.getWidgets(screen).remove(box);
         box = search;
+        lastTab = selectedTab(screen);
         Screens.getWidgets(screen).add(search);
         ScreenEvents.beforeExtract(screen).register((s, graphics, mouseX, mouseY, delta) -> {
             search.visible = onGridTab(screen);
             if (!search.visible && search.isFocused()) {
                 search.setFocused(false);
+            }
+            AdvancementTab tab = selectedTab(screen);
+            if (tab != lastTab) {
+                lastTab = tab;
+                scrollToFirstMatch(screen);
             }
         });
         // Vanilla draws the screen's widgets first and the advancement window over them, which hides
@@ -68,6 +75,7 @@ public final class TrackerSearch {
         ScreenEvents.remove(screen).register(s -> {
             query = "";
             box = null;
+            lastTab = null;
         });
     }
 
@@ -102,8 +110,17 @@ public final class TrackerSearch {
         return title.toLowerCase(Locale.ROOT).contains(query);
     }
 
+    private static AdvancementTab selectedTab(AdvancementsScreen screen) {
+        return ((AdvancementsScreenAccessor) screen).archipelago_euclesia$getSelectedTab();
+    }
+
     private static boolean onGridTab(AdvancementsScreen screen) {
-        AdvancementTab tab = ((AdvancementsScreenAccessor) screen).archipelago_euclesia$getSelectedTab();
-        return tab instanceof TrackerGridTab grid && grid.archipelago_euclesia$isGrid();
+        return selectedTab(screen) instanceof TrackerGridTab grid && grid.archipelago_euclesia$isGrid();
+    }
+
+    private static void scrollToFirstMatch(AdvancementsScreen screen) {
+        if (!query.isEmpty() && selectedTab(screen) instanceof TrackerGridTab grid) {
+            grid.archipelago_euclesia$scrollTo(TrackerSearch::matches);
+        }
     }
 }
